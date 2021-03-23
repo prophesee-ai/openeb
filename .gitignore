@@ -1,0 +1,15 @@
+# Build folders
+/_build*/
+/build*/
+
+# Python 
+__pycache__/
+*.pyc
+
+# cache
+.cache
+
+
+.vscode/
+.vs/
+out/

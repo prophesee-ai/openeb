@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Metavision Viewer</string>
+    <string name="text_message">Display stats</string>
+    <string name="text_message_summ">Display event rate statistics</string>
+</resources>

@@ -1,0 +1,5 @@
+sdk.dir=@ANDROID_SDK_DIR@
+ndk.abi=@ANDROID_ABI@
+ndk.version=@ANDROID_NDK_VERSION@
+metavision.plugin.dir=@HAL_BUILD_PLUGIN_PATH@/../../
+build.dir=@CMAKE_CURRENT_BINARY_DIR@

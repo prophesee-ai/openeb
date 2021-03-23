@@ -1,0 +1,174 @@
+/**********************************************************************************************************************
+ * Copyright (c) Prophesee S.A.                                                                                       *
+ *                                                                                                                    *
+ * Licensed under the Apache License, Version 2.0 (the "License");                                                    *
+ * you may not use this file except in compliance with the License.                                                   *
+ * You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0                                 *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed   *
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.                      *
+ * See the License for the specific language governing permissions and limitations under the License.                 *
+ **********************************************************************************************************************/
+
+#include <memory>
+#include <atomic>
+
+#include "metavision/utils/gtest/gtest_with_tmp_dir.h"
+#include "metavision/hal/device/device.h"
+#include "metavision/hal/device/device_discovery.h"
+#include "metavision/hal/facilities/i_hw_identification.h"
+#include "metavision/hal/facilities/i_geometry.h"
+#include "metavision/hal/facilities/i_decoder.h"
+#include "metavision/hal/facilities/i_event_decoder.h"
+#include "metavision/hal/facilities/i_events_stream.h"
+#include "metavision/hal/facilities/i_device_control.h"
+#include "metavision/hal/facilities/i_ll_biases.h"
+#include "metavision/hal/facilities/i_roi.h"
+#include "metavision/sdk/base/events/event_cd.h"
+#include "sample_hw_identification.h"
+#include "sample_geometry.h"
+
+using namespace Metavision;
+
+class HalSamplePlugin_GTest : public GTestWithTmpDir {
+public:
+    // Check facilities that should be present both online and offline
+    void check_common_facilities(Metavision::Device *device, bool offline) {
+        // I_HW_Identification
+        Metavision::I_HW_Identification *i_hw_identification = device->get_facility<Metavision::I_HW_Identification>();
+        ASSERT_NE(nullptr, i_hw_identification);
+        ASSERT_EQ(SampleHWIdentification::SAMPLE_SERIAL, i_hw_identification->get_serial());
+        ASSERT_EQ(SampleHWIdentification::SAMPLE_SYSTEM_ID, i_hw_identification->get_system_id());
+        ASSERT_EQ("1.0", i_hw_identification->get_sensor_info().as_string());
+        ASSERT_EQ(SampleHWIdentification::SAMPLE_SYSTEM_VERSION, i_hw_identification->get_system_version());
+        std::vector<std::string> available_raw_format = i_hw_identification->get_available_raw_format();
+        ASSERT_EQ(1, available_raw_format.size());
+        ASSERT_EQ("SAMPLE-FORMAT-1.0", available_raw_format[0]);
+        ASSERT_EQ(SampleHWIdentification::SAMPLE_INTEGRATOR, i_hw_identification->get_integrator());
+        if (offline) {
+            ASSERT_EQ("File", i_hw_identification->get_connection_type());
+        } else {
+            ASSERT_EQ("USB", i_hw_identification->get_connection_type());
+        }
+
+        // I_Geometry
+        Metavision::I_Geometry *i_geometry = device->get_facility<Metavision::I_Geometry>();
+        ASSERT_NE(nullptr, i_geometry);
+        ASSERT_EQ(SampleGeometry::WIDTH_, i_geometry->get_width());
+        ASSERT_EQ(SampleGeometry::HEIGHT_, i_geometry->get_height());
+
+        // I_Decoder
+        Metavision::I_Decoder *i_decoder = device->get_facility<Metavision::I_Decoder>();
+        ASSERT_NE(nullptr, i_decoder);
+        if (offline) {
+            ASSERT_TRUE(i_decoder->is_time_shifting_enabled());
+        } else {
+            ASSERT_FALSE(i_decoder->is_time_shifting_enabled());
+        }
+
+        // I_EventDecoder<Metavision::EventCD>
+        Metavision::I_EventDecoder<Metavision::EventCD> *i_cd_decoder =
+            device->get_facility<Metavision::I_EventDecoder<Metavision::EventCD>>();
+        ASSERT_NE(nullptr, i_cd_decoder);
+
+        // I_EventsStream
+        Metavision::I_EventsStream *i_events_stream = device->get_facility<Metavision::I_EventsStream>();
+        ASSERT_NE(nullptr, i_events_stream);
+    }
+};
+
+TEST_F(HalSamplePlugin_GTest, list_sources_and_open_it) {
+    // GIVEN the sample plugin library
+    // WHEN we get the list of available sources
+    auto v = Metavision::DeviceDiscovery::list();
+
+    // THEN we get exactly one source, with specific serial
+    ASSERT_EQ(1, v.size());
+    std::string full_serial_expected = std::string(SampleHWIdentification::SAMPLE_INTEGRATOR) +
+                                       ":hal_sample_plugin:" + std::string(SampleHWIdentification::SAMPLE_SERIAL);
+    ASSERT_EQ(full_serial_expected, v.front());
+
+    // GIVEN the sample plugin library
+    // WHEN we create a device with the given serial
+    std::unique_ptr<Metavision::Device> device;
+    ASSERT_NO_THROW(device = DeviceDiscovery::open(v.front()));
+
+    // THEN a valid device is built
+    ASSERT_NE(nullptr, device);
+}
+
+TEST_F(HalSamplePlugin_GTest, open_first_available_live_source_and_check_facilities) {
+    // GIVEN the sample plugin library
+    // WHEN we create a device from first available
+    std::unique_ptr<Metavision::Device> device;
+    ASSERT_NO_THROW(device = DeviceDiscovery::open(""));
+
+    // THEN a valid device is built, and it has the expected facilities
+    ASSERT_NE(nullptr, device);
+
+    check_common_facilities(device.get(), false);
+
+    // I_DeviceControl
+    Metavision::I_DeviceControl *i_device_control = device->get_facility<Metavision::I_DeviceControl>();
+    ASSERT_NE(nullptr, i_device_control);
+}
+
+TEST_F(HalSamplePlugin_GTest, record_and_read_back) {
+    // GIVEN the sample plugin library
+
+    // WHEN we record from live source
+    std::unique_ptr<Metavision::Device> device(DeviceDiscovery::open(""));
+
+    Metavision::I_EventsStream *i_events_stream = device->get_facility<Metavision::I_EventsStream>();
+    Metavision::I_Decoder *i_decoder            = device->get_facility<Metavision::I_Decoder>();
+    Metavision::I_EventDecoder<Metavision::EventCD> *i_cd_decoder =
+        device->get_facility<Metavision::I_EventDecoder<Metavision::EventCD>>();
+
+    std::atomic<int> n_cd_events_decoded(0);
+    i_cd_decoder->add_event_buffer_callback(
+        [&n_cd_events_decoded](const Metavision::EventCD *begin, const Metavision::EventCD *end) {
+            n_cd_events_decoded += std::distance(begin, end);
+        });
+
+    std::string rawfile_to_log_path = tmpdir_handler_->get_full_path("rawfile_sample_plugin.raw");
+    i_events_stream->log_raw_data(rawfile_to_log_path);
+    i_events_stream->start();
+    while (n_cd_events_decoded < 1000) { // To be sure to record something
+        short ret = i_events_stream->wait_next_buffer();
+        ASSERT_LE(0, ret);
+
+        long n_bytes;
+        uint8_t *raw_data = i_events_stream->get_latest_raw_data(n_bytes);
+        i_decoder->decode(raw_data, raw_data + n_bytes);
+    }
+    Metavision::timestamp last_time = i_decoder->get_last_timestamp();
+
+    // THEN when reading back the recording, we get the same events as the first run
+    device.reset(nullptr);
+    ASSERT_NO_THROW(device = DeviceDiscovery::open_raw_file(rawfile_to_log_path));
+    ASSERT_NE(nullptr, device);
+
+    // Check the facilities
+    check_common_facilities(device.get(), true);
+
+    // Reset counter and facilities
+    int number_cd_expected = n_cd_events_decoded;
+    n_cd_events_decoded    = 0;
+
+    i_events_stream = device->get_facility<Metavision::I_EventsStream>();
+    i_decoder       = device->get_facility<Metavision::I_Decoder>();
+    i_cd_decoder    = device->get_facility<Metavision::I_EventDecoder<Metavision::EventCD>>();
+    i_cd_decoder->add_event_buffer_callback(
+        [&n_cd_events_decoded](const Metavision::EventCD *begin, const Metavision::EventCD *end) {
+            n_cd_events_decoded += std::distance(begin, end);
+        });
+    i_events_stream->start();
+    short ret = i_events_stream->wait_next_buffer();
+    long n_bytes(0);
+    while (ret > 0) { // To be sure to record something
+        uint8_t *raw_data = i_events_stream->get_latest_raw_data(n_bytes);
+        i_decoder->decode(raw_data, raw_data + n_bytes);
+        ret = i_events_stream->wait_next_buffer();
+    }
+    ASSERT_EQ(number_cd_expected, n_cd_events_decoded);
+    ASSERT_EQ(last_time, i_decoder->get_last_timestamp());
+}
