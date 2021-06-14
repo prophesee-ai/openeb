@@ -48,7 +48,7 @@ void SampleDataTransfer::run_impl() {
 
         // Makes the buffer available to the events stream
         auto next_buffer      = transfer_data(buffer_);
-        next_buffer           = buffer_;
+        buffer_               = next_buffer;
         uint64_t cur_ts_clock = Metavision::get_system_time_us();
         uint64_t expected_ts  = first_ts_clock_ + (current_time_ - time_start);
         if (expected_ts > cur_ts_clock) {

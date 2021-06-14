@@ -9,7 +9,7 @@
 
 cmake_minimum_required(VERSION 3.5)
 
-project(metavision VERSION 2.2.0)
+project(metavision VERSION 2.2.1)
 
 # Set output directory for build targets
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib/ CACHE PATH "Output directory of libraries.")
@@ -18,6 +18,12 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin/ CACHE PATH "Output
 set(PYTHON3_OUTPUT_DIR ${PROJECT_BINARY_DIR}/py3/ CACHE PATH "Output directory of python 3 libraries.")
 
 # Set directory for Metavision and HAL plugins
+if (WIN32)
+    if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+        string(REGEX REPLACE "${PROJECT_NAME}$" "Prophesee" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
+        set(CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}" CACHE PATH "" FORCE)
+    endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+endif(WIN32)
 set(HEADER_INSTALL_DEST "include")
 if (ANDROID)
     set(LIBRARY_INSTALL_DEST "libs/${ANDROID_ABI}")

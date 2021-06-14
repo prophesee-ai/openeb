@@ -114,22 +114,24 @@ public:
         buffer->p        = p;
     }
 
-    /// Structure of size 64 bits to represent one event (old format)
-    FORCE_PACK(struct RawEventV1 {
-        uint32_t ts;
-        unsigned int x : 9;
-        unsigned int y : 8;
-        unsigned int p : 1;
-        unsigned int padding : 14;
-    });
+    FORCE_PACK(
+        /// Structure of size 64 bits to represent one event (old format)
+        struct RawEventV1 {
+            uint32_t ts;
+            unsigned int x : 9;
+            unsigned int y : 8;
+            unsigned int p : 1;
+            unsigned int padding : 14;
+        });
 
-    /// Structure of size 64 bits to represent one event
-    FORCE_PACK(struct RawEvent {
-        uint32_t ts;
-        unsigned int x : 14;
-        unsigned int y : 14;
-        unsigned int p : 4;
-    });
+    FORCE_PACK(
+        /// Structure of size 64 bits to represent one event
+        struct RawEvent {
+            uint32_t ts;
+            unsigned int x : 14;
+            unsigned int y : 14;
+            unsigned int p : 4;
+        });
 
     /// @endcond
 };

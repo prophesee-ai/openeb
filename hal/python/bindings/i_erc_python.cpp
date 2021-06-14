@@ -20,10 +20,11 @@ static DeviceFacilityGetter<I_Erc> getter("get_i_erc");
 
 static HALFacilityPythonBinder<I_Erc> bind(
     [](auto &module, auto &class_binding) {
-        class_binding.def("enable", &I_Erc::enable, pybind_doc_hal["Metavision::I_Erc::enable"])
+        class_binding.def("enable", &I_Erc::enable, py::arg("b"), pybind_doc_hal["Metavision::I_Erc::enable"])
             .def("is_enabled", &I_Erc::is_enabled, pybind_doc_hal["Metavision::I_Erc::is_enabled"])
             .def("erc_from_file", &I_Erc::erc_from_file)
-            .def("set_cd_event_rate", &I_Erc::set_cd_event_rate, pybind_doc_hal["Metavision::I_Erc::set_cd_event_rate"])
+            .def("set_cd_event_rate", &I_Erc::set_cd_event_rate, py::arg("events_per_sec"),
+                 pybind_doc_hal["Metavision::I_Erc::set_cd_event_rate"])
             .def("get_cd_event_rate", &I_Erc::get_cd_event_rate, pybind_doc_hal["Metavision::I_Erc::get_cd_event_rate"])
             .def(
                 "set_td_event_rate",

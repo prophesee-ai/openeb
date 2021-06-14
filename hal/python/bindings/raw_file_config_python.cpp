@@ -28,7 +28,8 @@ static HALClassPythonBinder<RawFileConfig, PythonBases<DeviceConfig>> bind(
                            pybind_doc_hal["Metavision::RawFileConfig::do_time_shifting_"])
             .def(
                 "max_events_per_buffer",
-                +[](RawFileConfig &self) { throw DeprecationWarningException("max_events_per_buffer"); });
+                +[](RawFileConfig &self) { throw DeprecationWarningException("max_events_per_buffer"); },
+                "max_events_per_buffer() is deprecated since version 2.2.0 and will be removed in later releases.");
     },
     "RawFileConfig", pybind_doc_hal["Metavision::RawFileConfig"]);
 

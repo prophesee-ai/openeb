@@ -35,7 +35,7 @@ public:
 
     /// @brief Information about the type of sensor available
     ///
-    /// Examples for Gen 3.1 Sensor:
+    /// Examples for Gen3.1 Sensor:
     ///  - major_version = 3
     ///  - minor_version = 1
     struct SensorInfo {
@@ -85,7 +85,7 @@ public:
     virtual std::string get_integrator() const = 0;
 
     /// @note get_manufacturer() is deprecated since version 2.2.0 and will be removed in later
-    /// releases. Please use get_integrator() instead
+    /// releases. Please use @ref get_integrator instead
     // clang-format off
     [[deprecated("get_manufacturer() is deprecated since version 2.2.0 and will be removed in later releases. "
                  "Please use get_integrator() instead")]]

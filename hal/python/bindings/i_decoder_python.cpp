@@ -38,7 +38,12 @@ static HALFacilityPythonBinder<I_Decoder> bind(
         class_binding
             .def("get_last_timestamp", &I_Decoder::get_last_timestamp,
                  pybind_doc_hal["Metavision::I_Decoder::get_last_timestamp"])
-            .def("decode", &decode_wrapper)
+            .def("decode", &decode_wrapper, py::arg("RawData"),
+                 "Decodes raw data. Identifies the events in the buffer and dispatches it to the instance "
+                 "Event Decoder corresponding to each event type\n"
+                 "\n"
+                 "Args:\n"
+                 "    RawData: Numpy array of Events\n")
             .def(
                 "add_time_callback",
                 +[](I_Decoder &self, py::object object) {

@@ -37,7 +37,13 @@ int main(int argc, char *argv[]) {
     std::uint16_t fps;
     std::string fourcc;
 
-    const std::string program_desc("Application to generate a video from RAW file.\n");
+    const std::string program_desc(
+        "Application to generate a video from RAW file.\n\n"
+        "The frame rate of the output video (display rate) is driven by --fps option.\n"
+        "The frame rate to generate the frames from the events (generation rate) is driven by the slow motion factor "
+        "(-s option): generation rate = slow motion factor x frame rate."
+        "For example, to create a video from frames generated at 1500 FPS that will be rendered in slow-motion "
+        "at 30 FPS, one has to set a slow-motion factor of 50.\n");
 
     po::options_description options_desc("Options");
     // clang-format off

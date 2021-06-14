@@ -19,6 +19,7 @@
 namespace Metavision {
 
 /// @brief Anti-flicker module
+/// @note This feature is available only on Gen4.1 sensors
 class I_AntiFlickerModule : public I_RegistrableFacility<I_AntiFlickerModule> {
 public:
     /// @brief Enables the anti-flicker filter
@@ -29,14 +30,13 @@ public:
 
     /// @brief Sets anti-flicker parameters.
     ///
-    /// Defines the frequency band to be kept or removed :
-    /// [frequency_center - bandwidth/2, frequency_center + bandwidth/2]
+    /// Defines the frequency band to be kept or removed:\n
+    /// [frequency_center - bandwidth/2, frequency_center + bandwidth/2]\n
     /// This frequency range should be in the range [50 - 500] Hz
     ///
     /// @param frequency_center Center of the frequency band (in Hz)
     /// @param bandwidth Range of frequencies around the frequency_center (in Hz)
     /// @param stop If true, band-stop (by default); if false, band-pass
-    ///
     /// @note band-stop removes all frequencies between min and max.\n
     ///       band-pass removes all events outside of the band sequence defined
     /// @throw runtime exception if frequency band is not in the range [50 - 500] Hz
@@ -49,7 +49,6 @@ public:
     /// @param min_freq Lower frequency of the band (in Hz)
     /// @param max_freq Higher frequency of the band (in Hz)
     /// @param stop If true, band-stop; if false, band-pass
-    ///
     /// @note band-stop removes all frequencies between min and max.\n
     ///       band-pass removes all events outside of the band sequence defined
     /// @throw runtime exception if frequencies are outside of the range [50 - 500] Hz

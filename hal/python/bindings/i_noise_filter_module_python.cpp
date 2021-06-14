@@ -31,8 +31,20 @@ static HALFacilityPythonBinder<I_NoiseFilterModule> bind(
     [](auto &module, auto &class_binding) {
         class_binding
             .def("disable", &I_NoiseFilterModule::disable, pybind_doc_hal["Metavision::I_NoiseFilterModule::disable"])
-            .def("enable_stc", &enable_stc_wrapper, "Enables the NoiseFilterModule in the mode STC")
-            .def("enable_trail", &enable_trail_wrapper, "Enables the NoiseFilterModule in the mode Trail");
+            .def("enable_stc", &enable_stc_wrapper, py::arg("threshold"),
+                 "Enables the NoiseFilterModule in the mode STC\n"
+                 "\n"
+                 "This filter keeps the second event within a burst of events with the same polarity\n"
+                 "\n"
+                 "Args:\n"
+                 "    threshold (int): Delay (in microseconds) between two bursts of events\n")
+            .def("enable_trail", &enable_trail_wrapper, py::arg("threshold"),
+                 "Enables the NoiseFilterModule in the mode Trail\n"
+                 "\n"
+                 "This filter keeps the first event within a burst of events with the same polarity\n"
+                 "\n"
+                 "Args:\n"
+                 "    threshold (int): Delay (in microseconds) between two bursts of events\n");
     },
     "I_NoiseFilterModule", pybind_doc_hal["Metavision::I_NoiseFilterModule"]);
 } // namespace Metavision

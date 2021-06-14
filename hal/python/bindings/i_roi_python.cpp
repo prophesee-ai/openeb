@@ -84,7 +84,13 @@ static HALFacilityPythonBinder<I_ROI> bind(
             .def("set_ROIs", &set_ROIs_cols_rows_wrapper, py::arg("cols_to_enable"), py::arg("rows_to_enable"),
                  py::arg("enable") = true)
             .def("create_ROI", &I_ROI::create_ROI, py::arg("roi"), pybind_doc_hal["Metavision::I_ROI::create_ROI"])
-            .def("create_ROIs", &create_ROIs_wrapper, py::arg("roi_list"));
+            .def("create_ROIs", &create_ROIs_wrapper, py::arg("roi_list"),
+                 "Creates several rectangular ROIs in bitword register format\n"
+                 "\n"
+                 "Args:\n"
+                 "    vroi (list): Vector of ROI to transform to bitword register format\n\n"
+                 "Returns:\n"
+                 "   The ROIs in bitword register format\n");
     },
     "I_ROI", pybind_doc_hal["Metavision::I_ROI"]);
 

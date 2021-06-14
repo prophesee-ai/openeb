@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
 
     const std::string program_desc(
         "Code sample demonstrating how to use Metavision SDK Driver and Core to convert a RAW file to a CSV formatted"
-        "file.\n");
+        " file.\n");
 
     po::options_description options_desc("Options");
     // clang-format off

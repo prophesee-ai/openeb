@@ -19,17 +19,16 @@
 namespace Metavision {
 
 /// @brief Noise filter module
+/// @note This feature is available only on Gen4.1 sensors
 class I_NoiseFilterModule : public I_RegistrableFacility<I_NoiseFilterModule> {
 public:
     /// @brief Type of implemented filter
     enum class Type { STC, TRAIL };
 
-    /// @brief Enables the NoiseFilterModule in the mode STC or Trail
-    /// with the corresponding threshold
+    /// @brief Enables the NoiseFilterModule in the mode STC or Trail with the corresponding threshold
     /// @param type Defines the type of the filter
     /// @param threshold Delay (in microseconds) between two bursts of events
-    ///
-    /// @note STC keeps the second event within a burst of events with the same polarity
+    /// @note STC keeps the second event within a burst of events with the same polarity.\n
     /// Trail keeps the first event within a burst of events with the same polarity
     virtual void enable(Type type, uint32_t threshold) = 0;
 

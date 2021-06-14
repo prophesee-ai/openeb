@@ -38,17 +38,24 @@ static HALFacilityPythonBinder<I_EventsStream> bind(
             .def("wait_next_buffer", &I_EventsStream::wait_next_buffer,
                  pybind_doc_hal["Metavision::I_EventsStream::wait_next_buffer"])
             .def("get_latest_raw_data", &get_latest_raw_data_wrapper,
-                 pybind_doc_hal["Metavision::I_EventsStream::get_latest_raw_data"])
+                 "Gets latest raw data from the event buffer.\n"
+                 "\n"
+                 "Gets raw data from the event buffer received since the last time this function was called.\n"
+                 "\n"
+                 "Returns:\n"
+                 "   Numpy array of Events\n")
             .def("log_raw_data", &I_EventsStream::log_raw_data, py::arg("f"),
                  pybind_doc_hal["Metavision::I_EventsStream::log_raw_data"])
             .def("stop_log_raw_data", &I_EventsStream::stop_log_raw_data,
                  pybind_doc_hal["Metavision::I_EventsStream::stop_log_raw_data"])
             .def(
                 "get_byte_size_events",
-                +[](I_EventsStream &self) { throw DeprecationWarningException("get_byte_size_events"); })
+                +[](I_EventsStream &self) { throw DeprecationWarningException("get_byte_size_events"); },
+                "get_byte_size_events() is deprecated since version 2.2.0 and will be removed in later releases.")
             .def(
                 "set_byte_size_events",
-                +[](I_EventsStream &self, uint32_t) { throw DeprecationWarningException("set_byte_size_events"); });
+                +[](I_EventsStream &self, uint32_t) { throw DeprecationWarningException("set_byte_size_events"); },
+                "set_byte_size_events() is deprecated since version 2.2.0 and will be removed in later releases.");
     },
     "I_EventsStream", pybind_doc_hal["Metavision::I_EventsStream"]);
 

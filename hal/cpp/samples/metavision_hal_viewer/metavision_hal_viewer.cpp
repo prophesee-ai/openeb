@@ -142,7 +142,7 @@ int main(int argc, char *argv[]) {
 
     /// [triggers]
     // Enable internal trigger loopback for trigger testing purposes.
-    // When enabling trigger out (pin 0/TRIGGER_OUT), the signal is also duplicated on trigger channel 6
+    // When enabling trigger out, the signal is also duplicated on trigger in (channel 6 for EVK 1 or 3 for EVK 2)
     Metavision::I_TriggerOut *i_trigger_out = device->get_facility<Metavision::I_TriggerOut>();
     Metavision::I_TriggerIn *i_trigger_in   = device->get_facility<Metavision::I_TriggerIn>();
     if (i_trigger_in && i_trigger_out) {
