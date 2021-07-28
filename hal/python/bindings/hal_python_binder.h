@@ -35,7 +35,7 @@ namespace detail {
 std::vector<std::function<void(py::module &, py::class_<Device, std::shared_ptr<Device>> &)>> &
     get_device_facility_getters_cbs();
 
-} /* namespace detail */
+} // namespace detail
 
 template<typename Facility>
 struct DeviceFacilityGetter {

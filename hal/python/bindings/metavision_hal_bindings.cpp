@@ -30,7 +30,7 @@ std::vector<std::function<void(py::module &, py::class_<Device, std::shared_ptr<
     return s_vcb_device;
 }
 
-} /* namespace detail */
+} // namespace detail
 } // namespace Metavision
 
 PYBIND11_MODULE(MODULE_NAME, m) {

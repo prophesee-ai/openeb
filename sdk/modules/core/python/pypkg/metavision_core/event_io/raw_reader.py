@@ -14,6 +14,7 @@ This class loads events from RAW files
     - no backward seek functionality
     - cd events dtype contains a 2 byte offset
 """
+
 import os
 from collections import deque
 import numpy as np
@@ -26,7 +27,8 @@ from metavision_sdk_base import EventExtTrigger
 
 
 def initiate_device(path, do_time_shifting=True, use_external_triggers=[]):
-    """Constructs a device either from a file if the path ends with RAW or with the camera ID.
+    """
+    Constructs a device either from a file if the path ends with RAW or with the camera ID.
 
     This device can be used in conjunction with `RawReader.from_device` or `EventsIterator.from_device`
     to create a RawReader or an EventsIterator with a customized HAL device.
@@ -53,7 +55,7 @@ def initiate_device(path, do_time_shifting=True, use_external_triggers=[]):
         if device is None:
             raise OSError(f"Incorrect raw input file : {path} !")
     else:
-        # # if the id is not correctly zero padded we try to recover
+        # if the id is not correctly zero padded we try to recover
         device = None
         device = DeviceDiscovery.open(path)
         if device is None:
@@ -136,6 +138,7 @@ class RawReaderBase(object):
         Args:
             final_time (int): Timestamps in us until the search stops"""
         final_time = int(final_time)
+
         if self.current_time > final_time:
             raise RuntimeError('cannot seek backward in RAW file')
         if final_time > self._last_loaded_ts():
@@ -328,7 +331,7 @@ class RawReader(RawReaderBase):
             Otherwise it is when the camera was started.
 
     Args:
-        record_path (string): Path to the record being read.
+        record_base (string): Path to the record being read.
         do_time_shifting (bool): If True the origin of time is a few us from the first events.
             Otherwise it is when the camera was started.
         use_external_triggers (int List): list of integer values corresponding to the channels of external trigger
@@ -337,12 +340,14 @@ class RawReader(RawReaderBase):
 
     def __init__(self, record_base, max_events=int(1e8), do_time_shifting=True,
                  device=None, initiate_device=True, use_external_triggers=[]):
-        super().__init__(record_base, device=device, do_time_shifting=do_time_shifting, initiate_device=initiate_device)
+        super().__init__(record_base, device=device, do_time_shifting=do_time_shifting,
+                         initiate_device=initiate_device, use_external_triggers=use_external_triggers)
         self._event_buffer = np.empty(max_events, dtype=EventCD)
 
     @classmethod
     def from_device(cls, device, max_events=int(1e8)):
-        """Alternate way of constructing an RawReader from an already initialized HAL device.
+        """
+        Alternate way of constructing an RawReader from an already initialized HAL device.
 
         Args:
             device (device): Hal device object initialized independently.

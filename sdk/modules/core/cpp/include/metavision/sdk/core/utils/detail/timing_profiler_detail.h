@@ -410,7 +410,7 @@ private:
     std::map<std::string, std::tuple<detail::CpuTimes, size_t, size_t>> data_;
 };
 
-} /* namespace detail */
+} // namespace detail
 } // namespace Metavision
 
 #endif // METAVISION_SDK_CORE_DETAIL_TIMING_PROFILER_DETAIL_H

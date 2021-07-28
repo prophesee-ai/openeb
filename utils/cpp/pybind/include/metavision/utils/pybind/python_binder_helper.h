@@ -60,7 +60,7 @@ std::vector<python_class_definition> &get_class_definitions_binding_cbs();
 template<typename tag>
 std::vector<std::function<void(py::module &)>> &get_generic_binding_cbs();
 
-} /* namespace detail */
+} // namespace detail
 
 #ifdef _WIN32
 static std::wstring stringTowstring(const std::string &s) {
@@ -215,7 +215,7 @@ std::vector<std::function<void(py::module &)>> &get_generic_binding_cbs() {
     return generic_binding_cbs;
 }
 
-} /* namespace detail */
+} // namespace detail
 
 template<typename tag>
 void export_python_bindings(py::module &module) {

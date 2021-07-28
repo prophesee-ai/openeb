@@ -466,3 +466,32 @@ def pytestcase_total_time_npy(tmpdir):
     assert record.current_time == 0
     time = record.total_time()
     assert time == 199999
+
+
+def pytestcase_equivalency(dataset_dir):
+    """loading boxes through numpy and EventNpyReader should be equivalent"""
+    # GIVEN
+    box_file = os.path.join(dataset_dir, "metavision_core", "event_io", "bbox.npy")
+    boxes = np.load(box_file)
+    record = EventNpyReader(box_file)
+
+    # WHEN
+    boxes2 = []
+    while not record.is_done():
+        boxes2.append(record.load_delta_t(1500000))
+    boxes2 = np.concatenate(boxes2)
+
+    # THEN
+    for name in boxes.dtype.names:
+        assert np.allclose(boxes2[name], boxes[name])
+
+    # WHEN
+    record.seek_time(0)
+    boxes2 = []
+    while not record.is_done():
+        boxes2.append(record.load_n_events(500))
+    boxes2 = np.concatenate(boxes2)
+
+    # THEN
+    for name in boxes.dtype.names:
+        assert np.allclose(boxes2[name], boxes[name])

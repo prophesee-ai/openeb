@@ -511,7 +511,7 @@ private:
     //    mutable std::mutex ring_next_mut_;
 };
 
-} /* namespace detail */
+} // namespace detail
 } // namespace Metavision
 
 #endif // METAVISION_SDK_CORE_DETAIL_RING_H

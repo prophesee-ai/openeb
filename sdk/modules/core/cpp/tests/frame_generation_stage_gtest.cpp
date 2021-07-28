@@ -147,7 +147,7 @@ TEST(FrameGenerationStageTest, not_round_timeshift) {
                       Metavision::EventCD{5, 8, 1, timeshift + step_us - 10},
                       Metavision::EventCD{0, 0, 0, timeshift + step_us + 1}});
 
-    // WHEN we run the pipeline with a diplay period of 1e5us and an accumulation time of 1e4us to generate images
+    // WHEN we run the pipeline with a display period of 1e5us and an accumulation time of 1e4us to generate images
     std::vector<FrameData> frames;
     Pipeline p;
     auto &s1 = p.add_stage(std::make_unique<MockProducingStage>(events));
@@ -175,7 +175,7 @@ TEST(FrameGenerationStageTest, overflow_pool) {
     }
     events.push_back({Metavision::EventCD{5, 5, 0, 95001}, Metavision::EventCD{0, 0, 0, 100001}});
 
-    // WHEN we run the pipeline with a diplay period of 1e5us and an accumulation time of 1e4us to generate images
+    // WHEN we run the pipeline with a display period of 1e5us and an accumulation time of 1e4us to generate images
     std::vector<FrameData> frames;
     Pipeline p;
     auto &s1 = p.add_stage(std::make_unique<MockProducingStage>(events));

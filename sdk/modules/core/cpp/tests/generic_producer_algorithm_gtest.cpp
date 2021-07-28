@@ -152,7 +152,7 @@ TEST_F(GenericProducerAlgorithm_GTest, test_is_done) {
     ASSERT_FALSE(this->producer_algo_.is_done());
 
     // To get the last event we need to set a timeout such that
-    // The last event can be retrived.
+    // The last event can be retrieved.
     this->producer_algo_.process_events(10, inserter);
 
     ASSERT_TRUE(this->producer_algo_.is_done());

@@ -51,7 +51,7 @@ TEST(FlipXAlgorithm_GTest, function_call_operator_even_width) {
 }
 
 TEST(FlipXAlgorithm_GTest, function_call_operator_odd_width) {
-    // GIVEN a FlipXAlgorithm instance, where the width on the input events is even
+    // GIVEN a FlipXAlgorithm instance, where the width on the input events is odd
     std::int16_t width = 111;
     Metavision::FlipXAlgorithm algo(width - 1);
 

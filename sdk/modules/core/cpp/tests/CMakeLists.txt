@@ -29,7 +29,7 @@ set(metavision_sdk_core_tests_srcs
     ${CMAKE_CURRENT_SOURCE_DIR}/stage_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/stream_logger_algorithm_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/shared_cd_events_buffer_producer_algorithm_gtest.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/timesurface_producer_algorithm_gtest.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/time_surface_producer_algorithm_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/timing_profiler_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/threaded_process_gtest.cpp
 )

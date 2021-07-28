@@ -133,7 +133,7 @@ TYPED_TEST(PolarityFilterAlgorithm_GTest, test_some_valid_some_invalid) {
     // Process the input buffer, we don't expect any throw
     EXPECT_NO_THROW({ this->process_output(); });
 
-    // So, the output buffer should be empty
+    // So, the output buffer should contain only some events
     ASSERT_NE(this->input_.size(), this->output_.size());
     ASSERT_EQ(this->output_.size(), number_valid);
 }

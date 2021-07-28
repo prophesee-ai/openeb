@@ -188,13 +188,13 @@ TYPED_TEST(RoiFilterAlgorithm_GTest, test_some_valid_some_outside_border) {
     constexpr auto number_invalid = 10;
     this->initialize({this->x1 + 1, this->y1 + 1}, {this->x1 + 1 + number_invalid, this->y1 + 1 + number_invalid}, 1);
 
-    // Check that the numeber of elements inside the buffer are the correct ones
+    // Check that the number of elements inside the buffer are the correct ones
     ASSERT_NE(this->input_.size(), number_invalid + number_valid);
 
     // Process the input buffer, we don't expect any throw
     EXPECT_NO_THROW({ this->process_output(); });
 
-    // So, the output buffer should be empty
+    // So, the output buffer should be made only of valid events
     ASSERT_NE(this->input_.size(), this->output_.size());
     ASSERT_EQ(this->output_.size(), number_valid);
 }

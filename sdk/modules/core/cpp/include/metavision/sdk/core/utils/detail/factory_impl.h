@@ -63,7 +63,7 @@ AbstractProduct *Factory<AbstractProduct, ProductKey, ProductConstructor>::on_un
     return nullptr;
 }
 
-} /* namespace detail */
+} // namespace detail
 } // namespace Metavision
 
 #endif // METAVISION_SDK_CORE_DETAIL_FACTORY_IMPL_H

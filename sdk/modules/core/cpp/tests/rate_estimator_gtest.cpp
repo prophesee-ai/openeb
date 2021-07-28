@@ -26,7 +26,7 @@ TEST(RateEstimator_GTest, custom_ctor_not_enough_data) {
     size_t num_calls = 0;
     RateEstimator estim([&num_calls](timestamp, double, double) { num_calls++; }, 100000, 1000000);
 
-    // WHEN we add one count sample at t = 10ms
+    // WHEN we add one count sample at t = 10us
     estim.add_data(10, 1);
 
     // THEN the callback is not supposed to be called
@@ -65,7 +65,7 @@ TEST(RateEstimator_GTest, custom_ctor_called_twice_bis) {
     size_t num_calls = 0;
     RateEstimator estim([&num_calls](timestamp, double, double) { num_calls++; }, 100000, 1000000);
 
-    // WHEN we add counts sample at t = 100ms, t = 200ms and t = 299ms
+    // WHEN we add counts sample at t = 100ms, and t = 200ms
     estim.add_data(100000, 1);
     estim.add_data(200000, 1);
     estim.add_data(300000, 0);
