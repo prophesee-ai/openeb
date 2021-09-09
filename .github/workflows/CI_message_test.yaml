@@ -1,0 +1,25 @@
+name: CI_message_test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  CI_results:
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+    
+      # - name: Check test results
+      #   if: ${{ failure() }}
+      #   run: |
+      #     if [[ "${{ needs.job1.outputs.result }}" == "Success" && "${{ needs.job2.outputs.job.status }}" == "Success" \
+      #     && "${{ needs.job3.outputs.job.status }}" == "Success" ]]; then
+      #     $results="Success"
+      #     fi
+
+      - name: Slack PR hook test
+        uses: kingarrkinian/slack-pr-open-notification-action@master
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.OPENEB_GITHUB_PROPHESEE_SLACK_WEBHOOK }}
+          IS_SEND_HERE_MENTION : false
+          MAKE_COMPACT : false
