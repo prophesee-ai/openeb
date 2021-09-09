@@ -54,7 +54,6 @@ jobs:
       with:
         workflow: upload_datasets_on_schedule.yaml
         workflow_conclusion: success
-        branch: develop
         name: datasets
         path: datasets
 
@@ -115,7 +114,6 @@ jobs:
       with:
         workflow: upload_datasets_on_schedule.yaml
         workflow_conclusion: success
-        branch: develop
         name: datasets
         path: datasets
 
@@ -176,7 +174,6 @@ jobs:
       with:
         workflow: upload_datasets_on_schedule.yaml
         workflow_conclusion: success
-        branch: develop
         name: datasets
         path: datasets
 
@@ -188,9 +185,7 @@ jobs:
 
   CI_results:
     runs-on: ubuntu-latest
-    if: always() && ${{ github.event_name == 'pull_request' }} && ${{ secrets.OPENEB_GITHUB_PROPHESEE_SLACK_WEBHOOK }}
-    env:
-      results: None
+    if: always()
     steps:
     
       # - name: Check test results
