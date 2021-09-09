@@ -49,7 +49,6 @@ jobs:
       with:
         workflow: upload_datasets_on_schedule.yaml
         workflow_conclusion: success
-        branch: develop
         name: datasets
         path: datasets
 
