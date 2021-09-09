@@ -18,7 +18,7 @@ jobs:
       #     fi
 
       - name: Slack PR hook test
-        uses: kingarrkinian/slack-pr-open-notification-action@master
+        uses: kingarrkinian/slack-pr-open-notification-action@testing
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.OPENEB_GITHUB_PROPHESEE_SLACK_WEBHOOK }}
           IS_SEND_HERE_MENTION : false
