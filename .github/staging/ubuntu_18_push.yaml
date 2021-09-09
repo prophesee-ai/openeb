@@ -63,7 +63,7 @@ jobs:
     - name : Getting datasets from storage
       uses: dawidd6/action-download-artifact@v2
       with:
-        workflow: upload_datasets_on_schedule.yaml
+        workflow: upload_datasets.yaml
         workflow_conclusion: success
         name: datasets
         path: datasets
