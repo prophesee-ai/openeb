@@ -1,4 +1,4 @@
-name: All Build on PR
+name: All Build
 
 on:
   workflow_dispatch:
@@ -183,32 +183,11 @@ jobs:
   CI_results:
     runs-on: ubuntu-latest
     needs: [job1, job2, job3]
-    if: always()
+    if: always() && ${{ github.event_name == 'pull_request' }}
     steps:
     
-      # - name: Check test results
-      #   if: ${{ failure() }}
-      #   run: |
-      #     if [[ "${{ needs.job1.outputs.result }}" == "Success" && "${{ needs.job2.outputs.job.status }}" == "Success" \
-      #     && "${{ needs.job3.outputs.job.status }}" == "Success" ]]; then
-      #     $results="Success"
-      #     fi
-
       - name: Slack PR hook test
-        uses: kingarrkinian/slack-pr-open-notification-action@no_fork_option
+        uses: kingarrkinian/slack-pr-open-notification-action@master
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.OPENEB_GITHUB_PROPHESEE_SLACK_WEBHOOK }}
-          PULL_REQUEST_NUMBER : ${{ github.event.pull_request.number }}
-          PULL_REQUEST_TITLE : ${{ github.event.pull_request.title }}
-          PULL_REQUEST_AUTHOR_NAME : ${{ github.event.pull_request.user.login }}
-          PULL_REQUEST_AUTHOR_ICON_URL : ${{ github.event.pull_request.user.avatar_url }}
-          PULL_REQUEST_URL : ${{ github.event.pull_request.html_url }}
-          PULL_REQUEST_BODY : ${{ github.event.pull_request.body }}
-          PULL_REQUEST_BASE_REPO_NAME: ${{ github.event.pull_request.base.repo.name }}
-          PULL_REQUEST_COMPARE_BRANCH_OWNER: ${{ github.event.pull_request.head.repo.owner.login }}
-          PULL_REQUEST_COMPARE_BRANCH_NAME : ${{ github.event.pull_request.head.ref }}
-          PULL_REQUEST_BASE_BRANCH_OWNER: ${{ github.event.pull_request.base.repo.owner.login }}
-          PULL_REQUEST_BASE_BRANCH_NAME : ${{ github.event.pull_request.base.ref }}
-          IS_SEND_HERE_MENTION : false
-          MAKE_PRETTY : true
-          MAKE_COMPACT : false
+          BANNER_COLOUR: "#FF0000"
