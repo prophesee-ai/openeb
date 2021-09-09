@@ -188,7 +188,7 @@ jobs:
 
   CI_results:
     runs-on: ubuntu-latest
-    if: always() && ${{ github.event_name == 'pull_request' }} && ${{ secrets.OPENEB_GITHUB_PROPHESEE_SLACK_WEBHOOK }}
+    if: always()
     env:
       results: None
     steps:
