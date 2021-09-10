@@ -178,6 +178,7 @@ jobs:
       shell: powershell
       run: |
         cd build
+        utils\scripts\setup_env.bat
         ctest -C Release --output-on-failure
 
   CI_results:
