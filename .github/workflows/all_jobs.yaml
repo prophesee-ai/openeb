@@ -179,6 +179,7 @@ jobs:
       run: |
         cd build
         utils\scripts\setup_env.bat
+        set MV_HAL_PLUGIN_PATH=C:\Program Files\Prophesee\lib\metavision\hal\plugins
         ctest -C Release --output-on-failure
 
   CI_results:
