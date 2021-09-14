@@ -182,15 +182,3 @@ jobs:
         utils\scripts\setup_env.bat
         set MV_HAL_PLUGIN_PATH=C:\Program Files\Prophesee\lib\metavision\hal\plugins
         ctest -C Release --output-on-failure
-
-  CI_results:
-    runs-on: ubuntu-latest
-    needs: [job1, job2, job3]
-    if: always() && ${{ github.event_name == 'pull_request' }}
-    steps:
-    
-      - name: Slack PR hook test
-        uses: kingarrkinian/slack-pr-open-notification-action@master
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.OPENEB_GITHUB_PROPHESEE_SLACK_WEBHOOK }}
-          BANNER_COLOUR: "#FF0000"
