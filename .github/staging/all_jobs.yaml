@@ -181,6 +181,7 @@ jobs:
         cd build
         utils\scripts\setup_env.bat
         set MV_HAL_PLUGIN_PATH=C:\Program Files\Prophesee\lib\metavision\hal\plugins
+<<<<<<< HEAD:.github/staging/all_jobs.yaml
         ctest -C Release --output-on-failure
 
   CI_results:
@@ -194,3 +195,6 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.OPENEB_GITHUB_PROPHESEE_SLACK_WEBHOOK }}
           BANNER_COLOUR: "#FF0000"
+=======
+        ctest -C Release --output-on-failure
+>>>>>>> github_actions:.github/workflows/all_jobs.yaml
