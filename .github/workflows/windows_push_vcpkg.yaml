@@ -1,0 +1,83 @@
+name: Windows Build
+
+on:
+  push:
+  workflow_dispatch:
+
+env:
+  #General variables
+  numpy_version: "numpy==1.19.5" # replace with only 'numpy' if no version needed
+  python_versions: 3.8
+  pybind_version: "2.4.3"
+  #Windows variables
+  python_executable: "C:/hostedtoolcache/windows/Python/3.8.10/x64/python.exe" #Cmake needs this to find python on windows
+  HAL_plugins_win: "https://files.prophesee.ai/share/dists/public/windows/cp51Vn3b/Metavision_HAL_Prophesee_plugins_222_Setup.exe"
+  VCPKG_export_name: "vcpkg-2020.11-1-export"
+
+jobs:
+  Windows:
+    name: Windows
+    runs-on: windows-2019
+    steps:
+
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
+    - name: Setup Python
+      uses: actions/setup-python@v2.2.2
+      with: 
+       python-version: ${{ env.python_versions }}
+
+    - name: Download vcpkg binaries
+      uses: dawidd6/action-download-artifact@v2
+      with:
+        workflow: upload_win_binaries.yaml
+        workflow_conclusion: success
+        name: vcpkg_binaries
+        path: ".."
+
+    - name: Install python and vcpkg dependencies
+      shell: bash
+      run: |
+          unzip "../$VCPKG_export_name"
+          py -$python_versions -m pip install pytest $numpy_version opencv-python
+
+    - name: Build openEB
+      shell: bash
+      run: |
+          mkdir build && cd build
+          cmake -A x64 -DCMAKE_TOOLCHAIN_FILE="../../$VCPKG_export_name/scripts/buildsystems/vcpkg.cmake" \
+                -D Python3_EXECUTABLE=$python_executable \
+                -DBUILD_TESTING=ON ..
+          cmake --build . --config Release --parallel 4
+
+    - name: Download HAL Plugins and move DLLs into /build
+      shell: bash
+      env:
+        HAL_CREDENTIALS: ${{ secrets.PROPHESEE_HAL_PLUGIN_CURL_DOWNLOAD_CREDENTIALS }}
+      run: |
+
+          curl -L -u "$HAL_CREDENTIALS" -o Metavision_Hal_Prophesee_plugins_Setup.exe $HAL_plugins_win
+
+
+    - name: Install HAL Plugins
+      shell: powershell
+      run: d:\a\openeb\openeb\Metavision_Hal_Prophesee_plugins_Setup.exe /VERYSILENT /SUPPRESSMSGBOXES
+      
+    - name : Getting datasets from storage
+      uses: dawidd6/action-download-artifact@v2
+      with:
+        workflow: upload_datasets.yaml
+        workflow_conclusion: success
+        name: datasets
+        path: datasets
+
+    - name: Ctest suite
+      shell: powershell
+      run: |
+        cd build
+        utils\scripts\setup_env.bat
+        ctest -C Release --output-on-failure
+
+# find C:/Miniconda/envs/test -name '*.dll' -exec cp "{}" build/py3/Release \;
+# cp -r build/py3/Release/{boost,lib}*.dll build/bin/Release
