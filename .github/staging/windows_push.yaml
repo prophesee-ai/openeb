@@ -49,10 +49,13 @@ jobs:
 
     - name: Download HAL Plugins and move DLLs into /build
       shell: bash
+      env:
+        HAL_CREDENTIALS: ${{ secrets.PROPHESEE_HAL_PLUGIN_CURL_DOWNLOAD_CREDENTIALS }}
       run: |
           find C:/Miniconda/envs/test -name '*.dll' -exec cp "{}" build/py3/Release \;
           cp -r build/py3/Release/{boost,lib}*.dll build/bin/Release
-          curl -L -u ${{ secrets.PROPHESEE_HAL_PLUGIN_CURL_DOWNLOAD_CREDENTIALS }} -o Metavision_Hal_Prophesee_plugins_Setup.exe $HAL_plugins_win
+          curl -L -u "$HAL_CREDENTIALS" -o Metavision_Hal_Prophesee_plugins_Setup.exe $HAL_plugins_win
+
 
     - name: Install HAL Plugins
       shell: powershell
@@ -70,4 +73,5 @@ jobs:
       shell: powershell
       run: |
         cd build
+        utils\scripts\setup_env.bat
         ctest -C Release --output-on-failure
