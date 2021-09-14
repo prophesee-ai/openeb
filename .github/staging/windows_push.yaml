@@ -56,6 +56,7 @@ jobs:
           cp -r build/py3/Release/{boost,lib}*.dll build/bin/Release
           curl -L -u "$HAL_CREDENTIALS" -o Metavision_Hal_Prophesee_plugins_Setup.exe $HAL_plugins_win
 
+
     - name: Install HAL Plugins
       shell: powershell
       run: d:\a\openeb\openeb\Metavision_Hal_Prophesee_plugins_Setup.exe /VERYSILENT /SUPPRESSMSGBOXES
