@@ -30,7 +30,7 @@ jobs:
       uses: rtCamp/action-slack-notify@v2
       env:
         SLACK_WEBHOOK: ${{ secrets.OPENEB_GITHUB_PROPHESEE_SLACK_WEBHOOK }}
-        SLACK_TITLE: Datasets update
+        SLACK_TITLE: VCPKG export update
         SLACK_MESSAGE: 'Status: ${{ job.status }}'
         SLACK_COLOR: ${{ job.status }}
         SLACK_FOOTER: ""
