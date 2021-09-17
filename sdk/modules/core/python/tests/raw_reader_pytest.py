@@ -86,7 +86,7 @@ def pytestcase_rawreader_load_n_events(tmpdir, dataset_dir):
     # GIVEN
     filename = os.path.join(dataset_dir,
                             "metavision_core", "event_io", "recording.raw")
-    video = RawReader(filename, do_time_shifting=False)
+    video = RawReader(filename, do_time_shifting=False, max_events=int(1e7))
     # WHEN
     events = video.load_n_events(12)
     # THEN
@@ -105,7 +105,7 @@ def pytestcase_rawreader_load_n_events_all(tmpdir, dataset_dir):
     # GIVEN
     filename = os.path.join(dataset_dir,
                             "metavision_core", "event_io", "recording.raw")
-    video = RawReader(filename, do_time_shifting=False)
+    video = RawReader(filename, do_time_shifting=False, max_events=int(1e7))
     # WHEN
     events = video.load_n_events(667850)
     # THEN
@@ -131,7 +131,7 @@ def pytestcase_rawreader_load_n_events_too_much(tmpdir, dataset_dir):
     """Tests loading more events than the number in the file"""
     filename = os.path.join(dataset_dir,
                             "metavision_core", "event_io", "recording.raw")
-    video = RawReader(filename, do_time_shifting=False)
+    video = RawReader(filename, do_time_shifting=False, max_events=int(1e7))
 
     events = video.load_n_events(667850)
     assert video.done == False
@@ -150,7 +150,7 @@ def pytestcase_rawreader_load_delta_t(tmpdir, dataset_dir):
     """Tests loading events inside a time window"""
     filename = os.path.join(dataset_dir,
                             "metavision_core", "event_io", "recording.raw")
-    video = RawReader(filename, do_time_shifting=False)
+    video = RawReader(filename, do_time_shifting=False, max_events=int(1e7))
     assert video.current_time == 0
     _ = video.load_n_events(1)  # we are in no time shifting mode
     events = video.load_delta_t(100)
@@ -173,7 +173,7 @@ def pytestcase_rawreader_load_small_delta_t(tmpdir, dataset_dir):
     """Tests loading events inside a time window smaller than the controller timeslice"""
     filename = os.path.join(dataset_dir,
                             "metavision_core", "event_io", "recording.raw")
-    video = RawReader(filename, do_time_shifting=False)
+    video = RawReader(filename, do_time_shifting=False, max_events=int(1e7))
     assert video.current_time == 0
     _ = video.load_n_events(1)  # we are in no time shifting mode
     events = video.load_delta_t(100)
@@ -232,7 +232,7 @@ def pytestcase_rawreader_load_delta_t_too_much(tmpdir, dataset_dir):
     """Tests loading events in a time window larger than total file duration"""
     filename = os.path.join(dataset_dir,
                             "metavision_core", "event_io", "recording.raw")
-    video = RawReader(filename, do_time_shifting=False)
+    video = RawReader(filename, do_time_shifting=False, max_events=int(1e7))
     assert video.current_time == 0
     while video.current_time < 16420000:
         _ = video.load_delta_t(10000)
@@ -258,7 +258,7 @@ def pytestcase_rawreader_seek_time(tmpdir, dataset_dir):
     """Tests loading events after a call to seek_time()"""
     filename = os.path.join(dataset_dir,
                             "metavision_core", "event_io", "recording.raw")
-    video = RawReader(filename, do_time_shifting=False)
+    video = RawReader(filename, do_time_shifting=False, max_events=int(1e7))
     assert video.current_time == 0
 
     video.seek_time(16420000)
@@ -284,7 +284,7 @@ def pytestcase_rawreader_exotic_seek_time_and_delta_t(tmpdir, dataset_dir):
     """Tests loading events after a call to seek_time() using a variety delta_t values"""
     filename = os.path.join(dataset_dir,
                             "metavision_core", "event_io", "recording.raw")
-    video = RawReader(filename, do_time_shifting=False)
+    video = RawReader(filename, do_time_shifting=False, max_events=int(1e7))
     assert video.current_time == 0
 
     video.seek_time(16420458)
@@ -311,7 +311,7 @@ def pytestcase_rawreader_exotic_mix_seek_time_load_n_and_delta_t(tmpdir, dataset
     """Tests loading events after a call to seek_time() using a variety delta_t values"""
     filename = os.path.join(dataset_dir,
                             "metavision_core", "event_io", "recording.raw")
-    video = RawReader(filename, do_time_shifting=False)
+    video = RawReader(filename, do_time_shifting=False, max_events=int(1e7))
     assert video.current_time == 0
 
     video.seek_time(16420000)
@@ -383,7 +383,7 @@ def pytestcase_rawreader_equivalence(tmpdir, dataset_dir):
     # GIVEN
     filename = os.path.join(dataset_dir,
                             "metavision_core", "event_io", "recording.raw")
-    video = RawReader(filename, do_time_shifting=False)
+    video = RawReader(filename, do_time_shifting=False, max_events=int(1e7))
     # WHEN
     dat_evs = load_events(filename.replace(".raw", "_td.dat"))
     raw_evs = video.load_n_events(1e8)
@@ -399,7 +399,7 @@ def pytestcase_rawreader_ext_triggerevent(tmpdir, dataset_dir):
     # GIVEN
     filename = os.path.join(dataset_dir,
                             "metavision_core", "event_io", "recording.raw")
-    video = RawReader(filename, do_time_shifting=False)
+    video = RawReader(filename, do_time_shifting=False, max_events=int(1e7))
     trigger_evt_gt = np.loadtxt(os.path.join(dataset_dir,
                                              "metavision_core", "event_io", "triggerevt.csv"), delimiter=",")
     # WHEN
@@ -421,7 +421,7 @@ def pytestcase_rawreader_time_shifting(tmpdir, dataset_dir):
     # GIVEN
     filename = os.path.join(dataset_dir,
                             "metavision_core", "event_io", "recording.raw")
-    video = RawReader(filename, do_time_shifting=True)
+    video = RawReader(filename, do_time_shifting=True, max_events=int(1e7))
     # WHEN
     dat_evs = load_events(filename.replace(".raw", "_td.dat"))
     raw_evs = video.load_n_events(1E8)
