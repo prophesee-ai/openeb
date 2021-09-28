@@ -6,7 +6,7 @@ on:
     - cron: "15 2 1 */2 *"
 
 env:
-  win_binaries_download_address: "https://prophesee-bamboo.s3.eu-west-1.amazonaws.com/build-env/vcpkg-2020.11-1-export.zip"
+  win_binaries_download_address: "https://prophesee-bamboo.s3.eu-west-1.amazonaws.com/build-env/vcpkg-export-20210915-MV2.2.x.zip"
 
 jobs:
   get_artifacts:
@@ -30,7 +30,7 @@ jobs:
       uses: rtCamp/action-slack-notify@v2
       env:
         SLACK_WEBHOOK: ${{ secrets.OPENEB_GITHUB_PROPHESEE_SLACK_WEBHOOK }}
-        SLACK_TITLE: Datasets update
+        SLACK_TITLE: VCPKG export update
         SLACK_MESSAGE: 'Status: ${{ job.status }}'
         SLACK_COLOR: ${{ job.status }}
         SLACK_FOOTER: ""

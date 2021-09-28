@@ -1,4 +1,4 @@
-name: Windows Build
+name: Windows Build with Conda
 
 on:
   push:
