@@ -32,7 +32,7 @@ jobs:
           !datasets/focus.raw
 
     - name: Slack Notification
-      if: always()
+      if: failure()
       uses: rtCamp/action-slack-notify@v2
       env:
         SLACK_WEBHOOK: ${{ secrets.OPENEB_GITHUB_PROPHESEE_SLACK_WEBHOOK }}
