@@ -18,7 +18,18 @@ env:
   
 jobs:
 
+  duplicate_check:
+    runs-on: ubuntu-latest
+    # Map a step output to a job output
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+    steps:
+      - id: skip_check
+        uses: fkirc/skip-duplicate-actions@master
+
   job1:
+    needs: duplicate_check
+    if: ${{ needs.duplicate_check.outputs.should_skip != 'true' }}
     name: Ubuntu 20
     runs-on: ubuntu-20.04
     steps:
@@ -73,6 +84,8 @@ jobs:
           ctest --output-on-failure
 
   job2:
+    needs: duplicate_check
+    if: ${{ needs.duplicate_check.outputs.should_skip != 'true' }}
     name: Ubuntu 18
     runs-on: ubuntu-18.04
     steps:
@@ -133,6 +146,8 @@ jobs:
           ctest --output-on-failure
 
   job3:
+    needs: duplicate_check
+    if: ${{ needs.duplicate_check.outputs.should_skip != 'true' }}
     name: Windows
     runs-on: windows-2019
     steps:
