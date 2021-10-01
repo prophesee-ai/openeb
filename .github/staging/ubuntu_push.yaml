@@ -27,8 +27,18 @@ jobs:
           libglew-dev git g++ libusb-1.0-0-dev libeigen3-dev libgtest-dev libssl-dev \
           python3-pip python3-distutils xvfb libglfw3 libglfw3-dev libglew-dev libopencv-dev ffmpeg \
           libboost-dev libboost-program-options-dev libboost-filesystem-dev libboost-timer-dev \
-          libboost-chrono-dev libboost-thread-dev zip unzip python3-pybind11 git-lfs
+          libboost-chrono-dev libboost-thread-dev zip unzip git-lfs
           pip install opencv-python $numpy_version pytest
+          openebfolder=${PWD}
+          cd ..
+          wget https://github.com/pybind/pybind11/archive/v$pybind_version.zip
+          unzip v$pybind_version.zip
+          cd pybind11-$pybind_version/
+          mkdir build && cd build
+          cmake .. -DPYBIND11_TEST=OFF
+          cmake --build .
+          make
+          sudo make install
 
     - name: Build openEB
       run: |
