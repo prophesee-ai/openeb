@@ -18,9 +18,23 @@ env:
   
 jobs:
 
+  skip_duplicates:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+    steps:
+      - id: skip_check
+        uses: fkirc/skip-duplicate-actions@master
+        with:
+          # This will skip a duplicate run if the runs have no diff.
+          concurrent_skipping: 'same_content'
+
   job1:
     name: Ubuntu 20
     runs-on: ubuntu-20.04
+    needs: skip_duplicates
+    if: ${{ needs.skip_duplicates.outputs.should_skip != 'true' }}
     steps:
 
     - name: Checkout Repository
@@ -75,6 +89,8 @@ jobs:
   job2:
     name: Ubuntu 18
     runs-on: ubuntu-18.04
+    needs: skip_duplicates
+    if: ${{ needs.skip_duplicates.outputs.should_skip != 'true' }}
     steps:
 
     - name: Checkout Repository
@@ -135,6 +151,8 @@ jobs:
   job3:
     name: Windows
     runs-on: windows-2019
+    needs: skip_duplicates
+    if: ${{ needs.skip_duplicates.outputs.should_skip != 'true' }}
     steps:
 
     - name: Checkout Repository
