@@ -2,7 +2,12 @@ name: All Build
 
 on:
   push:
+    branches-ignore:
+      - "develop"
   pull_request:
+    branches:
+      - "develop"
+      - "main"
 
 env:
   #General variables
