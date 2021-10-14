@@ -64,11 +64,12 @@ def cut_and_check_info(input_raw, start, end, expected_output_info=None):
         # Need to format the output
         expected_output_info = info_input_file.replace(input_raw, "{}").replace(os.path.basename(input_raw), "{}")
 
-    expected_output_info_formatted = expected_output_info.format(output_file_name, os.path.realpath(output_file_path))
+    expected_output_info_formatted = expected_output_info.format(
+        output_file_name, re.escape(os.path.realpath(output_file_path)))
 
     output_strip = "\n".join([line.strip() for line in info_cut_file.splitlines()])
     expected_output_strip = "\n".join([line.strip() for line in expected_output_info_formatted.splitlines()])
-    assert output_strip.find(expected_output_strip) >= 0
+    assert re.search(expected_output_strip, output_strip)
 
 
 def pytestcase_test_metavision_raw_cutter_show_help():
@@ -152,7 +153,7 @@ def pytestcase_test_metavision_raw_cutter_on_gen31_recording_full_cut(dataset_di
     """
 
     filename = "gen31_timer.raw"
-    filename_full = os.path.join(dataset_dir, "openeb", filename)
+    filename_full = os.path.realpath(os.path.join(dataset_dir, "openeb", filename))
 
     start = 0
     end = 15  # This recording is ~13s, so 15 is well after its end
@@ -166,22 +167,22 @@ def pytestcase_test_metavision_raw_cutter_on_gen31_recording_from_0s_to_6s(datas
     """
 
     filename = "gen31_timer.raw"
-    filename_full = os.path.join(dataset_dir, "openeb", filename)
+    filename_full = os.path.realpath(os.path.join(dataset_dir, "openeb", filename))
 
     start = 0
     end = 6
 
-    expected_output_info = """
+    expected_output_info = r"""
 ====================================================================================================
 
 Name                {}
 Path                {}
 Duration            6s 0ms 187us
 Integrator          Prophesee
-Plugin name         hal_plugin_gen31_fx3
-Event encoding      EVT2
+Plugin name         hal_plugin_gen31_fx3\w*
+Event encoding      (?:EVT2|2.0)
 Camera generation   3.1
-Camera systemID     28
+Camera systemID     \d*
 Camera serial       00001621
 
 ====================================================================================================
@@ -199,22 +200,22 @@ def pytestcase_test_metavision_raw_cutter_on_gen31_recording_from_8s_to_11s(data
     """
 
     filename = "gen31_timer.raw"
-    filename_full = os.path.join(dataset_dir, "openeb", filename)
+    filename_full = os.path.realpath(os.path.join(dataset_dir, "openeb", filename))
 
     start = 8
     end = 11
 
-    expected_output_info = """
+    expected_output_info = r"""
 ====================================================================================================
 
 Name                {}
 Path                {}
 Duration            3s 0ms 210us
 Integrator          Prophesee
-Plugin name         hal_plugin_gen31_fx3
-Event encoding      EVT2
+Plugin name         hal_plugin_gen31_fx3\w*
+Event encoding      (?:EVT2|2.0)
 Camera generation   3.1
-Camera systemID     28
+Camera systemID     \d*
 Camera serial       00001621
 
 ====================================================================================================
@@ -232,12 +233,32 @@ def pytestcase_test_metavision_raw_cutter_on_gen4_evt2_recording_full_cut(datase
     """
 
     filename = "gen4_evt2_hand.raw"
-    filename_full = os.path.join(dataset_dir, "openeb", filename)
+    filename_full = os.path.realpath(os.path.join(dataset_dir, "openeb", filename))
 
     start = 0
     end = 11
 
-    cut_and_check_info(filename_full, start, end)
+    expected_output_info = r"""
+====================================================================================================
+
+Name                {}
+Path                {}
+Duration            10s 442ms 743us
+Integrator          Prophesee
+Plugin name         hal_plugin_gen4_fx3\w*
+Event encoding      (?:EVT2|2.0)
+Camera generation   4.0
+Camera systemID     \d*(?:
+Camera subsystemID  537921537)?
+Camera serial       00001495
+
+====================================================================================================
+
+Type of event       Number of events    First timestamp     Last timestamp      Average event rate
+----------------------------------------------------------------------------------------------------
+CD                  17025195            49                  10442743            1.6 Mev/s
+"""
+    cut_and_check_info(filename_full, start, end, expected_output_info)
 
 
 def pytestcase_test_metavision_raw_cutter_on_gen4_evt2_recording_from_2s_to_3s(dataset_dir):
@@ -246,23 +267,23 @@ def pytestcase_test_metavision_raw_cutter_on_gen4_evt2_recording_from_2s_to_3s(d
     """
 
     filename = "gen4_evt2_hand.raw"
-    filename_full = os.path.join(dataset_dir, "openeb", filename)
+    filename_full = os.path.realpath(os.path.join(dataset_dir, "openeb", filename))
 
     start = 2
     end = 3
 
-    expected_output_info = """
+    expected_output_info = r"""
 ====================================================================================================
 
 Name                {}
 Path                {}
 Duration            999ms 977us
 Integrator          Prophesee
-Plugin name         hal_plugin_gen4_fx3
-Event encoding      EVT2
+Plugin name         hal_plugin_gen4_fx3\w*
+Event encoding      (?:EVT2|2.0)
 Camera generation   4.0
-Camera systemID     26
-Camera subsystemID  537921537
+Camera systemID     \d*(?:
+Camera subsystemID  537921537)?
 Camera serial       00001495
 
 ====================================================================================================
@@ -280,23 +301,23 @@ def pytestcase_test_metavision_raw_cutter_on_gen4_evt2_recording_from_4s_to_10s(
     """
 
     filename = "gen4_evt2_hand.raw"
-    filename_full = os.path.join(dataset_dir, "openeb", filename)
+    filename_full = os.path.realpath(os.path.join(dataset_dir, "openeb", filename))
 
     start = 4
     end = 10
 
-    expected_output_info = """
+    expected_output_info = r"""
 ====================================================================================================
 
 Name                {}
 Path                {}
 Duration            6s 0ms 53us
 Integrator          Prophesee
-Plugin name         hal_plugin_gen4_fx3
-Event encoding      EVT2
+Plugin name         hal_plugin_gen4_fx3\w*
+Event encoding      (?:EVT2|2.0)
 Camera generation   4.0
-Camera systemID     26
-Camera subsystemID  537921537
+Camera systemID     \d*(?:
+Camera subsystemID  537921537)?
 Camera serial       00001495
 
 ====================================================================================================
@@ -314,12 +335,32 @@ def pytestcase_test_metavision_raw_cutter_on_gen4_evt3_recording_full_cut(datase
     """
 
     filename = "gen4_evt3_hand.raw"
-    filename_full = os.path.join(dataset_dir, "openeb", filename)
+    filename_full = os.path.realpath(os.path.join(dataset_dir, "openeb", filename))
 
     start = 0
     end = 16
 
-    cut_and_check_info(filename_full, start, end)
+    expected_output_info = r"""
+====================================================================================================
+
+Name                {}
+Path                {}
+Duration            15s 445ms 502us
+Integrator          Prophesee
+Plugin name         hal_plugin_gen4_fx3\w*
+Event encoding      (?:EVT3|3.0)
+Camera generation   4.0
+Camera systemID     \d*(?:
+Camera subsystemID  537921537)?
+Camera serial       00001495
+
+====================================================================================================
+
+Type of event       Number of events    First timestamp     Last timestamp      Average event rate
+----------------------------------------------------------------------------------------------------
+CD                  18453063            5714                15445502            1.2 Mev/s
+"""
+    cut_and_check_info(filename_full, start, end, expected_output_info)
 
 
 def pytestcase_test_metavision_raw_cutter_on_gen4_evt3_recording_from_3s_to_7s(dataset_dir):
@@ -328,23 +369,23 @@ def pytestcase_test_metavision_raw_cutter_on_gen4_evt3_recording_from_3s_to_7s(d
     """
 
     filename = "gen4_evt3_hand.raw"
-    filename_full = os.path.join(dataset_dir, "openeb", filename)
+    filename_full = os.path.realpath(os.path.join(dataset_dir, "openeb", filename))
 
     start = 3
     end = 7
 
-    expected_output_info = """
+    expected_output_info = r"""
 ====================================================================================================
 
 Name                {}
 Path                {}
 Duration            4s 6ms 217us
 Integrator          Prophesee
-Plugin name         hal_plugin_gen4_fx3
-Event encoding      EVT3
+Plugin name         hal_plugin_gen4_fx3\w*
+Event encoding      (?:EVT3|3.0)
 Camera generation   4.0
-Camera systemID     26
-Camera subsystemID  537921537
+Camera systemID     \d*(?:
+Camera subsystemID  537921537)?
 Camera serial       00001495
 
 ====================================================================================================
@@ -362,23 +403,23 @@ def pytestcase_test_metavision_raw_cutter_on_gen4_evt3_recording_from_8s_to_9s(d
     """
 
     filename = "gen4_evt3_hand.raw"
-    filename_full = os.path.join(dataset_dir, "openeb", filename)
+    filename_full = os.path.realpath(os.path.join(dataset_dir, "openeb", filename))
 
     start = 8
     end = 9
 
-    expected_output_info = """
+    expected_output_info = r"""
 ====================================================================================================
 
 Name                {}
 Path                {}
 Duration            1s 4ms 655us
 Integrator          Prophesee
-Plugin name         hal_plugin_gen4_fx3
-Event encoding      EVT3
+Plugin name         hal_plugin_gen4_fx3\w*
+Event encoding      (?:EVT3|3.0)
 Camera generation   4.0
-Camera systemID     26
-Camera subsystemID  537921537
+Camera systemID     \d*(?:
+Camera subsystemID  537921537)?
 Camera serial       00001495
 
 ====================================================================================================
@@ -396,23 +437,23 @@ def pytestcase_test_metavision_raw_cutter_on_gen4_evt3_recording_from_4s_to_15s(
     """
 
     filename = "gen4_evt3_hand.raw"
-    filename_full = os.path.join(dataset_dir, "openeb", filename)
+    filename_full = os.path.realpath(os.path.join(dataset_dir, "openeb", filename))
 
     start = 4
     end = 15
 
-    expected_output_info = """
+    expected_output_info = r"""
 ====================================================================================================
 
 Name                {}
 Path                {}
 Duration            11s 6ms 525us
 Integrator          Prophesee
-Plugin name         hal_plugin_gen4_fx3
-Event encoding      EVT3
+Plugin name         hal_plugin_gen4_fx3\w*
+Event encoding      (?:EVT3|3.0)
 Camera generation   4.0
-Camera systemID     26
-Camera subsystemID  537921537
+Camera systemID     \d*(?:
+Camera subsystemID  537921537)?
 Camera serial       00001495
 
 ====================================================================================================
