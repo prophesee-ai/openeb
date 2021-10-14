@@ -6,29 +6,24 @@ on:
     - cron: "15 2 1 */2 *"
 
 env:
-  dataset_download_address: "https://dataset.prophesee.ai/index.php/s/ozjYOAAKTUshudQ/download"
+  dataset_download_address: "https://dataset.prophesee.ai/index.php/s/VfhepWI4MPVWh9o/download"
 
 jobs:
   get_artifacts:
-    name: Get Datasets (Bloated with ML)
+    name: Get Datasets
     runs-on: ubuntu-latest
     steps:
       - name: Downloading datasets
         timeout-minutes: 10
         run: |
           curl -L -o datasets.zip $dataset_download_address
-          unzip datasets.zip
+          mkdir datasets && cd datasets && unzip ../datasets.zip
 
       - name: Uploading datasets to storage
         uses: actions/upload-artifact@master
         with:
-          name: datasets #once they have the proper datasets and not this mass, remove the !datasets folders
-          path: |
-            datasets
-            !datasets/metavision_ml
-            !datasets/calibration*
-            !datasets/jet_monitoring_test
-            !datasets/focus.raw
+          name: datasets
+          path: datasets
 
       - name: Slack Notification
         if: always()
