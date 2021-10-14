@@ -10,6 +10,7 @@
 # Add sample plugin object library
 add_library(hal_sample_plugin_obj OBJECT
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sample_decoder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/future/sample_decoder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sample_device_control.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sample_camera_discovery.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sample_data_transfer.cpp
@@ -58,10 +59,6 @@ if (BUILD_TESTING)
 endif (BUILD_TESTING)
 
 # Install sample
-install(FILES README.md
-        DESTINATION share/metavision/hal/samples/metavision_hal_sample_plugin
-        COMPONENT metavision-hal-samples
-)
 install(DIRECTORY include src
         DESTINATION share/metavision/hal/samples/metavision_hal_sample_plugin
         COMPONENT metavision-hal-samples

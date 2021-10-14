@@ -20,7 +20,7 @@ def pytestcase_test_metavision_raw_info_with_sample_plugin(dataset_dir):
     '''
 
     filename = "sample_plugin_recording.raw"
-    filename_full = os.path.join(dataset_dir, filename)
+    filename_full = os.path.join(dataset_dir, "openeb", filename)
 
     # Before launching the app, check the dataset file exists
     assert os.path.exists(filename_full)

@@ -7,7 +7,7 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-lfs_download(datasets/sample_plugin_recording.raw)
+lfs_download(datasets/openeb/sample_plugin_recording.raw)
 
 add_executable(gtest_metavision_hal_sample_plugin 
     ${CMAKE_CURRENT_SOURCE_DIR}/hal_sample_plugin_gtest.cpp
@@ -42,11 +42,7 @@ foreach(app_name IN LISTS apps_to_test)
         )
     endif()
 
-    add_test(
-        NAME ${test_name}
-        COMMAND ${PYTEST_CMD} ${pytest_file} -vv --capture=no --color=yes --junitxml=${JUNIT_XML_OUTPUT_DIRECTORY}/${test_name}.xml
-        WORKING_DIRECTORY $<TARGET_FILE_DIR:${app_name}>
-    )
+    add_pytest(NAME ${test_name} PATH ${pytest_file} WORKING_DIRECTORY $<TARGET_FILE_DIR:${app_name}>)
     set_property(TEST ${test_name} PROPERTY ENVIRONMENT
         PYTHONPATH=${PROJECT_SOURCE_DIR}/utils/python # to be able to use prophesee_utils python module
         MV_HAL_PLUGIN_PATH=${HAL_BUILD_PLUGIN_PATH}/sample

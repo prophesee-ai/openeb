@@ -16,16 +16,16 @@
 # and potential dependencies
 
 # Runtime (library)
-set(CPACK_COMPONENT_METAVISION-SDK-DRIVER_DESCRIPTION "Metavision SDK Driver library.\n${OPEN_PACKAGE_LICENSE}")
-set(CPACK_COMPONENT_METAVISION-SDK-DRIVER_DEPENDS metavision-hal metavision-sdk-base metavision-sdk-core)
+set(CPACK_COMPONENT_METAVISION-SDK-DRIVER-LIB_DESCRIPTION "Metavision SDK Driver library.\n${OPEN_PACKAGE_LICENSE}")
+set(CPACK_COMPONENT_METAVISION-SDK-DRIVER-LIB_DEPENDS metavision-hal-lib metavision-sdk-base-lib metavision-sdk-core-lib)
 
 # Runtime (apps)
 set(CPACK_COMPONENT_METAVISION-SDK-DRIVER-BIN_DESCRIPTION "Binaries for the Metavision SDK Driver applications.\n${OPEN_PACKAGE_LICENSE}")
-set(CPACK_COMPONENT_METAVISION-SDK-DRIVER-BIN_DEPENDS metavision-sdk-driver metavision-sdk-core)
+set(CPACK_COMPONENT_METAVISION-SDK-DRIVER-BIN_DEPENDS metavision-sdk-driver-lib metavision-sdk-core-lib)
 
 # Development package
 set(CPACK_COMPONENT_METAVISION-SDK-DRIVER-DEV_DESCRIPTION "Development (C++) files for Metavision SDK Driver library.\n${OPEN_PACKAGE_LICENSE}")
-set(CPACK_COMPONENT_METAVISION-SDK-DRIVER-DEV_DEPENDS metavision-sdk-driver metavision-sdk-base-dev metavision-sdk-core-dev metavision-hal-dev)
+set(CPACK_COMPONENT_METAVISION-SDK-DRIVER-DEV_DEPENDS metavision-sdk-driver-lib metavision-sdk-base-dev metavision-sdk-core-dev metavision-hal-dev)
 
 # Samples
 set(CPACK_COMPONENT_METAVISION-SDK-DRIVER-SAMPLES_DESCRIPTION "Samples for Metavision SDK Driver library.\n${OPEN_PACKAGE_LICENSE}")

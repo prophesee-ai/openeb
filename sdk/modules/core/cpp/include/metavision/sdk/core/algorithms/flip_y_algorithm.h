@@ -34,13 +34,17 @@ public:
     /// Default destructor
     ~FlipYAlgorithm() = default;
 
-    /// @brief Applies the Flip Y filter to the given input buffer storing the result in the output buffer.
-    /// @param first Beginning of the range of the input elements
-    /// @param last End of the range of the input elements
-    /// @param d_first Beginning of the destination range
+    /// @brief Applies the Flip Y filter to the given input buffer storing the result in the output buffer
+    /// @tparam InputIt Read-Only input event iterator type. Works for iterators over buffers of @ref EventCD
+    /// or equivalent
+    /// @tparam OutputIt Read-Write output event iterator type. Works for iterators over containers of @ref EventCD
+    /// or equivalent
+    /// @param it_begin Iterator to first input event
+    /// @param it_end Iterator to the past-the-end event
+    /// @param inserter Output iterator or back inserter
     template<class InputIt, class OutputIt>
-    inline void process_events(InputIt first, InputIt last, OutputIt d_first) {
-        detail::transform(first, last, d_first, std::ref(*this));
+    inline void process_events(InputIt it_begin, InputIt it_end, OutputIt inserter) {
+        detail::transform(it_begin, it_end, inserter, std::ref(*this));
     }
 
     /// @note process(...) is deprecated since version 2.2.0 and will be removed in later releases.

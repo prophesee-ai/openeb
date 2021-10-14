@@ -31,7 +31,7 @@ protected:
 
     void run_test(const std::string &file_basename, short version_major_expected, short version_minor_expected) {
         std::string dataset_file_path =
-            (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / file_basename).string();
+            (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / file_basename).string();
 
         Camera camera;
 

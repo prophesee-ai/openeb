@@ -11,6 +11,7 @@
 
 #include <map>
 #include <opencv2/imgcodecs.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 #include <metavision/sdk/base/utils/sdk_log.h>
 #include <metavision/sdk/ui/utils/window.h>
 #include <metavision/sdk/ui/utils/mt_window.h>
@@ -20,6 +21,10 @@
 
 int main() {
     const auto img = cv::imread(image_path);
+
+    // Convert input image to grayscale for use in window 1
+    cv::Mat img1;
+    cv::cvtColor(img, img1, cv::COLOR_BGR2GRAY);
 
     /// [SIMPLE_WINDOW_CREATION_BEGIN]
     Metavision::Window w1("Window GRAY", img.cols, img.rows, Metavision::Window::RenderMode::GRAY);
@@ -71,7 +76,7 @@ int main() {
             // - Poll and process the events received by the window 1. The attached callbacks are processed here in this
             // thread.
             // - Immediately update the displayed image.
-            w1.show(img);
+            w1.show(img1);
 
             // Here we make the window 1 have a 40Hz refresh rate
             std::this_thread::sleep_for(std::chrono::milliseconds(25));

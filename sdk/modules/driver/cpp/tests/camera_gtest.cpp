@@ -10,14 +10,18 @@
  **********************************************************************************************************************/
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <condition_variable>
 #include <fstream>
+#include <gtest/gtest.h>
 #include <numeric> // std::iota
 #include <sstream>
+#include <thread>
 
 #include "metavision/hal/device/device_discovery.h"
 #include "metavision/hal/utils/raw_file_header.h"
+#include "metavision/sdk/base/utils/timestamp.h"
 #include "metavision/utils/gtest/gtest_with_tmp_dir.h"
 #include "metavision/utils/gtest/gtest_custom.h"
 #include "metavision/sdk/core/utils/callback_manager.h"
@@ -150,7 +154,7 @@ TEST_F_WITH_CAMERA(Camera_Gtest, available_online_sources) {
     auto available_sources = Camera::list_online_sources();
     ASSERT_FALSE(available_sources.empty());
 
-    // Check that we actually found the one we are looking for if we gave the serial number as input  arg
+    // Check that we actually found the one we are looking for if we gave the serial number as input arg
     if (!GtestsParameters::instance().serial.empty()) {
         bool found_wanted_camera = false;
         for (auto camera : available_sources) {
@@ -334,12 +338,12 @@ TEST_F(Camera_Gtest, basic_exceptions) {
     }
 }
 
-TEST_F(Camera_Gtest, basic_exceptions_with_additonal_info) {
-    const std::string additionnal_info = "PROBLEM";
+TEST_F(Camera_Gtest, basic_exceptions_with_additional_info) {
+    const std::string additional_info = "PROBLEM";
 
     try {
-        throw(CameraException(CameraErrorCode::CameraNotFound, additionnal_info));
-    } catch (CameraException &e) { ASSERT_TRUE(std::string(e.what()).find(additionnal_info) != std::string::npos); }
+        throw(CameraException(CameraErrorCode::CameraNotFound, additional_info));
+    } catch (CameraException &e) { ASSERT_TRUE(std::string(e.what()).find(additional_info) != std::string::npos); }
 }
 
 TEST_F_WITH_CAMERA(Camera_Gtest, camera_set_biases) {
@@ -465,7 +469,10 @@ typedef ::testing::Types<ParamsSet<true>, ParamsSet<false>> TestingTypes;
 
 TYPED_TEST_CASE(Camera_GtestT, TestingTypes);
 
-TYPED_TEST_WITH_CAMERA(Camera_GtestT, camera_file_logger_n_events) {
+TYPED_TEST_WITH_CAMERA(Camera_GtestT, camera_file_logger_n_events,
+                       camera_params(camera_param().integrator("Prophesee").generation("3.0"),
+                                     camera_param().integrator("Prophesee").generation("3.1"))) {
+    // This test is deactivated on gen 4.0 and 4.1 cameras until ticket TEAM-10660 is done.
     std::string file = this->tmpdir_handler_->get_full_path("Camera_Gtest_log.raw");
     Camera camera;
     if (GtestsParameters::instance().serial.empty()) {
@@ -591,7 +598,7 @@ TEST_F(Camera_Gtest, raw_file_logger_invalid_filename) {
         file)); // Just to check that the file does not exists already, otherwise it bias the test
 
     // REMARK : file is an invalid filename because the directory  tmpdir_ /
-    // boost::filesystem::path("inexistent_directory") dos not exist
+    // boost::filesystem::path("inexistent_directory") does not exist
 
     try {
         camera.start_recording(file);
@@ -628,7 +635,7 @@ TEST_F(Camera_Gtest, raw_file_logger_invalid_filename2) {
 TEST_F(Camera_Gtest, raw_file_logger_permissions) {
     write_evt2_raw_data();
 
-    // Create a direcotry and set permissions
+    // Create a directory and set permissions
     boost::filesystem::path tmpdir_perm = tmpdir_handler_->get_full_path("tmp_directory_permissions");
     if (!boost::filesystem::create_directory(tmpdir_perm)) {
         FAIL();
@@ -662,7 +669,7 @@ TEST_F(Camera_Gtest, raw_file_logger_permissions) {
                                                     boost::filesystem::perms::group_all | boost::filesystem::add_perms);
 
     // Chek the file does not exists. WARNING : this check has to be done after adding the permissions back, otherwise
-    // an expection is thrown EXPECT_FALSE(boost::filesystem:: ::exists(file));
+    // an exception is thrown EXPECT_FALSE(boost::filesystem:: ::exists(file));
 }
 
 TEST_F(Camera_Gtest, raw_file_logger) {
@@ -692,8 +699,8 @@ TEST_F(Camera_Gtest, drop_is_deprecated) {
     Camera camera = Camera::from_file(tmp_file_);
     ASSERT_THROW(camera.set_max_event_rate_limit(10), CameraException);
 }
-#endif /* __ANDROID__ */
-#endif /* _WIN32 */
+#endif // __ANDROID__
+#endif // _WIN32
 
 TEST_F(Camera_Gtest, start_stop) {
     write_evt2_raw_data();
@@ -864,15 +871,10 @@ TEST_F(Camera_Gtest, raw_events_callbacks_decoding_check) {
     std::vector<EventCD> received_events;
     Camera camera;
     try {
-        camera = Camera::from_file(tmp_file_, false); // Note: in the context of this gtest, we decode in the RAW file
-                                                      // using the internal decoder. So, if reproducing camera behavior,
-                                                      // decoding will occur twice (as events are decoded for cadencing
-                                                      // even if there are no callback registered). In the generic case,
-                                                      // API doesn't provide access to the internal decoder so there
-                                                      // are no risk of such thing happening.
+        camera = Camera::from_file(tmp_file_);
     } catch (CameraException &e) { FAIL(); }
 
-    I_Decoder *i_decoder                         = camera.get_pimpl().i_decoder_;
+    Future::I_Decoder *i_decoder                 = camera.get_pimpl().i_future_decoder_;
     I_EventDecoder<EventCD> *i_cd_events_decoder = camera.get_pimpl().device_->get_facility<I_EventDecoder<EventCD>>();
     ASSERT_TRUE(i_cd_events_decoder);
 
@@ -894,7 +896,7 @@ TEST_F(Camera_Gtest, raw_events_callbacks_decoding_check) {
     }
 
     timestamp ts_shift;
-    ASSERT_TRUE(camera.get_pimpl().device_->get_facility<I_Decoder>()->get_timestamp_shift(ts_shift));
+    ASSERT_TRUE(i_decoder->get_timestamp_shift(ts_shift));
 
     ASSERT_EQ(expected_events.size(), received_events.size());
     for (size_t i = 0; i < expected_events.size(); ++i) {
@@ -1136,7 +1138,7 @@ TEST_F_WITH_CAMERA(Camera_Gtest, roi_with_camera) {
 
     ASSERT_TRUE(camera.start());
     ASSERT_NO_THROW(camera.roi().set({roi_x, roi_y, roi_width, roi_height}));
-    // wait for the roi to be set
+    // wait for the ROI to be set
     std::this_thread::sleep_for(std::chrono::seconds(1));
     roi_set = true;
     {
@@ -1146,7 +1148,7 @@ TEST_F_WITH_CAMERA(Camera_Gtest, roi_with_camera) {
     ASSERT_TRUE(camera.stop());
 }
 
-TEST_F_WITH_CAMERA(Camera_Gtest, roi_advanced_binmap_fit_dimension_with_camera) {
+TEST_F_WITH_CAMERA(Camera_Gtest, roi_advanced_bitmap_fit_dimension_with_camera) {
     //////////////////////////////////////////////////////
     // PURPOSE
     // Checks that events are generated outside the disabled lines and thus inside the enabled ones
@@ -1207,7 +1209,7 @@ TEST_F_WITH_CAMERA(Camera_Gtest, roi_advanced_binmap_fit_dimension_with_camera) 
 
     ASSERT_TRUE(camera.start());
     ASSERT_NO_THROW(camera.roi().set(cols_to_enable, rows_to_enable));
-    // wait for the roi to be set
+    // wait for the ROI to be set
     std::this_thread::sleep_for(std::chrono::seconds(1));
     roi_set = true;
     {
@@ -1217,10 +1219,10 @@ TEST_F_WITH_CAMERA(Camera_Gtest, roi_advanced_binmap_fit_dimension_with_camera) 
     ASSERT_TRUE(camera.stop());
 }
 
-TEST_F_WITH_CAMERA(Camera_Gtest, roi_advanced_binmap_wrong_dimension_with_camera) {
+TEST_F_WITH_CAMERA(Camera_Gtest, roi_advanced_bitmap_wrong_dimension_with_camera) {
     //////////////////////////////////////////////////////
     // PURPOSE
-    // Checks that you can't set roi from binmap when these bin maps don't have the correct dimensions
+    // Checks that you can't set ROI from bitmap when these bitmaps don't have the correct dimensions
 
     Camera camera;
     if (GtestsParameters::instance().serial.empty()) {
@@ -1296,7 +1298,7 @@ TEST_F(Camera_Gtest, decode_evt2_data) {
 TEST_F_WITH_DATASET(Camera_Gtest, decode_evt3_data) {
     // Read the dataset provided
     std::string dataset_file_path =
-        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "gen4_evt3_hand.raw").string();
+        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen4_evt3_hand.raw").string();
 
     Camera camera = Camera::from_file(dataset_file_path, false);
 
@@ -1316,4 +1318,157 @@ TEST_F_WITH_DATASET(Camera_Gtest, decode_evt3_data) {
     camera.stop();
     ASSERT_EQ(18453063, n_cd_decoded);
     ASSERT_EQ(98794244, n_raw);
+}
+
+TEST_F_WITH_DATASET(Camera_Gtest, offline_streaming_control_not_ready) {
+    std::vector<std::string> datasets = {
+        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen31_timer.raw").string(),
+        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen4_evt2_hand.raw").string(),
+        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen4_evt3_hand.raw").string()};
+
+    for (const auto &dataset : datasets) {
+        boost::filesystem::remove(dataset + "_index");
+        ASSERT_FALSE(boost::filesystem::exists(dataset + "_index"));
+
+        // With this function, index building is not requested, so OSC is never ready
+        Camera camera = Camera::from_file(dataset);
+
+        ASSERT_NO_THROW(camera.offline_streaming_control());
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+        ASSERT_FALSE(camera.offline_streaming_control().is_ready());
+    }
+}
+
+TEST_F_WITH_DATASET(Camera_Gtest, offline_streaming_control_ready) {
+    std::vector<std::string> datasets = {
+        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen31_timer.raw").string(),
+        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen4_evt2_hand.raw").string(),
+        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen4_evt3_hand.raw").string()};
+
+    for (const auto &dataset : datasets) {
+        boost::filesystem::remove(dataset + "_index");
+        ASSERT_FALSE(boost::filesystem::exists(dataset + "_index"));
+
+        // With this function, index building is requested, so OSC should be ready
+        Camera camera = Camera::from_file(dataset, false, Metavision::Future::RawFileConfig());
+
+        ASSERT_NO_THROW(camera.offline_streaming_control());
+
+        bool ready     = false;
+        int max_trials = 1000;
+        for (int i = 0; i < max_trials; ++i) {
+            if (camera.offline_streaming_control().is_ready()) {
+                ready = true;
+                break;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+        ASSERT_TRUE(ready);
+    }
+}
+
+TEST_F_WITH_DATASET(Camera_Gtest, offline_streaming_control_seek_range) {
+    std::vector<std::string> datasets = {
+        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen31_timer.raw").string(),
+        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen4_evt2_hand.raw").string(),
+        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen4_evt3_hand.raw").string()};
+
+    std::vector<std::pair<Metavision::timestamp, Metavision::timestamp>> ranges = {
+        {16, 13040000}, {49, 10440000}, {5714, 15442000}};
+
+    size_t i = 0;
+    for (const auto &dataset : datasets) {
+        Camera camera = Camera::from_file(dataset, false, Metavision::Future::RawFileConfig());
+
+        bool ready     = false;
+        int max_trials = 1000;
+        for (int i = 0; i < max_trials; ++i) {
+            if (camera.offline_streaming_control().is_ready()) {
+                ready = true;
+                break;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+
+        EXPECT_EQ(ranges[i].first, camera.offline_streaming_control().get_seek_start_time());
+        EXPECT_EQ(ranges[i].second, camera.offline_streaming_control().get_seek_end_time());
+        ++i;
+    }
+}
+
+TEST_F_WITH_DATASET(Camera_Gtest, offline_streaming_control_seeks) {
+    std::vector<std::string> datasets = {
+        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen31_timer.raw").string(),
+        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen4_evt2_hand.raw").string(),
+        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen4_evt3_hand.raw").string()};
+
+    std::vector<std::pair<Metavision::timestamp, Metavision::timestamp>> ranges = {
+        {16, 13042000}, {49, 10442000}, {4096, 15444000}};
+
+    size_t i = 0;
+    for (const auto &dataset : datasets) {
+        Camera camera = Camera::from_file(dataset, false, Metavision::Future::RawFileConfig());
+
+        std::atomic<bool> decoded{false};
+        Metavision::timestamp ts, last_ts = 0;
+        camera.cd().add_callback([&](const EventCD *begin, const EventCD *end) {
+            if (!decoded && std::abs(begin->t - last_ts) > 1000) {
+                // this mean we've seeked
+                ts      = begin->t;
+                decoded = true;
+            }
+            last_ts = std::prev(end)->t;
+        });
+
+        bool ready     = false;
+        int max_trials = 1000;
+        for (int i = 0; i < max_trials; ++i) {
+            if (camera.offline_streaming_control().is_ready()) {
+                ready = true;
+                break;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+
+        // a valid seek while the camera is not started must succeed
+        ASSERT_TRUE(camera.offline_streaming_control().seek((ranges[i].first + ranges[i].second) / 2));
+        camera.start();
+        while (!decoded) {}
+        ASSERT_GE((ranges[i].first + ranges[i].second) / 2, ts);
+        camera.stop();
+
+        // out of bounds seek must fail when camera is not started
+        ASSERT_FALSE(camera.offline_streaming_control().seek(-1));
+        ASSERT_FALSE(camera.offline_streaming_control().seek(ranges[i].second + 100000));
+
+        camera.start();
+        // out of bounds seek must fail when camera is started
+        ASSERT_FALSE(camera.offline_streaming_control().seek(-1));
+        ASSERT_FALSE(camera.offline_streaming_control().seek(ranges[i].second + 100000));
+        camera.stop();
+
+        std::vector<timestamp> targets;
+        const timestamp timestamp_step = (ranges[i].second - ranges[i].first) / 10;
+        for (uint32_t step = 1; step <= 10; ++step) {
+            targets.push_back(ranges[i].first + step * timestamp_step);
+        }
+
+        for (size_t j = 0; j < targets.size(); ++j) {
+            auto target = j % 2 ? targets[targets.size() - j] : targets[j];
+            decoded     = false;
+
+            // some seek will have the camera stopped when reaching near the end of file
+            // make sure we start the camera before seeking
+            if (!camera.is_running()) {
+                camera.start();
+            }
+
+            ASSERT_TRUE(camera.offline_streaming_control().seek(target));
+            while (!decoded) {}
+            ASSERT_GE(target, ts);
+        }
+        ++i;
+    }
 }

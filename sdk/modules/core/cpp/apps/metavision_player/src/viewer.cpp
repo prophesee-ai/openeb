@@ -11,6 +11,7 @@
 
 #include <metavision/sdk/base/utils/log.h>
 
+#include "utils.h"
 #include "viewer.h"
 #include "view.h"
 #include "camera_view.h"
@@ -51,10 +52,11 @@ void Viewer::setup_camera() {
     });
 
     // Add CD callback
-    prod_.reset(new Metavision::GenericProducerAlgorithm<Metavision::Event2d>(500'000));
-    camera_.cd().add_callback([this](const Metavision::Event2d *ev_begin, const Metavision::Event2d *ev_end) {
-        prod_->register_new_event_buffer(ev_begin, ev_end);
-    });
+    prod_.reset(new Metavision::GenericProducerAlgorithm<Metavision::Event2d>(40'000));
+    cd_events_cb_id =
+        camera_.cd().add_callback([this](const Metavision::Event2d *ev_begin, const Metavision::Event2d *ev_end) {
+            prod_->register_new_event_buffer(ev_begin, ev_end);
+        });
 }
 
 void Viewer::run() {
@@ -110,5 +112,17 @@ void Viewer::run() {
         }
     }
 
+    stop();
     prod_->set_source_as_done();
+}
+
+void Viewer::stop() {
+    // unregister callbacks to make sure they are not called anymore
+    if (cd_events_cb_id >= 0) {
+        camera_.cd().remove_callback(cd_events_cb_id);
+    }
+    if (camera_.is_running()) {
+        MV_LOG_TRACE() << "Closing camera." << std::endl;
+        camera_.stop();
+    }
 }

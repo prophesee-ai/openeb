@@ -29,7 +29,7 @@ endif (BUILD_TESTING)
 # License file
 install(FILES ${PROJECT_SOURCE_DIR}/licensing/LICENSE_OPEN
         DESTINATION share/metavision/licensing
-        COMPONENT metavision-sdk-base
+        COMPONENT metavision-sdk-base-lib
 )
 
-add_cpack_component(PUBLIC metavision-sdk-base metavision-sdk-base-dev metavision-sdk-base-bin metavision-sdk-base-samples)
+add_cpack_component(PUBLIC metavision-sdk-base-lib metavision-sdk-base-dev metavision-sdk-base-bin metavision-sdk-base-samples)

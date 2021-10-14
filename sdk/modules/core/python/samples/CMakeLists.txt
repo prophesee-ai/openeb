@@ -7,8 +7,11 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
+add_subdirectory(metavision_adaptive_rate)
 add_subdirectory(metavision_csv_viewer)
 add_subdirectory(metavision_filtering)
+add_subdirectory(metavision_interop)
 add_subdirectory(metavision_raw_to_csv)
-add_subdirectory(metavision_simple_viewer)
 add_subdirectory(metavision_sdk_get_started)
+add_subdirectory(metavision_simple_viewer)
+

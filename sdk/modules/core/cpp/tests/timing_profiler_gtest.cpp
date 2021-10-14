@@ -33,8 +33,8 @@ public:
 
 TEST_F(TimingProfiler_GTest, test_empty) {
     TimingProfiler<true> profiler;
-    const auto &keys = profiler.get_storage_policy().get_ordered_keys();
-    ASSERT_TRUE(keys.empty());
+    const auto &storage = profiler.get_storage_policy();
+    ASSERT_TRUE(storage.get_ordered_keys().empty());
 }
 
 TEST_F(TimingProfiler_GTest, test_simple) {

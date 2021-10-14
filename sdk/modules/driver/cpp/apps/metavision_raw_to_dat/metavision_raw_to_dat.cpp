@@ -9,7 +9,7 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-// The source code of this application demonstrates how to use Metavision Core SDK pipeline utility to convert RAW file
+// This application demonstrates how to use Metavision SDK Core pipeline utility and SDK Driver to convert RAW file
 // to DAT file.
 
 #include <iostream>

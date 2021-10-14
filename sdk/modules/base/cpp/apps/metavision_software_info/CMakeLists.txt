@@ -15,7 +15,7 @@ install(TARGETS metavision_software_info
         COMPONENT metavision-sdk-base-bin
 )
 
-install(FILES metavision_software_info.cpp README.md
+install(FILES metavision_software_info.cpp
         DESTINATION share/metavision/sdk/base/apps/metavision_software_info
         COMPONENT metavision-sdk-base-samples
 )

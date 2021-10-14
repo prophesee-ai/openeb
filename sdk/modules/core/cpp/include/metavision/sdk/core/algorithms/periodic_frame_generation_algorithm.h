@@ -81,17 +81,17 @@ public:
     /// used outside the scope of the callback, the user must ensure to swap or copy it to another object
     void set_output_callback(const OutputCb &output_cb);
 
-    /// @brief Processes the events to update the internal time surface for the frame generation
-    /// @tparam EventIt Input event iterator type. Works for iterators over containers of @ref EventCD or equivalent
-    /// @param it_begin Iterator to first input event
-
+    /// @brief Processes a buffer of events to update the internal time surface for the frame generation
+    /// @tparam InputIt Read-Only input event iterator type. Works for iterators over buffers of @ref EventCD
+    /// or equivalent
+    /// @param it_begin Iterator to the first input event
     /// @param it_end Iterator to the past-the-end event
     template<typename EventIt>
     inline void process_events(EventIt it_begin, EventIt it_end);
 
     /// @brief Forces the generation of a frame for the current period with the input events that have been processed
     ///
-    /// This is to be used at the end of a process if one's wants to generate frames with the remaining events
+    /// This is intended to be used at the end of a process if one wants to generate frames with the remaining events
     /// This effectively calls the output_cb and updates the next timestamp at which a frame is to be generated
     void force_generate();
 

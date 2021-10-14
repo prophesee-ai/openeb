@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
 
     camera.start();
 
-    const std::string message("Analysing RAW file...");
+    const std::string message("Analyzing RAW file...");
     auto log = MV_LOG_INFO() << Metavision::Log::no_endline << Metavision::Log::no_space << message << std::flush;
     int dots = 0;
 

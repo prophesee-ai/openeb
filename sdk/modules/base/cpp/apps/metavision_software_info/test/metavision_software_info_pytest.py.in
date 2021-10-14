@@ -46,27 +46,39 @@ def pytestcase_test_metavision_software_commit():
     # Check app exited without error
     assert error_code == 0, "******\nError while executing cmd '{}':{}\n******".format(cmd, output)
 
-    # Check that the options showed in the output
+    # Check that we get the expected output
+    assert output.rstrip() == expected_output.rstrip()
+
+
+def pytestcase_test_metavision_software_date():
+    """
+    Checks output of metavision_software_info when retrieving date
+    """
+
+    # Get expected output
+    commit_command = "@GIT_COMMAND_GET_COMMIT_DATE_QUOTES_ESCAPED@"
+    expected_output, error, err_code = shell_tools.execute_cmd(commit_command)
+    assert err_code == 0, "******\nError while executing cmd '{}':{}\n{}\n******".format(
+        commit_command, expected_output, error)
+
+    # Run app
+    cmd = "./metavision_software_info --date"
+    output, error_code = pytest_tools.run_cmd_setting_mv_log_file(cmd)
+
+    # Check app exited without error
+    assert error_code == 0, "******\nError while executing cmd '{}':{}\n******".format(cmd, output)
+
+    # Check that we get the expected output
     assert output.rstrip() == expected_output.rstrip()
 
 
 def pytestcase_test_metavision_software_version():
     """
-    Checks output of metavision_software_info when retrieving commit
+    Checks output of metavision_software_info when retrieving version
     """
 
     # Get expected output
-
-    # Get project version
-    project_vesion = "@PROJECT_VERSION@"
-
-    # Get commit date
-    commit_date_command = "@GIT_COMMAND_GET_COMMIT_DATE_QUOTES_ESCAPED@"
-    commit_date, error, err_code = shell_tools.execute_cmd(commit_date_command)
-    assert err_code == 0, "******\nError while executing cmd '{}':{}\n{}\n******".format(commit_date_command,
-                                                                                         commit_date, error)
-
-    expected_output = project_vesion + "." + commit_date
+    expected_output = "@PROJECT_VERSION_FULL@"
 
     # Run app
     cmd = "./metavision_software_info --version"
@@ -75,5 +87,5 @@ def pytestcase_test_metavision_software_version():
     # Check app exited without error
     assert error_code == 0, "******\nError while executing cmd '{}':{}\n******".format(cmd, output)
 
-    # Check that the options showed in the output
+    # Check that we get the expected output
     assert output.rstrip() == expected_output.rstrip()

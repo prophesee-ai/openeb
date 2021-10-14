@@ -47,6 +47,9 @@ public:
     /// @return A device moved from @p dev
     Device &operator=(Device &&dev) = default;
 
+    /// @brief Destructor
+    ~Device();
+
 private:
     // A device can't be copied
     Device(const Device &) = delete;

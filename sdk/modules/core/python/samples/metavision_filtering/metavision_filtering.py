@@ -35,7 +35,7 @@ def parse_args():
     parser.add_argument(
         '-i', '--input-raw-file', dest='input_path', default="",
         help="Path to input RAW file. If not specified, the live stream of the first available camera is used. "
-        "If it's a camera ID, it will try to open that camera instead.")
+        "If it's a camera serial number, it will try to open that camera instead.")
     parser.add_argument(
         '-r', '--replay_factor', type=float, default=1,
         help="Replay Factor. If greater than 1.0 we replay with slow-motion, otherwise this is a speed-up over real-time.")
@@ -56,7 +56,7 @@ def main():
           "  - Q/Escape: Quit the application\n")
 
     # Events iterator on Camera or RAW file
-    mv_iterator = EventsIterator(input_path=args.input_path, delta_t=1e3)
+    mv_iterator = EventsIterator(input_path=args.input_path, delta_t=1000)
     if args.replay_factor > 0 and not is_live_camera(args.input_path):
         mv_iterator = LiveReplayEventsIterator(mv_iterator, replay_factor=args.replay_factor)
     height, width = mv_iterator.get_size()  # Camera Geometry

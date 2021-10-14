@@ -55,6 +55,8 @@ public:
     virtual void setCurrentTimeUs(Metavision::timestamp time) override;
     virtual Metavision::timestamp currentTimeUs() const override;
 
+    bool is_ready() const;
+
 protected:
     virtual void setup() override;
     virtual void update(cv::Mat &frame, int key_pressed) override;
@@ -63,6 +65,7 @@ protected:
 private:
     bool live_      = false;
     bool recording_ = false;
+    bool ready_     = false;
     std::string raw_filename_;
     RoiControl roi_control_;
     Metavision::timestamp time_us_ = 0;

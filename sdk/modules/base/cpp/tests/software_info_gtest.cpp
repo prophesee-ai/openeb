@@ -13,14 +13,40 @@
 
 #include "metavision/sdk/base/utils/software_info.h"
 
-TEST(SoftwareInfo_GTest, software_info_getters) {
+TEST(SoftwareInfo_GTest, software_info_getters_dev) {
+    Metavision::SoftwareInfo si(3, 5, 1, "dev", "branchname", "commithash", "2017119");
+
+    EXPECT_EQ(3, si.get_version_major());
+    EXPECT_EQ(5, si.get_version_minor());
+    EXPECT_EQ(1, si.get_version_patch());
+    EXPECT_EQ("dev", si.get_version_suffix());
+    EXPECT_EQ("3.5.1-dev", si.get_version());
+    EXPECT_EQ("branchname", si.get_vcs_branch());
+    EXPECT_EQ("commithash", si.get_vcs_commit());
+    EXPECT_EQ("2017119", si.get_vcs_date());
+}
+
+TEST(SoftwareInfo_GTest, software_info_getters_official) {
+    Metavision::SoftwareInfo si(3, 5, 1, "", "branchname", "commithash", "2017119");
+
+    EXPECT_EQ(3, si.get_version_major());
+    EXPECT_EQ(5, si.get_version_minor());
+    EXPECT_EQ(1, si.get_version_patch());
+    EXPECT_EQ("", si.get_version_suffix());
+    EXPECT_EQ("3.5.1", si.get_version());
+    EXPECT_EQ("branchname", si.get_vcs_branch());
+    EXPECT_EQ("commithash", si.get_vcs_commit());
+    EXPECT_EQ("2017119", si.get_vcs_date());
+}
+
+TEST(SoftwareInfo_GTest, software_info_getters_backward_compatibility) {
     Metavision::SoftwareInfo si(3, 5, 1, 45632, "branchname", "commithash", "2017119");
 
     EXPECT_EQ(3, si.get_version_major());
     EXPECT_EQ(5, si.get_version_minor());
     EXPECT_EQ(1, si.get_version_patch());
-    EXPECT_EQ(45632, si.get_version_dev());
-    EXPECT_EQ("3.5.1.45632", si.get_version());
+    EXPECT_EQ("", si.get_version_suffix());
+    EXPECT_EQ("3.5.1", si.get_version());
     EXPECT_EQ("branchname", si.get_vcs_branch());
     EXPECT_EQ("commithash", si.get_vcs_commit());
     EXPECT_EQ("2017119", si.get_vcs_date());

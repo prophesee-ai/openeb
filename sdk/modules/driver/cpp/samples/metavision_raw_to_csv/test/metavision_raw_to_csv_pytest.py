@@ -24,52 +24,69 @@ def get_ev_from_line(line):
 def run_raw_to_csv_and_check_result(filename_full, number_events_expected, first_10_events_expected,
                                     middle_10_events_expected, last_10_events_expected):
 
-    # Before launching the app, check the dataset file exists
+    # Before launching the sample, check the dataset file exists
     assert os.path.exists(filename_full)
 
-    # Since the application metavision_raw_to_csv writes the output file in the same directory
-    # the app is launched from, create a tmp directory from where we can run the app
+    # Since the sample metavision_raw_to_csv writes the output file in the same directory
+    # the sample is launched from, create a tmp directory from where we can run the sample
     tmp_dir = os_tools.TemporaryDirectoryHandler()
 
     # The pytest is run from the build/bin dir (cf CMakeLists.txt), but since we'll run the command
-    # from the temporary directory created above, we need to get the full path to the application
-    application_full_path = os.path.join(os.getcwd(), "metavision_raw_to_csv")
+    # from the temporary directory created above, we need to get the full path to the sample
+    sample_full_path = os.path.join(os.getcwd(), "metavision_raw_to_csv")
 
-    cmd = "\"{}\" -i \"{}\"".format(application_full_path, filename_full)
+    cmd = "\"{}\" -i \"{}\"".format(sample_full_path, filename_full)
     output, error_code = pytest_tools.run_cmd_setting_mv_log_file(cmd, working_directory=tmp_dir.temporary_directory())
 
-    # Check app exited without error
+    # Check sample exited without error
     assert error_code == 0, "******\nError while executing cmd '{}':{}\n******".format(cmd, output)
 
     # Check CSV file has been written
     expected_generated_file = os.path.join(tmp_dir.temporary_directory(), "cd.csv")
     assert os.path.exists(expected_generated_file)
 
-    # Now open the file and check for its contents
-    with open(expected_generated_file, 'r') as f:
-        lines = f.readlines()
+    def parse_lines(expected_generated_file, buffer_size):
+        """
+        Parse and yield each lines of file 'expected_generated_file'.
+        Internal reading of the file is done by chunks of 'buffer_size' bytes.
+        """
 
-        # Check number of events
-        nr_events = len(lines)
-        assert nr_events == number_events_expected
+        with open(expected_generated_file, 'r') as f:
+            remaining_buff = ""
+            buff = f.read(buffer_size)
+            while buff:
+                last_new_line = buff.rfind("\n")
+                lines_buff = buff[:last_new_line]
+                remaining_buff = buff[last_new_line+1:]
 
+                for line in lines_buff.split("\n"):
+                    yield line
+
+                buff = remaining_buff + f.read(buffer_size)
+
+    idx = 0
+    idx_ev = number_events_expected // 2 - 5
+    _1MB = 1 * 1024 * 1024
+    for line in parse_lines(expected_generated_file, _1MB):
         # Check first 10 events :
-        for idx in range(0, 10):
-            ev = get_ev_from_line(lines[idx])
+        if 0 <= idx < 10:
+            ev = get_ev_from_line(line)
             assert ev == first_10_events_expected[idx], "Error on event nr {}".format(idx)
 
         # Check the 10 events in the middle:
-        idx_ev = nr_events // 2 - 5
-        for idx in range(0, 10):
-            ev = get_ev_from_line(lines[idx_ev])
-            assert ev == middle_10_events_expected[idx], "Error on event nr {}".format(idx_ev)
-            idx_ev += 1
+        if idx_ev <= idx < idx_ev+10:
+            ev = get_ev_from_line(line)
+            assert ev == middle_10_events_expected[idx-idx_ev], "Error on event nr {}".format(idx)
 
         # Check last 10 events :
-        for idx in range(0, 10):
-            idx_ev = -(10 - idx)
-            ev = get_ev_from_line(lines[idx_ev])
-            assert ev == last_10_events_expected[idx], "Error on event nr {}".format(idx_ev)
+        if number_events_expected-10 <= idx < number_events_expected:
+            ev = get_ev_from_line(line)
+            assert ev == last_10_events_expected[idx-number_events_expected], "Error on event nr {}".format(idx)
+
+        idx += 1
+
+    # Check number of events
+    assert idx == number_events_expected
 
 
 def pytestcase_test_metavision_raw_to_csv_show_help():
@@ -80,7 +97,7 @@ def pytestcase_test_metavision_raw_to_csv_show_help():
     cmd = "./metavision_raw_to_csv --help"
     output, error_code = pytest_tools.run_cmd_setting_mv_log_file(cmd)
 
-    # Check app exited without error
+    # Check sample exited without error
     assert error_code == 0, "******\nError while executing cmd '{}':{}\n******".format(cmd, output)
 
     # Check that the options showed in the output
@@ -92,14 +109,14 @@ def pytestcase_test_metavision_raw_to_csv_non_existing_input_file():
     Checks that metavision_raw_to_csv returns an error when passing an input file that doesn't exist
     """
 
-    # Create a filepath that we are sure it does not exist
+    # Create a file path that we are sure does not exist
     tmp_dir = os_tools.TemporaryDirectoryHandler()
-    input_rawfile = os.path.join(tmp_dir.temporary_directory(), "data_in.raw")
+    input_raw_file = os.path.join(tmp_dir.temporary_directory(), "nonexistent.raw")
 
-    cmd = "./metavision_raw_to_csv -i {}".format(input_rawfile)
+    cmd = "./metavision_raw_to_csv -i {}".format(input_raw_file)
     output, error_code = pytest_tools.run_cmd_setting_mv_log_file(cmd)
 
-    # Assert app returned error
+    # Assert sample returned error
     assert error_code != 0
 
     # And now check that the error came from the fact that the input file could not be read
@@ -114,7 +131,7 @@ def pytestcase_test_metavision_raw_to_csv_missing_input_args():
     cmd = "./metavision_raw_to_csv"
     output, error_code = pytest_tools.run_cmd_setting_mv_log_file(cmd)
 
-    # Assert app returned error
+    # Assert sample returned error
     assert error_code != 0
 
     # And now check that the error came from the fact that the input file arg is missing
@@ -123,11 +140,11 @@ def pytestcase_test_metavision_raw_to_csv_missing_input_args():
 
 def pytestcase_test_metavision_raw_to_csv_on_gen31_recording(dataset_dir):
     """
-    Checks result of metavision_raw_to_csv application on dataset gen31_timer.raw
+    Checks result of metavision_raw_to_csv sample on dataset gen31_timer.raw
     """
 
     filename = "gen31_timer.raw"
-    filename_full = os.path.join(dataset_dir, filename)
+    filename_full = os.path.join(dataset_dir, "openeb", filename)
 
     number_events_expected = 29450906
 
@@ -158,11 +175,11 @@ def pytestcase_test_metavision_raw_to_csv_on_gen31_recording(dataset_dir):
 
 def pytestcase_test_metavision_raw_to_csv_on_gen4_evt2_recording(dataset_dir):
     """
-    Checks result of metavision_raw_to_csv application on dataset gen4_evt2_hand.raw
+    Checks result of metavision_raw_to_csv sample on dataset gen4_evt2_hand.raw
     """
 
     filename = "gen4_evt2_hand.raw"
-    filename_full = os.path.join(dataset_dir, filename)
+    filename_full = os.path.join(dataset_dir, "openeb", filename)
 
     number_events_expected = 17025195
 
@@ -194,11 +211,11 @@ def pytestcase_test_metavision_raw_to_csv_on_gen4_evt2_recording(dataset_dir):
 
 def pytestcase_test_metavision_raw_to_csv_on_gen4_evt3_recording(dataset_dir):
     """
-    Checks result of metavision_raw_to_csv application on dataset gen4_evt3_hand.raw
+    Checks result of metavision_raw_to_csv sample on dataset gen4_evt3_hand.raw
     """
 
     filename = "gen4_evt3_hand.raw"
-    filename_full = os.path.join(dataset_dir, filename)
+    filename_full = os.path.join(dataset_dir, "openeb", filename)
 
     number_events_expected = 18453063
 

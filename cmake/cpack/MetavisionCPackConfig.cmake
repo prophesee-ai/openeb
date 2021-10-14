@@ -13,7 +13,7 @@ set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "")
 
 set(CPACK_PACKAGE_VENDOR "Prophesee")
 
-set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
+set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION_FULL})
 
 set(CPACK_DEBIAN_ARCHIVE_TYPE "gnutar") # Variable introduced in cmake 3.7 (see https://cmake.org/cmake/help/v3.8/release/3.7.html#cpack)
 
@@ -73,6 +73,10 @@ include(${PROJECT_SOURCE_DIR}/hal/cmake/MetavisionHALCPackConfig.cmake)
 if(EXISTS "${PROJECT_SOURCE_DIR}/hal_psee_plugins/cmake/MetavisionHALPseePluginsCPackConfig.cmake")
     include("${PROJECT_SOURCE_DIR}/hal_psee_plugins/cmake/MetavisionHALPseePluginsCPackConfig.cmake")
 endif(EXISTS "${PROJECT_SOURCE_DIR}/hal_psee_plugins/cmake/MetavisionHALPseePluginsCPackConfig.cmake")
+
+if(EXISTS "${PROJECT_SOURCE_DIR}/hal_openeb_plugins/cmake/MetavisionHALOpenEBPluginsCPackConfig.cmake")
+    include("${PROJECT_SOURCE_DIR}/hal_openeb_plugins/cmake/MetavisionHALOpenEBPluginsCPackConfig.cmake")
+endif(EXISTS "${PROJECT_SOURCE_DIR}/hal_openeb_plugins/cmake/MetavisionHALOpenEBPluginsCPackConfig.cmake")
 
 ################################
 #      Standalone samples     ##

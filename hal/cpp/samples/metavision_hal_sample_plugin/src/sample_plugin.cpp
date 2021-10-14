@@ -21,7 +21,7 @@
 int SAMPLE_PLUGIN_VERSION_MAJOR           = 0;
 int SAMPLE_PLUGIN_VERSION_MINOR           = 1;
 int SAMPLE_PLUGIN_VERSION_PATCH           = 0;
-int SAMPLE_PLUGIN_VERSION_DEV             = 0;
+std::string SAMPLE_PLUGIN_VERSION_SUFFIX  = "dev";
 std::string SAMPLE_PLUGIN_VCS_BRANCH      = "hal-sample-plugin-vcs-branch";
 std::string SAMPLE_PLUGIN_VCS_COMMIT      = "hal-sample-plugin-vcs-commit";
 std::string SAMPLE_PLUGIN_VCS_COMMIT_DATE = "hal-sample-plugin-vcs-commit-date";
@@ -29,7 +29,7 @@ std::string SAMPLE_PLUGIN_VCS_COMMIT_DATE = "hal-sample-plugin-vcs-commit-date";
 namespace {
 Metavision::SoftwareInfo get_sample_plugin_software_info() {
     return Metavision::SoftwareInfo(SAMPLE_PLUGIN_VERSION_MAJOR, SAMPLE_PLUGIN_VERSION_MINOR,
-                                    SAMPLE_PLUGIN_VERSION_PATCH, SAMPLE_PLUGIN_VERSION_DEV, SAMPLE_PLUGIN_VCS_BRANCH,
+                                    SAMPLE_PLUGIN_VERSION_PATCH, SAMPLE_PLUGIN_VERSION_SUFFIX, SAMPLE_PLUGIN_VCS_BRANCH,
                                     SAMPLE_PLUGIN_VCS_COMMIT, SAMPLE_PLUGIN_VCS_COMMIT_DATE);
 }
 } // namespace

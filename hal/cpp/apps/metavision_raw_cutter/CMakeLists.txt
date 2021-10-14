@@ -15,7 +15,7 @@ install(TARGETS metavision_raw_cutter
         COMPONENT metavision-hal-bin
 )
 
-install(FILES metavision_raw_cutter.cpp README.md
+install(FILES metavision_raw_cutter.cpp
         DESTINATION share/metavision/hal/apps/metavision_raw_cutter
         COMPONENT metavision-hal-samples
 )

@@ -471,7 +471,7 @@ def pytestcase_total_time_npy(tmpdir):
 def pytestcase_equivalency(dataset_dir):
     """loading boxes through numpy and EventNpyReader should be equivalent"""
     # GIVEN
-    box_file = os.path.join(dataset_dir, "metavision_core", "event_io", "bbox.npy")
+    box_file = os.path.join(dataset_dir, "openeb", "core", "event_io", "bbox.npy")
     boxes = np.load(box_file)
     record = EventNpyReader(box_file)
 

@@ -8,7 +8,7 @@
 # See the License for the specific language governing permissions and limitations under the License.
 
 # Cpack
-add_cpack_component(PUBLIC metavision-sdk-ui-python)
+add_python_cpack_components(PUBLIC metavision-sdk-ui)
 
 # Add bindings library
 add_subdirectory(bindings)

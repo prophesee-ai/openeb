@@ -14,6 +14,7 @@
 #include <windows.h>
 #endif
 #include <iostream>
+#include <signal.h>
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
 #include <metavision/sdk/base/utils/log.h>
@@ -73,7 +74,7 @@ bool parse_command_line(int argc, const char *argv[], Parameters &app_params) {
         ("output-avi-framerate,f", po::value<int>(&app_params.out_avi_fps)->default_value(25), "Frame rate of the output AVI file.")
         ("output-raw-basename,o",  po::value<std::string>(&app_params.out_raw_basename)->default_value((docs_path / "out").string()),
             "Path and base name of the output RAW file for exporting. Each file will have the name <path>/<basename>_<date>.raw, where <date> represents the day and time the file was recorded.")
-        ("input-raw-file,i",       po::value<std::string>(&app_params.in_raw_file), "Path to input RAW file.")
+        ("input-raw-file,i",       po::value<std::string>(&app_params.in_raw_file), "Path to input RAW file. If not specified, the camera live stream is used.")
     ;
     // clang-format on
 
@@ -110,6 +111,17 @@ bool parse_command_line(int argc, const char *argv[], Parameters &app_params) {
     return true;
 }
 
+namespace {
+std::unique_ptr<Viewer> viewer;
+
+void sig_handler(int s) {
+    MV_LOG_TRACE() << "Interrupt signal received." << std::endl;
+    viewer->stop();
+
+    std::exit(s);
+}
+} // anonymous namespace
+
 int main(int argc, const char *argv[]) {
     // Parse command line.
     Parameters params;
@@ -118,12 +130,12 @@ int main(int argc, const char *argv[]) {
     }
 
     try {
-        Viewer viewer(params);
-        viewer.run();
+        viewer = std::make_unique<Viewer>(params);
+        signal(SIGINT, sig_handler);
+        viewer->run();
     } catch (Metavision::CameraException &e) {
         MV_LOG_ERROR() << e.what();
         return 1;
     }
-
     return 0;
 }

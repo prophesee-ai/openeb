@@ -9,7 +9,9 @@ __pycache__/
 # cache
 .cache
 
-
 .vscode/
 .vs/
 out/
+
+# Raw data index files
+*.raw.tmp_index

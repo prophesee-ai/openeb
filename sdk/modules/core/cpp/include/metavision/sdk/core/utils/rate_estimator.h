@@ -12,6 +12,7 @@
 #ifndef METAVISION_SDK_CORE_RATE_ESTIMATOR_H
 #define METAVISION_SDK_CORE_RATE_ESTIMATOR_H
 
+#include <mutex>
 #include <functional>
 #include <deque>
 
@@ -43,6 +44,9 @@ public:
     /// previous one) or with a @p time greater than the previous one
     void add_data(timestamp time, size_t count);
 
+    /// @brief Reset all sample counts
+    void reset_data();
+
     /// @brief Get the minimum time between two callbacks
     /// @return The step time
     timestamp step_time() const;
@@ -52,6 +56,7 @@ public:
     timestamp window_time() const;
 
 private:
+    std::mutex mutex_;
     Callback cb_;
     timestamp window_time_, step_time_, next_time_;
     std::deque<std::pair<timestamp, size_t>> counts_;

@@ -223,7 +223,7 @@ TEST_F(GenericProducerAlgorithm_GTest, test_max_duration_no_drop_stop) {
     }
     this->producer_algo_.register_new_event_buffer(events.begin(), events.begin() + 3);
 
-    // try to insert events from t = 3 to t = 9 on a separarate thread
+    // try to insert events from t = 3 to t = 9 on a separate thread
     // this should block even if the capacity (8) is enough to insert the (7) events from
     // because the producer can not drop, and some events were already added
     auto finished_reg = std::async(std::launch::async, [this, &events] {
@@ -268,7 +268,7 @@ TEST_F(GenericProducerAlgorithm_GTest, test_max_duration_no_drop_range_ok_ring_a
     }
     this->producer_algo_.register_new_event_buffer(events.begin(), events.begin() + 3);
 
-    // try to insert events from t = 3 to t = 9 on a separarate thread
+    // try to insert events from t = 3 to t = 9 on a separate thread
     // this should block even if the capacity (8) is enough to insert the (7) events from
     // because the producer can not drop, and some events were already added
     auto finished_reg = std::async(std::launch::async, [this, &events] {
@@ -342,5 +342,3 @@ TEST_F(GenericProducerAlgorithm_GTest, test_max_duration_no_drop_big) {
     ASSERT_EQ(timestamp(999), get_ring().get_first_time());
     ASSERT_EQ(timestamp(999), get_ring().get_last_time());
 }
-
-// test avec ring empty pour tester start != end, range OK,

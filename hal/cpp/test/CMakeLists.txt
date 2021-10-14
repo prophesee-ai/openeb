@@ -39,4 +39,9 @@ add_custom_command(TARGET hal_dummy_test_plugin POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/plugins"
     COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:hal_dummy_test_plugin>" "${CMAKE_CURRENT_BINARY_DIR}/plugins"
 )
-target_compile_definitions(gtest_metavision_hal PRIVATE HAL_DUMMY_TEST_PLUGIN="${CMAKE_CURRENT_BINARY_DIR}/plugins")
+
+# TODO : remove this comment after TEAM-9884
+# Until we execute ctest in docker on Windows, the embedded paths to resources used in the code
+# can not be absolute. Here the path is relative to the working directory of the test (which is the 
+# current binary dir).
+target_compile_definitions(gtest_metavision_hal PRIVATE HAL_DUMMY_TEST_PLUGIN="plugins")

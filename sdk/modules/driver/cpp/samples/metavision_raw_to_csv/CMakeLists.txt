@@ -13,7 +13,7 @@ set (common_libraries MetavisionSDK::core MetavisionSDK::driver Boost::program_o
 add_executable(${sample} ${sample}.cpp)
 target_link_libraries(${sample} PRIVATE ${common_libraries})
 
-install(FILES ${sample}.cpp README.md
+install(FILES ${sample}.cpp
         DESTINATION share/metavision/sdk/driver/samples/${sample}
         COMPONENT metavision-sdk-driver-samples
 )

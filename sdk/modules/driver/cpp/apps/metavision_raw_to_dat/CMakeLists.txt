@@ -15,7 +15,7 @@ install(TARGETS metavision_raw_to_dat
         COMPONENT metavision-sdk-driver-bin
 )
 
-install(FILES metavision_raw_to_dat.cpp README.md
+install(FILES metavision_raw_to_dat.cpp
         DESTINATION share/metavision/sdk/driver/apps/metavision_raw_to_dat
         COMPONENT metavision-sdk-driver-samples
 )

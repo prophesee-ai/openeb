@@ -14,7 +14,7 @@ add_subdirectory(lib)
 add_subdirectory(src)
 
 ## cpack
-add_cpack_component(PUBLIC metavision-sdk-ui metavision-sdk-ui-dev metavision-sdk-ui-samples)
+add_cpack_component(PUBLIC metavision-sdk-ui-lib metavision-sdk-ui-dev metavision-sdk-ui-samples)
 
 # Documentations
 if (GENERATE_DOC)

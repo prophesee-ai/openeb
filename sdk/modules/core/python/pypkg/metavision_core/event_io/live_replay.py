@@ -18,7 +18,7 @@ from metavision_core.event_io.events_iterator import EventsIterator
 def is_live_camera(input_path):
     """Checks if input_path is a live camera
     Args:
-        input_path (str): path to the file to read. if `path` is an empty string or a camera id, this function will return true.
+        input_path (str): path to the file to read. if `path` is an empty string or a camera serial number, this function will return true.
     """
     return isinstance(input_path, str) and not os.path.exists(input_path)
 
@@ -54,7 +54,7 @@ class LiveReplayEventsIterator(object):
     def __iter__(self):
         self.clock = time.time()
         for events in self.iterator:
-            ts = self.iterator.reader.current_time
+            ts = self.iterator.get_current_time()
             clock_time = time.time() - self.clock
             diff_s = self.replay_factor * ts * 1e-6 - clock_time
             if diff_s > 0:

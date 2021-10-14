@@ -242,7 +242,7 @@ if(${CMAKE_VERSION} VERSION_LESS "3.11.0")
         else()
             # In this case, if the sources are not provided we need to add them. To make the
             # code clearer to read, we add the dummy header in any case (even if it's needed
-            # only when the call to add_library is done without any source file) : it doensn't hurt
+            # only when the call to add_library is done without any source file) : it doesn't hurt
             # and if you forget to add sources to the library (via target_sources), you'll be warned
             # by cmake, which will throw the following error :
             #
@@ -253,6 +253,44 @@ if(${CMAKE_VERSION} VERSION_LESS "3.11.0")
     endfunction(add_library)
 
 endif(${CMAKE_VERSION} VERSION_LESS "3.11.0")
+
+##################################################
+
+if(${CMAKE_VERSION} VERSION_GREATER "3.19.0")
+
+# Override built-in target_include_directories to also forward the call to target_sources(), so that
+# some IDEs (e.g. Visual Studio, XCode, etc) properly display the header files for each target.
+# This is disabled for CMake versions below 3.19.0, because they do not support adding PRIVATE target
+# sources to INTERFACE libraries, which leads to much too many headers being added to the targets.
+function(target_include_directories target)
+    _target_include_directories(${target} ${ARGN})
+    # List relevant files in the include directories to forward to target_sources
+    set(ignored_keywords AFTER BEFORE PUBLIC PRIVATE INTERFACE)
+    set(header_file_list "")
+    foreach(arg ${ARGN})
+        if(${arg} STREQUAL "SYSTEM")
+            break()
+        elseif(${arg} IN_LIST ignored_keywords)
+            continue()
+        elseif(${arg} MATCHES "^.<BUILD_INTERFACE:.*>$")
+            string(LENGTH ${arg} arg_length)
+            math(EXPR arg_substring_length "${arg_length}-19")
+            string(SUBSTRING ${arg} 18 ${arg_substring_length} arg_path)
+            file(GLOB_RECURSE tmp_header_file_list "${arg_path}/*.h" "${arg_path}/*.hpp")
+            list(APPEND header_file_list ${tmp_header_file_list})
+        elseif(${arg} MATCHES "^.<.*>$")
+            continue()
+        else()
+            file(GLOB_RECURSE header_file_list "${arg}/*.h" "${arg}/*.hpp")
+            list(APPEND header_file_list ${tmp_header_file_list})
+        endif(${arg} STREQUAL "SYSTEM")
+    endforeach(arg in ${ARGN})
+    if(NOT header_file_list STREQUAL "")
+        target_sources(${target} PRIVATE ${header_file_list})
+    endif(NOT header_file_list STREQUAL "")
+endfunction(target_include_directories)
+
+endif(${CMAKE_VERSION} VERSION_GREATER "3.19.0")
 
 ##################################################
 

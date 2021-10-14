@@ -58,9 +58,7 @@ void SharedEventsBufferProducerAlgorithm<EventT>::process_online(InputIt it_begi
 template<typename EventT>
 void SharedEventsBufferProducerAlgorithm<EventT>::process_async(const timestamp processing_ts,
                                                                 const size_t n_processed_events) {
-    if (!current_shared_buffer_->empty()) {
-        buffer_produced_cb_(processing_ts, current_shared_buffer_);
-    }
+    buffer_produced_cb_(processing_ts, current_shared_buffer_);
 
     current_shared_buffer_ = buffers_pool_.acquire();
 

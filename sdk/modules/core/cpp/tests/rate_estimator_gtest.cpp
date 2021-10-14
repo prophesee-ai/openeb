@@ -136,7 +136,7 @@ TEST(RateEstimator_GTest, custom_ctor_values_ok_2) {
     for (int i = 200000; i <= 1000000; i += 100000) {
         estim.add_data(i, 1);
     }
-    estim.add_data(10000001, 0);
+    estim.add_data(1000001, 0);
 
     // THEN the average is (3+1+1+...+1)*10/0.1 = 12 data/s and peak rate is 3/0.1 = 30 data/s at t = 1000ms
     EXPECT_EQ(1000000, cb_t);
@@ -154,7 +154,7 @@ TEST(RateEstimator_GTest, custom_ctor_values_ok_3) {
     for (int i = 100000; i <= 1000000; i += 100000) {
         estim.add_data(i, i / 100000);
     }
-    estim.add_data(10000001, 0);
+    estim.add_data(1000001, 0);
 
     // THEN
     // the avg is 1/0.1 = 10 data/s and peak is 1/0.1 = 10 data/s at t = 100ms
@@ -184,7 +184,7 @@ TEST(RateEstimator_GTest, custom_ctor_values_outside_window) {
     for (int i = 100000; i <= 2000000; i += 100000) {
         estim.add_data(i, i / 100000);
     }
-    estim.add_data(20000001, 0);
+    estim.add_data(2000001, 0);
 
     // THEN
     // the avg is (2+3+...+10+11) data/s and peak is 11/0.1 data/s at t = 1100ms

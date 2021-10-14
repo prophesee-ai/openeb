@@ -16,4 +16,4 @@ if (GENERATE_DOC_PYTHON_BINDINGS)
 endif(GENERATE_DOC_PYTHON_BINDINGS)
 
 # Cpack
-add_cpack_component(PUBLIC metavision-hal-python)
+add_python_cpack_components(PUBLIC metavision-hal)

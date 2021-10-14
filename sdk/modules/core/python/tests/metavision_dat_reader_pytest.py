@@ -29,7 +29,7 @@ def pytestcase_check_ev_dtypes():
 def pytestcase_init(dataset_dir):
     """Tests initialization of all member variables after creation of EventDatReader object from a file"""
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording_td.dat")
+                            "openeb", "core", "event_io", "recording_td.dat")
     record = EventDatReader(filename)
     # check that the representation strings Works
     print(record)
@@ -51,7 +51,7 @@ def pytestcase_init(dataset_dir):
 def pytestcase_load_n_events(dataset_dir):
     """Tests loading a define number of events"""
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording_td.dat")
+                            "openeb", "core", "event_io", "recording_td.dat")
     record = EventDatReader(filename)
     assert record.current_event_index() == 0
     events = record.load_n_events(12)
@@ -71,7 +71,7 @@ def pytestcase_load_n_events(dataset_dir):
 def pytestcase_load_n_events_second_test(dataset_dir):
     """Tests loading events of a file by n events with different values"""
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording_td.dat")
+                            "openeb", "core", "event_io", "recording_td.dat")
     record = EventDatReader(filename)
     assert record.current_event_index() == 0
     assert record.event_count() == 667855
@@ -95,7 +95,7 @@ def pytestcase_load_n_events_second_test(dataset_dir):
 def pytestcase_reset(dataset_dir):
     """Tests resetting EventDatReader object after loading some events"""
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording_td.dat")
+                            "openeb", "core", "event_io", "recording_td.dat")
     record = EventDatReader(filename)
     events = record.load_n_events(10)
     record.reset()
@@ -107,7 +107,7 @@ def pytestcase_reset(dataset_dir):
 def pytestcase_load_event_plus_delta_t(dataset_dir):
     """Tests loading a define number of events and consecutively a time window"""
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording_td.dat")
+                            "openeb", "core", "event_io", "recording_td.dat")
     record = EventDatReader(filename)
     events = record.load_n_events(13)
     # Now we should be after event (t,x,y,p) : (88, 27, 153, 0)
@@ -133,7 +133,7 @@ def pytestcase_load_event_plus_delta_t(dataset_dir):
 def pytestcase_seek_event_future(dataset_dir):
     """Tests seeking at a define position (after n events)"""
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording_td.dat")
+                            "openeb", "core", "event_io", "recording_td.dat")
     record = EventDatReader(filename)
     assert record.current_event_index() == 0
     assert record.done is False
@@ -148,7 +148,7 @@ def pytestcase_seek_event_future(dataset_dir):
 def pytestcase_seek_event_past(dataset_dir):
     """Tests seeking at a define position (after n events)"""
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording_td.dat")
+                            "openeb", "core", "event_io", "recording_td.dat")
     record = EventDatReader(filename)
     assert record.current_event_index() == 0
     assert record.done is False
@@ -168,7 +168,7 @@ def pytestcase_seek_event_past(dataset_dir):
 def pytestcase_seek_event_zero(dataset_dir):
     """Tests seeking in the file after 0 event"""
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording_td.dat")
+                            "openeb", "core", "event_io", "recording_td.dat")
     record = EventDatReader(filename)
     assert record.current_event_index() == 0
     assert record.done is False
@@ -187,7 +187,7 @@ def pytestcase_seek_event_zero(dataset_dir):
 def pytestcase_seek_event_negative(dataset_dir):
     """Tests seeking in the file after a negative number of events"""
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording_td.dat")
+                            "openeb", "core", "event_io", "recording_td.dat")
     record = EventDatReader(filename)
     assert record.current_event_index() == 0
     assert record.done is False
@@ -207,7 +207,7 @@ def pytestcase_seek_time_with_numerous_events(dataset_dir):
     """Tests seeking in a file containing not so many events at a position defined by a timestamp.The fact
     that there are numerous events implies that position should be found using dichotomy plus numpy searchsort"""
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording_td.dat")
+                            "openeb", "core", "event_io", "recording_td.dat")
     record = EventDatReader(filename)
     record.seek_time(100)
     assert record.current_event_index() == 14
@@ -218,7 +218,7 @@ def pytestcase_seek_time_with_numerous_events(dataset_dir):
 def pytestcase_seek_time_with_negative_time(dataset_dir):
     """Tests seeking in a file at a position with negative time"""
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording_td.dat")
+                            "openeb", "core", "event_io", "recording_td.dat")
     record = EventDatReader(filename)
     record.seek_time(-15)
     assert record.current_event_index() == 0
@@ -229,7 +229,7 @@ def pytestcase_seek_time_with_negative_time(dataset_dir):
 def pytestcase_cycle_consistency_read_write(tmpdir, dataset_dir):
     """Tests reading and writing DAT files and that the read write read cycle is consistent"""
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording_td.dat")
+                            "openeb", "core", "event_io", "recording_td.dat")
     record = EventDatReader(filename)
     # height, width = record.get_size()
     # it is a gen1 recording with no height or width
@@ -263,7 +263,7 @@ def pytestcase_cycle_consistency_read_write(tmpdir, dataset_dir):
 def pytestcase_consistency(dataset_dir):
     """Tests reading and DAT files with the function and the class to check equivalence"""
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording_td.dat")
+                            "openeb", "core", "event_io", "recording_td.dat")
     record = EventDatReader(filename)
 
     event_buffers = []

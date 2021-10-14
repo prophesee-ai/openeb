@@ -330,7 +330,7 @@ public:
         }
 
         //bits == 0 means that last element shouldn't be used.
-        if (bits != 0) m_output_buffer[m_data_len++] = currval;
+        m_output_buffer[m_data_len++] = currval;
 
         m_last_bit_len = -bits;
 
@@ -1166,6 +1166,8 @@ public:
         fdct_qtab(_fdct_qtab),
         cat_table(_cat_table)
     {
+#if 0  // disable parallel processing due to buffer overrun bug: https://github.com/opencv/opencv/issues/19634
+
         //empirically found value. if number of pixels is less than that value there is no sense to parallelize it.
         const int min_pixels_count = 96*96;
 
@@ -1175,6 +1177,7 @@ public:
         {
             if(height*width > min_pixels_count)
             {
+                const int default_stripes_count = 4;
                 stripes_count = default_stripes_count;
             }
         }
@@ -1189,6 +1192,12 @@ public:
         int max_stripes = (height - 1)/y_step + 1;
 
         stripes_count = std::min(stripes_count, max_stripes);
+
+#else
+        if (nstripes > 1)
+            CV_LOG_ONCE_WARNING(NULL, "VIDEOIO/MJPEG: parallel processing is disabled: https://github.com/opencv/opencv/issues/19634");
+        stripes_count = 1;
+#endif
 
         m_buffer_list.allocate_buffers(stripes_count, (height*width*2)/stripes_count);
     }
@@ -1369,10 +1378,7 @@ private:
     const short (&fdct_qtab)[2][64];
     const uchar* cat_table;
     int stripes_count;
-    static const int default_stripes_count;
 };
-
-const int MjpegEncoder::default_stripes_count = 4;
 
 void MotionJpegWriter::writeFrameData( const uchar* data, int step, int colorspace, int input_channels )
 {

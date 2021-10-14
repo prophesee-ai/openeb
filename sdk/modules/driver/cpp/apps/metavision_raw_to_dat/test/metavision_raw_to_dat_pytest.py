@@ -17,7 +17,7 @@ from metavision_utils import os_tools, pytest_tools
 
 CD_X_MASK = 2**14 - 1  # 18 zeros followed by 14 ones when formulated as a binary number.
 CD_Y_MASK = 2**28 - 2**14  # 4 zeros, 14 ones and then 14 zeros.
-CD_P_MASK = 2 ** 29 - 2**28  # 3 zeros a one and 28 zeros.
+CD_P_MASK = 2 ** 29 - 2**28  # 3 zeros, a one and 28 zeros.
 
 
 def run_raw_to_dat_on_cd_recording_and_check_result(
@@ -61,7 +61,7 @@ def run_raw_to_dat_on_cd_recording_and_check_result(
         begin_events_pos = 0
         ev_type = -1
         ev_size = -1
-        while(True):
+        while True:
             begin_events_pos = f.tell()
             line = f.readline().decode("latin-1")
             first_char = line[0]
@@ -142,7 +142,7 @@ def pytestcase_test_metavision_raw_to_dat_non_existing_input_file():
 
     # Create a filepath that we are sure does not exist
     tmp_dir = os_tools.TemporaryDirectoryHandler()
-    input_rawfile = os.path.join(tmp_dir.temporary_directory(), "data_in.raw")
+    input_rawfile = os.path.join(tmp_dir.temporary_directory(), "nonexistent.raw")
 
     cmd = "./metavision_raw_to_dat -i {}".format(input_rawfile)
     output, error_code = pytest_tools.run_cmd_setting_mv_log_file(cmd)
@@ -175,7 +175,7 @@ def pytestcase_test_metavision_raw_to_dat_on_gen31_recording(dataset_dir):
     """
 
     filename = "gen31_timer.raw"
-    filename_full = os.path.join(dataset_dir, filename)
+    filename_full = os.path.join(dataset_dir, "openeb", filename)
 
     width_expected = 640
     height_expected = 480
@@ -213,7 +213,7 @@ def pytestcase_test_metavision_raw_to_dat_on_gen4_evt2_recording(dataset_dir):
     """
 
     filename = "gen4_evt2_hand.raw"
-    filename_full = os.path.join(dataset_dir, filename)
+    filename_full = os.path.join(dataset_dir, "openeb", filename)
 
     width_expected = 1280
     height_expected = 720
@@ -252,7 +252,7 @@ def pytestcase_test_metavision_raw_to_dat_on_gen4_evt3_recording(dataset_dir):
     """
 
     filename = "gen4_evt3_hand.raw"
-    filename_full = os.path.join(dataset_dir, filename)
+    filename_full = os.path.join(dataset_dir, "openeb", filename)
 
     width_expected = 1280
     height_expected = 720

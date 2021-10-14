@@ -31,8 +31,8 @@ namespace py = pybind11;
 PYBIND11_MODULE(metavision_sdk_base_paths_internal, m) {
     bool import = try_import();
     if (!import) {
-        for (auto &fn : {Metavision::setMetavisionDllPathsForBindings, Metavision::setPseeInstallPathsForBindings,
-                         Metavision::setBuildDirDllPathsForBindings}) {
+        for (auto &fn : {Metavision::setMetavisionDllPathsForBindings, Metavision::setBuildDirDllPathsForBindings,
+                         Metavision::setPseeInstallPathsForBindings}) {
             // try to import after updating the environment incrementally using paths
             // deduced by MV_DLL_PATH, the Prophesee reg keys or the build folder
             if (fn()) {

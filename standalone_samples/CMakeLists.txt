@@ -11,6 +11,7 @@
 set(standalone_sample
     metavision_evt2_raw_file_decoder
     metavision_evt3_raw_file_decoder
+    metavision_evt2_raw_file_encoder
 )
 
 foreach(sample ${standalone_sample})

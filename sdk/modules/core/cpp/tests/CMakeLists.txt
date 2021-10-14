@@ -12,6 +12,7 @@ set(metavision_sdk_core_tests_srcs
     ${CMAKE_CURRENT_SOURCE_DIR}/base_frame_generation_algorithm_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/cd_frame_generator_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/counter_map_gtest.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/cv_color_map_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/flip_x_algorithm_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/flip_y_algorithm_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/frame_composer_gtest.cpp

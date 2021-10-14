@@ -136,7 +136,7 @@ public:
         }
     }
 
-    /// @brief method to produce events up to some timestamp
+    /// @brief Produces events up to some timestamp
     ///
     /// If the timeout has a positive value, it will wait at most timeout us before
     /// returning the events "generated".
@@ -146,7 +146,7 @@ public:
     /// greater than ts is registered, before returning the events with a timestamp
     /// less or equal to ts.
     /// @param ts Timestamp before which to include events.
-    /// @param inserter Iterator to insert the events
+    /// @param inserter Output iterator or back inserter
     /// @param timing_profiler Profiler to debug
     template<class OutputIt, typename TimingProfilerType = TimingProfiler<false>>
     void process_events(timestamp ts, OutputIt inserter,

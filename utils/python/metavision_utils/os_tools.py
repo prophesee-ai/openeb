@@ -455,9 +455,7 @@ class TemporaryDirectoryHandler(object):
             self,
             create_dir_right_away=True,
             verbose_in_dtor=False,
-            tmp_dir_root=os.path.join(
-                os.getcwd(),
-                '/tmp'),
+            tmp_dir_root=None,
             tmp_dir_root_in_container=None):
         """Constructor
 
@@ -473,7 +471,7 @@ class TemporaryDirectoryHandler(object):
         self.__temporary_directory = None
         self.__temporary_directory_created = False
         self.__verbose_in_dtor = verbose_in_dtor
-        self.__tmp_dir_root = tmp_dir_root
+        self.__tmp_dir_root = tmp_dir_root or os.path.join(os.getcwd(), 'tmp')
         self.__tmp_dir_root_in_container = tmp_dir_root_in_container
 
         if not tmp_dir_root_in_container:

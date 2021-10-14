@@ -9,13 +9,23 @@
 
 cmake_minimum_required(VERSION 3.5)
 
-project(metavision VERSION 2.2.2)
+project(metavision VERSION 2.3.0)
+set(PROJECT_VERSION_SUFFIX "")
+
+if(PROJECT_VERSION_SUFFIX STREQUAL "")
+    set(PROJECT_VERSION_FULL "${PROJECT_VERSION}")
+else(PROJECT_VERSION_SUFFIX STREQUAL "")
+    set(PROJECT_VERSION_FULL "${PROJECT_VERSION}-${PROJECT_VERSION_SUFFIX}")
+endif(PROJECT_VERSION_SUFFIX STREQUAL "")
 
 # Set output directory for build targets
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib/ CACHE PATH "Output directory of libraries.")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib/ CACHE PATH "Output directory of all executables.")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin/ CACHE PATH "Output directory of all executables.")
 set(PYTHON3_OUTPUT_DIR ${PROJECT_BINARY_DIR}/py3/ CACHE PATH "Output directory of python 3 libraries.")
+
+# Set Platform Target name
+set(TARGET_PLATFORM "" CACHE STRING "Optional targeted plaform name for cross-compiling")
 
 # Set directory for Metavision and HAL plugins
 if (WIN32)
@@ -30,7 +40,7 @@ if (ANDROID)
     set(ARCHIVE_INSTALL_DEST "libs/${ANDROID_ABI}")
     set(RUNTIME_INSTALL_DEST "bins/${ANDROID_ABI}")
     set(HAL_INSTALL_PLUGIN_RELATIVE_PATH "libs/${ANDROID_ABI}/metavision/hal/plugins")
-    set(CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/metavision-${PROJECT_VERSION}")
+    set(CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/metavision-${PROJECT_VERSION_FULL}")
 else (ANDROID)
     set(LIBRARY_INSTALL_DEST "lib")
     set(ARCHIVE_INSTALL_DEST "lib")
@@ -60,6 +70,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/cpack) # For cpack
 include(CMakeDependentOption)
 include(overridden_cmake_functions)
 include(lfs_download)
+include(add_pytest)
 if (ANDROID)
     # Setup 3rd party prebuilt libraries dir
     set(ANDROID_PREBUILT_3RDPARTY_ARCHIVE utils/android/prebuilt-3rdparty.tar.gz)
@@ -135,6 +146,11 @@ if (WIN32)
     string(REPLACE "\\" "\\\\" METAVISION_SUBKEY ${METAVISION_SUBKEY})
 endif()
 
+
+if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/utils/platforms/CMakeLists.txt")
+    add_subdirectory(utils/platforms) # Load platform specific cmake early to override necessary options
+endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/utils/platforms/CMakeLists.txt")
+
 ################################################### CMake options
 
 if (NOT ANDROID)
@@ -146,26 +162,30 @@ if (NOT ANDROID)
 else (NOT ANDROID)
     option(GRADLE_OFFLINE_MODE "Gradle will not try to download dependencies (assumes the cache is already filled)" OFF)
 endif (NOT ANDROID)
+
 set(DATASET_DIR "" CACHE PATH "Folder with dataset for testing")
 
 ################################################### Detect which SDK modules are available
 
-set(METAVISION_SDK_MODULES_OPEN base core driver)
-set(METAVISION_SDK_MODULES_ESSENTIALS analytics calibration cv ml)
+set(METAVISION_SDK_MODULES_OPEN base core driver CACHE STRING "SDK Open modules")
+set(METAVISION_SDK_MODULES_PROFESSIONAL analytics calibration cv ml CACHE STRING "SDK Professional modules")
+
 if (NOT ANDROID)
     list(APPEND METAVISION_SDK_MODULES_OPEN ui)
-    list(APPEND METAVISION_SDK_MODULES_ESSENTIALS 3dview cv3d)
+    list(APPEND METAVISION_SDK_MODULES_PROFESSIONAL 3dview cv3d)
 endif (NOT ANDROID)
 
-foreach(metavision_offer OPEN ESSENTIALS)
+set(METAVISION_SDK_MODULES_AVAILABLE)
+foreach(metavision_offer OPEN PROFESSIONAL)
     set(METAVISION_SDK_${metavision_offer}_MODULES_AVAILABLE)
+    message(STATUS "Building METAVISION_SDK_MODULES_${metavision_offer} modules : ${METAVISION_SDK_MODULES_${metavision_offer}}")
     foreach(module_name IN LISTS METAVISION_SDK_MODULES_${metavision_offer})
         if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/sdk/modules/${module_name}/CMakeLists.txt")
             list(APPEND METAVISION_SDK_${metavision_offer}_MODULES_AVAILABLE "${module_name}")
         endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/sdk/modules/${module_name}/CMakeLists.txt")
     endforeach(module_name)
+    list(APPEND METAVISION_SDK_MODULES_AVAILABLE ${METAVISION_SDK_${metavision_offer}_MODULES_AVAILABLE})
 endforeach(metavision_offer)
-set(METAVISION_SDK_MODULES_AVAILABLE ${METAVISION_SDK_OPEN_MODULES_AVAILABLE} ${METAVISION_SDK_ESSENTIALS_MODULES_AVAILABLE})
 
 ################################################### Find needed packages and programs
 
@@ -186,16 +206,10 @@ find_package(LibUSB REQUIRED)
 set (boost_components_to_find program_options filesystem timer chrono thread)
 find_package(Boost COMPONENTS ${boost_components_to_find} REQUIRED)
 
-# Bindings for python 3
-if(COMPILE_PYTHON3_BINDINGS)
-    if (MSVC)
-        set(PYBIND11_CPP_STANDARD /std:c++${CMAKE_CXX_STANDARD})
-    else ()
-        set(PYBIND11_CPP_STANDARD -std=c++${CMAKE_CXX_STANDARD})
-    endif ()
-
-    find_package(pybind11 REQUIRED)
-endif(COMPILE_PYTHON3_BINDINGS)
+# Python 3 for bindings and pytests
+if (COMPILE_PYTHON3_BINDINGS OR BUILD_TESTING)
+    include(python3)
+endif ()
 
 # OpenCV
 find_package(OpenCV COMPONENTS core highgui imgproc videoio imgcodecs calib3d objdetect REQUIRED)
@@ -212,54 +226,29 @@ if (BUILD_TESTING)
     find_package(GTest REQUIRED)
 
     # Pytests
-    if(NOT Python3_EXECUTABLE)
-        set(Python3_FIND_FRAMEWORK LAST)
-        find_package(Python3 COMPONENTS Interpreter REQUIRED)
-    endif(NOT Python3_EXECUTABLE)
-    execute_process(
-        COMMAND ${Python3_EXECUTABLE} -c "import pytest"
-        RESULT_VARIABLE res
-        ERROR_VARIABLE err
-        OUTPUT_QUIET
-    )
-    if(res AND NOT res EQUAL 0)
-        message(FATAL_ERROR "Error when executing '${Python3_EXECUTABLE} -c \"import pytest\"'"
-        "\n${err}Either install pytest or disable option BUILD_TESTING\n"
-        "To install pytest, run :\n    ${Python3_EXECUTABLE} -m pip install pytest")
-    endif(res AND NOT res EQUAL 0)
-
-    # If compiling the python bindings, extract the version of the python bindings tested
-    if(COMPILE_PYTHON3_BINDINGS)
-        execute_process(
-            COMMAND ${Python3_EXECUTABLE} -c "import platform; print(platform.python_version())"
-            RESULT_VARIABLE res
-            ERROR_VARIABLE err
-            OUTPUT_VARIABLE PYTHON_VERSION_TESTED
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-        )
-        if(res AND NOT res EQUAL 0)
-            message(FATAL_ERROR "Error when executing '${Python3_EXECUTABLE} -c \"import platform; print(platform.python_version())\""
-            "\n${err}")
-        endif(res AND NOT res EQUAL 0)
-    endif(COMPILE_PYTHON3_BINDINGS)
-
     if(NOT EXISTS "${PROJECT_SOURCE_DIR}/datasets" AND GIT_LFS_NOT_AVAILABLE)
-        message("----------------------------------------------------------------------------------------------")
-        message("|  To run tests, please download https://dataset.prophesee.ai/index.php/s/ozjYOAAKTUshudQ    |")
-        message("|  and extract its content in <METAVISION_FOLDER>/datasets/                                  |")
-        message("|  Warning : the whole test archive weighs about 3 Gb.                                       |")
-        message("----------------------------------------------------------------------------------------------\n")
+        message("---------------------------------------------------------------------------------------------------------")
+        message("|  Test data was not found. To run the tests, please download the test data adapted to your project:    |")
+        message("|  - OpenEB: https://dataset.prophesee.ai/index.php/s/VfhepWI4MPVWh9o (500 Mb archive)                  |")
+        message("|  - Metavision Professional: https://dataset.prophesee.ai/index.php/s/JJ5xStgd8GSUWFz (3 Gb archive)   |")
+        message("---------------------------------------------------------------------------------------------------------\n")
     endif()
+    
+    set(PYTEST_CMD ${PYTHON_${PYTEST_PYTHON_VERSION}_EXECUTABLE} -m pytest)
+    if(CMAKE_CROSSCOMPILING)
+        # When cross compiling, we cannot use python executable path from the Host
+        set(PYTEST_CMD pytest) # TODO we need a proper way to find python executable path on the TARGET.
+    endif(CMAKE_CROSSCOMPILING)
 
-    set(PYTEST_CMD ${Python3_EXECUTABLE} -m pytest)
-    lfs_download(datasets/gen31_timer.raw)
-    lfs_download(datasets/gen4_evt2_hand.raw)
-    lfs_download(datasets/gen4_evt3_hand.raw)
+    lfs_download(datasets/openeb/gen31_timer.raw)
+    lfs_download(datasets/openeb/gen4_evt2_hand.raw)
+    lfs_download(datasets/openeb/gen4_evt3_hand.raw)
     if(COMPILE_PYTHON3_BINDINGS)
-        lfs_download(datasets/gen4_evt2_hand_cd.dat)
-        # python modules pytest data
-        lfs_download("datasets/metavision_core/")
+        lfs_download(datasets/openeb/blinking_leds.raw)
+        lfs_download(datasets/openeb/gen4_evt2_hand_cd.dat)
+        lfs_download(datasets/openeb/core)
     endif(COMPILE_PYTHON3_BINDINGS)
+
 
     function(add_test_app app_name)
         string(REPLACE "_" "-" test_name "${app_name}")
@@ -286,15 +275,10 @@ if (BUILD_TESTING)
         if (NOT EXISTS "${pytest_file}")
             message(FATAL_ERROR "ERROR : cannot add test for app ${app_name} because file ${pytest_file} does not exist")
         endif(NOT EXISTS "${pytest_file}")
-        add_test(
-            NAME ${test_name}
-            COMMAND ${PYTEST_CMD} ${pytest_file} -vv --capture=no --color=yes --junitxml=${JUNIT_XML_OUTPUT_DIRECTORY}/${test_name}.xml
-            WORKING_DIRECTORY $<TARGET_FILE_DIR:${app_name}>
-        )
-        set_property(TEST ${test_name} PROPERTY ENVIRONMENT
-            PYTHONPATH=${PROJECT_SOURCE_DIR}/utils/python # to be able to use prophesee_utils python module
-            MV_HAL_PLUGIN_PATH=${HAL_BUILD_PLUGIN_PATH}
-        )
+
+        # TODO : TEAM-9991, put this in a foreach loop for each python versions
+        add_pytest(NAME ${test_name} PATH ${pytest_file} WORKING_DIRECTORY $<TARGET_FILE_DIR:${app_name}>)
+
     endfunction(add_test_app)
 
     # Paths where gtest and pytests xml output files are stored
@@ -323,7 +307,6 @@ endif(CODE_COVERAGE)
 include(uninstall)
 include(add_library_version_header)
 include(add_cpack_component)
-include(pybind11_create_module)
 include(create_metavision_open_archive)
 if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/cmake/custom_targets_metavision_professional")
     list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/custom_targets_metavision_professional)
@@ -331,16 +314,25 @@ if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/cmake/custom_targets_metavision_professiona
 endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/cmake/custom_targets_metavision_professional")
 
 # Add Metavision Open debian packages :
-add_cpack_component(PUBLIC metavision-open metavision-open-bin metavision-open-dev metavision-open-samples)
+add_cpack_component(PUBLIC metavision-open-lib metavision-open-bin metavision-open-dev metavision-open-samples)
 if(COMPILE_PYTHON3_BINDINGS)
     add_cpack_component(PUBLIC metavision-open-python metavision-open-python-samples)
+    add_python_cpack_components(PUBLIC metavision-open)
 endif(COMPILE_PYTHON3_BINDINGS)
 
-# Add Metavision Essentials debian packages :
-if (METAVISION_SDK_ESSENTIALS_MODULES_AVAILABLE)
-    add_cpack_component(PUBLIC metavision-essentials-licence metavision-essentials metavision-essentials-bin)
+# Add Metavision Essentials and SDK Pro debian packages :
+if (METAVISION_SDK_PROFESSIONAL_MODULES_AVAILABLE)
+    # SDK Pro
+    add_cpack_component(PUBLIC metavision-sdk-pro-lib metavision-sdk-pro-bin)
     if(COMPILE_PYTHON3_BINDINGS)
-        add_cpack_component(PUBLIC metavision-essentials-python metavision-essentials-python-samples)
+        add_cpack_component(PUBLIC metavision-sdk-pro-python-samples)
+        add_python_cpack_components(PUBLIC metavision-sdk-pro)
+    endif(COMPILE_PYTHON3_BINDINGS)
+    # Essentials
+    add_cpack_component(PUBLIC metavision-essentials-licence metavision-essentials-lib metavision-essentials-bin metavision-essentials)
+    if(COMPILE_PYTHON3_BINDINGS)
+        add_cpack_component(PUBLIC metavision-essentials-python-samples)
+        add_python_cpack_components(PUBLIC metavision-essentials)
     endif(COMPILE_PYTHON3_BINDINGS)
 
     if(EXISTS "${PROJECT_SOURCE_DIR}/licensing/LICENSE_ESSENTIALS")
@@ -348,7 +340,7 @@ if (METAVISION_SDK_ESSENTIALS_MODULES_AVAILABLE)
                 DESTINATION share/metavision/licensing
                 COMPONENT metavision-essentials-licence)
     endif()
-endif (METAVISION_SDK_ESSENTIALS_MODULES_AVAILABLE)
+endif (METAVISION_SDK_PROFESSIONAL_MODULES_AVAILABLE)
 
 ################################
 #            Utils            ##
@@ -364,6 +356,9 @@ add_subdirectory(hal)
 if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/hal_psee_plugins/CMakeLists.txt")
     add_subdirectory(hal_psee_plugins)
 endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/hal_psee_plugins/CMakeLists.txt")
+if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/hal_openeb_plugins/CMakeLists.txt")
+    add_subdirectory(hal_openeb_plugins)
+endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/hal_openeb_plugins/CMakeLists.txt")
 
 ################################
 #             SDK             ##
@@ -375,12 +370,19 @@ add_subdirectory(sdk)
 ################################
 if (COMPILE_PYTHON3_BINDINGS AND EXISTS "${CMAKE_CURRENT_LIST_DIR}/designer/CMakeLists.txt")
     add_subdirectory(designer)
-endif(COMPILE_PYTHON3_BINDINGS AND EXISTS "${CMAKE_CURRENT_LIST_DIR}/designer/CMakeLists.txt")
+endif (COMPILE_PYTHON3_BINDINGS AND EXISTS "${CMAKE_CURRENT_LIST_DIR}/designer/CMakeLists.txt")
 
 ################################
 #      Standalone samples     ##
 ################################
 add_subdirectory(standalone_samples)
+
+################################
+#      Standalone apps        ##
+################################
+if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/standalone_apps/CMakeLists.txt")
+    add_subdirectory(standalone_apps)
+endif (EXISTS "${CMAKE_CURRENT_LIST_DIR}/standalone_apps/CMakeLists.txt")
 
 ################################
 #           Documentation     ##
@@ -392,3 +394,20 @@ endif (GENERATE_DOC)
 ################################################### CPack for debian packages
 
 include(deb_packages)
+
+# Make sure meta-packages install an additional (dummy) file to avoid installation warnings
+# with packages disappearing because their content is completely replaced
+get_property(cpack_public_components GLOBAL PROPERTY list_cpack_public_components)
+get_property(cpack_internal_components GLOBAL PROPERTY list_cpack_internal_components)
+set(cpack_all_components ${cpack_public_components} ${cpack_internal_components})
+list(REMOVE_DUPLICATES cpack_all_components)
+file(WRITE ${GENERATE_FILES_DIRECTORY}/meta-package.log "")
+foreach(comp ${cpack_all_components})
+    if ("${comp}" MATCHES "^metavision-(open|essentials|sdk-pro|designer)-(lib|bin|dev|samples|python3.*|python|python-samples)$" OR
+        "${comp}" STREQUAL "metavision-essentials") 
+        install(FILES ${GENERATE_FILES_DIRECTORY}/meta-package.log
+                DESTINATION share/metavision/log/${comp}
+                COMPONENT ${comp}
+        )
+    endif()
+endforeach()

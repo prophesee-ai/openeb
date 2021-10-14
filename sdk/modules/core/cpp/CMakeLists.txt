@@ -28,5 +28,5 @@ endif (BUILD_TESTING)
 
 
 # Cpack
-add_cpack_component(PUBLIC metavision-sdk-core metavision-sdk-core-dev metavision-sdk-core-bin metavision-sdk-core-samples)
+add_cpack_component(PUBLIC metavision-sdk-core-lib metavision-sdk-core-dev metavision-sdk-core-bin metavision-sdk-core-samples)
 

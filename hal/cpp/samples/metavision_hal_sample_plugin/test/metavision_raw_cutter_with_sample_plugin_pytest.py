@@ -26,7 +26,7 @@ def cut_and_check_infos(dataset_dir, start, end, expected_output_info):
     """
 
     filename = "sample_plugin_recording.raw"
-    filename_full = os.path.join(dataset_dir, filename)
+    filename_full = os.path.join(dataset_dir, "openeb", filename)
 
     # Before launching the app, check the dataset file exists
     assert os.path.exists(filename_full)

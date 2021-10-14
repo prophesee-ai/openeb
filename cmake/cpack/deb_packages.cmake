@@ -18,7 +18,7 @@ foreach(comp ${cpack_all_components})
 
     # File name
     if (NOT DEFINED CPACK_DEBIAN_${COMP_UPPER}_FILE_NAME)
-        set(CPACK_DEBIAN_${COMP_UPPER}_FILE_NAME "${comp_lower}-${PROJECT_VERSION}.deb")
+        set(CPACK_DEBIAN_${COMP_UPPER}_FILE_NAME "${comp_lower}-${PROJECT_VERSION_FULL}.deb")
     endif (NOT DEFINED CPACK_DEBIAN_${COMP_UPPER}_FILE_NAME)
 
     # package installed name

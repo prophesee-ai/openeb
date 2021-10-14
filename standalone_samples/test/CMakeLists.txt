@@ -12,3 +12,4 @@ target_link_libraries(raw_file_decoder_with_hal PRIVATE metavision_hal_discovery
 
 add_test_app(metavision_evt2_raw_file_decoder)
 add_test_app(metavision_evt3_raw_file_decoder)
+add_test_app(metavision_evt2_raw_file_encoder)

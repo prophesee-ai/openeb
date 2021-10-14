@@ -18,6 +18,7 @@ import shlex
 import sys
 import os
 import platform
+import pprint
 if platform.system() != 'Windows':
     import fcntl
 
@@ -163,3 +164,16 @@ def execute_cmd(cmd, **kwargs):
             error_code = process.returncode
 
     return output, error, error_code
+
+
+def update_env_from_string(env_string):
+    """
+    A function that returns an updated os.environ from env_string
+    """
+    excluded_keys = ["_", "SHLVL", "PWD", "OLDPWD"]
+    env = os.environ
+    for line in env_string.split("\n"):
+        (key, _, value) = line.partition("=")
+        if key and value and key not in excluded_keys:
+            env[key] = value
+    return env

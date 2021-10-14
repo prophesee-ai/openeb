@@ -7,13 +7,6 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/metavision_studio/CMakeLists.txt")
-    option(COMPILE_METAVISION_STUDIO "Compile Metavision Studio" ON)
-    if (COMPILE_METAVISION_STUDIO)
-        add_subdirectory(metavision_studio)
-    endif ()
-endif (EXISTS "${CMAKE_CURRENT_LIST_DIR}/metavision_studio/CMakeLists.txt")
-
 option(COMPILE_PLAYER "Compile Metavision SDK player" ON)
 if (COMPILE_PLAYER)
     add_subdirectory(metavision_player)

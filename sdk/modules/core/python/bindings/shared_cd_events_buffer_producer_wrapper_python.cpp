@@ -15,6 +15,7 @@
 
 #include "metavision/sdk/base/events/event_cd.h"
 #include "shared_cd_events_buffer_producer_wrapper.h"
+#include "metavision/utils/pybind/async_algorithm_process_helper.h"
 #include "pb_doc_core.h"
 
 namespace py = pybind11;
@@ -75,7 +76,8 @@ void export_shared_cd_events_buffer_producer(py::module &m) {
              "         increased if necessary automatically. Can be left as is in most cases.\n"
              "    buffers_preallocation_size (int): initialization size of vectors in the memory pool. Here again,\n"
              "        this can be left alone in most uses.\n")
-
+        .def("process_events", &process_events_array_async<SharedCdEventsBufferProducerWrapper, EventCD>,
+             py::arg("events_np"), doc_process_events_array_async_str)
         .def("set_processing_n_us", &SharedCdEventsBufferProducerWrapper::set_processing_n_us,
              pybind_doc_core["Metavision::AsyncAlgorithm::set_processing_n_us"], py::arg("delta_ts"))
         .def("get_processing_n_us", &SharedCdEventsBufferProducerWrapper::get_processing_n_us,
@@ -90,6 +92,7 @@ void export_shared_cd_events_buffer_producer(py::module &m) {
         .def("flush", &SharedCdEventsBufferProducerWrapper::flush,
              "Flushes the last buffers when the file is done, producing a last incomplete buffer.")
 
+        .def("reset", &SharedCdEventsBufferProducerWrapper::reset, "Resets the buffer.")
         .def("get_process_events_callback", &SharedCdEventsBufferProducerWrapper::get_process_events_callback,
              "Returns a callback to be passed to the event_cd decoder from Metavision HAL.");
 }

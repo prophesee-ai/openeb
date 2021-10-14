@@ -13,7 +13,7 @@ find_package(Threads REQUIRED)
 
 target_link_libraries(metavision_hal_viewer PRIVATE metavision_hal_discovery Boost::program_options ${OpenCV_LIBS} Threads::Threads)
 
-install(FILES metavision_hal_viewer.cpp README.md
+install(FILES metavision_hal_viewer.cpp
         DESTINATION share/metavision/hal/samples/metavision_hal_viewer
         COMPONENT metavision-hal-samples
 )

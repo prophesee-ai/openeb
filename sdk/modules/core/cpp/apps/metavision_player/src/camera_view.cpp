@@ -42,33 +42,45 @@ int current_roi_x, current_roi_x_end, current_roi_y, current_roi_y_end;
 CameraView::RoiControl::State current_roi_state = CameraView::RoiControl::State::NONE;
 
 void diff_off_trackbar_handler(int v, void *ptr) {
-    auto *camera = reinterpret_cast<Metavision::Camera *>(ptr);
-    camera->biases().get_facility()->set(biasLabelToName[DiffOffLabel], v);
+    auto *view = reinterpret_cast<CameraView *>(ptr);
+    if (view->is_ready()) {
+        view->camera().biases().get_facility()->set(biasLabelToName[DiffOffLabel], v);
+    }
 }
 
 void diff_on_trackbar_handler(int v, void *ptr) {
-    auto *camera = reinterpret_cast<Metavision::Camera *>(ptr);
-    camera->biases().get_facility()->set(biasLabelToName[DiffOnLabel], v);
+    auto *view = reinterpret_cast<CameraView *>(ptr);
+    if (view->is_ready()) {
+        view->camera().biases().get_facility()->set(biasLabelToName[DiffOnLabel], v);
+    }
 }
 
 void hpf_trackbar_handler(int v, void *ptr) {
-    auto *camera = reinterpret_cast<Metavision::Camera *>(ptr);
-    camera->biases().get_facility()->set(biasLabelToName[HpfLabel], v);
+    auto *view = reinterpret_cast<CameraView *>(ptr);
+    if (view->is_ready()) {
+        view->camera().biases().get_facility()->set(biasLabelToName[HpfLabel], v);
+    }
 }
 
 void fo_trackbar_handler(int v, void *ptr) {
-    auto *camera = reinterpret_cast<Metavision::Camera *>(ptr);
-    camera->biases().get_facility()->set(biasLabelToName[FoLabel], v);
+    auto *view = reinterpret_cast<CameraView *>(ptr);
+    if (view->is_ready()) {
+        view->camera().biases().get_facility()->set(biasLabelToName[FoLabel], v);
+    }
 }
 
 void pr_trackbar_handler(int v, void *ptr) {
-    auto *camera = reinterpret_cast<Metavision::Camera *>(ptr);
-    camera->biases().get_facility()->set(biasLabelToName[PrLabel], v);
+    auto *view = reinterpret_cast<CameraView *>(ptr);
+    if (view->is_ready()) {
+        view->camera().biases().get_facility()->set(biasLabelToName[PrLabel], v);
+    }
 }
 
 void refr_trackbar_handler(int v, void *ptr) {
-    auto *camera = reinterpret_cast<Metavision::Camera *>(ptr);
-    camera->biases().get_facility()->set(biasLabelToName[RefrLabel], v);
+    auto *view = reinterpret_cast<CameraView *>(ptr);
+    if (view->is_ready()) {
+        view->camera().biases().get_facility()->set(biasLabelToName[RefrLabel], v);
+    }
 }
 
 void mouse_handler(int event, int x, int y, int, void *ptr) {
@@ -131,21 +143,24 @@ void CameraView::setup() {
 
         const auto &params = parameters();
         if (params.show_biases) {
-            auto &cam = camera();
-            addTrackBar(DiffOffLabel, window_name, 0, 1, diff_off_trackbar_handler, &cam);
-            addTrackBar(DiffOnLabel, window_name, 0, 1, diff_on_trackbar_handler, &cam);
-            addTrackBar(HpfLabel, window_name, 0, 1, hpf_trackbar_handler, &cam);
-            addTrackBar(FoLabel, window_name, 0, 1, fo_trackbar_handler, &cam);
-            addTrackBar(PrLabel, window_name, 0, 1, pr_trackbar_handler, &cam);
-            addTrackBar(RefrLabel, window_name, 0, 1, refr_trackbar_handler, &cam);
-
+            auto &cam       = camera();
             const auto &gen = cam.generation();
             auto *bias      = cam.biases().get_facility();
+
+            addTrackBar(DiffOffLabel, window_name, 0, 1, diff_off_trackbar_handler, this);
+            addTrackBar(DiffOnLabel, window_name, 0, 1, diff_on_trackbar_handler, this);
+            addTrackBar(HpfLabel, window_name, 0, 1, hpf_trackbar_handler, this);
+            addTrackBar(FoLabel, window_name, 0, 1, fo_trackbar_handler, this);
+            if (!(gen.version_major() == 4 && gen.version_minor() == 1)) {
+                addTrackBar(PrLabel, window_name, 0, 1, pr_trackbar_handler, this);
+            }
+            addTrackBar(RefrLabel, window_name, 0, 1, refr_trackbar_handler, this);
+
             if (gen.version_major() == 4) {
                 if (gen.version_minor() == 0) {
                     biasLabelToName[FoLabel] = "bias_fo_n";
                 } else {
-                    biasLabelToName[FoLabel] = "bias_fo_p";
+                    biasLabelToName.erase(PrLabel);
                 }
             }
 
@@ -199,8 +214,10 @@ void CameraView::setup() {
                 cv::setTrackbarMin(HpfLabel, window_name, 0);
                 cv::setTrackbarMax(FoLabel, window_name, 255);
                 cv::setTrackbarMin(FoLabel, window_name, 0);
-                cv::setTrackbarMax(PrLabel, window_name, 255);
-                cv::setTrackbarMin(PrLabel, window_name, 0);
+                if (gen.version_minor() != 1) {
+                    cv::setTrackbarMax(PrLabel, window_name, 255);
+                    cv::setTrackbarMin(PrLabel, window_name, 0);
+                }
                 cv::setTrackbarMax(RefrLabel, window_name, 255);
                 cv::setTrackbarMin(RefrLabel, window_name, 0);
             } else {
@@ -220,6 +237,7 @@ void CameraView::setup() {
             roi_control_.y     = current_roi_y;
             roi_control_.y_end = current_roi_y_end;
         }
+        ready_ = true;
     }
 }
 
@@ -271,6 +289,10 @@ void CameraView::setCurrentTimeUs(Metavision::timestamp time_us) {
 
 Metavision::timestamp CameraView::currentTimeUs() const {
     return time_us_;
+}
+
+bool CameraView::is_ready() const {
+    return ready_;
 }
 
 void CameraView::update(cv::Mat &frame, int key_pressed) {

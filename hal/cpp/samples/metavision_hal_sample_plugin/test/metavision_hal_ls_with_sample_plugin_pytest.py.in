@@ -43,7 +43,7 @@ def pytestcase_test_metavision_hal_ls_with_sample_plugin_verbose():
     # Get expected output
 
     # Version
-    project_version = "@PROJECT_VERSION@"
+    project_version = "@PROJECT_VERSION_FULL@"
 
     # Commit id
     commit_command = "@GIT_COMMAND_GET_COMMIT_ID_QUOTES_ESCAPED@"

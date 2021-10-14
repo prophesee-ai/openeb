@@ -45,10 +45,11 @@ public:
     OnDemandFrameGenerationAlgorithm(int width, int height, uint32_t accumulation_time_us = 0,
                                      const Metavision::ColorPalette &palette = default_palette());
 
-    /// @brief Processes events
+    /// @brief Processes a buffer of events
     /// @warning Call @ref reset before starting processing events from a timestamp in the past
-    /// @tparam EventIt Input event iterator type. Works for iterators over containers of @ref EventCD or equivalent
-    /// @param it_begin Iterator to first input event
+    /// @tparam EventIt Read-Only input event iterator type. Works for iterators over buffers of @ref EventCD
+    /// or equivalent
+    /// @param it_begin Iterator to the first input event
     /// @param it_end Iterator to the past-the-end event
     /// @warning This method is expected to be called with timestamps increasing monotonically and events from the past
     template<typename EventIt>

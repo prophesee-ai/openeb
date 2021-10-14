@@ -108,7 +108,7 @@ TEST_F(Biases_GTest, set_from_file_compatible_with_legacy_format) {
     // WHEN we set the biases from file
     ASSERT_NO_THROW(biases_->set_from_file(filename));
 
-    // THEN the biases set in the HAL facility are have the values written in the file
+    // THEN the biases set in the HAL facility have the values written in the file
     std::map<std::string, int> biases_set      = i_ll_biases_->get_all_biases();
     std::map<std::string, int> expected_biases = {{"bias_diff", 300}, {"bias_diff_off", 222}, {"bias_diff_on", 385},
                                                   {"bias_fo", 1480},  {"bias_hpf", 1450},     {"bias_pr", 1250},
@@ -132,7 +132,7 @@ TEST_F(Biases_GTest, set_from_file_with_current_format) {
     // WHEN we set the biases from file
     ASSERT_NO_THROW(biases_->set_from_file(filename));
 
-    // THEN the biases set in the HAL facility are have the values written in the file
+    // THEN the biases set in the HAL facility have the values written in the file
     std::map<std::string, int> biases_set      = i_ll_biases_->get_all_biases();
     std::map<std::string, int> expected_biases = {{"bias_diff", 299}, {"bias_diff_off", 228}, {"bias_diff_on", 370},
                                                   {"bias_fo", 1507},  {"bias_hpf", 1499},     {"bias_pr", 1250},
@@ -155,7 +155,7 @@ TEST_F(Biases_GTest, set_from_file_exa) {
     // WHEN we set the biases from file
     ASSERT_NO_THROW(biases_->set_from_file(filename));
 
-    // THEN the biases set in the HAL facility are have the values written in the file
+    // THEN the biases set in the HAL facility have the values written in the file
     std::map<std::string, int> biases_set      = i_ll_biases_->get_all_biases();
     std::map<std::string, int> expected_biases = {{"bias_pr", 151},      {"bias_fo", 23},   {"bias_hpf", 48},
                                                   {"bias_diff_on", 112}, {"bias_diff", 69}, {"bias_diff_off", 52},
@@ -169,7 +169,7 @@ TEST_F(Biases_GTest, set_from_file_wrong_extension) {
     write_file(filename, "299  % bias_diff");
 
     try {
-        // WHEN we set the biases given file
+        // WHEN we set the biases from the given file
         biases_->set_from_file(filename);
         FAIL() << "Expected exception Metavision::CameraErrorCode::WrongExtension";
     } catch (const Metavision::CameraException &err) {
@@ -178,12 +178,12 @@ TEST_F(Biases_GTest, set_from_file_wrong_extension) {
     }
 }
 
-TEST_F(Biases_GTest, set_from_file_inexistent_file) {
+TEST_F(Biases_GTest, set_from_file_nonexistent_file) {
     // GIVEN a bias file that doesn't exist
-    std::string filename = tmpdir_handler_->get_full_path("input.bias");
+    std::string filename = tmpdir_handler_->get_full_path("nonexistent.bias");
 
     try {
-        // WHEN we set the biases from this inexistent file
+        // WHEN we set the biases from this nonexistent file
         biases_->set_from_file(filename);
         FAIL() << "Expected exception Metavision::CameraErrorCode::CouldNotOpenFile";
     } catch (const Metavision::CameraException &err) {
@@ -278,7 +278,7 @@ TEST_F(Biases_GTest, save_to_file) {
 }
 
 TEST_F(Biases_GTest, save_to_file_wrong_extension) {
-    // GIVEN an output file with wrong extention
+    // GIVEN an output file with wrong extension
     std::string filename = tmpdir_handler_->get_full_path("output.txt");
 
     try {
@@ -294,7 +294,7 @@ TEST_F(Biases_GTest, save_to_file_wrong_extension) {
 TEST_F(Biases_GTest, save_to_file_when_passing_invalid_filename) {
     // GIVEN an output file that is invalid
     std::string invalid_filename = tmpdir_handler_->get_full_path("output.bias");
-    // Invalid because it's an existing directory :
+    // Invalid because it's an existing directory
     ASSERT_TRUE(boost::filesystem::create_directory(invalid_filename));
 
     try {

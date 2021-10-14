@@ -28,6 +28,6 @@ if (BUILD_TESTING)
 endif (BUILD_TESTING)
 
 # Cpack
-add_cpack_component(PUBLIC metavision-sdk-driver metavision-sdk-driver-dev metavision-sdk-driver-bin metavision-sdk-driver-samples)
+add_cpack_component(PUBLIC metavision-sdk-driver-lib metavision-sdk-driver-dev metavision-sdk-driver-bin metavision-sdk-driver-samples)
 
 

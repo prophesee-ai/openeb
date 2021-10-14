@@ -17,9 +17,9 @@ add_custom_target(create_metavision_open_archive_folder
         -P ${CMAKE_CURRENT_LIST_DIR}/create_metavision_open_archive_folder.cmake
 )
 
-set(output_metavision_open_archive_path "${GENERATE_FILES_DIRECTORY}/metavision_open_${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}.tar")
+set(output_metavision_open_archive_path "${GENERATE_FILES_DIRECTORY}/metavision_open_${PROJECT_VERSION_FULL}.tar")
 add_custom_target(create_metavision_open_archive
-    COMMAND ${CMAKE_COMMAND} -E tar cvf ${output_metavision_open_archive_path} * .gitignore
+    COMMAND ${CMAKE_COMMAND} -E tar cvf ${output_metavision_open_archive_path} .
     COMMAND ${CMAKE_COMMAND} -E echo "File ${output_metavision_open_archive_path} generated"
     WORKING_DIRECTORY ${output_metavision_open_archive_dir_path}
 )

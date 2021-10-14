@@ -39,7 +39,7 @@ def main():
         return
 
     # Events iterator on Camera or RAW file
-    mv_iterator = EventsIterator(input_path=args.input_path, delta_t=1e3)
+    mv_iterator = EventsIterator(input_path=args.input_path, delta_t=1000)
 
     with open('cd.csv', 'w') as csv_file:
 

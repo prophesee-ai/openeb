@@ -20,7 +20,7 @@ def pytestcase_evt2_rawfile_decoder_on_gen31_recording(dataset_dir):
     """
 
     filename = "gen31_timer.raw"
-    filename_full = os.path.join(dataset_dir, filename)
+    filename_full = os.path.join(dataset_dir, "openeb", filename)
 
     run_standalone_decoder_and_compare_to_hal_implementation(filename_full, 2)
 
@@ -31,6 +31,6 @@ def pytestcase_evt2_rawfile_decoder_on_gen4_evt2_recording(dataset_dir):
     """
 
     filename = "gen4_evt2_hand.raw"
-    filename_full = os.path.join(dataset_dir, filename)
+    filename_full = os.path.join(dataset_dir, "openeb", filename)
 
     run_standalone_decoder_and_compare_to_hal_implementation(filename_full, 2)

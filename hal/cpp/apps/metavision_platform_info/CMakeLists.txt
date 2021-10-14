@@ -15,7 +15,7 @@ install(TARGETS metavision_platform_info
         COMPONENT metavision-hal-bin
 )
 
-install(FILES metavision_platform_info.cpp README.md
+install(FILES metavision_platform_info.cpp
         DESTINATION share/metavision/hal/apps/metavision_platform_info
         COMPONENT metavision-hal-samples
 )

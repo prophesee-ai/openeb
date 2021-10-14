@@ -11,9 +11,13 @@
 # metavision-sdk-{modules} #
 ############################
 include("${CMAKE_CURRENT_LIST_DIR}/MetavisionOpenCPackConfig.cmake")
+if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/MetavisionSDKProCPackConfig.cmake")
+    include("${CMAKE_CURRENT_LIST_DIR}/MetavisionSDKProCPackConfig.cmake")
+endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/MetavisionSDKProCPackConfig.cmake")
 if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/MetavisionEssentialsCPackConfig.cmake")
     include("${CMAKE_CURRENT_LIST_DIR}/MetavisionEssentialsCPackConfig.cmake")
 endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/MetavisionEssentialsCPackConfig.cmake")
+
 foreach(available_module IN LISTS METAVISION_SDK_MODULES_AVAILABLE)
     get_filename_component(module_cpack_config "${CMAKE_CURRENT_LIST_DIR}/../modules/${available_module}/cmake/MetavisionSDK_${available_module}CPackConfig.cmake" REALPATH)
     if(EXISTS "${module_cpack_config}")

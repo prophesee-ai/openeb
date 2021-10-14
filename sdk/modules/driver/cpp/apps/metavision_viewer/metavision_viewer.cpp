@@ -12,6 +12,7 @@
 // Example of using Metavision SDK Driver API for visualizing events stream.
 
 #include <iostream>
+#include <signal.h>
 #include <boost/program_options.hpp>
 #include <metavision/sdk/driver/camera.h>
 #include <thread>
@@ -20,6 +21,7 @@
 #if CV_MAJOR_VERSION >= 4
 #include <opencv2/highgui/highgui_c.h>
 #endif
+#include <opencv2/imgproc.hpp>
 #include <metavision/sdk/base/utils/log.h>
 #include <metavision/sdk/core/utils/cd_frame_generator.h>
 
@@ -27,6 +29,23 @@ static const int ESCAPE = 27;
 static const int SPACE  = 32;
 
 namespace po = boost::program_options;
+
+std::string human_readable_time(Metavision::timestamp t) {
+    std::ostringstream oss;
+    std::array<std::string, 3> ls{":", ".", ""};
+    std::array<std::string, 3> vs;
+    vs[2] = cv::format("%03d", int(t % 1000));
+    t /= 1000; // ms
+    vs[1] = cv::format("%03d", int(t % 1000));
+    t /= 1000; // s
+    vs[0] = cv::format("%02d", int(t % 60));
+
+    size_t i = 0;
+    for (; i < 3; ++i) {
+        oss << vs[i] << ls[i];
+    }
+    return oss.str();
+}
 
 int process_ui_for(int delay_ms) {
     auto then = std::chrono::high_resolution_clock::now();
@@ -51,22 +70,46 @@ bool window_was_closed(const std::string &window_name) {
     return false;
 }
 
-int setup_cd_callback_and_window(Metavision::Camera &camera, cv::Mat &cd_frame,
+int setup_cd_callback_and_window(Metavision::Camera &camera, cv::Mat &cd_frame, Metavision::timestamp &cd_frame_ts,
                                  Metavision::CDFrameGenerator &cd_frame_generator, const std::string &window_name) {
     auto &geometry = camera.geometry();
     auto id        = camera.cd().add_callback(
         [&cd_frame_generator](const Metavision::EventCD *ev_begin, const Metavision::EventCD *ev_end) {
             cd_frame_generator.add_events(ev_begin, ev_end);
         });
-    cd_frame_generator.start(
-        30, [&cd_frame](const Metavision::timestamp &ts, const cv::Mat &frame) { frame.copyTo(cd_frame); });
+    cd_frame_generator.start(30, [&cd_frame, &cd_frame_ts](const Metavision::timestamp &ts, const cv::Mat &frame) {
+        cd_frame_ts = ts;
+        frame.copyTo(cd_frame);
+    });
     cv::namedWindow(window_name, CV_GUI_EXPANDED);
     cv::resizeWindow(window_name, geometry.width(), geometry.height());
     cv::moveWindow(window_name, 0, 0);
     return id;
 }
 
+namespace {
+std::unique_ptr<Metavision::Camera> camera;
+int cd_events_cb_id;
+
+void sig_handler(int s) {
+    MV_LOG_TRACE() << "Interrupt signal received." << std::endl;
+
+    if (cd_events_cb_id >= 0) {
+        camera->cd().remove_callback(cd_events_cb_id);
+    }
+
+    if (camera && camera->is_running()) {
+        MV_LOG_TRACE() << "Stopping camera." << std::endl;
+        camera->stop();
+    }
+
+    std::exit(s);
+}
+} // anonymous namespace
+
 int main(int argc, char *argv[]) {
+    signal(SIGINT, sig_handler);
+
     std::string serial;
     std::string biases_file;
     std::string in_raw_file_path;
@@ -77,11 +120,11 @@ int main(int argc, char *argv[]) {
 
     const std::string short_program_desc(
         "Simple viewer to stream events from a RAW file or device, using the SDK driver API.\n");
-    const std::string long_program_desc(short_program_desc +
-                                        "Press SPACE key while running to record or stop recording raw data\n"
-                                        "Press 'q' or Escape key to leave the program.\n"
-                                        "Press 'r' to toggle the hardware ROI given as input.\n"
-                                        "Press 'h' to print this help.\n");
+    std::string long_program_desc(short_program_desc +
+                                  "Press SPACE key while running to record or stop recording raw data\n"
+                                  "Press 'q' or Escape key to leave the program.\n"
+                                  "Press 'r' to toggle the hardware ROI given as input.\n"
+                                  "Press 'h' to print this help.\n");
 
     po::options_description options_desc("Options");
     // clang-format off
@@ -112,6 +155,13 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
+    if (!in_raw_file_path.empty()) {
+        long_program_desc += "\nIf available, you can also:\n"
+                             "Press 'b' key to seek backward 1s\n"
+                             "Press 'f' key to seek forward 1s\n"
+                             "Press 'o' to toggle the on screen display\n";
+    }
+
     MV_LOG_INFO() << long_program_desc;
 
     if (vm.count("roi")) {
@@ -120,13 +170,12 @@ int main(int argc, char *argv[]) {
             return 1;
         }
         if (roi.size() != 4) {
-            MV_LOG_WARNING() << "ROI as argument must be in the format 'x y width height '. Roi has not been set.";
+            MV_LOG_WARNING() << "ROI as argument must be in the format 'x y width height '. ROI has not been set.";
             roi.clear();
         }
     }
 
     do {
-        Metavision::Camera camera;
         bool camera_is_opened = false;
 
         // If the filename is set, then read from the file
@@ -137,24 +186,25 @@ int main(int argc, char *argv[]) {
             }
 
             try {
-                camera           = Metavision::Camera::from_file(in_raw_file_path);
+                camera = std::make_unique<Metavision::Camera>(
+                    Metavision::Camera::from_file(in_raw_file_path, true, Metavision::Future::RawFileConfig()));
                 camera_is_opened = true;
             } catch (Metavision::CameraException &e) { MV_LOG_ERROR() << e.what(); }
             // Otherwise, set the input source to the first available camera
         } else {
             try {
                 if (!serial.empty()) {
-                    camera = Metavision::Camera::from_serial(serial);
+                    camera = std::make_unique<Metavision::Camera>(Metavision::Camera::from_serial(serial));
                 } else {
-                    camera = Metavision::Camera::from_first_available();
+                    camera = std::make_unique<Metavision::Camera>(Metavision::Camera::from_first_available());
                 }
 
                 if (biases_file != "") {
-                    camera.biases().set_from_file(biases_file);
+                    camera->biases().set_from_file(biases_file);
                 }
 
                 if (!roi.empty()) {
-                    camera.roi().set({roi[0], roi[1], roi[2], roi[3]});
+                    camera->roi().set({roi[0], roi[1], roi[2], roi[3]});
                 }
                 camera_is_opened = true;
             } catch (Metavision::CameraException &e) { MV_LOG_ERROR() << e.what(); }
@@ -173,29 +223,60 @@ int main(int argc, char *argv[]) {
         }
 
         // Add runtime error callback
-        camera.add_runtime_error_callback([&do_retry](const Metavision::CameraException &e) {
+        camera->add_runtime_error_callback([&do_retry](const Metavision::CameraException &e) {
             MV_LOG_ERROR() << e.what();
             do_retry = true;
         });
 
         // Get the geometry of the camera
-        auto &geometry = camera.geometry(); // Get the geometry of the camera
+        auto &geometry = camera->geometry(); // Get the geometry of the camera
 
         // All cameras have CDs events
         std::string cd_window_name("CD Events");
         cv::Mat cd_frame;
+        Metavision::timestamp cd_frame_ts{0};
         Metavision::CDFrameGenerator cd_frame_generator(geometry.width(), geometry.height());
         cd_frame_generator.set_display_accumulation_time_us(10000);
-        int cd_events_cb_id = setup_cd_callback_and_window(camera, cd_frame, cd_frame_generator, cd_window_name);
+        cd_events_cb_id =
+            setup_cd_callback_and_window(*camera, cd_frame, cd_frame_ts, cd_frame_generator, cd_window_name);
 
         // Start the camera streaming
-        camera.start();
+        camera->start();
 
-        bool recording  = false;
-        bool is_roi_set = true;
+        bool recording     = false;
+        bool is_roi_set    = true;
+        bool osc_available = false;
+        bool osc_ready     = false;
+        bool osd           = false;
 
-        while (camera.is_running()) {
+        if (!in_raw_file_path.empty()) {
+            try {
+                camera->offline_streaming_control().is_ready();
+                osc_available = true;
+            } catch (Metavision::CameraException &e) {
+                MV_LOG_INFO() << "A required facility is not available, seeking operations are disabled.";
+            }
+        }
+
+        while (camera->is_running()) {
+            if (!in_raw_file_path.empty() && osc_available) {
+                try {
+                    bool was_osc_ready = osc_ready;
+                    osc_ready          = camera->offline_streaming_control().is_ready();
+                    if (!was_osc_ready && osc_ready) {
+                        osd = true;
+                    }
+                } catch (Metavision::CameraException &e) { MV_LOG_ERROR() << e.what(); }
+            }
+
             if (!cd_frame.empty()) {
+                if (osd) {
+                    const std::string text =
+                        human_readable_time(cd_frame_ts) + " / " +
+                        human_readable_time(camera->offline_streaming_control().get_seek_end_time());
+                    cv::putText(cd_frame, text, cv::Point(10, 20), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(108, 143, 255),
+                                1, cv::LINE_AA);
+                }
                 cv::imshow(cd_window_name, cd_frame);
             }
 
@@ -204,25 +285,47 @@ int main(int argc, char *argv[]) {
             switch (key) {
             case 'q':
             case ESCAPE:
-                camera.stop();
+                camera->stop();
                 do_retry = false;
                 break;
             case SPACE:
                 if (!recording) {
-                    camera.start_recording(out_raw_file_path);
+                    camera->start_recording(out_raw_file_path);
                 } else {
-                    camera.stop_recording();
+                    camera->stop_recording();
                 }
                 recording = !recording;
                 break;
+            case 'b':
+                if (osc_ready) {
+                    Metavision::timestamp pos = cd_frame_ts - 1000 * 1000;
+                    if (camera->offline_streaming_control().seek(pos)) {
+                        cd_frame_generator.reset();
+                    }
+                }
+                break;
+            case 'f':
+                if (osc_ready) {
+                    Metavision::timestamp pos = cd_frame_ts + 1000 * 1000;
+                    if (camera->offline_streaming_control().seek(pos)) {
+                        cd_frame_generator.reset();
+                    }
+                }
+                break;
+            case 'o': {
+                if (osc_ready) {
+                    osd = !osd;
+                }
+                break;
+            }
             case 'r': {
                 if (roi.size() == 0) {
                     break;
                 }
                 if (!is_roi_set) {
-                    camera.roi().set({roi[0], roi[1], roi[2], roi[3]});
+                    camera->roi().set({roi[0], roi[1], roi[2], roi[3]});
                 } else {
-                    camera.roi().unset();
+                    camera->roi().unset();
                 }
                 is_roi_set = !is_roi_set;
                 break;
@@ -237,11 +340,11 @@ int main(int argc, char *argv[]) {
 
         // unregister callbacks to make sure they are not called anymore
         if (cd_events_cb_id >= 0) {
-            camera.cd().remove_callback(cd_events_cb_id);
+            camera->cd().remove_callback(cd_events_cb_id);
         }
 
         // Stop the camera streaming, optional, the destructor will automatically do it
-        camera.stop();
+        camera->stop();
     } while (do_retry);
 
     return 0;

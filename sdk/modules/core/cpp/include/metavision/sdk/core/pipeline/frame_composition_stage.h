@@ -41,7 +41,7 @@ public:
     using Output    = std::pair<timestamp, FramePtr>;
 
 public:
-    FrameCompositionStage(int fps, timestamp max_ts_range = 500000, const cv::Vec3b &bg_color = cv::Vec3b(0, 0, 0));
+    FrameCompositionStage(int fps, timestamp max_ts_range = 5000000, const cv::Vec3b &bg_color = cv::Vec3b(0, 0, 0));
 
     /// @brief Sets up the frame composer to put the frame produced by @p prev_frame_stage at the given location
     /// @param prev_frame_stage Stage producing the frames

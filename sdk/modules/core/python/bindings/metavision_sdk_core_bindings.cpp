@@ -39,6 +39,7 @@ PythonBindingsDoc pybind_doc_core;
 
 void export_base_frame_generation_algorithm(py::module &);
 void export_colors(py::module &);
+void export_adaptive_rate_events_splitter_algorithm(py::module &);
 void export_flip_x_algorithm(py::module &);
 void export_flip_y_algorithm(py::module &);
 void export_on_demand_frame_generation_algorithm(py::module &);
@@ -68,6 +69,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
 
     // 3. Export algos
     Metavision::export_base_frame_generation_algorithm(m);
+    Metavision::export_adaptive_rate_events_splitter_algorithm(m);
     Metavision::export_flip_x_algorithm(m);
     Metavision::export_flip_y_algorithm(m);
     Metavision::export_on_demand_frame_generation_algorithm(m);

@@ -20,8 +20,10 @@
 
 #include "metavision/hal/facilities/i_device_control.h"
 #include "metavision/hal/facilities/i_events_stream.h"
+#include "metavision/hal/facilities/future/i_events_stream.h"
 #include "metavision/hal/facilities/i_decoder.h"
-#include "metavision/hal/utils/raw_file_config.h"
+#include "metavision/hal/facilities/future/i_decoder.h"
+#include "metavision/hal/utils/future/raw_file_config.h"
 #include "metavision/sdk/driver/camera.h"
 #include "metavision/sdk/core/utils/index_manager.h"
 #include "metavision/sdk/core/utils/timing_profiler.h"
@@ -34,6 +36,7 @@ class ExtTrigger;
 class TriggerOut;
 class RawData;
 class Biases;
+class OfflineStreamingControl;
 
 namespace detail {
 struct Config {
@@ -53,14 +56,15 @@ public:
     Private(bool empty_init);
     Private(OnlineSourceType input_source_type, uint32_t source_index);
     Private(const Serial &serial);
-    Private(const std::string &rawfile, const RawFileConfig &file_stream_config, bool reproduce_camera_behavior);
+    Private(const std::string &rawfile, const Future::RawFileConfig &file_stream_config,
+            bool reproduce_camera_behavior);
 
     ~Private();
 
-    void open_raw_file(const std::string &rawfile, const RawFileConfig &file_stream_config,
+    void open_raw_file(const std::string &rawfile, const Future::RawFileConfig &file_stream_config,
                        bool reproduce_camera_behavior);
 
-    RawFileConfig raw_file_stream_config_;
+    Future::RawFileConfig raw_file_stream_config_;
 
     // Camera interface mirror functions
     CallbackId add_runtime_error_callback(RuntimeErrorCallback error_callback);
@@ -68,6 +72,53 @@ public:
 
     CallbackId add_status_change_callback(StatusChangeCallback status_change_callback);
     bool remove_status_change_callback(CallbackId callback_id);
+
+    // Class used to represent a callback that can modify the status of the I_EventsStream stored in the Camera
+    // It is only used internally for now.
+    class EventsStreamUpdateCallback {
+    public:
+        EventsStreamUpdateCallback(const std::function<bool(void)> &f) : called(false), cancelled(false), f(f) {}
+
+        // wait for the callback to finish executing or a cancellation
+        // return the callback return value or false if it was cancelled
+        bool wait() {
+            std::unique_lock<std::mutex> lock(mutex);
+            cond.wait(lock, [this] { return called || cancelled; });
+            return called ? ret : false;
+        }
+
+        // cancel the callback execution
+        void cancel() {
+            {
+                std::unique_lock<std::mutex> lock(mutex);
+                cancelled = true;
+            }
+            cond.notify_one();
+        }
+
+        // call the callback and return its value
+        // the callback should return true if the events stream facility was indeed modified, false otherwise
+        bool call() {
+            ret = f();
+            {
+                std::unique_lock<std::mutex> lock(mutex);
+                called = true;
+            }
+            cond.notify_one();
+            return ret;
+        }
+
+    private:
+        std::mutex mutex;
+        std::condition_variable cond;
+        bool ret, called, cancelled;
+        std::function<bool(void)> f;
+    };
+
+    std::shared_ptr<EventsStreamUpdateCallback> add_events_stream_update_callback(const std::function<bool(void)> &cb);
+    bool remove_events_stream_update_callback(const std::shared_ptr<EventsStreamUpdateCallback> &cb);
+    bool call_events_stream_update_callbacks();
+    void cancel_events_stream_update_callbacks();
 
     bool start();
     bool stop();
@@ -81,11 +132,17 @@ public:
     // Get biases handler class :
     Biases &biases();
 
+    // Get offline streaming control class :
+    OfflineStreamingControl &offline_streaming_control();
+
     // Get the roi handler class
     Roi &roi();
 
     // Get the sensor antiflicker handler class
     AntiFlickerModule &antiflicker_module();
+
+    // Get the sensor antiflicker handler class
+    ErcModule &erc_module();
 
     // Get the noise filter handler class for configuring hardware side module
     NoiseFilterModule &noise_filter_module();
@@ -114,11 +171,9 @@ public:
     int run_from_file(TimingProfilerType *profiler);
     template<typename TimingProfilerType>
     int run_main_loop(TimingProfilerType *profiler);
-    void emulate_real_time(I_EventsStream::RawData *ev_buffer, long n_rawbytes);
     void init_clocks();
 
     void set_up_from_config();
-    void end_run(int run_output);
     void set_is_running(bool);
 
     // initialization check up
@@ -139,7 +194,11 @@ public:
     std::unique_ptr<Device> device_    = nullptr;
     I_DeviceControl *i_device_control_ = nullptr;
     I_EventsStream *i_events_stream_   = nullptr;
-    I_Decoder *i_decoder_              = nullptr;
+    // TODO TEAM-10620: remove this field
+    Future::I_EventsStream *i_future_events_stream_ = nullptr;
+    I_Decoder *i_decoder_                           = nullptr;
+    // TODO TEAM-10620: remove this field
+    Future::I_Decoder *i_future_decoder_ = nullptr;
 
     bool from_file_    = false;
     bool is_init_      = false;
@@ -158,7 +217,9 @@ public:
     std::unique_ptr<Roi> roi_;
     std::unique_ptr<TriggerOut> trigger_out_;
     std::unique_ptr<Biases> biases_;
+    std::unique_ptr<OfflineStreamingControl> osc_;
     std::unique_ptr<AntiFlickerModule> afk_;
+    std::unique_ptr<ErcModule> ercm_;
     std::unique_ptr<NoiseFilterModule> noise_filter_;
 
     // Classes that handle events cbs :
@@ -175,6 +236,7 @@ public:
 
     std::map<CallbackId, RuntimeErrorCallback> runtime_error_callback_map_;
     std::map<CallbackId, StatusChangeCallback> status_change_callback_map_;
+    std::vector<std::shared_ptr<EventsStreamUpdateCallback>> events_stream_update_callbacks_;
 };
 
 } // namespace Metavision

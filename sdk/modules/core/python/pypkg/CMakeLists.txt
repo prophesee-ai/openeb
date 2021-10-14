@@ -7,14 +7,4 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-set(METAVISION_CORE_MODULE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
-
-pybind11_install(DIRECTORY "${METAVISION_CORE_MODULE_DIR}/metavision_core"
-    DESTINATION "PYTHON_SYSTEM_SITE_PACKAGES"
-    COMPONENT metavision-sdk-core-python EXCLUDE_FROM_ALL
-    PATTERN __pycache__ EXCLUDE)
-
-pybind11_install(DIRECTORY "${METAVISION_CORE_MODULE_DIR}/metavision_core"
-    DESTINATION "PYTHON_LOCAL_SITE_PACKAGES"
-    COMPONENT metavision-sdk-core-python-local-install
-    PATTERN __pycache__ EXCLUDE)
+install_sdk_python_module(core "${CMAKE_CURRENT_SOURCE_DIR}/metavision_core")

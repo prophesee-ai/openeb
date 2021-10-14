@@ -80,6 +80,9 @@ public:
     /// been previously started
     bool stop();
 
+    /// @brief Resets the frame generator state
+    void reset();
+
 private:
     bool generate();
 

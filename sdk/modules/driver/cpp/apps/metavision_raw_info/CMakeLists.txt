@@ -15,7 +15,7 @@ install(TARGETS metavision_raw_info
         COMPONENT metavision-sdk-driver-bin
 )
 
-install(FILES metavision_raw_info.cpp README.md
+install(FILES metavision_raw_info.cpp
         DESTINATION share/metavision/sdk/driver/apps/metavision_raw_info
         COMPONENT metavision-sdk-driver-samples
 )

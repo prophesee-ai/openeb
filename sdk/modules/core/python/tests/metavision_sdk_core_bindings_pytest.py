@@ -7,13 +7,11 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
+# pylint: disable=no-member
+
 import numpy as np
-import os
 import metavision_sdk_base
 import metavision_sdk_core
-import cv2
-
-# pylint: disable=no-member
 
 
 def pytestcase_RoiFilterAlgorithm():
@@ -106,8 +104,8 @@ def pytestcase_FlipYAlgorithm():
 
 def pytestcase_PeriodicFrameGenerationAlgorithm():
     events = np.zeros(5, dtype=metavision_sdk_base.EventCD)
-    events["x"] = [1,   2,  3,  1,     4]
-    events["p"] = [0,   1,  0,  1,     1]
+    events["x"] = [1, 2, 3, 1, 4]
+    events["p"] = [0, 1, 0, 1, 1]
     events["t"] = [10, 20, 30, 40, 10002]
 
     last_processed_timestamp = 0
@@ -120,6 +118,7 @@ def pytestcase_PeriodicFrameGenerationAlgorithm():
         nonlocal frame
         last_processed_timestamp = ts
         frame[...] = cv_frame[...]
+
     frame_generator.set_output_callback(callback_frame_generator)
 
     # last event is not processed because its timestamp is above 10000
@@ -134,8 +133,8 @@ def pytestcase_PeriodicFrameGenerationAlgorithm():
 
 def pytestcase_PeriodicFrameGenerationAlgorithmGray():
     events = np.zeros(5, dtype=metavision_sdk_base.EventCD)
-    events["x"] = [1,   2,  3,  1,     4]
-    events["p"] = [0,   1,  0,  1,     1]
+    events["x"] = [1, 2, 3, 1, 4]
+    events["p"] = [0, 1, 0, 1, 1]
     events["t"] = [10, 20, 30, 40, 10002]
 
     last_processed_timestamp = 0
@@ -151,6 +150,7 @@ def pytestcase_PeriodicFrameGenerationAlgorithmGray():
         nonlocal frame
         last_processed_timestamp = ts
         frame[...] = cv_frame[...]
+
     frame_generator.set_output_callback(callback_frame_generator)
 
     # last event is not processed because its timestamp is above 10000
@@ -165,8 +165,8 @@ def pytestcase_PeriodicFrameGenerationAlgorithmGray():
 
 def pytestcase_OnDemandFrameGenerationAlgorithm():
     events = np.zeros(5, dtype=metavision_sdk_base.EventCD)
-    events["x"] = [1,   2,  3,  1,     4]
-    events["p"] = [0,   1,  0,  1,     1]
+    events["x"] = [1, 2, 3, 1, 4]
+    events["p"] = [0, 1, 0, 1, 1]
     events["t"] = [10, 20, 30, 40, 10002]
 
     frame = np.zeros((5, 5, 3), np.uint8)
@@ -196,8 +196,8 @@ def pytestcase_OnDemandFrameGenerationAlgorithm():
 
 def pytestcase_BaseFrameGenerationAlgorithmStaticGeneration():
     events = np.zeros(5, dtype=metavision_sdk_base.EventCD)
-    events["x"] = [1,   2,  3,  1,     4]
-    events["p"] = [0,   1,  0,  1,     1]
+    events["x"] = [1, 2, 3, 1, 4]
+    events["p"] = [0, 1, 0, 1, 1]
     events["t"] = [10, 20, 30, 40, 10002]
 
     frame = np.zeros((5, 5, 3), np.uint8)
@@ -267,6 +267,7 @@ def pytestcase_TimeSurfaceProducerAlgoritm():
         nonlocal time_surface_single_channel
         last_processed_timestamp = ts
         time_surface_single_channel.numpy()[...] = time_surface.numpy()[...]
+
     ts_prod_single_channel.set_output_callback(callback_single_channel)
 
     ts_prod_single_channel.process_events(events)
@@ -289,6 +290,7 @@ def pytestcase_TimeSurfaceProducerAlgoritm():
         nonlocal time_surface_double_channel
         last_processed_timestamp = ts
         time_surface_double_channel.numpy()[...] = time_surface.numpy()[...]
+
     ts_prod_double_channel.set_output_callback(callback_double_channel)
 
     ts_prod_double_channel.process_events(events)

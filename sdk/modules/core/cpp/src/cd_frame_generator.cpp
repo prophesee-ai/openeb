@@ -155,4 +155,11 @@ bool CDFrameGenerator::stop() {
     return true;
 }
 
+void CDFrameGenerator::reset() {
+    std::lock_guard<std::mutex> lock(processing_mutex_);
+    frame_generation_algo_->reset();
+    events_back_.clear();
+    next_notify_us_ = notify_slice_us_;
+}
+
 } // namespace Metavision

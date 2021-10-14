@@ -26,6 +26,8 @@
 
 #include "metavision/sdk/driver/internal/camera_internal.h"
 #include "metavision/sdk/driver/biases.h"
+#include "metavision/sdk/driver/offline_streaming_control.h"
+#include "metavision/sdk/driver/internal/offline_streaming_control_internal.h"
 #include "metavision/sdk/base/utils/callback_id.h"
 #include "metavision/sdk/base/utils/get_time.h"
 #include "metavision/sdk/core/utils/callback_manager.h"
@@ -120,7 +122,7 @@ Camera::Private::Private(const Serial &serial) {
     init_common_interfaces(serial.serial_, config);
 }
 
-Camera::Private::Private(const std::string &rawfile, const RawFileConfig &file_stream_config,
+Camera::Private::Private(const std::string &rawfile, const Future::RawFileConfig &file_stream_config,
                          bool reproduce_camera_behavior) {
     open_raw_file(rawfile, file_stream_config, reproduce_camera_behavior);
 }
@@ -131,7 +133,7 @@ Camera::Private::~Private() {
     }
 }
 
-void Camera::Private::open_raw_file(const std::string &rawfile, const RawFileConfig &file_stream_config,
+void Camera::Private::open_raw_file(const std::string &rawfile, const Future::RawFileConfig &file_stream_config,
                                     bool reproduce_camera_behavior) {
     if (is_init_ && run_thread_.joinable()) {
         stop();
@@ -154,9 +156,11 @@ void Camera::Private::open_raw_file(const std::string &rawfile, const RawFileCon
                               "Expected .raw as extension for the provided input file " + rawfile + ".");
     }
 
-    raw_file_stream_config_ = file_stream_config;
-
-    device_ = DeviceDiscovery::open_raw_file(rawfile, raw_file_stream_config_);
+    raw_file_stream_config_.n_events_to_read_ = file_stream_config.n_events_to_read_;
+    raw_file_stream_config_.n_read_buffers_   = file_stream_config.n_read_buffers_;
+    raw_file_stream_config_.do_time_shifting_ = file_stream_config.do_time_shifting_;
+    raw_file_stream_config_.build_index_      = file_stream_config.build_index_;
+    device_                                   = DeviceDiscovery::open_raw_file(rawfile, raw_file_stream_config_);
     if (!device_) {
         // We should never get here as open_raw_file should throw an exception if the system is unknown
         throw CameraException(CameraErrorCode::InvalidRawfile,
@@ -221,6 +225,51 @@ bool Camera::Private::remove_status_change_callback(CallbackId callback_id) {
     return false;
 }
 
+std::shared_ptr<Camera::Private::EventsStreamUpdateCallback>
+    Camera::Private::add_events_stream_update_callback(const std::function<bool(void)> &f) {
+    auto cb_ptr = std::make_shared<EventsStreamUpdateCallback>(f);
+
+    std::unique_lock<std::mutex> lock(cbs_mutex_);
+    events_stream_update_callbacks_.push_back(cb_ptr);
+    return cb_ptr;
+}
+
+bool Camera::Private::remove_events_stream_update_callback(const std::shared_ptr<EventsStreamUpdateCallback> &cb) {
+    std::unique_lock<std::mutex> lock(cbs_mutex_);
+
+    auto error_cb_it = std::find(events_stream_update_callbacks_.begin(), events_stream_update_callbacks_.end(), cb);
+    if (error_cb_it != events_stream_update_callbacks_.end()) {
+        events_stream_update_callbacks_.erase(error_cb_it);
+        return true;
+    }
+
+    return false;
+}
+
+bool Camera::Private::call_events_stream_update_callbacks() {
+    bool ret = false;
+    std::vector<std::shared_ptr<EventsStreamUpdateCallback>> cbs;
+    {
+        std::unique_lock<std::mutex> lock(cbs_mutex_);
+        std::swap(cbs, events_stream_update_callbacks_);
+    }
+    for (auto &cb : cbs) {
+        ret |= cb->call();
+    }
+    return ret;
+}
+
+void Camera::Private::cancel_events_stream_update_callbacks() {
+    std::vector<std::shared_ptr<EventsStreamUpdateCallback>> cbs;
+    {
+        std::unique_lock<std::mutex> lock(cbs_mutex_);
+        std::swap(cbs, events_stream_update_callbacks_);
+    }
+    for (auto &cb : cbs) {
+        cb->cancel();
+    }
+}
+
 bool Camera::Private::start() {
     check_initialization();
 
@@ -270,7 +319,11 @@ bool Camera::Private::stop() {
 
     set_is_running(false);
 
-    i_events_stream_->stop();
+    if (i_future_events_stream_) {
+        i_future_events_stream_->stop();
+    } else {
+        i_events_stream_->stop();
+    }
     if (i_device_control_) {
         i_device_control_->stop();
     }
@@ -300,19 +353,35 @@ void Camera::Private::start_recording(const std::string &rawfile_path) {
         biases_->save_to_file(base_path + ".bias");
     }
 
-    if (!i_events_stream_->log_raw_data(base_path + ".raw")) {
-        throw CameraException(
-            CameraErrorCode::CouldNotOpenFile,
-            "Could not open file '" + base_path +
-                ".raw' to record. Make sure it is a valid filename and that you have permissions to write it.");
+    if (i_future_events_stream_) {
+        if (!i_future_events_stream_->log_raw_data(base_path + ".raw")) {
+            throw CameraException(
+                CameraErrorCode::CouldNotOpenFile,
+                "Could not open file '" + base_path +
+                    ".raw' to record. Make sure it is a valid filename and that you have permissions to write it.");
+        } else {
+            is_recording_ = true;
+        }
     } else {
-        is_recording_ = true;
+        if (!i_events_stream_->log_raw_data(base_path + ".raw")) {
+            throw CameraException(
+                CameraErrorCode::CouldNotOpenFile,
+                "Could not open file '" + base_path +
+                    ".raw' to record. Make sure it is a valid filename and that you have permissions to write it.");
+        } else {
+            is_recording_ = true;
+        }
     }
 }
 
 void Camera::Private::stop_recording() {
     check_events_stream_instance();
-    i_events_stream_->stop_log_raw_data();
+    if (i_future_events_stream_) {
+        i_future_events_stream_->stop_log_raw_data();
+    } else {
+        i_events_stream_->stop_log_raw_data();
+    }
+
     is_recording_ = false;
 }
 
@@ -324,6 +393,22 @@ Biases &Camera::Private::biases() {
     check_biases_instance();
 
     return *biases_;
+}
+
+OfflineStreamingControl &Camera::Private::offline_streaming_control() {
+    check_camera_device_instance();
+
+    if (!from_file_) {
+        throw CameraException(UnsupportedFeatureErrors::OfflineStreamingControlUnavailable,
+                              "Cannot get offline streaming control from a live camera.");
+    }
+
+    if (!osc_->get_pimpl().is_valid()) {
+        throw CameraException(UnsupportedFeatureErrors::OfflineStreamingControlUnavailable,
+                              "Offline streaming control unavailable.");
+    }
+
+    return *osc_;
 }
 
 Roi &Camera::Private::roi() {
@@ -383,11 +468,24 @@ AntiFlickerModule &Camera::Private::antiflicker_module() {
     return *afk_;
 }
 
+ErcModule &Camera::Private::erc_module() {
+    check_camera_device_instance();
+    if (from_file_) {
+        throw CameraException(UnsupportedFeatureErrors::ErcModuleUnavailable,
+                              "Cannot get erc instance when running from a file.");
+    }
+
+    if (!ercm_) {
+        throw CameraException(UnsupportedFeatureErrors::ErcModuleUnavailable);
+    }
+    return *ercm_;
+}
+
 NoiseFilterModule &Camera::Private::noise_filter_module() {
     check_camera_device_instance();
     if (from_file_) {
         throw CameraException(UnsupportedFeatureErrors::NoiseFilterModuleUnavailable,
-                              "Cannot get NoiseFilterModule instance when running from a file.");
+                              "Cannot get noise filter instance when running from a file.");
     }
 
     if (!noise_filter_) {
@@ -437,6 +535,11 @@ void Camera::Private::init_online_interfaces(const detail::Config &config) {
         afk_.reset(new AntiFlickerModule(i_afk));
     }
 
+    I_Erc *i_ercm = device_->get_facility<I_Erc>();
+    if (i_ercm) {
+        ercm_.reset(new ErcModule(i_ercm));
+    }
+
     I_NoiseFilterModule *i_noise_filter = device_->get_facility<I_NoiseFilterModule>();
     if (i_noise_filter) {
         noise_filter_.reset(new NoiseFilterModule(i_noise_filter));
@@ -444,7 +547,10 @@ void Camera::Private::init_online_interfaces(const detail::Config &config) {
 }
 
 void Camera::Private::init_common_interfaces(const std::string &serial, const detail::Config &config) {
-    i_events_stream_ = device_->get_facility<I_EventsStream>();
+    i_future_events_stream_ = device_->get_facility<Future::I_EventsStream>();
+    if (!i_future_events_stream_) {
+        i_events_stream_ = device_->get_facility<I_EventsStream>();
+    }
     check_events_stream_instance();
 
     I_Geometry *i_geometry = device_->get_facility<I_Geometry>();
@@ -453,7 +559,10 @@ void Camera::Private::init_common_interfaces(const std::string &serial, const de
     }
     geometry_.reset(new Geometry(i_geometry));
 
-    i_decoder_ = device_->get_facility<I_Decoder>();
+    i_future_decoder_ = device_->get_facility<Future::I_Decoder>();
+    if (!i_future_decoder_) {
+        i_decoder_ = device_->get_facility<I_Decoder>();
+    }
     check_decoder_device_instance();
 
     raw_data_.reset(RawData::Private::build(index_manager_));
@@ -463,6 +572,10 @@ void Camera::Private::init_common_interfaces(const std::string &serial, const de
     generation_.reset(CameraGeneration::Private::build(*device_));
 
     camera_configuration_.serial_number = serial;
+
+    if (from_file_) {
+        osc_.reset(new OfflineStreamingControl(*this));
+    }
 
     if (config.print_timings) {
         print_timings_ = true;
@@ -497,6 +610,15 @@ void Camera::Private::init_callbacks() {
     }
 }
 
+void Camera::Private::init_clocks() {
+    if (i_future_decoder_) {
+        first_ts_ = i_future_decoder_->get_last_timestamp();
+    } else {
+        first_ts_ = i_decoder_->get_last_timestamp();
+    }
+    first_ts_clock_ = 0;
+}
+
 template<typename TimingProfilerType>
 void Camera::Private::run(TimingProfilerType *profiler) {
     {
@@ -512,14 +634,17 @@ void Camera::Private::run(TimingProfilerType *profiler) {
     check_camera_device_instance();
     check_events_stream_instance();
     check_decoder_device_instance();
-    int res;
     if (from_file_) {
-        res = run_from_file(profiler);
+        run_from_file(profiler);
     } else {
-        res = run_from_camera(profiler);
+        run_from_camera(profiler);
     }
+    set_is_running(false);
 
-    end_run(res);
+    // cancel any waiting event stream update callbacks
+    // we do this after setting is_running_ to false, because these callbacks are only added when the main loop is
+    // running, so those which have been added before, if they were not called, must be cancelled
+    cancel_events_stream_update_callbacks();
 }
 
 template<typename TimingProfilerType>
@@ -532,30 +657,84 @@ int Camera::Private::run_main_loop(TimingProfilerType *profiler) {
     init_clocks();
 
     while (is_running_) {
+        call_events_stream_update_callbacks();
+
         {
             typename TimingProfilerType::TimedOperation t("Polling", profiler);
-            res = i_events_stream_->wait_next_buffer();
+            if (i_future_events_stream_) {
+                res = i_future_events_stream_->wait_next_buffer();
+            } else {
+                res = i_events_stream_->wait_next_buffer();
+            }
         }
 
         if (res < 0) {
             break;
         } else if (res > 0) {
             typename TimingProfilerType::TimedOperation t("Processing", profiler);
-            I_EventsStream::RawData *ev_buffer = i_events_stream_->get_latest_raw_data(n_rawbytes);
-
-            if (emulate_real_time_) {
-                emulate_real_time(ev_buffer, n_rawbytes);
-                t.setNumProcessedElements(n_rawbytes / i_decoder_->get_raw_event_size_bytes());
+            I_EventsStream::RawData *ev_buffer, *ev_buffer_end;
+            if (i_future_events_stream_) {
+                ev_buffer = i_future_events_stream_->get_latest_raw_data(n_rawbytes);
             } else {
+                ev_buffer = i_events_stream_->get_latest_raw_data(n_rawbytes);
+            }
+            ev_buffer_end = ev_buffer + n_rawbytes;
+
+            // Decode events chunk by chunk to allow early stop and better cadencing when emulating real time
+            const bool has_decode_callbacks =
+                index_manager_.counter_map_.tag_count(CallbackTagIds::DECODE_CALLBACK_TAG_ID);
+            constexpr uint32_t events_per_buffer_to_decode = 1024;
+            const uint32_t bytes_step_to_decode = (i_future_decoder_ ? i_future_decoder_->get_raw_event_size_bytes() :
+                                                                       i_decoder_->get_raw_event_size_bytes()) *
+                                                  events_per_buffer_to_decode;
+            long bytes_to_decode;
+            for (; ev_buffer < ev_buffer_end; ev_buffer += bytes_to_decode) {
+                const uint32_t remains = std::distance(ev_buffer, ev_buffer_end);
+                bytes_to_decode        = std::min(remains, bytes_step_to_decode);
+
                 // we first decode the buffer and call the corresponding events callback ...
-                if (index_manager_.counter_map_.tag_count(CallbackTagIds::DECODE_CALLBACK_TAG_ID)) {
-                    i_decoder_->decode(ev_buffer, ev_buffer + n_rawbytes);
-                    t.setNumProcessedElements(n_rawbytes / i_decoder_->get_raw_event_size_bytes());
+                if (has_decode_callbacks) {
+                    if (i_future_decoder_) {
+                        i_future_decoder_->decode(ev_buffer, ev_buffer + bytes_to_decode);
+                        t.setNumProcessedElements(bytes_to_decode / i_future_decoder_->get_raw_event_size_bytes());
+                    } else {
+                        i_decoder_->decode(ev_buffer, ev_buffer + bytes_to_decode);
+                        t.setNumProcessedElements(bytes_to_decode / i_decoder_->get_raw_event_size_bytes());
+                    }
                 }
-                // ... then we call the raw buffer callback so that a user have access to some info (e.g last decoded
-                // timestamp) when the raw callback is called
+
+                // ... then we call the raw buffer callback so that a user has access to some info (e.g last
+                // decoded timestamp) when the raw callback is called
                 for (auto &cb : raw_data_->get_pimpl().get_cbs()) {
-                    cb(ev_buffer, n_rawbytes);
+                    cb(ev_buffer, bytes_to_decode);
+                }
+
+                // call the callbacks that could modify the events stream, and early stop the decoding loop if the
+                // stream has been modified. this can happen in some cases (e.g when we seek and the remaining data to
+                // be decoded is garbage anyway)
+                if (call_events_stream_update_callbacks()) {
+                    break;
+                }
+
+                if (has_decode_callbacks) {
+                    // emulate real time if needed
+                    if (emulate_real_time_) {
+                        const timestamp cur_ts      = i_future_decoder_ ? i_future_decoder_->get_last_timestamp() :
+                                                                          i_decoder_->get_last_timestamp();
+                        const uint64_t cur_ts_clock = get_system_time_us();
+
+                        // compute the offset first, if never done
+                        if (first_ts_clock_ == 0 && cur_ts != first_ts_) {
+                            first_ts_clock_ = cur_ts_clock;
+                            first_ts_       = cur_ts;
+                        }
+
+                        const uint64_t expected_ts = first_ts_clock_ + (cur_ts - first_ts_);
+
+                        if (cur_ts_clock < expected_ts) {
+                            std::this_thread::sleep_for(std::chrono::microseconds(expected_ts - cur_ts_clock));
+                        }
+                    }
                 }
             }
         }
@@ -564,76 +743,15 @@ int Camera::Private::run_main_loop(TimingProfilerType *profiler) {
     return res;
 }
 
-void Camera::Private::init_clocks() {
-    first_ts_       = i_decoder_->get_last_timestamp();
-    first_ts_clock_ = 0;
-}
-
-void Camera::Private::emulate_real_time(I_EventsStream::RawData *ev_buffer, long n_rawbytes) {
-    // when reading from a file, we read a huge chunk of data to avoid overhead of reading small
-    // buffers. To emulate real time, we handle buffer of events of smaller
-    // (arbitrary) size, closer to the size of a buffer normally sent by the camera, to avoid huge
-    // latency and so that the real time emulation feels more natural
-
-    // This is here to show that when reading speed will be featured, this
-    // will affect the quantity of events decoded at a time to have a
-    // smooth cadencing. The slower the cadencing, the lesser events you want to decode at a time.
-    constexpr double reading_speed_factor = 1.;
-
-    // Reference number of events to decode at a time at real time speed (i.e. 1.)
-    constexpr uint32_t events_per_buffer_to_decode = 1024;
-
-    // Reference minimum number of events to decode at a time
-    constexpr uint32_t min_events_per_buffer_to_decode = 128;
-
-    I_EventsStream::RawData *ev_buffer_ref       = ev_buffer;
-    I_EventsStream::RawData *const ev_buffer_end = ev_buffer + n_rawbytes;
-
-    // Computes the number of bytes per sub buffer to decode from the polled raw buffer
-    const uint32_t bytes_step_to_decode =
-        std::max(min_events_per_buffer_to_decode,
-                 i_decoder_->get_raw_event_size_bytes() *
-                     static_cast<uint32_t>(std::round(events_per_buffer_to_decode * reading_speed_factor)));
-
-    long bytes_to_decode;
-
-    // Decode each sub buffer and cadence depending on the reading speed.
-    for (; ev_buffer < ev_buffer_end && is_running_; ev_buffer += bytes_to_decode) {
-        const uint32_t remains = std::distance(ev_buffer, ev_buffer_end);
-        bytes_to_decode        = std::min(remains, bytes_step_to_decode);
-
-        // we first decode the buffer and call the corresponding events callback ...
-        i_decoder_->decode(ev_buffer, ev_buffer + bytes_to_decode);
-
-        // ... then we call the raw buffer callback with the same subset of data that was decoded, so that a user have
-        // access to some info (e.g last decoded timestamp) when the raw callback is called
-        for (auto &cb : raw_data_->get_pimpl().get_cbs()) {
-            cb(ev_buffer, bytes_to_decode);
-        }
-
-        const timestamp cur_ts      = i_decoder_->get_last_timestamp();
-        const uint64_t cur_ts_clock = get_system_time_us();
-
-        // compute the offset first, if never done
-        if (first_ts_clock_ == 0 && cur_ts != first_ts_) {
-            first_ts_clock_ = cur_ts_clock;
-            first_ts_       = cur_ts;
-        }
-
-        const timestamp diff       = (1 / reading_speed_factor) * (cur_ts - first_ts_);
-        const uint64_t expected_ts = first_ts_clock_ + diff;
-
-        if (cur_ts_clock < expected_ts) {
-            std::this_thread::sleep_for(std::chrono::microseconds(expected_ts - cur_ts_clock));
-        }
-    }
-}
-
 template<typename TimingProfilerType>
 int Camera::Private::run_from_camera(TimingProfilerType *profiler) {
     check_ccam_instance();
 
-    i_events_stream_->start();
+    if (i_future_events_stream_) {
+        // should never happen for the moment ...
+    } else {
+        i_events_stream_->start();
+    }
     i_device_control_->start();
     i_device_control_->reset();
 
@@ -649,7 +767,11 @@ int Camera::Private::run_from_camera(TimingProfilerType *profiler) {
 
 template<typename TimingProfilerType>
 int Camera::Private::run_from_file(TimingProfilerType *profiler) {
-    i_events_stream_->start();
+    if (i_future_events_stream_) {
+        i_future_events_stream_->start();
+    } else {
+        i_events_stream_->start();
+    }
 
     if (!run_main_loop(profiler)) {
         return false;
@@ -672,21 +794,6 @@ void Camera::Private::set_is_running(bool is_running) {
     }
 }
 
-void Camera::Private::end_run(int run_output) {
-    if (run_output == -1) {
-        std::map<CallbackId, RuntimeErrorCallback> callbacks_to_call;
-        {
-            std::unique_lock<std::mutex> lock(cbs_mutex_);
-            callbacks_to_call = runtime_error_callback_map_;
-        }
-        for (auto &callback : callbacks_to_call) {
-            callback.second(CameraException(CameraErrorCode::DataTransferFailed));
-        }
-    }
-
-    set_is_running(false);
-}
-
 void Camera::Private::check_initialization() const {
     if (!is_init_) {
         throw CameraException(CameraErrorCode::CameraNotInitialized);
@@ -702,7 +809,7 @@ void Camera::Private::check_biases_instance() const {
 
 void Camera::Private::check_events_stream_instance() const {
     check_initialization();
-    if (!i_events_stream_) {
+    if (!i_future_events_stream_ && !i_events_stream_) {
         throw CameraException(InternalInitializationErrors::IEventsStreamNotFound);
     }
 }
@@ -723,7 +830,7 @@ void Camera::Private::check_camera_device_instance() const {
 
 void Camera::Private::check_decoder_device_instance() const {
     check_initialization();
-    if (!i_decoder_) {
+    if (!i_future_decoder_ && !i_decoder_) {
         throw CameraException(InternalInitializationErrors::IDecoderNotFound);
     }
 }
@@ -799,9 +906,22 @@ Camera Camera::from_serial(const std::string &serial) {
     return Camera(new Private(Private::Serial(serial)));
 }
 
-Camera Camera::from_file(const std::string &rawfile, bool reproduce_camera_behavior) {
-    RawFileConfig config;
-    return Camera(new Private(rawfile, config, reproduce_camera_behavior));
+// TODO TEAM-10620: remove this overload
+Camera Camera::from_file(const std::string &rawfile, bool reproduce_camera_behavior, const RawFileConfig &file_config) {
+    Future::RawFileConfig raw_file_config;
+    raw_file_config.do_time_shifting_ = file_config.do_time_shifting_;
+    raw_file_config.n_events_to_read_ = file_config.n_events_to_read_;
+    raw_file_config.n_read_buffers_   = file_config.n_read_buffers_;
+    // to keep the same behavior as before, do not build index by default
+    raw_file_config.build_index_ = false;
+    return Camera(new Private(rawfile, raw_file_config, reproduce_camera_behavior));
+}
+
+// TODO TEAM-10620: mention that RAW index files will automatically be constructed starting from next major release
+// unless RawFileConfig::build_index_ is set to false
+Camera Camera::from_file(const std::string &rawfile, bool reproduce_camera_behavior,
+                         const Future::RawFileConfig &file_config) {
+    return Camera(new Private(rawfile, file_config, reproduce_camera_behavior));
 }
 
 bool Camera::synchronize_and_start_cameras(Camera &master, Camera &slave) {
@@ -832,6 +952,10 @@ Imu &Camera::imu() {
 
 AntiFlickerModule &Camera::antiflicker_module() {
     return pimpl_->antiflicker_module();
+}
+
+ErcModule &Camera::erc_module() {
+    return pimpl_->erc_module();
 }
 
 NoiseFilterModule &Camera::noise_filter_module() {
@@ -895,6 +1019,10 @@ Biases &Camera::biases() {
     return pimpl_->biases();
 }
 
+OfflineStreamingControl &Camera::offline_streaming_control() {
+    return pimpl_->offline_streaming_control();
+}
+
 const Geometry &Camera::geometry() const {
     return pimpl_->geometry();
 }
@@ -933,6 +1061,15 @@ void Camera::stop_recording() {
 
 const CameraConfiguration &Camera::get_camera_configuration() {
     return pimpl_->camera_configuration_;
+}
+
+Metavision::timestamp Camera::get_last_timestamp() const {
+    const bool decode_cbs_registered =
+        pimpl_->index_manager_.counter_map_.tag_count(CallbackTagIds::DECODE_CALLBACK_TAG_ID);
+    if (!decode_cbs_registered)
+        return -1;
+    return pimpl_->i_future_decoder_ ? pimpl_->i_future_decoder_->get_last_timestamp() :
+                                       pimpl_->i_decoder_->get_last_timestamp();
 }
 
 Device &Camera::get_device() {

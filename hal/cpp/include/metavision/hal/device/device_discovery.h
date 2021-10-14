@@ -17,6 +17,7 @@
 #include <string>
 
 #include "metavision/hal/utils/raw_file_config.h"
+#include "metavision/hal/utils/future/raw_file_config.h"
 
 namespace Metavision {
 
@@ -119,6 +120,12 @@ public:
     /// @param file_config Configuration describing how to read the file (see @ref RawFileConfig)
     /// @return A new Device
     static std::unique_ptr<Device> open_raw_file(const std::string &raw_file, RawFileConfig &file_config);
+
+    /// @brief Builds a new Device from file
+    /// @param raw_file Path to the file to open
+    /// @param file_config Configuration describing how to read the file (see @ref RawFileConfig)
+    /// @return A new Device
+    static std::unique_ptr<Device> open_raw_file(const std::string &raw_file, Future::RawFileConfig &file_config);
 
     /// @brief Builds a new Device from a standard input stream
     /// @param stream The input stream to read from. The device takes ownership of the input stream to ensure its

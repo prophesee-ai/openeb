@@ -134,16 +134,20 @@ public:
     /// [last event's timestamp + 1, next_processing_ts_[).
     inline void flush();
 
-    /// @brief Function that is calling process online and process state when necessary
-    /// @param it_begin First iterator of the buffer
-    /// @param it_end End iterator of the buffer
+    /// @brief Processes a buffer of events
+    /// @tparam InputIt Read-Only input event iterator type. Works for iterators over buffers of @ref EventCD
+    /// or equivalent
+    /// @param it_begin Iterator to the first input event
+    /// @param it_end Iterator to the past-the-end event
     template<typename InputIt>
     inline void process_events(InputIt it_begin, InputIt it_end);
 
-    /// @brief Function that is calling process online and process state when necessary
+    /// @brief Processes a buffer of events
+    /// @tparam InputIt Read-Only input event iterator type. Works for iterators over buffers of @ref EventCD
+    /// or equivalent
     /// @param ts End timestamp of the buffer. Used if higher than the timestamp of the last event
-    /// @param it_begin First iterator of the buffer
-    /// @param it_end End iterator of the buffer
+    /// @param it_begin Iterator to the first input event
+    /// @param it_end Iterator to the past-the-end event
     template<typename InputIt>
     inline void process_events(const timestamp ts, InputIt it_begin, InputIt it_end);
 

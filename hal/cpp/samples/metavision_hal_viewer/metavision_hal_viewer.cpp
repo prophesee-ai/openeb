@@ -28,6 +28,8 @@
 #include <metavision/hal/facilities/i_geometry.h>
 #include <metavision/hal/facilities/i_decoder.h>
 #include <metavision/hal/facilities/i_event_decoder.h>
+#include <metavision/hal/facilities/i_plugin_software_info.h>
+#include "metavision/hal/facilities/i_hw_identification.h"
 #include <metavision/hal/device/device.h>
 #include <metavision/hal/device/device_discovery.h>
 #include <metavision/hal/facilities/i_events_stream.h>
@@ -79,6 +81,18 @@ int main(int argc, char *argv[]) {
     std::string in_raw_file_path;
     std::string out_raw_file_path;
     std::string serial;
+    std::string plugin_name;
+    long system_id;
+    /// [TriggerInChannels]
+    struct TriggerInConfiguration {
+        int main_channel;
+        int loopback_channel;
+    };
+    std::map<std::string, TriggerInConfiguration> trigger_in_channels{
+        {"hal_plugin_gen31_evk2", {0, 3}}, {"hal_plugin_gen31_evk3", {0, 6}}, {"hal_plugin_gen31_fx3", {0, 6}},
+        {"hal_plugin_gen3_fx3", {0, 6}},   {"hal_plugin_gen41_evk2", {1, 3}}, {"hal_plugin_gen4_evk2", {1, 3}},
+        {"hal_plugin_gen4_fx3", {1, 6}}};
+    /// [TriggerInChannels]
     int illumination = 0;
     int temperature  = 0;
 
@@ -128,6 +142,24 @@ int main(int argc, char *argv[]) {
     }
     std::cout << "Camera open." << std::endl;
 
+    Metavision::I_PluginSoftwareInfo *i_pluginsoftwareinfo = device->get_facility<Metavision::I_PluginSoftwareInfo>();
+    if (i_pluginsoftwareinfo) {
+        plugin_name = i_pluginsoftwareinfo->get_plugin_name();
+        std::cout << "Plugin used: " << plugin_name << std::endl;
+    }
+
+    Metavision::I_HW_Identification *i_hw_identifiction = device->get_facility<Metavision::I_HW_Identification>();
+    if (i_hw_identifiction) {
+        system_id = i_hw_identifiction->get_system_id();
+        std::cout << "System ID: " << system_id << std::endl;
+    }
+
+    Metavision::I_DeviceControl *i_device_control = device->get_facility<Metavision::I_DeviceControl>();
+    if (!i_device_control) {
+        std::cerr << "Could not get Device Control facility." << std::endl;
+        return 1;
+    }
+
     /// [RawfileCreation]
     Metavision::I_EventsStream *i_eventsstream = device->get_facility<Metavision::I_EventsStream>();
     if (i_eventsstream) {
@@ -141,16 +173,21 @@ int main(int argc, char *argv[]) {
     /// [RawfileCreation]
 
     /// [triggers]
-    // Enable internal trigger loopback for trigger testing purposes.
-    // When enabling trigger out, the signal is also duplicated on trigger in (channel 6 for EVK 1 or 3 for EVK 2)
+    // We enable Trigger Out and duplicate the signal on Trigger In using the loopback channel
     Metavision::I_TriggerOut *i_trigger_out = device->get_facility<Metavision::I_TriggerOut>();
     Metavision::I_TriggerIn *i_trigger_in   = device->get_facility<Metavision::I_TriggerIn>();
     if (i_trigger_in && i_trigger_out) {
         i_trigger_out->set_period(100000);
         i_trigger_out->set_duty_cycle(0.5);
         i_trigger_out->enable();
-        if (!i_trigger_in->enable(6)) {
-            i_trigger_in->enable(3);
+        i_trigger_in->enable(trigger_in_channels[plugin_name].loopback_channel);
+    }
+
+    if (system_id == 0x30) {
+        // Evk3 Gen41 system
+        if (i_trigger_in && i_device_control) {
+            i_device_control->set_mode_master();
+            i_trigger_in->enable(0);
         }
     }
     /// [triggers]
@@ -223,7 +260,6 @@ int main(int argc, char *argv[]) {
     bool stop_application            = false;
     i_eventsstream->start();
     if (in_raw_file_path.empty()) {
-        Metavision::I_DeviceControl *i_device_control = device->get_facility<Metavision::I_DeviceControl>();
         i_device_control->start();
         std::cout << "Camera started." << std::endl;
     }
@@ -236,6 +272,7 @@ int main(int argc, char *argv[]) {
                 std::cout << "End of file" << std::endl;
                 i_eventsstream->stop();
                 i_eventsstream->stop_log_raw_data();
+                i_device_control->stop();
                 stop_decoding    = true;
                 stop_application = true;
             } else if (ret == 0) {

@@ -6,9 +6,9 @@
 # Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
-pybind11_create_module(sdk_core module_name)
 
-pybind11_target_sources(${module_name}_python3 PRIVATE
+set(sdk_core_python_srcs
+    ${CMAKE_CURRENT_SOURCE_DIR}/adaptive_rate_events_splitter_algorithm_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/base_frame_generation_algorithm_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/colors_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/flip_x_algorithm_python.cpp
@@ -24,14 +24,19 @@ pybind11_target_sources(${module_name}_python3 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/metavision_sdk_core_bindings.cpp
 )
 
-pybind11_target_link_libraries(${module_name}_python3
-    PRIVATE
-        MetavisionSDK::core
-        MetavisionUtils::pybind
-)
-
 if (GENERATE_DOC_PYTHON_BINDINGS)
-    pybind11_add_dependencies(${module_name}_python3 metavision_sdk_core_python_doc_from_cpp)
-    pybind11_target_include_directories(${module_name}_python3 PRIVATE ${GENERATE_PYTHON_BINDINGS_DOC_DIRECTORY})
-    pybind11_target_compile_definitions(${module_name}_python3 PRIVATE GENERATE_DOC_PYTHON_BINDINGS_USING_CPP_COMMENTS)
+    set (sdk_core_python_dependencies metavision_sdk_core_python_doc_from_cpp)
+    set (sdk_core_python_include_directories ${GENERATE_PYTHON_BINDINGS_DOC_DIRECTORY})
+    set (sdk_core_python_compile_definitions GENERATE_DOC_PYTHON_BINDINGS_USING_CPP_COMMENTS)
 endif()
+
+add_sdk_python_bindings(core 
+    SOURCES ${sdk_core_python_srcs}
+    LINK_LIBRARIES
+        PRIVATE
+            MetavisionSDK::core
+            MetavisionUtils::pybind
+    INCLUDE_DIRECTORIES PRIVATE ${sdk_core_python_include_directories}
+    COMPILE_DEFINITIONS PRIVATE ${sdk_core_python_compile_definitions}
+    DEPENDENCIES ${sdk_core_python_dependencies}
+)

@@ -20,7 +20,6 @@
 #include <queue>
 
 #include "metavision/hal/facilities/i_registrable_facility.h"
-#include "metavision/hal/utils/raw_file_header.h"
 #include "metavision/hal/utils/data_transfer.h"
 
 namespace Metavision {
@@ -104,6 +103,14 @@ private:
     std::condition_variable new_buffer_cond_;
     std::queue<DataTransfer::BufferPtr> available_buffers_;
     DataTransfer::BufferPtr returned_buffer_;
+
+    // For some data transfer, we should not release already transferred buffers when streaming is stopped
+    // To achieve this, we copy buffers internally in a temporary buffer pool to always leave the data transfer
+    // buffer pool full when resuming streaming
+    const bool stop_should_release_buffers_;
+    DataTransfer::BufferPool tmp_buffer_pool_;
+    std::vector<DataTransfer::BufferPtr::element_type *>
+        data_transfer_buffer_ptrs_; // for quick check if copying is necessary
 
     std::mutex start_stop_safety_;
     bool stop_;

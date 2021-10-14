@@ -53,7 +53,7 @@ if (BUILD_TESTING)
     add_subdirectory(test)
 endif (BUILD_TESTING)
 
-add_cpack_component(PUBLIC metavision-hal-bin metavision-hal-samples metavision-hal metavision-hal-dev)
+add_cpack_component(PUBLIC metavision-hal-bin metavision-hal-samples metavision-hal-lib metavision-hal-dev)
 
 # Documentations
 if (GENERATE_DOC)

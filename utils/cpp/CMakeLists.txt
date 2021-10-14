@@ -15,3 +15,6 @@ if(COMPILE_PYTHON3_BINDINGS)
     # Utils to write python bindings
     add_subdirectory(pybind)
 endif(COMPILE_PYTHON3_BINDINGS)
+
+# Utils to instrument and profile code
+add_subdirectory(profiling)

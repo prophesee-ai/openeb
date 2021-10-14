@@ -23,6 +23,8 @@
 
 // Metavision HAL Device class
 #include "metavision/hal/device/device.h"
+#include "metavision/hal/utils/raw_file_config.h"
+#include "metavision/hal/utils/future/raw_file_config.h"
 
 // Metavision SDK Driver CD handler class
 #include "metavision/sdk/driver/cd.h"
@@ -63,6 +65,9 @@
 // Metavision SDK driver Biases class
 #include "metavision/sdk/driver/biases.h"
 
+// Metavision SDK driver OfflineStreamingControl class
+#include "metavision/sdk/driver/offline_streaming_control.h"
+
 // Metavision SDK Driver Geometry handler class
 #include "metavision/sdk/driver/geometry.h"
 
@@ -80,6 +85,9 @@
 
 // Metavision SDK Driver AntiFlickerModule class
 #include "metavision/sdk/driver/antiflicker_module.h"
+
+// Metavision SDK Driver ErcModule class
+#include "metavision/sdk/driver/erc_module.h"
 
 // Metavision SDK Driver NoiseFilterModule class
 #include "metavision/sdk/driver/noise_filter_module.h"
@@ -210,10 +218,29 @@ public:
     ///                                  false, the file will be read as fast as possible and the events will be
     ///                                  available as soon as possible as well. The max_event_lifespan will only be
     ///                                  taken into account when reproducing the camera behavior.
+    /// @param file_config Configuration describing how to read the file (see @ref RawFileConfig)
     /// @note Since 2.1.0, the @p reproduce_camera_behavior is only taken into account if at least one event callback
     ///       is registered (CD or ExtTrigger), it will have no effect if only a RawData callback is registered.
     /// @return @ref Camera instance initialized from the input RAW file
-    static Camera from_file(const std::string &rawfile, bool reproduce_camera_behavior = true);
+    /// @return @ref Camera instance initialized from the input RAW file
+    static Camera from_file(const std::string &rawfile, bool reproduce_camera_behavior = true,
+                            const RawFileConfig &file_config = RawFileConfig());
+
+    /// @brief Initializes a camera instance from a RAW file
+    /// @throw A @ref CameraException in case of initialization failure.
+    /// @param rawfile Path to the RAW file
+    /// @param reproduce_camera_behavior If true, the RAW file will be read at the same speed as was sent by the camera
+    ///                                  when the file was recorded, and the events will be available after the same
+    ///                                  amount of time it took for them to be received when recording the RAW file. If
+    ///                                  false, the file will be read as fast as possible and the events will be
+    ///                                  available as soon as possible as well. The max_event_lifespan will only be
+    ///                                  taken into account when reproducing the camera behavior.
+    /// @param file_config Configuration describing how to read the file (see @ref Future::RawFileConfig)
+    /// @note Since 2.1.0, the @p reproduce_camera_behavior is only taken into account if at least one event callback
+    ///       is registered (CD or ExtTrigger), it will have no effect if only a RawData callback is registered.
+    /// @return @ref Camera instance initialized from the input RAW file
+    static Camera from_file(const std::string &rawfile, bool reproduce_camera_behavior,
+                            const Future::RawFileConfig &file_config);
 
     /// @note This method is deprecated since version 2.1.0 and will be removed in next releases
     METAVISION_DEPRECATED_FEATURE(2.1.0) static bool synchronize_and_start_cameras(Camera &master, Camera &slave);
@@ -259,6 +286,11 @@ public:
     /// @throw A @ref CameraException in case of failure (for instance if the camera is not initialized or the camera is
     /// running from an offline source).
     AntiFlickerModule &antiflicker_module();
+
+    /// @brief Gets class to handle Event Rater Controller on the hardware side
+    /// @throw A @ref CameraException in case of failure (for instance if the camera is not initialized or the camera is
+    /// running from an offline source).
+    ErcModule &erc_module();
 
     /// @brief Gets class to handle STC or TRAIL Noise Filter Module on the hardware side
     /// @throw A @ref CameraException in case of failure (for instance if the camera is not initialized or the camera is
@@ -318,6 +350,10 @@ public:
     /// @brief Gets class to handle camera biases
     /// @throw A @ref CameraException in case of failure, (for example if camera runs from an offline source).
     Biases &biases();
+
+    /// @brief Gets class to control offline streaming
+    /// @throw A @ref CameraException if the camera has not been initialized or if the feature is not available.
+    OfflineStreamingControl &offline_streaming_control();
 
     /// @brief Gets the device's geometry
     /// @throw A @ref CameraException if the camera has not been initialized.
@@ -379,6 +415,11 @@ public:
     /// Read-only structure.
     /// @sa @ref CameraConfiguration
     const CameraConfiguration &get_camera_configuration();
+
+    /// @brief Gets the last decoded timestamp
+    /// @return timestamp Last decoded timestamp
+    /// @warning If no event decoding callback has been set, this functions returns -1
+    timestamp get_last_timestamp() const;
 
     /// @brief Gets corresponding @ref Device in HAL library
     /// @return The @ref Device used internally by the class Camera

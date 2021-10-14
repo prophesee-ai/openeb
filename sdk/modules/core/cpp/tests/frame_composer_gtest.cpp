@@ -55,8 +55,8 @@ TEST_F(FrameComposer_GTest, fit_size) {
     frames.reserve(6);
     rois.reserve(6);
 
+    int id             = 127;
     auto add_ref_image = [&](int left_x, int top_y, int width, int height) {
-        static int id = 127;
         frames.emplace_back(width, height, CV_8UC3, cv::Scalar::all(id++));
         rois.emplace_back(left_x, top_y, width, height);
     };
@@ -346,10 +346,10 @@ TEST_F(FrameComposer_GTest, gray_to_color) {
 
     // WHEN we add it to the FrameComposer using different rescaling and colormap options
     FrameComposer composer(cv::Vec3b(0, 0, 0));
+    int k = 0;
+    FrameComposer::ResizingOptions resize_options(width, height);
     auto add_image_to_the_composer = [&](unsigned char min_val, unsigned char max_val, int map_id) {
-        static int k = 0;
-        static FrameComposer::ResizingOptions resize_options(width, height);
-        static FrameComposer::GrayToColorOptions gray_o;
+        FrameComposer::GrayToColorOptions gray_o;
 
         gray_o.min_rescaling_value = min_val;
         gray_o.max_rescaling_value = max_val;

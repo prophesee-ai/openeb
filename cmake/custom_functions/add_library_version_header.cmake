@@ -8,8 +8,8 @@
 # See the License for the specific language governing permissions and limitations under the License.
 
 set(GIT_BRANCH "main")
-set(GIT_COMMIT_ID "11a19a7899e5fc8dcc27add6e273a66e513afa35")
-set(GIT_COMMIT_DATE "2120809")
+set(GIT_COMMIT_ID "9563348eafe82e4baddf6639fe8113821103f628")
+set(GIT_COMMIT_DATE "2021-10-08 17:33:30 +0200")
 
 # If git information are not provided in command line when running cmake, try to automatically determine them
 if(NOT GIT_BRANCH OR NOT GIT_COMMIT_ID OR NOT GIT_COMMIT_DATE)
@@ -29,7 +29,7 @@ else()
 endif(NOT GIT_COMMIT_ID)
 
 if(NOT GIT_COMMIT_DATE)
-    set(GIT_COMMAND_GET_COMMIT_DATE "${GIT_SCM} -C \"${PROJECT_SOURCE_DIR}\" log -1 --pretty=format:%cd --date=format:%y%j%H")
+    set(GIT_COMMAND_GET_COMMIT_DATE "${GIT_SCM} -C \"${PROJECT_SOURCE_DIR}\" log -1 --pretty=format:%cd --date=iso8601")
 else()
     set(GIT_COMMAND_GET_COMMIT_DATE "${CMAKE_COMMAND} -E echo ${GIT_COMMIT_DATE}")
 endif(NOT GIT_COMMIT_DATE)
@@ -111,6 +111,7 @@ function(add_library_version_header target_name outputfile libname)
     set(LIBRARY_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
     set(LIBRARY_VERSION_MINOR ${PROJECT_VERSION_MINOR})
     set(LIBRARY_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+    set(LIBRARY_VERSION_SUFFIX ${PROJECT_VERSION_SUFFIX})
 
     cmake_parse_arguments(LIB_HEADER "" "VERSION" "" ${ARGN})
     if (LIB_HEADER_VERSION)
@@ -129,6 +130,7 @@ function(add_library_version_header target_name outputfile libname)
                 -D LIBRARY_VERSION_MAJOR=${LIBRARY_VERSION_MAJOR}
                 -D LIBRARY_VERSION_MINOR=${LIBRARY_VERSION_MINOR}
                 -D LIBRARY_VERSION_PATCH=${LIBRARY_VERSION_PATCH}
+                -D LIBRARY_VERSION_SUFFIX=${LIBRARY_VERSION_SUFFIX}
                 -P ${cmake_script}
         COMMENT "Generating version file for library ${libname}"
         VERBATIM

@@ -27,7 +27,7 @@ def parse_args():
     parser.add_argument(
         '-i', '--input-raw-file', dest='input_path', default="",
         help="Path to input RAW file. If not specified, the live stream of the first available camera is used. "
-        "If it's a camera ID, it will try to open that camera instead.")
+        "If it's a camera serial number, it will try to open that camera instead.")
     args = parser.parse_args()
     return args
 
@@ -37,7 +37,7 @@ def main():
     args = parse_args()
 
     # Events iterator on Camera or RAW file
-    mv_iterator = EventsIterator(input_path=args.input_path, delta_t=1e3)
+    mv_iterator = EventsIterator(input_path=args.input_path, delta_t=1000)
     height, width = mv_iterator.get_size()  # Camera Geometry
 
     # Window - Graphical User Interface

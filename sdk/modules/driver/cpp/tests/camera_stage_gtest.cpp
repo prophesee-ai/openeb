@@ -31,7 +31,7 @@ using namespace Metavision;
 class CameraStage_Gtest : public GTestWithTmpDir {
 protected:
     virtual void SetUp() override {
-        // Create and open the rawfile
+        // Create and open the RAW file
         static int raw_counter = 1;
         rawfile_to_log_path_   = tmpdir_handler_->get_full_path("rawfile_" + std::to_string(++raw_counter) + ".raw");
         encoded_bytes_         = 0;
@@ -117,7 +117,7 @@ TEST_F(CameraStage_Gtest, camera_stage_produces_correct_events) {
     ASSERT_EQ(ref_data.size(), mock_stage.events_received_.size());
 
     timestamp tshift;
-    ASSERT_TRUE(cam_stage.camera().get_pimpl().device_->get_facility<I_Decoder>()->get_timestamp_shift(tshift));
+    ASSERT_TRUE(cam_stage.camera().get_pimpl().device_->get_facility<Future::I_Decoder>()->get_timestamp_shift(tshift));
     for (size_t i = 0; i < ref_data.size(); ++i) {
         ASSERT_EQ(ref_data[i].x, mock_stage.events_received_[i].x);
         ASSERT_EQ(ref_data[i].y, mock_stage.events_received_[i].y);

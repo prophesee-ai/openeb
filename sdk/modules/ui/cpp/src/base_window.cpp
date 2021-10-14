@@ -202,10 +202,10 @@ BaseWindow::BaseWindow(const std::string &title, int width, int height, RenderMo
 
     glfwMakeContextCurrent(nullptr);
 
+    glfwSetWindowUserPointer(glfwWindow_, this);
     glfwSetFramebufferSizeCallback(glfwWindow_, native_resize_callback);
     glfwSetWindowAspectRatio(glfwWindow_, width, height);
     glfwSetWindowSizeLimits(glfwWindow_, 200, 200 * height / width, GLFW_DONT_CARE, GLFW_DONT_CARE);
-    glfwSetWindowUserPointer(glfwWindow_, this);
 }
 
 BaseWindow::~BaseWindow() {

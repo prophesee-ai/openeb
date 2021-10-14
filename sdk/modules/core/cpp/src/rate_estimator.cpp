@@ -22,12 +22,19 @@ RateEstimator::RateEstimator(const Callback &cb, timestamp step_time, timestamp 
 }
 
 void RateEstimator::add_data(timestamp time, size_t count) {
+    std::unique_lock<std::mutex> guard(mutex_);
     if (!counts_.empty() && counts_.back().first == time) {
         counts_.back().second += count;
     } else {
         counts_.emplace_back(time, count);
     }
+
     if (time > next_time_) {
+        // handle calls to reset_data where next_time has been reset to a "too far" value
+        // this set next_time_ so that time - step_time_ < next_time_ < time
+        while (time > next_time_ + step_time_) {
+            next_time_ += step_time_;
+        }
         if (cb_) {
             timestamp last_time = 0;
             int count           = 0;
@@ -50,7 +57,9 @@ void RateEstimator::add_data(timestamp time, size_t count) {
                 last_time = it->first;
                 ++count;
             }
-            avg_rate /= count;
+            if (count != 0) {
+                avg_rate /= count;
+            }
             cb_(next_time_, avg_rate * 1.e6, peak_rate * 1.e6);
 
             // remove older countime from the map, they won't be needed anymore
@@ -58,6 +67,12 @@ void RateEstimator::add_data(timestamp time, size_t count) {
         }
         next_time_ += step_time_;
     }
+}
+
+void RateEstimator::reset_data() {
+    std::unique_lock<std::mutex> guard(mutex_);
+    counts_.clear();
+    next_time_ = step_time_;
 }
 
 timestamp RateEstimator::step_time() const {

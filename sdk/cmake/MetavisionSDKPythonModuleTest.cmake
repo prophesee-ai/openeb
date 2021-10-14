@@ -29,20 +29,12 @@ function(add_sdk_python_module_test module_name)
     get_filename_component(PYTESTS_DIR "${CMAKE_CURRENT_SOURCE_DIR}" ABSOLUTE)
 
     set(test_name "pytests_${module_name}")
-    set(module_target_name "metavision_sdk_${module_name}_python3")
     if(WIN32)
-        set(module_target_name "metavision_sdk_${module_name}_internal_python3")
-    endif()
-    # For now we test only one version, so we need to check the target name (if multiple versions are built
-    # then the target name is
-    # metavision_sdk_${module_name}_python3${VERSION_MAJOR}_${VERSION_MINOR}_${VERSION_PATCH}
-    list(LENGTH PYBIND11_PYTHON_VERSIONS NUMBER_OF_PYTHON_VERSIONS_BUILT)
-    if(NUMBER_OF_PYTHON_VERSIONS_BUILT GREATER 1)
-        string(REPLACE "." "_" PYTHON_VERSION_TESTED_UNDERSCORE "${PYTHON_VERSION_TESTED}")
-        set(python_module_target_name "${module_target_name}${PYTHON_VERSION_TESTED_UNDERSCORE}")
+        set(pythonpath_value "${PYTHON3_OUTPUT_DIR}/$<CONFIG>")
     else()
-        set(python_module_target_name "${module_target_name}")
+        set(pythonpath_value "${PYTHON3_OUTPUT_DIR}")
     endif()
+    get_prepended_env_paths(PYTHONPATH pythonpath_value "${pythonpath_value}" "${PROJECT_SOURCE_DIR}/utils/python")
 
     add_test(
         NAME ${test_name}
@@ -50,9 +42,6 @@ function(add_sdk_python_module_test module_name)
         WORKING_DIRECTORY ${PYTESTS_DIR}/..
     )
     # add module dependencies and global utils to the python paths
-    get_prepended_env_paths(PYTHONPATH pythonpath_value
-                           "$<TARGET_FILE_DIR:${python_module_target_name}>" "${PROJECT_SOURCE_DIR}/utils/python")
-
     set(pypkg_module_dir "${PROJECT_SOURCE_DIR}/sdk/modules/${module_name}/python/pypkg")
     if(EXISTS "${pypkg_module_dir}")
         get_prepended_env_paths(PYTHONPATH pythonpath_value "${pythonpath_value}" "${pypkg_module_dir}")

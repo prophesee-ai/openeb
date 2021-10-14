@@ -19,7 +19,16 @@ class I_HW_Identification_GTest : public ::testing::Test {
 public:
     void open() {
         try {
+            auto serial_list = Metavision::DeviceDiscovery::list();
+            if (serial_list.empty()) {
+                std::cerr << "No Device Found" << std::endl;
+                FAIL();
+            } else if (serial_list.size() > 1) {
+                std::cerr << "WARNING: Several Cameras Plugged In" << std::endl;
+            }
+
             device_ = Metavision::DeviceDiscovery::open("");
+
         } catch (const Metavision::HalException &e) {
             std::cerr << "Plug a camera to run this test." << std::endl;
             FAIL();
@@ -59,11 +68,16 @@ TEST_F_WITH_CAMERA(I_HW_Identification_GTest, hd_get_available_raw_format_psee_g
                    camera_params(camera_param().integrator("Prophesee").generation("3.1"))) {
     open();
     ASSERT_EQ(1, hw_id_->get_available_raw_format().size());
-    ASSERT_EQ("EVT2", hw_id_->get_available_raw_format()[0]);
+    if (hw_id_->get_system_id() == 0x28) {
+        ASSERT_EQ("EVT3", hw_id_->get_available_raw_format()[0]);
+    } else {
+        ASSERT_EQ("EVT2", hw_id_->get_available_raw_format()[0]);
+    }
 }
 
 TEST_F_WITH_CAMERA(I_HW_Identification_GTest, hd_get_available_raw_format_psee_gen4,
-                   camera_params(camera_param().integrator("Prophesee").generation("4.0"))) {
+                   camera_params(camera_param().integrator("Prophesee").generation("4.0"),
+                                 camera_param().integrator("Prophesee").generation("4.1"))) {
     open();
     ASSERT_EQ(2, hw_id_->get_available_raw_format().size());
     ASSERT_EQ("EVT2", hw_id_->get_available_raw_format()[0]);
@@ -86,4 +100,10 @@ TEST_F_WITH_CAMERA(I_HW_Identification_GTest, hd_get_sensor_info_gen4,
                    camera_params(camera_param().generation("4.0"))) {
     open();
     ASSERT_EQ("4.0", hw_id_->get_sensor_info().as_string());
+}
+
+TEST_F_WITH_CAMERA(I_HW_Identification_GTest, hd_get_sensor_info_gen41,
+                   camera_params(camera_param().generation("4.1"))) {
+    open();
+    ASSERT_EQ("4.1", hw_id_->get_sensor_info().as_string());
 }

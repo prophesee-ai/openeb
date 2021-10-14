@@ -39,12 +39,16 @@ public:
     ~RoiFilterAlgorithm() = default;
 
     /// @brief Applies the ROI Mask filter to the given input buffer storing the result in the output buffer.
-    /// @param first Iterator at the beginning of the range of the input elements
-    /// @param last Iterator at the end of the range of the input elements
-    /// @param d_first Beginning of the destination range
-    /// @return Iterator pointing to the last + 1 event added in the output
+    /// @tparam InputIt Read-Only input event iterator type. Works for iterators over buffers of @ref EventCD
+    /// or equivalent
+    /// @tparam OutputIt Read-Write output event iterator type. Works for iterators over containers of @ref EventCD
+    /// or equivalent
+    /// @param it_begin Iterator to first input event
+    /// @param it_end Iterator to the past-the-end event
+    /// @param inserter Output iterator or back inserter
+    /// @return Iterator pointing to the past-the-end event added in the output
     template<class InputIt, class OutputIt>
-    inline OutputIt process_events(InputIt first, InputIt last, OutputIt d_first);
+    inline OutputIt process_events(InputIt it_begin, InputIt it_end, OutputIt inserter);
 
     /// @note process(...) is deprecated since version 2.2.0 and will be removed in later releases.
     ///       Please use process_events(...) instead
@@ -126,12 +130,12 @@ inline RoiFilterAlgorithm::RoiFilterAlgorithm(std::int32_t x0, std::int32_t y0, 
     x0_(x0), y0_(y0), x1_(x1), y1_(y1), output_relative_coordinates_(output_relative_coordinates) {}
 
 template<class InputIt, class OutputIt>
-inline OutputIt RoiFilterAlgorithm::process_events(InputIt first, InputIt last, OutputIt d_first) {
+inline OutputIt RoiFilterAlgorithm::process_events(InputIt it_begin, InputIt it_end, OutputIt inserter) {
     if (is_resetting()) {
         return Metavision::detail::transform_if(
-            first, last, d_first, [&](const auto &event) { return this->operator()(event); }, std::cref(*this));
+            it_begin, it_end, inserter, [&](const auto &event) { return this->operator()(event); }, std::cref(*this));
     } else {
-        return Metavision::detail::insert_if(first, last, d_first,
+        return Metavision::detail::insert_if(it_begin, it_end, inserter,
                                              [&](const auto &event) { return this->operator()(event); });
     }
 }

@@ -34,25 +34,24 @@ int main(int argc, char *argv[]) {
 
     uint32_t accumulation_time;
     double slow_motion_factor;
-    std::uint16_t fps;
+    const std::uint16_t fps(30);
     std::string fourcc;
 
     const std::string program_desc(
         "Application to generate a video from RAW file.\n\n"
-        "The frame rate of the output video (display rate) is driven by --fps option.\n"
+        "The frame rate of the output video (display rate) is fixed to 30.\n"
         "The frame rate to generate the frames from the events (generation rate) is driven by the slow motion factor "
-        "(-s option): generation rate = slow motion factor x frame rate."
-        "For example, to create a video from frames generated at 1500 FPS that will be rendered in slow-motion "
-        "at 30 FPS, one has to set a slow-motion factor of 50.\n");
+        "(-s option): generation rate = slow motion factor x 30.\n"
+        "For example, to create a video from frames generated at 1500 FPS that will be rendered in slow-motion at 30 "
+        "FPS, one has to set a slow-motion factor of 50.\n");
 
     po::options_description options_desc("Options");
     // clang-format off
     options_desc.add_options()
         ("help,h", "Produce help message.")
         ("input-raw-file,i",     po::value<std::string>(&in_raw_file_path)->required(), "Path to input RAW file.")
-        ("output-video-file,o",  po::value<std::string>(&out_video_file_path), "Path to output AVI file. If not provided, the base name of the input file will be used.")
+        ("output-video-file,o",  po::value<std::string>(&out_video_file_path), "Path to output AVI file. If not provided, the base name of the input file will be used. The output video fps is fixed to 30.")
         ("accumulation-time,a",  po::value<uint32_t>(&accumulation_time)->default_value(10000), "Accumulation time (in us).")
-        ("fps",                  po::value<std::uint16_t>(&fps)->default_value(30), "Frame rate of the video to generate.")
         ("slow-motion-factor,s", po::value<double>(&slow_motion_factor)->default_value(1.), "Slow motion factor (or fast for value lower than 1) to apply to generate the video.")
         ("fourcc",               po::value<std::string>(&fourcc)->default_value("MJPG"), "Fourcc 4-character code of codec used to compress the frames. List of codes can be obtained at [Video Codecs by FOURCC](http://www.fourcc.org/codecs.php) page.")
     ;
@@ -116,9 +115,10 @@ int main(int argc, char *argv[]) {
     });
 
     // Set up a change of status callback
-    camera.add_status_change_callback([&recorder](const Metavision::CameraStatus &status) {
+    camera.add_status_change_callback([&recorder, &frame_generation](const Metavision::CameraStatus &status) {
         // When the camera stops, we stop the recorder as well and wait for all the frames to be written.
         if (status == Metavision::CameraStatus::STOPPED) {
+            frame_generation.force_generate();
             recorder.stop();
         }
     });

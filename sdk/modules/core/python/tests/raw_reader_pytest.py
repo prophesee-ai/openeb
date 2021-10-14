@@ -7,6 +7,8 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
+# pylint: disable=E1101
+
 """
 Unit tests for RawReader class
 """
@@ -15,15 +17,14 @@ import numpy as np
 
 from metavision_core.event_io import RawReader
 from metavision_core.event_io.raw_reader import initiate_device
-from metavision_core.event_io import load_events
-# pylint: disable=E1101
+from metavision_core.event_io import load_events, EventDatReader
 
 
 def pytestcase_rawreader_init(tmpdir, dataset_dir):
     """Tests initialization of all member variables after creation of RawReader object from a file"""
     # GIVEN
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording.raw")
+                            "openeb", "core", "event_io", "recording.raw")
     # WHEN
     video = RawReader(filename, max_events=int(1e7), do_time_shifting=False)
     # THEN
@@ -40,7 +41,7 @@ def pytestcase_rawreader_init(tmpdir, dataset_dir):
     """Tests initialization of all member variables after creation of RawReader object from a file"""
     # GIVEN
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording.raw")
+                            "openeb", "core", "event_io", "recording.raw")
 
     video = RawReader(filename, max_events=int(1e7), do_time_shifting=False)
     # WHEN
@@ -58,7 +59,7 @@ def pytestcase_rawreader_init(tmpdir, dataset_dir):
 def pytestcase_rawreader_init_from_device(tmpdir, dataset_dir):
     """Tests initialization of all member variables after creation of RawReader object from a file"""
     # GIVEN
-    filename = os.path.join(dataset_dir, "metavision_core", "event_io", "recording.raw")
+    filename = os.path.join(dataset_dir, "openeb", "core", "event_io", "recording.raw")
     device = initiate_device(filename, do_time_shifting=True)
     # WHEN
     video = RawReader.from_device(device, max_events=int(1e7))
@@ -85,8 +86,8 @@ def pytestcase_rawreader_load_n_events(tmpdir, dataset_dir):
     """Tests loading a define number of events"""
     # GIVEN
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording.raw")
-    video = RawReader(filename, do_time_shifting=False)
+                            "openeb", "core", "event_io", "recording.raw")
+    video = RawReader(filename, do_time_shifting=False, max_events=int(1e7))
     # WHEN
     events = video.load_n_events(12)
     # THEN
@@ -100,12 +101,35 @@ def pytestcase_rawreader_load_n_events(tmpdir, dataset_dir):
                 for name in events.dtype.names])
 
 
+def pytestcase_rawreader_seek_n_events(tmpdir, dataset_dir):
+    """Tests seeking a precise number of events"""
+    # GIVEN
+    filename = os.path.join(dataset_dir,
+                            "openeb", "core", "event_io", "recording.raw")
+    video = RawReader(filename, do_time_shifting=False, max_events=int(1e7))
+    # WHEN
+    video.seek_event(11)
+    events = video.load_n_events(1)
+    # THEN
+    reference = np.array([(8720087, 252, 227, 1)],
+                         dtype={'itemsize': 16, 'offsets': [8, 0, 2, 4], 'names': ['t', 'x', 'y', 'p'],
+                                'formats': ['i8', 'u2', 'u2', 'i2']})
+    assert all([np.allclose(events[name], reference[name])
+                for name in events.dtype.names])
+    assert video.current_event_index() == 12
+
+    # WHEN
+    video.seek_event(1e7)
+    # THEN
+    assert video.is_done()
+
+
 def pytestcase_rawreader_load_n_events_all(tmpdir, dataset_dir):
     """Tests loading all the events of a file"""
     # GIVEN
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording.raw")
-    video = RawReader(filename, do_time_shifting=False)
+                            "openeb", "core", "event_io", "recording.raw")
+    video = RawReader(filename, do_time_shifting=False, max_events=int(1e7))
     # WHEN
     events = video.load_n_events(667850)
     # THEN
@@ -130,8 +154,8 @@ def pytestcase_rawreader_load_n_events_all(tmpdir, dataset_dir):
 def pytestcase_rawreader_load_n_events_too_much(tmpdir, dataset_dir):
     """Tests loading more events than the number in the file"""
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording.raw")
-    video = RawReader(filename, do_time_shifting=False)
+                            "openeb", "core", "event_io", "recording.raw")
+    video = RawReader(filename, do_time_shifting=False, max_events=int(1e7))
 
     events = video.load_n_events(667850)
     assert video.done == False
@@ -149,8 +173,8 @@ def pytestcase_rawreader_load_n_events_too_much(tmpdir, dataset_dir):
 def pytestcase_rawreader_load_delta_t(tmpdir, dataset_dir):
     """Tests loading events inside a time window"""
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording.raw")
-    video = RawReader(filename, do_time_shifting=False)
+                            "openeb", "core", "event_io", "recording.raw")
+    video = RawReader(filename, do_time_shifting=False, max_events=int(1e7))
     assert video.current_time == 0
     _ = video.load_n_events(1)  # we are in no time shifting mode
     events = video.load_delta_t(100)
@@ -172,8 +196,8 @@ def pytestcase_rawreader_load_delta_t(tmpdir, dataset_dir):
 def pytestcase_rawreader_load_small_delta_t(tmpdir, dataset_dir):
     """Tests loading events inside a time window smaller than the controller timeslice"""
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording.raw")
-    video = RawReader(filename, do_time_shifting=False)
+                            "openeb", "core", "event_io", "recording.raw")
+    video = RawReader(filename, do_time_shifting=False, max_events=int(1e7))
     assert video.current_time == 0
     _ = video.load_n_events(1)  # we are in no time shifting mode
     events = video.load_delta_t(100)
@@ -231,8 +255,8 @@ def pytestcase_rawreader_load_small_delta_t(tmpdir, dataset_dir):
 def pytestcase_rawreader_load_delta_t_too_much(tmpdir, dataset_dir):
     """Tests loading events in a time window larger than total file duration"""
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording.raw")
-    video = RawReader(filename, do_time_shifting=False)
+                            "openeb", "core", "event_io", "recording.raw")
+    video = RawReader(filename, do_time_shifting=False, max_events=int(1e7))
     assert video.current_time == 0
     while video.current_time < 16420000:
         _ = video.load_delta_t(10000)
@@ -257,8 +281,8 @@ def pytestcase_rawreader_load_delta_t_too_much(tmpdir, dataset_dir):
 def pytestcase_rawreader_seek_time(tmpdir, dataset_dir):
     """Tests loading events after a call to seek_time()"""
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording.raw")
-    video = RawReader(filename, do_time_shifting=False)
+                            "openeb", "core", "event_io", "recording.raw")
+    video = RawReader(filename, do_time_shifting=False, max_events=int(1e7))
     assert video.current_time == 0
 
     video.seek_time(16420000)
@@ -283,8 +307,8 @@ def pytestcase_rawreader_seek_time(tmpdir, dataset_dir):
 def pytestcase_rawreader_exotic_seek_time_and_delta_t(tmpdir, dataset_dir):
     """Tests loading events after a call to seek_time() using a variety delta_t values"""
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording.raw")
-    video = RawReader(filename, do_time_shifting=False)
+                            "openeb", "core", "event_io", "recording.raw")
+    video = RawReader(filename, do_time_shifting=False, max_events=int(1e7))
     assert video.current_time == 0
 
     video.seek_time(16420458)
@@ -310,8 +334,8 @@ def pytestcase_rawreader_exotic_seek_time_and_delta_t(tmpdir, dataset_dir):
 def pytestcase_rawreader_exotic_mix_seek_time_load_n_and_delta_t(tmpdir, dataset_dir):
     """Tests loading events after a call to seek_time() using a variety delta_t values"""
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording.raw")
-    video = RawReader(filename, do_time_shifting=False)
+                            "openeb", "core", "event_io", "recording.raw")
+    video = RawReader(filename, do_time_shifting=False, max_events=int(1e7))
     assert video.current_time == 0
 
     video.seek_time(16420000)
@@ -382,8 +406,8 @@ def pytestcase_rawreader_equivalence(tmpdir, dataset_dir):
     """Ensures the equivalence of events coming from a RAW file and its RAW to DAT equivalent"""
     # GIVEN
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording.raw")
-    video = RawReader(filename, do_time_shifting=False)
+                            "openeb", "core", "event_io", "recording.raw")
+    video = RawReader(filename, do_time_shifting=False, max_events=int(1e7))
     # WHEN
     dat_evs = load_events(filename.replace(".raw", "_td.dat"))
     raw_evs = video.load_n_events(1e8)
@@ -394,14 +418,37 @@ def pytestcase_rawreader_equivalence(tmpdir, dataset_dir):
     assert np.allclose(np.diff(dat_evs['t']), np.diff(raw_evs['t']))
 
 
+def pytestcase_rawreader_pyreader_equivalence_mixed(tmpdir, dataset_dir):
+    """Ensures the equivalence of events coming from a RAW file and its RAW to DAT equivalent in mixed mode"""
+    # GIVEN
+    filename = os.path.join(dataset_dir,
+                            "openeb", "core", "event_io", "recording.raw")
+    video = RawReader(filename, do_time_shifting=False, max_events=int(1e7))
+    # WHEN
+    dat_video = EventDatReader(filename.replace(".raw", "_td.dat"))
+
+    video.load_n_events(10)
+    dat_video.load_n_events(10)
+
+    while not video.is_done():
+        # THEN
+        raw_evs = video.load_mixed(10000, 2000)
+        dat_evs = dat_video.load_mixed(10000, 2000)
+
+        assert len(dat_evs) == len(raw_evs)
+
+        assert all([np.allclose(dat_evs[name], raw_evs[name]) for name in ("x", "y", "p")])
+        assert np.allclose(np.diff(dat_evs['t']), np.diff(raw_evs['t']))
+
+
 def pytestcase_rawreader_ext_triggerevent(tmpdir, dataset_dir):
     """Tries to read external trigger events in a RAW file"""
     # GIVEN
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording.raw")
-    video = RawReader(filename, do_time_shifting=False)
+                            "openeb", "core", "event_io", "recording.raw")
+    video = RawReader(filename, do_time_shifting=False, max_events=int(1e7))
     trigger_evt_gt = np.loadtxt(os.path.join(dataset_dir,
-                                             "metavision_core", "event_io", "triggerevt.csv"), delimiter=",")
+                                             "openeb", "core", "event_io", "triggerevt.csv"), delimiter=",")
     # WHEN
     video.load_delta_t(int(1e8))  # read everything in this small file
     ext_trigger_evt = video.get_ext_trigger_events()
@@ -420,8 +467,8 @@ def pytestcase_rawreader_time_shifting(tmpdir, dataset_dir):
     """Ensures the equivalence of events coming from a RAW file and its RAW to DAT equivalent"""
     # GIVEN
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording.raw")
-    video = RawReader(filename, do_time_shifting=True)
+                            "openeb", "core", "event_io", "recording.raw")
+    video = RawReader(filename, do_time_shifting=True, max_events=int(1e7))
     # WHEN
     dat_evs = load_events(filename.replace(".raw", "_td.dat"))
     raw_evs = video.load_n_events(1E8)

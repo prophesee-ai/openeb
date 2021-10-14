@@ -18,4 +18,4 @@ endif (GENERATE_DOC_PYTHON_BINDINGS)
 # Add tests
 add_subdirectory(tests)
 
-add_cpack_component(PUBLIC metavision-sdk-base-python)
+add_python_cpack_components(PUBLIC metavision-sdk-base)

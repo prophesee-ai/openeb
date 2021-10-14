@@ -128,7 +128,7 @@ install(FILES "${MetavisionSDK_config_version_file_to_install}"
 #
 #      set_target_properties(metavision_sdk_analytics
 #          PROPERTIES
-#              VERSION ${PROJECT_VERSION}
+#              VERSION ${PROJECT_VERSION_FULL}
 #              SOVERSION ${PROJECT_VERSION_MAJOR}
 #      )
 #
@@ -152,13 +152,13 @@ install(FILES "${MetavisionSDK_config_version_file_to_install}"
 #          EXPORT metavision_sdk_analyticsTargets
 #          RUNTIME
 #              DESTINATION bin
-#              COMPONENT metavision-sdk-analytics
+#              COMPONENT metavision-sdk-analytics-lib
 #          ARCHIVE
 #              DESTINATION lib
-#              COMPONENT metavision-sdk-analytics
+#              COMPONENT metavision-sdk-analytics-lib
 #          LIBRARY
 #              DESTINATION lib
-#              COMPONENT metavision-sdk-analytics
+#              COMPONENT metavision-sdk-analytics-lib
 #              NAMELINK_SKIP
 #      )
 #
@@ -219,7 +219,7 @@ function(MetavisionSDK_add_module module_name)
         add_library(metavision_sdk_${module_name} SHARED ${PARSED_ARGS_SOURCES})
         set_target_properties(metavision_sdk_${module_name}
             PROPERTIES
-                VERSION ${PROJECT_VERSION}
+                VERSION ${PROJECT_VERSION_FULL}
                 SOVERSION ${PROJECT_VERSION_MAJOR}
         )
     endif(PARSED_ARGS_INTERFACE_LIBRARY)
@@ -237,22 +237,13 @@ function(MetavisionSDK_add_module module_name)
             $<INSTALL_INTERFACE:include>
     )
 
-    set(internal_include_dir "${PROJECT_SOURCE_DIR}/sdk/modules/${module_name}/src/include")
+    set(internal_include_dir "${PROJECT_SOURCE_DIR}/sdk/modules/${module_name}/cpp/src/include")
     if(NOT PARSED_ARGS_INTERFACE_LIBRARY)
         if(IS_DIRECTORY "${internal_include_dir}")
             target_include_directories(metavision_sdk_${module_name}
                 PRIVATE
                     $<BUILD_INTERFACE:${internal_include_dir}>
             )
-        else()
-            # TODO : when reorganization is finished, keep only the contents of this else
-            set(internal_include_dir "${PROJECT_SOURCE_DIR}/sdk/modules/${module_name}/cpp/src/include")
-            if(IS_DIRECTORY "${internal_include_dir}")
-                target_include_directories(metavision_sdk_${module_name}
-                    PRIVATE
-                        $<BUILD_INTERFACE:${internal_include_dir}>
-                )
-            endif(IS_DIRECTORY "${internal_include_dir}")
         endif(IS_DIRECTORY "${internal_include_dir}")
     endif(NOT PARSED_ARGS_INTERFACE_LIBRARY)
 
@@ -291,13 +282,13 @@ function(MetavisionSDK_add_module module_name)
             EXPORT metavision_sdk_${module_name}Targets
             RUNTIME
                 DESTINATION ${RUNTIME_INSTALL_DEST}
-                COMPONENT metavision-sdk-${module_name}
+                COMPONENT metavision-sdk-${module_name}-lib
             ARCHIVE
                 DESTINATION ${ARCHIVE_INSTALL_DEST}
-                COMPONENT metavision-sdk-${module_name}
+                COMPONENT metavision-sdk-${module_name}-lib
             LIBRARY
                 DESTINATION ${LIBRARY_INSTALL_DEST}
-                COMPONENT metavision-sdk-${module_name}
+                COMPONENT metavision-sdk-${module_name}-lib
                 NAMELINK_SKIP
             )
 

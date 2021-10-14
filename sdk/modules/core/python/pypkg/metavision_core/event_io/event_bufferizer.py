@@ -11,8 +11,8 @@
 This class receives events, buffers them,
 and yields them according to a common criterion like
 - event_count
-- fixed_time 
-- array coverage 
+- fixed_time
+- array coverage
 - maximum flow
 etc.
 """

@@ -35,6 +35,14 @@ class EventBaseReader(object):
     """
 
     def __init__(self, event_file):
+        self._binary_format = None
+        self._file = None
+        self._start = None
+        self.ev_type = None
+        self._ev_size = None
+        self._size = None
+        self._dtype = None
+        self._decode_dtype = None
         self.path = event_file
         self._extension = self.path.split('.')[-1]
         self.open_file()
@@ -49,6 +57,12 @@ class EventBaseReader(object):
         # timestamp superior or equal to t (event with timestamp exactly t is not loaded yet)
         self.current_time = 0
         self.duration_s = self.total_time() * 1e-6
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        pass
 
     def open_file(self):
         raise NotImplementedError()
@@ -102,41 +116,43 @@ class EventBaseReader(object):
         wrd += '-----------\n'
         return wrd
 
-    def load_n_events(self, ev_count):
-        """Loads batch of n events.
+    def load_n_events(self, n_events):
+        """
+        Loads batch of n events.
 
         Args:
-            ev_count (int): Number of events that will be loaded
+            n_events (int): Number of events that will be loaded
 
         Returns:
-            events
+            events (numpy array): structured numpy array containing the events.
 
         Note that current time will be incremented to reach the timestamp of the first event not loaded yet.
         """
-        event_buffer = np.empty((ev_count + 1,), dtype=self._decode_dtype)
+        event_buffer = np.empty((n_events + 1,), dtype=self._decode_dtype)
 
         pos = self._file.tell()
         count = (self._end - pos) // self._ev_size
-        if ev_count >= count:
+        if n_events >= count:
             self.done = True
-            ev_count = count
-            self._binary_format.stream_events(self._file, event_buffer, self._dtype, ev_count)
-            self.current_time = event_buffer["t"][ev_count - 1] + 1
+            n_events = count
+            self._binary_format.stream_events(self._file, event_buffer, self._dtype, n_events)
+            self.current_time = event_buffer["t"][n_events - 1] + 1
         else:
-            self._binary_format.stream_events(self._file, event_buffer, self._dtype, ev_count + 1)
-            self.current_time = event_buffer["t"][ev_count]
-            self._file.seek(pos + ev_count * self._ev_size)
+            self._binary_format.stream_events(self._file, event_buffer, self._dtype, n_events + 1)
+            self.current_time = event_buffer["t"][n_events]
+            self._file.seek(pos + n_events * self._ev_size)
 
-        return event_buffer[:ev_count]
+        return event_buffer[:n_events]
 
     def load_delta_t(self, delta_t):
-        """Loads events corresponding to a slice of time, starting from the DatReader's `current_time`.
+        """
+        Loads events corresponding to a slice of time, starting from the DatReader's `current_time`.
 
         Args:
-            delta_t: (us) slice thickness
+            delta_t (int): slice duration (in us).
 
         Returns:
-            events
+            events (numpy array): structured numpy array containing the events.
 
         Note that current time will be incremented by `delta_t`.
         If an event is timestamped at exactly current_time it will not be loaded.
@@ -179,30 +195,71 @@ class EventBaseReader(object):
 
         return event_buffer
 
-    def seek_event(self, ev_count):
-        """Seeks in the file by `ev_count` events
+    def load_mixed(self, n_events, delta_t):
+        """
+        Loads batch of n events or delta_t microseconds, whichever comes first.
 
         Args:
-            ev_count (int): seek in the file after ev_count events
+            n_events (int): Maximum number of events that will be loaded.
+            delta_t (int): Maximum allowed slice duration (in us).
+
+        Returns:
+            events (numpy array): structured numpy array containing the events.
+
+        Note that current time will be incremented to reach the timestamp of the first event not loaded yet.
+        However if the maximal time slice duration is reached, current time will be increased by delta_t instead.
+        """
+        event_buffer = np.empty((n_events + 1,), dtype=self._decode_dtype)
+        previous_time = self.current_time
+
+        pos = self._file.tell()
+        count = (self._end - pos) // self._ev_size
+        if count <= n_events:
+            self.done = True
+            n_events = count
+            self._binary_format.stream_events(self._file, event_buffer, self._dtype, n_events)
+            self.current_time = event_buffer["t"][n_events - 1] + 1
+        else:
+            self._binary_format.stream_events(self._file, event_buffer, self._dtype, n_events + 1)
+            self.current_time = event_buffer["t"][n_events]
+            self._file.seek(pos + n_events * self._ev_size)
+
+        # let's check is the delta_t condition already met
+        if self.current_time - previous_time >= delta_t:
+            # then we only need a subset of the events.
+            index = np.searchsorted(event_buffer[:n_events]['t'], previous_time + delta_t)
+
+            event_buffer = event_buffer[:index]
+            self.current_time = previous_time + delta_t
+            self._file.seek(pos + index * self._ev_size)
+
+        return event_buffer[:n_events]
+
+    def seek_event(self, n_events):
+        """
+        Seeks in the file by `n_events` events
+
+        Args:
+            n_events (int): seek in the file after n_events events
 
         Note that current time will be set to the timestamp of the next event.
         """
-        if ev_count <= 0:
+        if n_events <= 0:
             self._file.seek(self._start)
             self.current_time = 0
-        elif ev_count >= self._ev_count:
+        elif n_events >= self._ev_count:
             # we put the cursor one event before and read the last event
             # which puts the file cursor at the right place
             # current_time is set to the last event timestamp + 1
             self._file.seek(self._start + (self._ev_count - 1) * self._ev_size)
             self.current_time = np.fromfile(self._file, dtype=self._dtype, count=1)["t"][0] + 1
         else:
-            # we put the cursor at the *ev_count*nth event
-            self._file.seek(self._start + (ev_count) * self._ev_size)
+            # we put the cursor at the *n_events*nth event
+            self._file.seek(self._start + (n_events) * self._ev_size)
             # we read the timestamp of the following event (this change the position in the file)
             self.current_time = np.fromfile(self._file, dtype=self._dtype, count=1)["t"][0]
             # this is why we go back at the right position here
-            self._file.seek(self._start + (ev_count) * self._ev_size)
+            self._file.seek(self._start + (n_events) * self._ev_size)
         self.done = self._file.tell() >= self._end
 
     def seek_time(self, expected_time, term_criterion=100000):
@@ -335,6 +392,6 @@ class EventDatReader(EventBaseReader):
         self._file = open(self.path, "rb")
         self._start, self.ev_type, self._ev_size, self._size = self._binary_format.parse_header(self._file)
         assert self._ev_size != 0
-        assert type(self._ev_size) is int
+        assert isinstance(self._ev_size, int)
         self._dtype = self._binary_format.EV_TYPES[self.ev_type]
         self._decode_dtype = self._binary_format.DECODE_DTYPES[self.ev_type]

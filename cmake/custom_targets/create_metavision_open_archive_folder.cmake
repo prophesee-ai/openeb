@@ -12,13 +12,18 @@ file(REMOVE_RECURSE "${OUTPUT_DIR}")
 file(MAKE_DIRECTORY "${OUTPUT_DIR}")
 
 # Add the files and folders needed to compile open :
-foreach (file_or_dir CMakeLists.txt licensing/LICENSE_OPEN .gitignore conftest.py pytest.ini cmake standalone_samples hal utils/python/metavision_utils utils/cpp utils/scripts utils/CMakeLists.txt sdk/cmake sdk/CMakeLists.txt sdk/modules/CMakeLists.txt)
+foreach (file_or_dir CMakeLists.txt licensing/LICENSE_OPEN .gitignore conftest.py pytest.ini cmake standalone_samples hal hal_openeb_plugins utils/python/metavision_utils utils/cpp utils/scripts utils/CMakeLists.txt sdk/cmake sdk/CMakeLists.txt sdk/modules/CMakeLists.txt)
     get_filename_component(dest "${OUTPUT_DIR}/${file_or_dir}" DIRECTORY)
     file(COPY "${PROJECT_SOURCE_DIR}/${file_or_dir}"
          DESTINATION "${dest}"
          PATTERN __pycache__ EXCLUDE
     )
 endforeach(file_or_dir)
+file(MAKE_DIRECTORY "${OUTPUT_DIR}/.github")
+file(COPY "${PROJECT_SOURCE_DIR}/utils/github_actions/openeb/"
+     DESTINATION "${OUTPUT_DIR}/.github"
+     PATTERN "*"
+)
 
 # Remove professional targets
 file(REMOVE_RECURSE "${OUTPUT_DIR}/cmake/custom_targets_metavision_professional")

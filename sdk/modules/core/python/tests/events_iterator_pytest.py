@@ -24,7 +24,7 @@ def pytestcase_iterator_init(tmpdir, dataset_dir):
     """Tests initialization of all member variables after creation of RawReader object from a file"""
     # GIVEN
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording.raw")
+                            "openeb", "core", "event_io", "recording.raw")
     mv_iterator = EventsIterator(filename, start_ts=0, delta_t=10000,
                                  max_duration=1e7, relative_timestamps=True)
     # WHEN
@@ -38,7 +38,7 @@ def pytestcase_iterator_float_init(tmpdir, dataset_dir):
     """Tests initialization with float values !"""
     # GIVEN
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording.raw")
+                            "openeb", "core", "event_io", "recording.raw")
     # WHEN
     mv_iterator = EventsIterator(filename, start_ts=0, delta_t=1e4,
                                  max_duration=2E4, relative_timestamps=True)
@@ -58,7 +58,7 @@ def pytestcase_rawiterator_max_duration(tmpdir, dataset_dir):
     """Tests max_duration parameter effect"""
     # GIVEN
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording.raw")
+                            "openeb", "core", "event_io", "recording.raw")
     delta_t = 100000
     for max_duration in (10000, 100000, 400000):
         mv_iterator = EventsIterator(filename, start_ts=0, delta_t=delta_t,
@@ -78,7 +78,7 @@ def pytestcase_rawiterator_max_duration_not_round(tmpdir, dataset_dir):
     """Tests max_duration parameter effect with a not round value"""
     # GIVEN
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording.raw")
+                            "openeb", "core", "event_io", "recording.raw")
     delta_t = 100000
     max_duration = 120000
     mv_iterator = EventsIterator(filename, start_ts=0, delta_t=delta_t,
@@ -96,16 +96,16 @@ def pytestcase_rawiterator_start_ts(tmpdir, dataset_dir):
     """Tests start ts parameter effect"""
     # GIVEN
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording.raw")
+                            "openeb", "core", "event_io", "recording.raw")
     max_duration = 100000
     start_ts = 230000
-    delta_t = 100000
+    delta_t = 10000
     mv_iterator = EventsIterator(filename, start_ts=start_ts, delta_t=delta_t,
                                  max_duration=max_duration, relative_timestamps=True)
     # WHEN
     counter = 0
     for evs in mv_iterator:
-        assert mv_iterator.reader.current_time >= start_ts
+        assert mv_iterator.get_current_time() >= start_ts
         # relative timestamps is True so all timestamp should be less than delta t
         if evs.size:
             assert evs['t'][-1] < delta_t  # relative
@@ -119,7 +119,7 @@ def pytestcase_rawiterator_absolute_timestamps(tmpdir, dataset_dir):
     # GIVEN
     timeslice = 100000
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording.raw")
+                            "openeb", "core", "event_io", "recording.raw")
     mv_iterator = EventsIterator(filename, start_ts=0, delta_t=timeslice,
                                  max_duration=1e6, relative_timestamps=False)
     # WHEN & THEN
@@ -137,7 +137,7 @@ def pytestcase_iterator_equivalence(tmpdir, dataset_dir):
     """Ensures the equivalence of events coming from a RAW file and its RAW to DAT equivalent"""
     # GIVEN
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording.raw")
+                            "openeb", "core", "event_io", "recording.raw")
     mv_iterator = EventsIterator(filename, start_ts=0, delta_t=2000000,
                                  max_duration=1e6, relative_timestamps=False)
 
@@ -151,12 +151,31 @@ def pytestcase_iterator_equivalence(tmpdir, dataset_dir):
     assert all([np.allclose(dat_evs[name], evs[name]) for name in ("t", "x", "y", "p")])
 
 
+def pytestcase_iterator_equivalence_mixed_mode(tmpdir, dataset_dir):
+    """Ensures the equivalence of events coming from a RAW file and its RAW to DAT equivalent when runs
+    from two iterators in mixed mode."""
+    # GIVEN
+    filename = os.path.join(dataset_dir,
+                            "openeb", "core", "event_io", "recording.raw")
+    filename_dat = filename.replace(".raw", "_td.dat")
+    mv_it = EventsIterator(filename, start_ts=0, n_events=50000, delta_t=200000, mode="mixed",
+                           max_duration=2e6, relative_timestamps=False)
+    mv_it_dat = EventsIterator(filename_dat, start_ts=0, n_events=50000, delta_t=200000, mode="mixed",
+                               max_duration=2e6, relative_timestamps=False)
+
+    # WHEN
+    for ev, ev_dat in zip(mv_it, mv_it_dat):
+        # THEN
+        assert len(ev_dat) == len(ev)
+        assert all([np.allclose(ev_dat[name], ev[name]) for name in ("t", "x", "y", "p")])
+
+
 def pytestcase_iterator_from_device(tmpdir, dataset_dir):
     """Ensures the equivalence of events coming from a RAW file and its RAW to DAT equivalent when intiliased
     from a device"""
     # GIVEN
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording.raw")
+                            "openeb", "core", "event_io", "recording.raw")
     device = initiate_device(filename, do_time_shifting=True)
     mv_iterator = EventsIterator.from_device(device, start_ts=0, delta_t=2000000, max_duration=1e6,
                                              relative_timestamps=False)
@@ -176,7 +195,7 @@ def pytestcase_iterator_equivalence_large_delta_t(tmpdir, dataset_dir):
     using a large delta_t"""
     # GIVEN
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording.raw")
+                            "openeb", "core", "event_io", "recording.raw")
     mv_iterator = EventsIterator(filename, start_ts=0, delta_t=20000000,
                                  max_duration=1e6, relative_timestamps=False)
 
@@ -194,8 +213,8 @@ def pytestcase_iterator_run_twice(tmpdir, dataset_dir):
     """Ensures the equivalence between two consecutive runs of the iterator"""
     # GIVEN
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording.raw")
-    mv_iterator = EventsIterator(filename, start_ts=1e5, delta_t=200000,
+                            "openeb", "core", "event_io", "recording.raw")
+    mv_iterator = EventsIterator(filename, start_ts=1e5, delta_t=20000,
                                  max_duration=1e6)
 
     # WHEN
@@ -213,7 +232,7 @@ def pytestcase_dat_iterator_equivalence(tmpdir, dataset_dir):
     """
     # GIVEN
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording_td.dat")
+                            "openeb", "core", "event_io", "recording_td.dat")
     mv_iterator = EventsIterator(filename, start_ts=0, delta_t=20000000,
                                  max_duration=1e6, relative_timestamps=False)
 
@@ -231,7 +250,7 @@ def pytestcase_iterator_large_shared_pointer_nb(tmpdir, dataset_dir):
     """Ensures that using a large number of sharedpointers is possible """
     # GIVEN
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording.raw")
+                            "openeb", "core", "event_io", "recording.raw")
     mv_iterator = EventsIterator(filename, start_ts=0, delta_t=500, relative_timestamps=False)
 
     # WHEN & THEN
@@ -244,7 +263,7 @@ def pytestcase_iterator_n_event_equivalence(tmpdir, dataset_dir):
     using n_event argument"""
     # GIVEN
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording.raw")
+                            "openeb", "core", "event_io", "recording.raw")
     mv_iterator = EventsIterator(filename, start_ts=0, mode="n_events", n_events=0,
                                  max_duration=1e6, relative_timestamps=False)
 
@@ -262,7 +281,7 @@ def pytestcase_iterator_n_event_correctness(tmpdir, dataset_dir):
     """Ensures that events indeed come into slice of n events"""
     # GIVEN
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording.raw")
+                            "openeb", "core", "event_io", "recording.raw")
     mv_iterator = EventsIterator(filename, start_ts=0, mode="n_events", n_events=10000,
                                  max_duration=1e6, relative_timestamps=False)
 
@@ -277,12 +296,33 @@ def pytestcase_rawiterator_dont_do_time_shifting(tmpdir, dataset_dir):
     # GIVEN
     timeslice = 100000
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "event_io", "recording.raw")
+                            "openeb", "core", "event_io", "recording.raw")
+    # first event's timestamp of this sequence (without time_shifting is: 8720024)
+
     mv_iterator = EventsIterator(filename, start_ts=0, delta_t=timeslice,
                                  max_duration=1e6, relative_timestamps=False, do_time_shifting=False)
+
     # WHEN
-    current_time = 0
+    nb_non_empty_frames = 0
     for evs in mv_iterator:
-        current_time += 1
+        if evs.size > 0:
+            nb_non_empty_frames += 1
     # THEN
-    assert current_time == 10
+    assert nb_non_empty_frames == 0  # first event arrives too late (after 1e6 max duration)
+
+    # here there should be 3 valid frames:
+    # 8'700'000 -> 8'800'000
+    # 8'800'000 -> 8'900'000
+    # 8'900'000 -> 9'000'000
+    mv_iterator = EventsIterator(filename, start_ts=0, delta_t=timeslice,
+                                 max_duration=9e6, relative_timestamps=False, do_time_shifting=False)
+    # WHEN
+    list_non_empty_frames = []
+    for evs in mv_iterator:
+        if evs.size > 0:
+            list_non_empty_frames.append(evs)
+    # THEN
+    assert len(list_non_empty_frames) == 3
+    assert list_non_empty_frames[0]['t'][0] >= 8700000 and list_non_empty_frames[0]['t'][-1] < 8800000
+    assert list_non_empty_frames[1]['t'][0] >= 8800000 and list_non_empty_frames[1]['t'][-1] < 8900000
+    assert list_non_empty_frames[2]['t'][0] >= 8900000 and list_non_empty_frames[2]['t'][-1] < 9000000

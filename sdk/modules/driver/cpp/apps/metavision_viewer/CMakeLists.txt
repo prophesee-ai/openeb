@@ -18,7 +18,7 @@ install(TARGETS ${sample}
         COMPONENT metavision-sdk-driver-bin
 )
 
-install(FILES ${sample}.cpp README.md
+install(FILES ${sample}.cpp
         DESTINATION share/metavision/sdk/driver/apps/${sample}
         COMPONENT metavision-sdk-driver-samples
 )

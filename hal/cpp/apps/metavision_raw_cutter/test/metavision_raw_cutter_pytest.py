@@ -16,7 +16,7 @@ import re
 from metavision_utils import os_tools, pytest_tools
 
 
-def cut_and_check_infos(input_raw, start, end, expected_output_info=None):
+def cut_and_check_info(input_raw, start, end, expected_output_info=None):
     """"Runs metavision_raw_cutter on input file and checks the output
 
     Args:
@@ -72,9 +72,9 @@ def cut_and_check_infos(input_raw, start, end, expected_output_info=None):
 
 
 def pytestcase_test_metavision_raw_cutter_show_help():
-    '''
+    """
     Checks output of metavision_raw_cutter when displaying help message
-    '''
+    """
 
     cmd = "./metavision_raw_cutter --help"
     output, error_code = pytest_tools.run_cmd_setting_mv_log_file(cmd)
@@ -86,17 +86,17 @@ def pytestcase_test_metavision_raw_cutter_show_help():
     assert "Options:" in output, "******\nMissing options display in output :{}\n******".format(output)
 
 
-def pytestcase_test_metavision_raw_cutter_non_existing_input_file():
-    '''
+def pytestcase_test_metavision_raw_cutter_nonexistent_input_file():
+    """
     Checks that metavision_raw_cutter returns an error when passing an input file that doesn't exist
-    '''
+    """
 
-    # Create temporary directory for non existing RAW file
+    # Create temporary directory for nonexistent RAW file
     tmp_dir = os_tools.TemporaryDirectoryHandler()
-    input_rawfile = os.path.join(tmp_dir.temporary_directory(), "data_in.raw")
-    output_rawfile = os.path.join(tmp_dir.temporary_directory(), "data_out.raw")
+    input_raw_file = os.path.join(tmp_dir.temporary_directory(), "nonexistent_in.raw")
+    output_raw_file = os.path.join(tmp_dir.temporary_directory(), "nonexistent_out.raw")
 
-    cmd = "./metavision_raw_cutter -i {} --start {} --end {} -o {}".format(input_rawfile, 0, 2, output_rawfile)
+    cmd = "./metavision_raw_cutter -i {} --start {} --end {} -o {}".format(input_raw_file, 0, 2, output_raw_file)
     output, error_code = pytest_tools.run_cmd_setting_mv_log_file(cmd)
 
     # Check app exited with error
@@ -107,9 +107,9 @@ def pytestcase_test_metavision_raw_cutter_non_existing_input_file():
 
 
 def pytestcase_test_metavision_raw_cutter_missing_input_args():
-    '''
+    """
     Checks that metavision_raw_to_dat returns an error when not passing required input args
-    '''
+    """
 
     cmd = "./metavision_raw_cutter"
     output, error_code = pytest_tools.run_cmd_setting_mv_log_file(cmd)
@@ -122,21 +122,21 @@ def pytestcase_test_metavision_raw_cutter_missing_input_args():
 
 
 def pytestcase_test_metavision_raw_cutter_invalid_range(dataset_dir):
-    '''
+    """
     Checks that metavision_raw_cutter returns an error when passing inconsistent values for start and stop
-    '''
+    """
 
-    # To be sure the error isn't thrown because the input file doens't exist, use one of the datasets
-    input_rawfile = os.path.join(dataset_dir, "gen31_timer.raw")
-    assert os.path.exists(input_rawfile)
+    # To be sure the error isn't thrown because the input file doesn't exist, use one from the datasets
+    input_raw_file = os.path.join(dataset_dir, "openeb", "gen31_timer.raw")
+    assert os.path.exists(input_raw_file)
 
-    # Create temporary directory for non existing RAW file
+    # Create temporary directory for output RAW file
     tmp_dir = os_tools.TemporaryDirectoryHandler()
-    output_rawfile = os.path.join(tmp_dir.temporary_directory(), "data_out.raw")
+    output_raw_file = os.path.join(tmp_dir.temporary_directory(), "data_out.raw")
 
     start = 4
     end = 2
-    cmd = "./metavision_raw_cutter -i {} --start {} --end {} -o {}".format(input_rawfile, start, end, output_rawfile)
+    cmd = "./metavision_raw_cutter -i {} --start {} --end {} -o {}".format(input_raw_file, start, end, output_raw_file)
     output, error_code = pytest_tools.run_cmd_setting_mv_log_file(cmd)
 
     # Check app exited with error
@@ -147,26 +147,26 @@ def pytestcase_test_metavision_raw_cutter_invalid_range(dataset_dir):
 
 
 def pytestcase_test_metavision_raw_cutter_on_gen31_recording_full_cut(dataset_dir):
-    '''
-    Checks output of metavision_raw_cutter application when the range given spans throws all the file
-    '''
+    """
+    Checks output of metavision_raw_cutter application when the range given spans through the whole file
+    """
 
     filename = "gen31_timer.raw"
-    filename_full = os.path.join(dataset_dir, filename)
+    filename_full = os.path.join(dataset_dir, "openeb", filename)
 
     start = 0
     end = 15  # This recording is ~13s, so 15 is well after its end
 
-    cut_and_check_infos(filename_full, start, end)
+    cut_and_check_info(filename_full, start, end)
 
 
 def pytestcase_test_metavision_raw_cutter_on_gen31_recording_from_0s_to_6s(dataset_dir):
-    '''
+    """
     Checks output of metavision_raw_cutter on dataset gen31_timer.raw, cutting from 0s to 6s
-    '''
+    """
 
     filename = "gen31_timer.raw"
-    filename_full = os.path.join(dataset_dir, filename)
+    filename_full = os.path.join(dataset_dir, "openeb", filename)
 
     start = 0
     end = 6
@@ -190,16 +190,16 @@ Type of event       Number of events    First timestamp     Last timestamp      
 ----------------------------------------------------------------------------------------------------
 CD                  14067447            16                  6000187             2.3 Mev/s
 """
-    cut_and_check_infos(filename_full, start, end, expected_output_info)
+    cut_and_check_info(filename_full, start, end, expected_output_info)
 
 
 def pytestcase_test_metavision_raw_cutter_on_gen31_recording_from_8s_to_11s(dataset_dir):
-    '''
+    """
     Checks output of metavision_raw_cutter on dataset gen31_timer.raw, cutting from 8s to 11s
-    '''
+    """
 
     filename = "gen31_timer.raw"
-    filename_full = os.path.join(dataset_dir, filename)
+    filename_full = os.path.join(dataset_dir, "openeb", filename)
 
     start = 8
     end = 11
@@ -223,30 +223,30 @@ Type of event       Number of events    First timestamp     Last timestamp      
 ----------------------------------------------------------------------------------------------------
 CD                  5590919             16                  3000210             1.9 Mev/s
 """
-    cut_and_check_infos(filename_full, start, end, expected_output_info)
+    cut_and_check_info(filename_full, start, end, expected_output_info)
 
 
 def pytestcase_test_metavision_raw_cutter_on_gen4_evt2_recording_full_cut(dataset_dir):
-    '''
+    """
     Checks output of metavision_raw_cutter application when the range given spans throws all the file
-    '''
+    """
 
     filename = "gen4_evt2_hand.raw"
-    filename_full = os.path.join(dataset_dir, filename)
+    filename_full = os.path.join(dataset_dir, "openeb", filename)
 
     start = 0
     end = 11
 
-    cut_and_check_infos(filename_full, start, end)
+    cut_and_check_info(filename_full, start, end)
 
 
 def pytestcase_test_metavision_raw_cutter_on_gen4_evt2_recording_from_2s_to_3s(dataset_dir):
-    '''
+    """
     Checks output of metavision_raw_cutter on dataset gen4_evt2_hand.raw, cutting from 2s to 3s
-    '''
+    """
 
     filename = "gen4_evt2_hand.raw"
-    filename_full = os.path.join(dataset_dir, filename)
+    filename_full = os.path.join(dataset_dir, "openeb", filename)
 
     start = 2
     end = 3
@@ -271,16 +271,16 @@ Type of event       Number of events    First timestamp     Last timestamp      
 ----------------------------------------------------------------------------------------------------
 CD                  1985451             16                  999977              2.0 Mev/s
 """
-    cut_and_check_infos(filename_full, start, end, expected_output_info)
+    cut_and_check_info(filename_full, start, end, expected_output_info)
 
 
 def pytestcase_test_metavision_raw_cutter_on_gen4_evt2_recording_from_4s_to_10s(dataset_dir):
-    '''
+    """
     Checks output of metavision_raw_cutter on dataset gen4_evt2_hand.raw, cutting from 4s to 10s
-    '''
+    """
 
     filename = "gen4_evt2_hand.raw"
-    filename_full = os.path.join(dataset_dir, filename)
+    filename_full = os.path.join(dataset_dir, "openeb", filename)
 
     start = 4
     end = 10
@@ -305,30 +305,30 @@ Type of event       Number of events    First timestamp     Last timestamp      
 ----------------------------------------------------------------------------------------------------
 CD                  9468423             0                   6000053             1.6 Mev/s
 """
-    cut_and_check_infos(filename_full, start, end, expected_output_info)
+    cut_and_check_info(filename_full, start, end, expected_output_info)
 
 
 def pytestcase_test_metavision_raw_cutter_on_gen4_evt3_recording_full_cut(dataset_dir):
-    '''
+    """
     Checks output of metavision_raw_cutter application when the range given spans throws all the file
-    '''
+    """
 
     filename = "gen4_evt3_hand.raw"
-    filename_full = os.path.join(dataset_dir, filename)
+    filename_full = os.path.join(dataset_dir, "openeb", filename)
 
     start = 0
     end = 16
 
-    cut_and_check_infos(filename_full, start, end)
+    cut_and_check_info(filename_full, start, end)
 
 
 def pytestcase_test_metavision_raw_cutter_on_gen4_evt3_recording_from_3s_to_7s(dataset_dir):
-    '''
+    """
     Checks output of metavision_raw_cutter on dataset gen4_evt3_hand.raw, cutting from 3s to 7s
-    '''
+    """
 
     filename = "gen4_evt3_hand.raw"
-    filename_full = os.path.join(dataset_dir, filename)
+    filename_full = os.path.join(dataset_dir, "openeb", filename)
 
     start = 3
     end = 7
@@ -353,16 +353,16 @@ Type of event       Number of events    First timestamp     Last timestamp      
 ----------------------------------------------------------------------------------------------------
 CD                  4884793             5841                4006217             1.2 Mev/s
 """
-    cut_and_check_infos(filename_full, start, end, expected_output_info)
+    cut_and_check_info(filename_full, start, end, expected_output_info)
 
 
 def pytestcase_test_metavision_raw_cutter_on_gen4_evt3_recording_from_8s_to_9s(dataset_dir):
-    '''
+    """
     Checks output of metavision_raw_cutter on dataset gen4_evt3_hand.raw, cutting from 8s to 9s
-    '''
+    """
 
     filename = "gen4_evt3_hand.raw"
-    filename_full = os.path.join(dataset_dir, filename)
+    filename_full = os.path.join(dataset_dir, "openeb", filename)
 
     start = 8
     end = 9
@@ -387,16 +387,16 @@ Type of event       Number of events    First timestamp     Last timestamp      
 ----------------------------------------------------------------------------------------------------
 CD                  1319855             4753                1004655             1.3 Mev/s
 """
-    cut_and_check_infos(filename_full, start, end, expected_output_info)
+    cut_and_check_info(filename_full, start, end, expected_output_info)
 
 
 def pytestcase_test_metavision_raw_cutter_on_gen4_evt3_recording_from_4s_to_15s(dataset_dir):
-    '''
+    """
     Checks output of metavision_raw_cutter on dataset gen4_evt3_hand.raw, cutting from 4s to 15s
-    '''
+    """
 
     filename = "gen4_evt3_hand.raw"
-    filename_full = os.path.join(dataset_dir, filename)
+    filename_full = os.path.join(dataset_dir, "openeb", filename)
 
     start = 4
     end = 15
@@ -421,4 +421,4 @@ Type of event       Number of events    First timestamp     Last timestamp      
 ----------------------------------------------------------------------------------------------------
 CD                  12759106            6464                11006525            1.2 Mev/s
 """
-    cut_and_check_infos(filename_full, start, end, expected_output_info)
+    cut_and_check_info(filename_full, start, end, expected_output_info)

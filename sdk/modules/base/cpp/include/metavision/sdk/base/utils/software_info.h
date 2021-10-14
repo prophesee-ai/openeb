@@ -18,16 +18,35 @@ namespace Metavision {
 
 /// @brief Stores information about the version of the software
 struct SoftwareInfo {
+    /// @brief Supported version suffixes
+    enum class VersionSuffix { NONE = 0, DEV = 1 };
+
+    /// @brief Backward-compatible constructor
+    ///
+    /// @param version_major Major version number
+    /// @param version_minor Minor version number
+    /// @param version_patch Patch version number
+    /// @param version_suffix_type Version suffix type
+    /// @param vcs_branch VCS branch name
+    /// @param vcs_commit VCS commit's hash
+    /// @param vcs_date VCS commit's date
+    // clang-format off
+    [[deprecated("SoftwareInfo(int, int, int, int, const std::string&, const std::string&, const std::string&) is "
+                 "deprecated since version 2.3.0 and will be removed in later releases.")]]
+    SoftwareInfo(int version_major, int version_minor, int version_patch, int version_suffix_type,
+                 const std::string &vcs_branch, const std::string &vcs_commit, const std::string &vcs_date);
+    // clang-format on
+
     /// @brief Constructor
     ///
     /// @param version_major Major version number
     /// @param version_minor Minor version number
     /// @param version_patch Patch version number
-    /// @param version_dev Dev version number
+    /// @param version_suffix_string Version suffix string
     /// @param vcs_branch VCS branch name
     /// @param vcs_commit VCS commit's hash
     /// @param vcs_date VCS commit's date
-    SoftwareInfo(int version_major, int version_minor, int version_patch, int version_dev,
+    SoftwareInfo(int version_major, int version_minor, int version_patch, const std::string &version_suffix_string,
                  const std::string &vcs_branch, const std::string &vcs_commit, const std::string &vcs_date);
 
     /// @brief Returns major version number
@@ -39,8 +58,15 @@ struct SoftwareInfo {
     /// @brief Returns patch version number
     int get_version_patch() const;
 
-    /// @brief Returns dev version number
+    /// @brief Returns version suffix type
+    // clang-format off
+    [[deprecated("SoftwareInfo::get_version_dev() is deprecated since version 2.3.0 and will be removed in later "
+                 "releases.")]]
     int get_version_dev() const;
+    // clang-format on
+
+    /// @brief Returns version suffix string
+    std::string get_version_suffix() const;
 
     /// @brief Returns version as a string
     std::string get_version() const;
@@ -64,8 +90,8 @@ private:
     /// Patch version number
     int version_patch_;
 
-    /// Dev version number
-    int version_dev_;
+    /// Version suffix
+    int version_suffix_type_;
 
     /// VCS branch
     std::string vcs_branch_;

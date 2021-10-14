@@ -16,16 +16,16 @@
 # and potential dependencies
 
 # Runtime (library)
-set(CPACK_COMPONENT_METAVISION-SDK-CORE_DESCRIPTION "Metavision SDK Core library.\n${OPEN_PACKAGE_LICENSE}")
-set(CPACK_COMPONENT_METAVISION-SDK-CORE_DEPENDS metavision-sdk-base)
+set(CPACK_COMPONENT_METAVISION-SDK-CORE-LIB_DESCRIPTION "Metavision SDK Core library.\n${OPEN_PACKAGE_LICENSE}")
+set(CPACK_COMPONENT_METAVISION-SDK-CORE-LIB_DEPENDS metavision-sdk-base-lib)
 
 # Runtime (apps)
 set(CPACK_COMPONENT_METAVISION-SDK-CORE-BIN_DESCRIPTION "Binaries for the Metavision SDK Core applications.\n${OPEN_PACKAGE_LICENSE}")
-set(CPACK_COMPONENT_METAVISION-SDK-CORE-BIN_DEPENDS metavision-sdk-core metavision-sdk-driver)
+set(CPACK_COMPONENT_METAVISION-SDK-CORE-BIN_DEPENDS metavision-sdk-core-lib metavision-sdk-driver-lib)
 
 # Development package
 set(CPACK_COMPONENT_METAVISION-SDK-CORE-DEV_DESCRIPTION "Development (C++) files for Metavision SDK Core library.\n${OPEN_PACKAGE_LICENSE}")
-set(CPACK_COMPONENT_METAVISION-SDK-CORE-DEV_DEPENDS metavision-sdk-core metavision-sdk-base-dev)
+set(CPACK_COMPONENT_METAVISION-SDK-CORE-DEV_DEPENDS metavision-sdk-core-lib metavision-sdk-base-dev)
 list(APPEND CPACK_DEBIAN_METAVISION-SDK-CORE-DEV_PACKAGE_DEPENDS "libopencv-dev")
 list(APPEND CPACK_DEBIAN_METAVISION-SDK-CORE-DEV_PACKAGE_DEPENDS "libboost-dev" "libboost-filesystem-dev" "libboost-timer-dev")
 string(REPLACE ";" ", " CPACK_DEBIAN_METAVISION-SDK-CORE-DEV_PACKAGE_DEPENDS "${CPACK_DEBIAN_METAVISION-SDK-CORE-DEV_PACKAGE_DEPENDS}")
@@ -34,18 +34,24 @@ string(REPLACE ";" ", " CPACK_DEBIAN_METAVISION-SDK-CORE-DEV_PACKAGE_DEPENDS "${
 set(CPACK_COMPONENT_METAVISION-SDK-CORE-SAMPLES_DESCRIPTION "Samples for Metavision SDK Core library.\n${OPEN_PACKAGE_LICENSE}")
 set(CPACK_COMPONENT_METAVISION-SDK-CORE-SAMPLES_DEPENDS metavision-sdk-base-dev metavision-sdk-core-dev metavision-sdk-driver-dev metavision-sdk-ui-dev)
 
+# Pure python library
+set(CPACK_COMPONENT_METAVISION-SDK-CORE-PYTHON_DESCRIPTION "Metavision SDK Core Python 3 library.\n${OPEN_PACKAGE_LICENSE}")
+set(CPACK_COMPONENT_METAVISION-SDK-CORE-PYTHON_DEPENDS metavision-sdk-core-lib metavision-sdk-base-python${PYTHON3_DEFAULT_VERSION})
+
 # Python bindings
-set(CPACK_COMPONENT_METAVISION-SDK-CORE-PYTHON_DESCRIPTION "Metavision SDK Core Python 3 libraries.\n${OPEN_PACKAGE_LICENSE}")
-set(CPACK_COMPONENT_METAVISION-SDK-CORE-PYTHON_DEPENDS metavision-sdk-core metavision-sdk-base-python)
+foreach (py_suffix ${PYTHON3_ALL_VERSIONS})
+    set(CPACK_COMPONENT_METAVISION-SDK-CORE-PYTHON${py_suffix}_DESCRIPTION "Metavision SDK Core Python 3 libraries.\n${OPEN_PACKAGE_LICENSE}")
+    set(CPACK_COMPONENT_METAVISION-SDK-CORE-PYTHON${py_suffix}_DEPENDS metavision-sdk-core-lib metavision-sdk-base-python${py_suffix})
+endforeach()
 
 # Python samples of metavision-sdk-core-python
 set(CPACK_COMPONENT_METAVISION-SDK-CORE-PYTHON-SAMPLES_DESCRIPTION "Samples for Metavision SDK Core Python 3 library.\n${OPEN_PACKAGE_LICENSE}")
-set(CPACK_COMPONENT_METAVISION-SDK-CORE-PYTHON-SAMPLES_DEPENDS metavision-hal-python metavision-sdk-core-python metavision-sdk-base-python metavision-sdk-ui-python)
+set(CPACK_COMPONENT_METAVISION-SDK-CORE-PYTHON-SAMPLES_DEPENDS metavision-hal-python${PYTHON3_DEFAULT_VERSION} metavision-sdk-core-python${PYTHON3_DEFAULT_VERSION} metavision-sdk-base-python${PYTHON3_DEFAULT_VERSION} metavision-sdk-ui-python${PYTHON3_DEFAULT_VERSION})
 
 # Metavision Studio
 set(CPACK_COMPONENT_METAVISION-STUDIO-CLIENT_DESCRIPTION "Metavision Studio client.\n${OPEN_PACKAGE_LICENSE}")
 set(CPACK_COMPONENT_METAVISION-STUDIO-SERVER_DESCRIPTION "Metavision Studio server.\n${OPEN_PACKAGE_LICENSE}")
-set(CPACK_COMPONENT_METAVISION-STUDIO-SERVER_DEPENDS metavision-sdk-core metavision-sdk-driver)
+set(CPACK_COMPONENT_METAVISION-STUDIO-SERVER_DEPENDS metavision-sdk-core-lib metavision-sdk-driver-lib)
 set(CPACK_COMPONENT_METAVISION-STUDIO_DESCRIPTION "Metavision Studio.\n${OPEN_PACKAGE_LICENSE}")
 set(CPACK_COMPONENT_METAVISION-STUDIO-SAMPLE_DESCRIPTION "Metavision Studio source code.\n${OPEN_PACKAGE_LICENSE}")
 set(CPACK_COMPONENT_METAVISION-STUDIO-SAMPLE_DEPENDS metavision-sdk-base-dev metavision-sdk-core-dev metavision-sdk-driver-dev)

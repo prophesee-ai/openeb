@@ -10,8 +10,10 @@
 target_sources(metavision_hal PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/facility_wrapper.cpp 
     ${CMAKE_CURRENT_SOURCE_DIR}/i_decoder.cpp 
+    ${CMAKE_CURRENT_SOURCE_DIR}/future/i_decoder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/i_erc.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/i_events_stream.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/future/i_events_stream.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/i_hal_software_info.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/i_hw_identification.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/i_plugin_software_info.cpp

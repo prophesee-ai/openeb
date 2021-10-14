@@ -9,6 +9,10 @@
 
 add_subdirectory(cpp)
 
+if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/python/CMakeLists.txt")
+    add_subdirectory(python)
+endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/python/CMakeLists.txt")
+
 if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/windows/CMakeLists.txt")
     add_subdirectory(windows)
 endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/windows/CMakeLists.txt")

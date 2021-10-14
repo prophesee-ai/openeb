@@ -24,6 +24,7 @@ int main(int argc, char *argv[]) {
     options_desc.add_options()
         ("help,h", "Produce help message.")
         ("commit,c", "Print commit hash at compile time.")
+        ("date,d", "Print commit date at compile time.")
         ("version,v", "Print version.")
     ;
     // clang-format on
@@ -48,6 +49,9 @@ int main(int argc, char *argv[]) {
     auto &metavision_sdk_software_info = Metavision::get_metavision_software_info();
     if (vm.count("commit")) {
         MV_LOG_INFO() << metavision_sdk_software_info.get_vcs_commit();
+    }
+    if (vm.count("date")) {
+        MV_LOG_INFO() << metavision_sdk_software_info.get_vcs_date();
     }
     if (vm.count("version")) {
         MV_LOG_INFO() << metavision_sdk_software_info.get_version();

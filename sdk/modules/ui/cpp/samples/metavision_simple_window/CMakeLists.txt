@@ -24,7 +24,7 @@ add_executable(${sample} ${sample}.cpp constants.h ${CMAKE_CURRENT_BINARY_DIR}/c
 target_include_directories(${sample} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(${sample} PRIVATE ${common_libraries} opencv_highgui)
 
-install(FILES ${sample}.cpp constants.cpp.in constants.h README.md prophesee_logo.jpg
+install(FILES ${sample}.cpp constants.cpp.in constants.h prophesee_logo.jpg
         DESTINATION share/metavision/sdk/ui/samples/${sample}
         COMPONENT metavision-sdk-ui-samples)
 

@@ -36,12 +36,14 @@ enum : CameraErrorCodeType {
 /// Runtime Error specific code
 namespace UnsupportedFeatureErrors {
 enum : CameraErrorCodeType {
-    RoiUnavailable               = CameraErrorCode::UnsupportedFeature | 0x2,
-    BiasesUnavailable            = CameraErrorCode::UnsupportedFeature | 0x3,
-    TriggerOutUnavailable        = CameraErrorCode::UnsupportedFeature | 0x4,
-    ExtTriggerUnavailable        = CameraErrorCode::UnsupportedFeature | 0x5,
-    AntiFlickerModuleUnavailable = CameraErrorCode::UnsupportedFeature | 0xD,
-    NoiseFilterModuleUnavailable = CameraErrorCode::UnsupportedFeature | 0xF,
+    RoiUnavailable                     = CameraErrorCode::UnsupportedFeature | 0x2,
+    BiasesUnavailable                  = CameraErrorCode::UnsupportedFeature | 0x3,
+    TriggerOutUnavailable              = CameraErrorCode::UnsupportedFeature | 0x4,
+    ExtTriggerUnavailable              = CameraErrorCode::UnsupportedFeature | 0x5,
+    AntiFlickerModuleUnavailable       = CameraErrorCode::UnsupportedFeature | 0xD,
+    NoiseFilterModuleUnavailable       = CameraErrorCode::UnsupportedFeature | 0xF,
+    ErcModuleUnavailable               = CameraErrorCode::UnsupportedFeature | 0x10,
+    OfflineStreamingControlUnavailable = CameraErrorCode::UnsupportedFeature | 0x11,
 };
 }
 

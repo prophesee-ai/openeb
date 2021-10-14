@@ -25,3 +25,4 @@ add_subdirectory(tests)
 
 # Cpack
 add_cpack_component(PUBLIC metavision-sdk-core-python metavision-sdk-core-python-samples)
+add_python_cpack_components(PUBLIC metavision-sdk-core)

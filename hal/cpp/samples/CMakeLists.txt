@@ -9,5 +9,6 @@
 
 add_subdirectory(metavision_hal_viewer)
 add_subdirectory(metavision_hal_ls)
+add_subdirectory(metavision_hal_seek)
 add_subdirectory(metavision_hal_sync)
 add_subdirectory(metavision_hal_sample_plugin)

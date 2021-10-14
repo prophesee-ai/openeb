@@ -9,8 +9,6 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-#include <boost/python.hpp>
-
 #include "hal_python_binder.h"
 #include "metavision/hal/facilities/i_trigger_in.h"
 #include "pb_doc_hal.h"

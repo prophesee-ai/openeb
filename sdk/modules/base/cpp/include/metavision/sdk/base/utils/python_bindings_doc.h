@@ -12,9 +12,11 @@
 #ifndef METAVISION_SDK_BASE_PYTHON_BINDINGS_DOC_H
 #define METAVISION_SDK_BASE_PYTHON_BINDINGS_DOC_H
 
+#include <algorithm>
 #include <iostream>
-#include <sstream>
+#include <iterator>
 #include <map>
+#include <sstream>
 #include <vector>
 
 namespace Metavision {
@@ -65,7 +67,7 @@ public:
                    "###########################################\n";
         }
 
-        const auto it = map_doc_.find(key);
+        auto it = map_doc_.find(key);
 
         if (it == map_doc_.end()) {
             std::ostringstream oss;
@@ -76,7 +78,19 @@ public:
         const std::string &value = it->second;
         if (value == "... ... ...") {
             std::ostringstream oss;
-            oss << "Error: ambiguous key for python documentation (use function + args instead): " << key << std::endl;
+            oss << "Error: ambiguous python documentation for: \n";
+            oss << "\t <key> : '" << key << "'\n";
+            oss << "\t <value> : '" << value << "'\n";
+            oss << "Your <key> needs to be specified as it matches multiple definitions.\n";
+            oss << "Update your cpp python bindings by replacing your <key> with one of the following options:\n";
+            const auto start_with = [](const std::string &str, const std::string &prefix) {
+                return str.substr(0, prefix.size()) == prefix;
+            };
+            std::for_each(++it, map_doc_.end(), [&](const auto it) {
+                if (start_with(it.first, key + "(")) {
+                    oss << "\t- \"" << it.first << "\"\n";
+                }
+            });
             throw std::logic_error(oss.str());
         }
         return value.c_str();

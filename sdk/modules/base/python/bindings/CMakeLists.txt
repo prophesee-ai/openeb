@@ -9,60 +9,41 @@
 
 if (WIN32)
     # dummy module used to check if loading bindings linked with a DLL works
-    pybind11_add_module(metavision_sdk_base_dummy_python3 MODULE)
-    pybind11_target_sources(metavision_sdk_base_dummy_python3 PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/metavision_sdk_base_dummy_bindings.cpp)
-    pybind11_target_link_libraries(metavision_sdk_base_dummy_python3
-        PRIVATE
-            MetavisionSDK::base
-    )
-    pybind11_set_target_properties(metavision_sdk_base_dummy_python3
-        PROPERTIES
-            OUTPUT_NAME "metavision_sdk_base_dummy"
-            LIBRARY_OUTPUT_DIRECTORY ${PYTHON3_OUTPUT_DIR}
-            ARCHIVE_OUTPUT_DIRECTORY ${PYTHON3_OUTPUT_DIR}
-            RUNTIME_OUTPUT_DIRECTORY ${PYTHON3_OUTPUT_DIR}
-    )
-    pybind11_install(TARGETS metavision_sdk_base_dummy_python3
-            RUNTIME
-                DESTINATION "PYTHON_LOCAL_SITE_PACKAGES"
-                COMPONENT metavision-sdk-base-paths-internal-python-local-install
-            LIBRARY
-                DESTINATION "PYTHON_LOCAL_SITE_PACKAGES"
-                COMPONENT metavision-sdk-base-paths-internal-python-local-install
-            ARCHIVE
-                DESTINATION "PYTHON_LOCAL_SITE_PACKAGES"
-                COMPONENT metavision-sdk-base-paths-internal-python-local-install
+    add_sdk_python_bindings(base_dummy 
+        SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/metavision_sdk_base_dummy_bindings.cpp
+        LINK_LIBRARIES PRIVATE MetavisionSDK::base
     )
 
     # module taking care of setting the correct paths for loading bindings with DLL dependencies
-    pybind11_create_module(sdk_base_paths module_name_paths)
-    pybind11_target_sources(${module_name_paths}_python3 PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/metavision_sdk_base_paths_bindings.cpp)
-    pybind11_target_link_libraries(${module_name_paths}_python3
-        PRIVATE
-            MetavisionUtils::pybind)
+    add_sdk_python_bindings(base_paths 
+        SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/metavision_sdk_base_paths_bindings.cpp
+        LINK_LIBRARIES PRIVATE MetavisionUtils::pybind
+    )
 endif()
 
-pybind11_create_module(sdk_base module_name)
-
-pybind11_target_sources(${module_name}_python3 PRIVATE
+set(sdk_base_python_srcs
     ${CMAKE_CURRENT_SOURCE_DIR}/debug_buffer_info_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/event_cd_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/event_ext_trigger_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generic_header_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/metavision_sdk_base_bindings.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/software_info_python.cpp)
-
-pybind11_target_link_libraries(${module_name}_python3
-    PUBLIC
-        MetavisionSDK::base
-    PRIVATE
-        MetavisionUtils::pybind
+    ${CMAKE_CURRENT_SOURCE_DIR}/software_info_python.cpp
 )
 
 if (GENERATE_DOC_PYTHON_BINDINGS)
-    pybind11_add_dependencies(${module_name}_python3 metavision_sdk_base_python_doc_from_cpp)
-    pybind11_target_include_directories(${module_name}_python3 PRIVATE ${GENERATE_PYTHON_BINDINGS_DOC_DIRECTORY})
-    pybind11_target_compile_definitions(${module_name}_python3 PRIVATE GENERATE_DOC_PYTHON_BINDINGS_USING_CPP_COMMENTS)
+    set (sdk_base_python_dependencies metavision_sdk_base_python_doc_from_cpp)
+    set (sdk_base_python_include_directories ${GENERATE_PYTHON_BINDINGS_DOC_DIRECTORY})
+    set (sdk_base_python_compile_definitions GENERATE_DOC_PYTHON_BINDINGS_USING_CPP_COMMENTS)
 endif()
+
+add_sdk_python_bindings(base
+    SOURCES ${sdk_base_python_srcs}
+    LINK_LIBRARIES
+        PUBLIC
+            MetavisionSDK::base
+        PRIVATE
+            MetavisionUtils::pybind
+    INCLUDE_DIRECTORIES PRIVATE ${sdk_base_python_include_directories}
+    COMPILE_DEFINITIONS PRIVATE ${sdk_base_python_compile_definitions}
+    DEPENDENCIES ${sdk_base_python_dependencies}
+)

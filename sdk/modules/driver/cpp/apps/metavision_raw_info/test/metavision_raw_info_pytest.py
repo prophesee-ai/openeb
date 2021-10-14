@@ -15,7 +15,7 @@ import re
 from metavision_utils import os_tools, pytest_tools
 
 
-def check_file_informations(filename_full, expected_output):
+def check_file_information(filename_full, expected_output):
 
     # Before launching the app, check the dataset file exists
     assert os.path.exists(filename_full)
@@ -26,16 +26,16 @@ def check_file_informations(filename_full, expected_output):
     # Check app exited without error
     assert error_code == 0
 
-    # Now check output ,after stripping them for trailing whitespaces
+    # Now check output, after stripping them for trailing whitespaces
     output_strip = "\n".join([line.strip() for line in output.splitlines()])
     expected_output_strip = "\n".join([line.strip() for line in expected_output.splitlines()])
     assert output_strip.find(expected_output_strip) >= 0
 
 
 def pytestcase_test_metavision_raw_info_show_help():
-    '''
+    """
     Checks output of metavision_raw_info when displaying help message
-    '''
+    """
 
     cmd = "./metavision_raw_info --help"
     output, error_code = pytest_tools.run_cmd_setting_mv_log_file(cmd)
@@ -48,15 +48,15 @@ def pytestcase_test_metavision_raw_info_show_help():
 
 
 def pytestcase_test_metavision_raw_info_non_existing_input_file():
-    '''
+    """
     Checks that metavision_raw_info returns an error when passing an input file that doesn't exist
-    '''
+    """
 
-    # Create a filepath that we are sure it does not exist
+    # Create a file path that we are sure does not exist
     tmp_dir = os_tools.TemporaryDirectoryHandler()
-    input_rawfile = os.path.join(tmp_dir.temporary_directory(), "data_in.raw")
+    input_raw_file = os.path.join(tmp_dir.temporary_directory(), "nonexistent.raw")
 
-    cmd = "./metavision_raw_info -i {}".format(input_rawfile)
+    cmd = "./metavision_raw_info -i {}".format(input_raw_file)
     output, error_code = pytest_tools.run_cmd_setting_mv_log_file(cmd)
 
     # Assert app returned error
@@ -67,9 +67,9 @@ def pytestcase_test_metavision_raw_info_non_existing_input_file():
 
 
 def pytestcase_test_metavision_raw_info_missing_input_args():
-    '''
+    """
     Checks that metavision_raw_info returns an error when not passing required input args
-    '''
+    """
 
     cmd = "./metavision_raw_info"
     output, error_code = pytest_tools.run_cmd_setting_mv_log_file(cmd)
@@ -82,12 +82,12 @@ def pytestcase_test_metavision_raw_info_missing_input_args():
 
 
 def pytestcase_test_metavision_raw_info_on_gen31_recording(dataset_dir):
-    '''
+    """
     Checks output of metavision_raw_info application
-    '''
+    """
 
     filename = "gen31_timer.raw"
-    filename_full = os.path.join(dataset_dir, filename)
+    filename_full = os.path.join(dataset_dir, "openeb", filename)
 
     expected_output = """
 ====================================================================================================
@@ -108,16 +108,16 @@ Type of event       Number of events    First timestamp     Last timestamp      
 ----------------------------------------------------------------------------------------------------
 CD                  29450906            16                  13043033            2.3 Mev/s
 """.format(filename, filename_full)
-    check_file_informations(filename_full, expected_output)
+    check_file_information(filename_full, expected_output)
 
 
 def pytestcase_test_metavision_raw_info_on_gen4_evt2_recording(dataset_dir):
-    '''
+    """
     Checks output of metavision_raw_info application
-    '''
+    """
 
     filename = "gen4_evt2_hand.raw"
-    filename_full = os.path.join(dataset_dir, filename)
+    filename_full = os.path.join(dataset_dir, "openeb", filename)
 
     expected_output = """
 ====================================================================================================
@@ -139,16 +139,16 @@ Type of event       Number of events    First timestamp     Last timestamp      
 ----------------------------------------------------------------------------------------------------
 CD                  17025195            49                  10442743            1.6 Mev/s
 """.format(filename, filename_full)
-    check_file_informations(filename_full, expected_output)
+    check_file_information(filename_full, expected_output)
 
 
 def pytestcase_test_metavision_raw_info_on_gen4_evt3_recording(dataset_dir):
-    '''
+    """
     Checks output of metavision_raw_info application
-    '''
+    """
 
     filename = "gen4_evt3_hand.raw"
-    filename_full = os.path.join(dataset_dir, filename)
+    filename_full = os.path.join(dataset_dir, "openeb", filename)
 
     expected_output = """
 ====================================================================================================
@@ -170,4 +170,4 @@ Type of event       Number of events    First timestamp     Last timestamp      
 ----------------------------------------------------------------------------------------------------
 CD                  18453063            5714                15445502            1.2 Mev/s
 """.format(filename, filename_full)
-    check_file_informations(filename_full, expected_output)
+    check_file_information(filename_full, expected_output)

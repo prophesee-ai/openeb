@@ -64,12 +64,13 @@ public:
     inline void change_destination(const std::string &filename, bool reset_ts = true);
 
     /// @brief Exports the information in the input buffer into the StreamLogger
-    /// @tparam InputIterator Read-Only iterator with Event2d base class
-    /// @param first Beginning of the input iterator
-    /// @param last End of the input iterator
+    /// @tparam InputIt Read-Only input event iterator type. Works for iterators over buffers of @ref Event2d
+    /// or equivalent
+    /// @param it_begin Iterator to the first input event
+    /// @param it_end Iterator to the past-the-end event
     /// @param ts Input buffer timestamp
-    template<class InputIterator>
-    inline void process_events(InputIterator first, InputIterator last, timestamp ts);
+    template<class InputIt>
+    inline void process_events(InputIt it_begin, InputIt it_end, timestamp ts);
 
     /// @note process(...) is deprecated since version 2.2.0 and will be removed in later releases.
     ///       Please use process_events(...) instead
@@ -223,11 +224,11 @@ void StreamLoggerAlgorithm::split_file(timestamp ts) {
     }
 }
 
-template<class InputIterator>
-inline void StreamLoggerAlgorithm::process_events(InputIterator first, InputIterator last, timestamp ts) {
-    using value_type            = typename std::iterator_traits<InputIterator>::value_type;
+template<class InputIt>
+inline void StreamLoggerAlgorithm::process_events(InputIt it_begin, InputIt it_end, timestamp ts) {
+    using value_type            = typename std::iterator_traits<InputIt>::value_type;
     constexpr auto RawEventSize = get_event_size<value_type>();
-    const auto size             = static_cast<std::size_t>(std::distance(first, last));
+    const auto size             = static_cast<std::size_t>(std::distance(it_begin, it_end));
 
     if (size > 0 && enable_ && output_.is_open()) {
         if (!header_written_) {
@@ -239,12 +240,12 @@ inline void StreamLoggerAlgorithm::process_events(InputIterator first, InputIter
         buffer_.resize(size * RawEventSize);
         auto *buf         = buffer_.data();
         auto byte_written = 0ul;
-        for (; first != last; ++first) {
-            if (first->t >= initial_timestamp_) {
-                first->write_event(buf, initial_timestamp_);
+        for (; it_begin != it_end; ++it_begin) {
+            if (it_begin->t >= initial_timestamp_) {
+                it_begin->write_event(buf, initial_timestamp_);
                 buf += RawEventSize;
                 byte_written += RawEventSize;
-                last_timestamp_ = first->t;
+                last_timestamp_ = it_begin->t;
             }
         }
         output_.write((const char *)buffer_.data(), byte_written);

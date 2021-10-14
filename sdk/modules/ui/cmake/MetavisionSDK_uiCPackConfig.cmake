@@ -12,12 +12,12 @@
 ###########################
 
 # Runtime (library)
-set(CPACK_COMPONENT_METAVISION-SDK-UI_DESCRIPTION "Metavision SDK UI library.\n${OPEN_PACKAGE_LICENSE}")
-set(CPACK_COMPONENT_METAVISION-SDK-UI_DEPENDS metavision-sdk-base)
+set(CPACK_COMPONENT_METAVISION-SDK-UI-LIB_DESCRIPTION "Metavision SDK UI library.\n${OPEN_PACKAGE_LICENSE}")
+set(CPACK_COMPONENT_METAVISION-SDK-UI-LIB_DEPENDS metavision-sdk-base-lib)
 
 # Development package
 set(CPACK_COMPONENT_METAVISION-SDK-UI-DEV_DESCRIPTION "Development (C++) files for Metavision SDK UI library.\n${OPEN_PACKAGE_LICENSE}")
-set(CPACK_COMPONENT_METAVISION-SDK-UI-DEV_DEPENDS metavision-sdk-ui metavision-sdk-base-dev metavision-sdk-core-dev)
+set(CPACK_COMPONENT_METAVISION-SDK-UI-DEV_DEPENDS metavision-sdk-ui-lib metavision-sdk-base-dev metavision-sdk-core-dev)
 list(APPEND CPACK_DEBIAN_METAVISION-SDK-UI-DEV_PACKAGE_DEPENDS "libopencv-dev" "libglfw3-dev" "libboost-dev" "libglew-dev")
 string(REPLACE ";" ", " CPACK_DEBIAN_METAVISION-SDK-UI-DEV_PACKAGE_DEPENDS "${CPACK_DEBIAN_METAVISION-SDK-UI-DEV_PACKAGE_DEPENDS}")
 
@@ -26,5 +26,7 @@ set(CPACK_COMPONENT_METAVISION-SDK-UI-SAMPLES_DESCRIPTION "Samples for Metavisio
 set(CPACK_COMPONENT_METAVISION-SDK-UI-SAMPLES_DEPENDS metavision-sdk-ui-dev metavision-sdk-base-dev)
 
 # Python bindings
-set(CPACK_COMPONENT_METAVISION-SDK-UI-PYTHON_DESCRIPTION "Metavision SDK UI Python 3 libraries.\n${OPEN_PACKAGE_LICENSE}")
-set(CPACK_COMPONENT_METAVISION-SDK-UI-PYTHON_DEPENDS metavision-sdk-base metavision-sdk-ui metavision-sdk-base-python metavision-sdk-core-python)
+foreach (py_suffix ${PYTHON3_ALL_VERSIONS})
+    set(CPACK_COMPONENT_METAVISION-SDK-UI-PYTHON${py_suffix}_DESCRIPTION "Metavision SDK UI Python 3 libraries.\n${OPEN_PACKAGE_LICENSE}")
+    set(CPACK_COMPONENT_METAVISION-SDK-UI-PYTHON${py_suffix}_DEPENDS metavision-sdk-base-lib metavision-sdk-ui-lib metavision-sdk-base-python${py_suffix} metavision-sdk-core-python${py_suffix})
+endforeach()

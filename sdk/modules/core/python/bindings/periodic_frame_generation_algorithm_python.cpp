@@ -28,8 +28,8 @@ auto frame_pool = SharedObjectPool<cv::Mat>();
 
 void export_periodic_frame_generation_algorithm(py::module &m) {
     py::class_<PeriodicFrameGenerationAlgorithm, BaseFrameGenerationAlgorithm>(m, "PeriodicFrameGenerationAlgorithm")
-        .def(py::init<int, int, timestamp, double>(), py::arg("sensor_width"), py::arg("sensor_height"),
-             py::arg("accumulation_time_us") = 10000, py::arg("fps") = 0.,
+        .def(py::init<int, int, timestamp, double, ColorPalette>(), py::arg("sensor_width"), py::arg("sensor_height"),
+             py::arg("accumulation_time_us") = 10000, py::arg("fps") = 0., py::arg("palette") = ColorPalette::Dark,
              "Inherits BaseFrameGenerationAlgorithm. Algorithm that generates frames from events at a fixed rate "
              "(fps). The reference clock used is the one of the input events\n"
              "\n"
@@ -39,6 +39,7 @@ void export_periodic_frame_generation_algorithm(py::module &m) {
              "    accumulation_time_us (timestamp): Accumulation time (in us) (@ref set_accumulation_time_us)\n"
              "    fps (float): The fps at which to generate the frames. The time reference used is the one from the "
              "input events (@ref set_fps) \n"
+             "    palette (ColorPalette): The Prophesee's color palette to use (@ref set_color_palette)\n"
              "@throw std::invalid_argument If the input fps is not positive or if the input accumulation time is not "
              "strictly positive\n")
         .def(

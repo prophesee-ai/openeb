@@ -28,13 +28,13 @@ from metavision_sdk_base import EventExtTrigger
 
 def initiate_device(path, do_time_shifting=True, use_external_triggers=[]):
     """
-    Constructs a device either from a file if the path ends with RAW or with the camera ID.
+    Constructs a device either from a file if the path ends with RAW or with the camera serial number.
 
     This device can be used in conjunction with `RawReader.from_device` or `EventsIterator.from_device`
     to create a RawReader or an EventsIterator with a customized HAL device.
 
     Args:
-        path (str): either path do a RAW file (having a .raw or .RAW extension) or a camera ID. leave blank to take
+        path (str): either path do a RAW file (having a .raw or .RAW extension) or a camera serial number. leave blank to take
             the first available camera.
         do_time_shifting (bool): in case of a file, makes the timestamps start close to 0mus.
         use_external_triggers (int List): list of integer values corresponding to the channels of external trigger
@@ -43,7 +43,6 @@ def initiate_device(path, do_time_shifting=True, use_external_triggers=[]):
         device: a HAL Device.
 
     """
-
     if path.lower().endswith(".raw"):
         if not os.path.exists(path):
             raise FileNotFoundError(path)
@@ -58,6 +57,7 @@ def initiate_device(path, do_time_shifting=True, use_external_triggers=[]):
         # if the id is not correctly zero padded we try to recover
         device = None
         device = DeviceDiscovery.open(path)
+
         if device is None:
             raise OSError(f"Failed to open camera {path} !")
         # External triggers
@@ -99,24 +99,33 @@ class RawReaderBase(object):
         return cls("", device=device, ev_count=ev_count, delta_t=delta_t, initiate_device=False)
 
     def __del__(self):
-        if self.i_device_control is not None:
+        if hasattr(self, "i_device_control") and self.i_device_control is not None:
             self.i_device_control.stop()
-        if self.i_events_stream is not None:
+        if hasattr(self, "i_events_stream") and self.i_events_stream is not None:
             self.i_events_stream.stop()
             self.i_events_stream.stop_log_raw_data()
-        del self.device
-        del self._event_ext_trigger_buffer
-        del self._event_buffer
-        del self.i_events_stream
-        del self.i_device_control
-        del self.i_decoder
+        if hasattr(self, "device"):
+            del self.device
+        if hasattr(self, "i_events_stream"):
+            del self.i_events_stream
+        if hasattr(self, "i_device_control"):
+            del self.i_device_control
+        if hasattr(self, "i_decoder"):
+            del self.i_decoder
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.__del__()
 
     def _process_batch(self, ts, batch):
         # in case of fast forward incoming events are discarded
-        if ts > self._seek_time:
+        if ts > self._seek_time and len(batch) > self._seek_event:
             self._event_buffer.append((ts, batch))
         else:
             self._current_event_index += len(batch)
+            self._seek_event -= len(batch)
 
     def _run(self):
         """"decode a packet"""
@@ -132,20 +141,31 @@ class RawReaderBase(object):
 
         return True
 
-    def _advance(self, final_time, skip=False):
-        """decodes events until final time.
+    def _advance(self, n_events=0, delta_t=0, drop_events=False):
+        """
+        decodes events until either n_events or delta_t events are decoded.
 
         Args:
-            final_time (int): Timestamps in us until the search stops"""
-        final_time = int(final_time)
-
+            n_events (int): number of events to decode.
+            delta_t (int): duration in us of events to decode
+            drop_events (boolean): if True drop the decoded events until the desired point.
+        """
+        final_time = int(delta_t + self.current_time)
         if self.current_time > final_time:
             raise RuntimeError('cannot seek backward in RAW file')
-        if final_time > self._last_loaded_ts():
-            if skip:
+
+        def _are_enough_ev_loaded(final_time, n_events):
+            enough = final_time == self.current_time or final_time < self._last_loaded_ts()
+            return enough and (not n_events or n_events < self._count_ev_loaded())
+
+        if drop_events:
+            if delta_t:
                 self._seek_time = final_time
-            while not self._decode_done and final_time > self._last_loaded_ts():
-                self._run()
+            if n_events:
+                self._seek_event = n_events
+
+        while not (self._decode_done or _are_enough_ev_loaded(final_time, n_events)):
+            self._run()
 
     def __repr__(self):
         string = "RawReader({})\n".format(self.path)
@@ -205,6 +225,7 @@ class RawReaderBase(object):
         self.done = False
         self._decode_done = False
         self._seek_time = -1
+        self._seek_event = -1
         self.current_time = 0
         self._current_event_index = 0
 
@@ -247,12 +268,24 @@ class RawReaderBase(object):
         Args:
             final_time (int): Timestamp in us at which the search stops (only multiples of delta_t are supported.).
         """
-        self._advance(final_time, skip=True)
+        # if self.delta_t:
+        #     assert final_time % self.delta_t == 0
+        self._advance(delta_t=final_time - self.current_time, drop_events=True)
         if self._seek_time > 0 and len(self._event_buffer):
             for index, (ts, evs) in enumerate(self._event_buffer):
                 if ts - self.delta_t < self._seek_time:
                     self._event_buffer[index] = (ts, evs[evs['t'] >= self._seek_time])
         self.current_time = final_time
+
+    def seek_event(self, n_events):
+        """
+        Advance n_events into the RAW file
+
+        Args:
+            n_events (int): number of events to skip (only multiples of n_events are supported.).
+        """
+        assert self.ev_count and n_events % self.ev_count
+        self._advance(n_events=n_events, drop_events=True)
 
     def _last_loaded_ts(self):
         """returns the timestamp of the last loaded event and -1 if None are in the buffer"""
@@ -261,13 +294,16 @@ class RawReaderBase(object):
         else:
             return 0
 
-    def _load_next_buffer(self, increase_time_by_delta_t=False):
+    def _count_ev_loaded(self):
+        """return the number of events in buffer"""
+        n_events_loaded = 0
+        for buf in self._event_buffer:
+            n_events_loaded += len(buf)
+        return n_events_loaded
+
+    def _load_next_buffer(self):
         """
         Loads a batch of events from the queue.
-
-        Args:
-            increase_time_by_delta_t (bool): if True increases "current time" by delta_t, otherwise sets current time
-                to the last loaded event.
 
         Returns:
             events
@@ -280,6 +316,7 @@ class RawReaderBase(object):
         # update variables describing the object state.
         self._current_event_index += events.size
 
+        increase_time_by_delta_t = self.delta_t != 0 and (not len(events) or len(events) != self.ev_count)
         if increase_time_by_delta_t:
             self.current_time += self.buffer_producer.get_processing_n_us()
         else:
@@ -288,18 +325,18 @@ class RawReaderBase(object):
 
         return events
 
-    def load_n_events(self, ev_count):
+    def load_n_events(self, n_events):
         """
-        Loads a batch of *ev_count* events.
+        Loads a batch of *n_events* events.
 
         Args:
-            ev_count (int): Number of events to load
+            n_events (int): Number of events to load
 
         Returns:
-            events
+            events (numpy array): structured numpy array containing the events.
         """
 
-        return self._load_next_buffer(increase_time_by_delta_t=False)
+        return self._load_next_buffer()
 
     def load_delta_t(self, delta_t):
         """
@@ -309,21 +346,36 @@ class RawReaderBase(object):
             delta_t (int): Interval of time in us since last loading, within which events are loaded
 
         Returns:
-            events
+            events (numpy array): structured numpy array containing the events.
         """
 
-        return self._load_next_buffer(increase_time_by_delta_t=True)
+        return self._load_next_buffer()
+
+    def load_mixed(self, n_events, delta_t):
+        """Loads batch of n events or delta_t microseconds, whichever comes first.
+
+        Args:
+            n_events (int): Maximum number of events that will be loaded.
+            delta_t (int): Maximum allowed slice duration (in us).
+
+        Returns:
+            events (numpy array): structured numpy array containing the events.
+
+        Note that current time will be incremented to reach the timestamp of the first event not loaded yet Unless
+        the maximal time slice duration is reached in which case current time will be increased by delta_t instead.
+        """
+        return self._load_next_buffer()
 
 
 class RawReader(RawReaderBase):
     """
     RawReader loads events from a RAW file.
 
-    RawReader allows to read a file of events while maintaning a position of the cursor.
-    Further manipulations like advancing the cursor in time are posible.
+    RawReader allows to read a file of events while maintaining a position of the cursor.
+    Further manipulations like advancing the cursor in time are possible.
 
     Attributes:
-        path (string): Path to the file being read. If `path` is an empty string or a camera ID it will try to open
+        path (string): Path to the file being read. If `path` is an empty string or a camera serial number it will try to open
             that camera instead.
         current_time (int): Indicating the position of the cursor in the file in us.
         duration_s (int): Indicating the total duration of the file in seconds.
@@ -349,6 +401,10 @@ class RawReader(RawReaderBase):
         """
         Alternate way of constructing an RawReader from an already initialized HAL device.
 
+                Note that it is not recommended to leave a device in the global scope, so either create the HAL device
+                in a function or, delete explicitely afterwards. In some cameras this could result in an undefined
+                behaviour.
+
         Args:
             device (device): Hal device object initialized independently.
 
@@ -356,21 +412,30 @@ class RawReader(RawReaderBase):
             >>> device = initiate_device(path=args.input_path)
             >>> # call any methods on device
             >>> reader = RawReader.from_device(device=device)
+            >>> del device  # do not leave the device variable in the global scope
         """
         return cls("", device=device, max_events=max_events, initiate_device=False)
 
     # callbacks
     def _process_batch(self, ts, batch):
+        length = len(batch)
         # in case of fast forward incoming events are discarded
         if self._seek_time > batch[-1]['t']:
-            self._current_event_index += (self._end_buffer - self._begin_buffer) + len(batch)
+            self._current_event_index += (self._end_buffer - self._begin_buffer) + length
             self._begin_buffer = self._end_buffer
             return
+
+        if self._seek_event > length:
+            self._current_event_index += (self._end_buffer - self._begin_buffer) + length
+            self._begin_buffer = self._end_buffer
+            self._seek_event -= length
+            self.current_time = ts
+            return
+
         # otherwise the rolling buffer parameters are updated
         begin_buffer = self._end_buffer
-        self._end_buffer += len(batch)
-        # and events are copied in one go or two goes depending on whether we need to "roll"
-        # around the buffer
+        self._end_buffer += length
+        # and events are copied in one go or two goes depending on whether we need to "roll" around the buffer
         if self._end_buffer <= self._event_buffer.size:
             self._event_buffer[begin_buffer:self._end_buffer] = batch
         else:
@@ -396,12 +461,6 @@ class RawReader(RawReaderBase):
         else:
             return self._event_buffer.size - self._begin_buffer + self._end_buffer
 
-    def _are_enough_ev_loaded(self, ev_count):
-        """helper function to check if there are enough events in rolling buffer"""
-        loaded_count = self._count_ev_loaded()
-
-        return loaded_count >= ev_count
-
     def _last_loaded_ts(self):
         """returns the timestamp of the last loaded event and -1 if None are in the buffer"""
         if self._end_buffer == self._begin_buffer:
@@ -412,32 +471,31 @@ class RawReader(RawReaderBase):
         # resets memory buffer "pointers"
         self._begin_buffer, self._end_buffer = 0, 0
 
-    def load_n_events(self, ev_count):
+    def load_n_events(self, n_events):
         """
-        Loads a batch of *ev_count* events.
+        Loads a batch of *n_events* events.
 
         Args:
-            ev_count (int): Number of events to load
+            n_events (int): Number of events to load
 
         Returns:
-            events
+            events (numpy array): structured numpy array containing the events.
         """
-
-        while not (self._decode_done or self._are_enough_ev_loaded(ev_count)):
-            self._run()
+        n_events = int(n_events)
+        self._advance(n_events)
 
         # if all events are decoded, there is only this classes buffer left.
         if self._decode_done:
-            ev_count = min(ev_count, self._count_ev_loaded())
+            n_events = min(n_events, self._count_ev_loaded())
 
-        if self._begin_buffer + ev_count < self._event_buffer.size:
-            events = self._event_buffer[self._begin_buffer:self._begin_buffer + ev_count]
-            self._begin_buffer += ev_count
+        if self._begin_buffer + n_events < self._event_buffer.size:
+            events = self._event_buffer[self._begin_buffer:self._begin_buffer + n_events]
+            self._begin_buffer += n_events
         else:
             events = np.concatenate(
                 (self._event_buffer[self._begin_buffer:],
-                 self._event_buffer[:ev_count - self._event_buffer.size + self._begin_buffer]))
-            self._begin_buffer = ev_count - self._event_buffer.size + self._begin_buffer
+                 self._event_buffer[:n_events - self._event_buffer.size + self._begin_buffer]))
+            self._begin_buffer = n_events - self._event_buffer.size + self._begin_buffer
         # update variables describing the Class state
         self._current_event_index += events.size
         self.current_time = self._event_buffer[
@@ -453,36 +511,103 @@ class RawReader(RawReaderBase):
             delta_t (int): Interval of time in us since last loading, within which events are loaded
 
         Returns:
-            events
+            events (numpy array): structured numpy array containing the events.
         """
 
         delta_t = int(delta_t)
         final_time = self.current_time + delta_t
 
-        self._advance(final_time, skip=False)
+        self._advance(delta_t=delta_t, drop_events=False)
 
         # return events that have timestamps between [current_time, current_time+dt[
-        ev_count = self._count_ev_loaded()
+        n_events = self._count_ev_loaded()
 
-        if self._begin_buffer + ev_count < self._event_buffer.size:
+        if self._begin_buffer + n_events < self._event_buffer.size:
             index = np.searchsorted(
-                self._event_buffer[self._begin_buffer:self._begin_buffer + ev_count]['t'], final_time)
+                self._event_buffer[self._begin_buffer:self._begin_buffer + n_events]['t'], final_time)
             events = self._event_buffer[self._begin_buffer:self._begin_buffer + index]
             self._begin_buffer += index
         else:
             events = np.concatenate(
                 (self._event_buffer[self._begin_buffer:],
-                 self._event_buffer[:ev_count - self._event_buffer.size + self._begin_buffer]))
+                 self._event_buffer[:n_events - self._event_buffer.size + self._begin_buffer]))
             index = np.searchsorted(events[:]['t'], final_time)
             if self._begin_buffer + index < self._event_buffer.size:
                 self._begin_buffer += index
             else:
-                self._begin_buffer = self._end_buffer - (ev_count - index)
+                self._begin_buffer = self._end_buffer - (n_events - index)
         # update variables describing the Class state
         self._current_event_index += events[:index].size
         self.current_time = final_time
         self.is_done()
         return events[:index]
+
+    def load_mixed(self, n_events, delta_t):
+        """Loads batch of n events or delta_t microseconds, whichever comes first.
+
+        Args:
+            n_events (int): Maximum number of events that will be loaded.
+            delta_t (int): Maximum allowed slice duration (in us).
+
+        Returns:
+            events (numpy array): structured numpy array containing the events.
+
+        Note that current time will be incremented to reach the timestamp of the first event not loaded yet unless
+        the maximal time slice duration is reached in which case current time will be increased by delta_t instead.
+        """
+        n_events = int(n_events)
+        delta_t = int(delta_t)
+        self._advance(n_events=n_events, delta_t=delta_t)
+
+        # if all events are decoded, there is only this classes buffer left.
+        if self._decode_done:
+            n_events = min(n_events, self._count_ev_loaded())
+
+        if self._begin_buffer + n_events < self._event_buffer.size:
+            if self._last_loaded_ts() >= (self.current_time + delta_t):
+                # we search by delta_t to limit how many events are loaded
+                n_events = np.searchsorted(self._event_buffer[self._begin_buffer:self._end_buffer]['t'],
+                                           self.current_time + delta_t)
+
+            # we simply load n events in one go from the round buffer
+            events = self._event_buffer[self._begin_buffer:self._begin_buffer + n_events]
+            self._begin_buffer += n_events
+
+        else:
+            # in this case we need to "go around the buffer": to read till the end of the buffer and some from the
+            # beginning and concatenate their result.
+            if self._last_loaded_ts() >= (self.current_time + delta_t):
+
+                index = np.searchsorted(self._event_buffer[self._begin_buffer:]['t'],
+                                        self.current_time + delta_t)
+                if index == len(self._event_buffer[self._begin_buffer:]):
+                    # we need the whole end of the actual buffer and some extra event from the the beginning.
+                    second_buffer_part = self._event_buffer[:n_events - self._event_buffer.size + self._begin_buffer]
+                    index = np.searchsorted(second_buffer_part['t'], self.current_time + delta_t)
+                    events = np.concatenate(
+                        (self._event_buffer[self._begin_buffer:], self._event_buffer[:index]))
+                    self._begin_buffer = index
+
+                else:
+                    # here all events are gathered before the actual end of the round buffer, no need to read twice.
+                    events = self._event_buffer[self._begin_buffer:self._begin_buffer + index]
+                    self._begin_buffer += index
+
+            else:
+                # we need the whole end of the actual buffer and some extra event from the the beginning.
+                events = np.concatenate(
+                    (self._event_buffer[self._begin_buffer:],
+                     self._event_buffer[:n_events - self._event_buffer.size + self._begin_buffer]))
+                self._begin_buffer = n_events - self._event_buffer.size + self._begin_buffer
+
+        # update variables describing the Class state
+        self._current_event_index += events.size
+        if self._last_loaded_ts() >= (self.current_time + delta_t):
+            self.current_time += delta_t
+        else:
+            self.current_time = self._event_buffer[self._begin_buffer]['t']
+        self.is_done()
+        return events
 
     def seek_time(self, final_time):
         """
@@ -492,32 +617,58 @@ class RawReader(RawReaderBase):
             final_time (int): Timestamp in us at which the search stops.
         """
         final_time = int(final_time)
-        self._advance(final_time, skip=True)
+
+        self._advance(delta_t=final_time - self.current_time, drop_events=True)
 
         # adjust the beginning of the buffer to the right final_time
-        ev_count = self._count_ev_loaded()
+        n_events = self._count_ev_loaded()
         begin_buffer_mem = self._begin_buffer
 
-        if self._begin_buffer + ev_count <= self._event_buffer.size:
+        if self._begin_buffer + n_events <= self._event_buffer.size:
             self._begin_buffer += np.searchsorted(
-                self._event_buffer[self._begin_buffer:self._begin_buffer + ev_count]['t'], final_time)
+                self._event_buffer[self._begin_buffer:self._begin_buffer + n_events]['t'], final_time)
         else:
             events = np.concatenate(
                 (self._event_buffer[self._begin_buffer:],
-                 self._event_buffer[:ev_count - self._event_buffer.size + self._begin_buffer]))
+                 self._event_buffer[:n_events - self._event_buffer.size + self._begin_buffer]))
             index = np.searchsorted(events[:]['t'], final_time)
             if self._begin_buffer + index < self._event_buffer.size:
                 self._begin_buffer += index
             else:
-                self._begin_buffer = self._end_buffer - (ev_count - index)
+                self._begin_buffer = self._end_buffer - (n_events - index)
         # update variables describing the Class state
         self._current_event_index += self._begin_buffer - begin_buffer_mem
         self.current_time = final_time
         self.is_done()
 
+    def seek_event(self, n_events):
+        """
+        Advance n_events into the RAW file. The decoded events are dropped.
+
+        Args:
+            n_events (int): number of events to skip.
+        """
+        # advance loads buffer until the last one which contains the last buffer we want to move to
+        self._advance(n_events=int(n_events), drop_events=True)
+
+        # if there are still event to drop we advance the buffer pointers and class state variables
+        self._current_event_index += self._seek_event
+        if self._seek_event:
+            # first we advance towards the end of the buffer
+            adv = min(self._seek_event, self._event_buffer.size - self._begin_buffer)
+            self._begin_buffer = self._begin_buffer + adv % self._event_buffer.size
+            self._seek_event -= adv
+            # if necessary we advance toward the beginning
+            if self._seek_event:
+                self._begin_buffer = self._seek_event
+
+            self.current_time = self._event_buffer['t'][self._begin_buffer]
+        self.is_done()
+
     def is_done(self):
         """
-        indicates if all event have been loaded and if the rolling buffer is empty
+        Indicates if all events have been already read.
         """
+        # we check if all event have been loaded and if the rolling buffer is empty.
         self.done = self._decode_done and (self._begin_buffer >= self._end_buffer)
         return self.done

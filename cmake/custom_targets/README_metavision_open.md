@@ -34,13 +34,13 @@ sudo apt -y install libgtest-dev
 
 For the Python API, you will need Python and some additional libraries.
 If Python is not available on your system, install it
-(we support Python 3.6 and 3.7 on Ubuntu 18.04 and Python 3.8 on Ubuntu 20.04).
+(we support Python 3.6 and 3.7 on Ubuntu 18.04 and Python 3.7 and 3.8 on Ubuntu 20.04).
 Then install some extra libraries:
 
 ```bash
 sudo apt -y install python3-pip python3-distutils
 python3 -m pip install pip --upgrade
-python3 -m pip install pytest "numpy==1.19.5"
+python3 -m pip install "numpy==1.19.5" "opencv-python>=4.2.0.34" pytest
 ```
 
 If you want to run tests, then you need to compile **gtest** package (this is optional):
@@ -52,7 +52,7 @@ sudo make
 sudo make install
 ```
 
-The Python bindings rely on the [pybind11](https://github.com/pybind) library, specifically version 2.4.3.
+The Python bindings rely on the [pybind11](https://github.com/pybind) library, specifically version 2.6.0.
 
 *Note* that pybind11 is required only if you want to use the Python bindings of our C++ API.
 You can opt out of creating these bindings by passing the argument `-DCOMPILE_PYTHON3_BINDINGS=OFF` at step 3 during compilation (see below).
@@ -61,9 +61,9 @@ In that case, you will not need to install pybind11, but you won't be able to us
 Unfortunately, there is no pre-compiled version of pybind11 available, so you need to install it manually:
 
 ```bash
-wget https://github.com/pybind/pybind11/archive/v2.4.3.zip
-unzip v2.4.3.zip
-cd pybind11-2.4.3/
+wget https://github.com/pybind/pybind11/archive/v2.6.0.zip
+unzip v2.6.0.zip
+cd pybind11-2.6.0/
 mkdir build && cd build
 cmake .. -DPYBIND11_TEST=OFF
 cmake --build .
@@ -90,7 +90,8 @@ with the following command: `sudo cmake --build . --target install`. In that cas
 `LD_LIBRARY_PATH` with `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib` (If you want to update this path
 permanently, you should add the previous command in your ~/.bashrc)
 
-If you are planning to work with Prophesee cameras or data recordings, then install **Prophesee plugins**:
+To get started with OpenEB, you can download some [sample recordings](https://docs.prophesee.ai/stable/datasets.html) and stream them with [metavision_viewer](https://docs.prophesee.ai/stable/metavision_sdk/modules/driver/guides/viewer.html#chapter-sdk-driver-samples-viewer). The RAW plugins included in OpenEB will allow you to read the RAW files.
+However, if you are planning to use a Prophesee camera, then you need to install **Prophesee plugins** by following this procedure:
 
  * Go to the [sign-up page for Prophesee Camera Plugins](https://www.prophesee.ai/metavision-intelligence-plugins-download/)
  * Download the `.list` file for your version of Ubuntu and add it to the folder `/etc/apt/sources.list.d`
@@ -112,10 +113,10 @@ Running the test suite is a sure-fire way to ensure you did everything well with
 
 *Note* that the [Prophesee Camera Plugins](https://www.prophesee.ai/metavision-intelligence-plugins-download/) must be installed for most of these tests to run.
 
- * Download [the files](https://dataset.prophesee.ai/index.php/s/ozjYOAAKTUshudQ) necessary to run the tests.
-   Click `Download` on the top right folder. Beware of the size of the obtained archive which weighs around 3 Gb.
+ * Download [the files](https://dataset.prophesee.ai/index.php/s/VfhepWI4MPVWh9o) necessary to run the tests.
+   Click `Download` on the top right folder. Beware of the size of the obtained archive which weighs around 500 Mb.
 
- * Extract and put the content of this archive to `<OPENEB_SRC_DIR>/datasets/`
+ * Extract and put the content of this archive to `<OPENEB_SRC_DIR>/datasets`. For instance, the correct path of sequence `gen31_timer.raw` should be `<OPENEB_SRC_DIR>/datasets/openeb/gen31_timer.raw`.
 
  * Regenerate the makefiles with the test options on.
 
@@ -148,10 +149,10 @@ To compile OpenEB, you will need to install some extra tools:
       * Download and run ["Build tools for Visual Studio 2019" installer](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
       * Select "C++ build tools", make sure Windows 10 SDK is checked, and add English Language Pack
     * For development, you can also download and run [Visual Studio Installer](https://visualstudio.microsoft.com/fr/downloads/)    
- * install [vcpkg](https://github.com/microsoft/vcpkg) that will be used for installing dependencies (we require a specific version, see below):
-    * `git clone https://github.com/microsoft/vcpkg.git`
-    * `cd vcpkg`  
-    * `git checkout 08c951fef9de63cde1c6b94245a63db826be2e32` 
+ * install [vcpkg](https://github.com/microsoft/vcpkg) that will be used for installing dependencies:
+    * download and extract [vcpkg](https://github.com/microsoft/vcpkg/archive/refs/tags/2020.11-1.zip) 
+    * `cd <VCPKG_SRC_DIR>`
+    * `bootstrap-vcpkg.bat`
     * `bootstrap-vcpkg.bat`
   * finally, install the libraries by running `vcpkg.exe --triplet x64-windows install libusb eigen3 boost opencv glfw3 glew gtest dirent`
     * Note that to avoid using `--triplet x64-windows`, which informs vcpkg to install packages for a x64-windows target,
@@ -159,7 +160,7 @@ To compile OpenEB, you will need to install some extra tools:
 
 #### Install pybind
 
-The Python bindings rely on the [pybind11](https://github.com/pybind) library (version 2.4.3).
+The Python bindings rely on the [pybind11](https://github.com/pybind) library (version 2.6.0).
 You should install pybind using vcpkg in order to get the appropriate version: `vcpkg.exe --triplet x64-windows install pybind11`
 
 *Note* that pybind11 is required only if you plan to use the Python API.
@@ -185,7 +186,7 @@ C:\Users\Username\AppData\Local\Programs\Python\Python37\Scripts
 
 ```bash
 python -m pip install pip --upgrade
-python -m pip install "numpy==1.19.5" pytest
+python -m pip install "numpy==1.19.5" "opencv-python>=4.2.0.34" pytest
 ```
 
 ### Compilation
@@ -201,7 +202,8 @@ git clone https://github.com/prophesee-ai/openeb.git
 Open a command prompt inside the `openeb` folder (called `OPENEB_SRC_DIR` in next sections) and do as follows:
 
  1. Create and open the build directory, where temporary files will be created: `mkdir build && cd build`
- 2. Generate the build using CMake: `cmake -A x64 -DCMAKE_TOOLCHAIN_FILE=<VCPKG_SRC_DIR>\scripts\buildsystems\vcpkg.cmake ..`
+ 2. Generate the build using CMake: `cmake -A x64 -DCMAKE_TOOLCHAIN_FILE=<OPENEB_SRC_DIR>\cmake\toolchains\vcpkg.cmake -DVCPKG_DIRECTORY=<VCPKG_SRC_DIR> ..`.
+    Note that the value passed to the parameter `-DCMAKE_TOOLCHAIN_FILE` must be an absolute path, not a relative one. 
  3. Compile: `cmake --build . --config Release --parallel 4`
  
 You can now use OpenEB directly from the build folder.
@@ -231,12 +233,14 @@ and append the following path:
 Open a command prompt inside the `openeb` folder and do as follows:
 
  1. Create and open the build directory, where temporary files will be created: `mkdir build && cd build`
- 2. Generate the Visual Studio files using CMake: `cmake -G "Visual Studio 16 2019" -A x64 -DCMAKE_TOOLCHAIN_FILE=<VCPKG_SRC_DIR>\scripts\buildsystems\vcpkg.cmake ..` (adapt to your Visual Studio version)
+ 2. Generate the Visual Studio files using CMake: `cmake -G "Visual Studio 16 2019" -A x64 -DCMAKE_TOOLCHAIN_FILE=<OPENEB_SRC_DIR>\cmake\toolchains\vcpkg.cmake -DVCPKG_DIRECTORY=<VCPKG_SRC_DIR> ..` (adapt to your Visual Studio version).
+    Note that the value passed to the parameter `-DCMAKE_TOOLCHAIN_FILE` must be an absolute path, not a relative one.
  3. Open the solution file `metavision.sln`, select the `Release` configuration and build the `ALL_BUILD` project.
 
 #### Installing Prophesee Plugins
 
-Install **Prophesee plugins** if you plan to work with Prophesee cameras or data recordings:
+To get started with OpenEB, you can download some [sample recordings](https://docs.prophesee.ai/stable/datasets.html) and stream them with [metavision_viewer](https://docs.prophesee.ai/stable/metavision_sdk/modules/driver/guides/viewer.html#chapter-sdk-driver-samples-viewer). The RAW plugins included in OpenEB will allow you to read the RAW files.
+However, if you are planning to use a Prophesee camera, then you need to install **Prophesee plugins** by following this procedure:
 
  * Go to the [sign-up page for Prophesee Camera Plugins](https://www.prophesee.ai/metavision-intelligence-plugins-download/)
  * Follow the Camera Plugins download link provided after sign-up
@@ -250,20 +254,21 @@ Running the test suite is a sure-fire way to ensure you did everything well with
 
 *Note* that the [Prophesee Camera Plugins](https://www.prophesee.ai/metavision-intelligence-plugins-download/) must be installed for most of these tests to run.
 
- * Download [the files](https://dataset.prophesee.ai/index.php/s/ozjYOAAKTUshudQ) necessary to run the tests.
-   Click `Download` on the top right folder. Beware of the size of the obtained archive which weighs around 3 Gb.
- * Extract and put the content of this archive to `<OPENEB_SRC_DIR>/datasets/`
+ * Download [the files](https://dataset.prophesee.ai/index.php/s/VfhepWI4MPVWh9o) necessary to run the tests.
+   Click `Download` on the top right folder. Beware of the size of the obtained archive which weighs around 500 Mb.
+   
+ * Extract and put the content of this archive to `<OPENEB_SRC_DIR>/datasets/`. For instance, the correct path of sequence `gen31_timer.raw` should be `<OPENEB_SRC_DIR>/datasets/openeb/gen31_timer.raw`.
 
  * To run the test suite you need to reconfigure your build environment using CMake and to recompile
 
 
    * Compilation using CMake
 
-    1. Regenerate the build using CMake:
+    1. Regenerate the build using CMake (note that `-DCMAKE_TOOLCHAIN_FILE` must be absolute path, not a relative one)::
 
         ```
         cd <OPENEB_SRC_DIR>/build
-        cmake -A x64 -DCMAKE_TOOLCHAIN_FILE=<VCPKG_SRC_DIR>\scripts\buildsystems\vcpkg.cmake -DBUILD_TESTING=ON ..
+        cmake -A x64 -DCMAKE_TOOLCHAIN_FILE=<OPENEB_SRC_DIR>\cmake\toolchains\vcpkg.cmake -DVCPKG_DIRECTORY=<VCPKG_SRC_DIR> -DBUILD_TESTING=ON ..
         ```
     2. Compile: `cmake --build . --config Release --parallel 4`
 
@@ -272,7 +277,9 @@ Running the test suite is a sure-fire way to ensure you did everything well with
 
     1. Generate the Visual Studio files using CMake (adapt the command to your Visual Studio version):
 
-        `cmake -G "Visual Studio 16 2019" -A x64 -DCMAKE_TOOLCHAIN_FILE=<VCPKG_SRC_DIR>\scripts\buildsystems\vcpkg.cmake -DBUILD_TESTING=ON ..`
+        `cmake -G "Visual Studio 16 2019" -A x64 -DCMAKE_TOOLCHAIN_FILE=<OPENEB_SRC_DIR>\cmake\toolchains\vcpkg.cmake -DVCPKG_DIRECTORY=<VCPKG_SRC_DIR> -DBUILD_TESTING=ON ..`
+
+        Note that the value passed to the parameter `-DCMAKE_TOOLCHAIN_FILE` must be an absolute path, not a relative one.
 
     2. Open the solution file `metavision.sln`, select the `Release` configuration and build the `ALL_BUILD` project.
 

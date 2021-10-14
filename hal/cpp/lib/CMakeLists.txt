@@ -117,7 +117,7 @@ foreach(targ metavision_hal metavision_hal_discovery)
 
     set_target_properties(${targ}
         PROPERTIES
-            VERSION ${PROJECT_VERSION}
+            VERSION ${PROJECT_VERSION_FULL}
             SOVERSION ${PROJECT_VERSION_MAJOR}
             EXPORT_NAME ${exp_name}
     )
@@ -127,13 +127,13 @@ foreach(targ metavision_hal metavision_hal_discovery)
             EXPORT MetavisionHALTargets
             RUNTIME
                 DESTINATION ${RUNTIME_INSTALL_DEST}
-                COMPONENT metavision-hal
+                COMPONENT metavision-hal-lib
             ARCHIVE
                 DESTINATION ${ARCHIVE_INSTALL_DEST}
-                COMPONENT metavision-hal
+                COMPONENT metavision-hal-lib
             LIBRARY
                 DESTINATION ${LIBRARY_INSTALL_DEST}
-                COMPONENT metavision-hal
+                COMPONENT metavision-hal-lib
                 NAMELINK_SKIP
     )
     install(TARGETS ${targ}

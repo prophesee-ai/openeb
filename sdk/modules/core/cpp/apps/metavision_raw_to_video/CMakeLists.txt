@@ -21,7 +21,7 @@ install(TARGETS metavision_raw_to_video
         COMPONENT metavision-sdk-core-bin
 )
 
-install(FILES metavision_raw_to_video.cpp README.md
+install(FILES metavision_raw_to_video.cpp
         DESTINATION share/metavision/sdk/core/apps/metavision_raw_to_video
         COMPONENT metavision-sdk-core-samples
 )

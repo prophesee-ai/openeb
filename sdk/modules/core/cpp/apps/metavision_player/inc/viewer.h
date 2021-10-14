@@ -31,6 +31,7 @@ public:
     Viewer(const Parameters &params);
     ~Viewer();
     void run();
+    void stop();
 
 private:
     void setup_camera();
@@ -42,6 +43,7 @@ private:
     cv::Size sensor_size_;
     cv::Mat frame_;
     std::unique_ptr<View> view_;
+    int cd_events_cb_id;
 };
 
 #endif // METAVISION_PLAYER_VIEWER_H

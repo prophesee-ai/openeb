@@ -31,10 +31,6 @@ install(
 )
 
 # Install source code
-install(FILES README.md
-        DESTINATION share/metavision/sdk/core/apps/metavision_player
-        COMPONENT metavision-sdk-core-samples
-)
 install(FILES CMakeLists.txt.install
         RENAME CMakeLists.txt
         DESTINATION share/metavision/sdk/core/apps/metavision_player

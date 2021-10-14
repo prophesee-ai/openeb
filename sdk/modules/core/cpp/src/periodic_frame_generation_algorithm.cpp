@@ -19,15 +19,9 @@ PeriodicFrameGenerationAlgorithm::PeriodicFrameGenerationAlgorithm(int sensor_wi
                                                                    const Metavision::ColorPalette &palette) :
     BaseFrameGenerationAlgorithm(sensor_width, sensor_height, palette),
     output_cb_([](auto, auto) {}),
-    accumulation_time_us_(accumulation_time_us),
     force_next_frame_(false) {
-    if (fps < 0)
-        throw std::invalid_argument("Frame rate must be positive or null.");
-
-    // Computes the frame period from the input fps. If the input fps is 0 (default option), then the frame period
-    // is the accumulation time.
-    frame_period_us_ = fps > 0. ? static_cast<uint32_t>(std::round(1000000 / fps)) : accumulation_time_us;
-
+    set_accumulation_time_us(accumulation_time_us);
+    set_fps(fps);
     set_processing_n_us(frame_period_us_);
     reset();
 }
@@ -46,9 +40,8 @@ void PeriodicFrameGenerationAlgorithm::set_fps(double fps) {
     if (fps < 0)
         throw std::invalid_argument("Frame rate must be positive.");
 
-    if (fps == get_fps())
-        return;
-
+    // Computes the frame period from the input fps. If the input fps is 0, then the frame period
+    // is the accumulation time.
     if (fps == 0)
         frame_period_us_ = accumulation_time_us_;
     else
