@@ -17,12 +17,11 @@ jobs:
     name: Ubuntu 18
     runs-on: ubuntu-18.04
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
 
-    - name: Checkout Repository
-      uses: actions/checkout@v2
-
-    - name: Install dependencies
-      run: |
+      - name: Install dependencies
+        run: |
           sudo apt-get -y update && sudo apt-get install -y sudo apt-utils wget cmake build-essential \
           libglew-dev git g++ libusb-1.0-0-dev libeigen3-dev libgtest-dev libssl-dev \
           python3-pip python3-distutils xvfb libglfw3 libglfw3-dev libglew-dev libopencv-dev ffmpeg \
@@ -31,8 +30,8 @@ jobs:
           python3 -m pip install --upgrade pip
           python3 -m pip install opencv-python $numpy_version pytest
 
-    - name: Build pybind, gtest, and openEB
-      run: |
+      - name: Build pybind, gtest, and openEB
+        run: |
           openebfolder=${PWD}
           cd ..
           wget https://github.com/pybind/pybind11/archive/v$pybind_version.zip
@@ -52,23 +51,23 @@ jobs:
           cmake .. -DBUILD_TESTING=ON
           cmake --build . --config Release --parallel 4
 
-    - name: Download and Install HAL Plugins
-      shell: bash
-      run: |
+      - name: Download and Install HAL Plugins
+        shell: bash
+        run: |
           curl -L -o source.list $HAL_plugins_source
           cat source.list | sudo tee -a /etc/apt/sources.list
           sudo apt update
           sudo apt install metavision-hal-prophesee-plugins
 
-    - name : Getting datasets from storage
-      uses: dawidd6/action-download-artifact@v2
-      with:
-        workflow: upload_datasets.yaml
-        workflow_conclusion: success
-        name: datasets
-        path: datasets
+      - name: Getting datasets from storage
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: upload_datasets.yaml
+          workflow_conclusion: success
+          name: datasets
+          path: datasets
 
-    - name: Run ctest
-      run: |
+      - name: Run ctest
+        run: |
           cd build
           ctest --output-on-failure
