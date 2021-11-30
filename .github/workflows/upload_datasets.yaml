@@ -16,8 +16,8 @@ jobs:
       - name: Downloading datasets
         timeout-minutes: 10
         run: |
-          curl -L -o datasets.zip $dataset_download_address
-          mkdir -p datasets/openeb && cd datasets/openeb && unzip ../../datasets.zip
+          curl -L -o openeb.zip $dataset_download_address
+          mkdir datasets && cd datasets && unzip ../openeb.zip
 
       - name: Uploading datasets to storage
         uses: actions/upload-artifact@master
