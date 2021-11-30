@@ -53,7 +53,7 @@ jobs:
           workflow: upload_datasets.yaml
           workflow_conclusion: success
           name: datasets
-          path: datasets
+          path: datasets/openeb
 
       - name: Run ctest
         run: |
@@ -107,7 +107,7 @@ jobs:
           workflow: upload_datasets.yaml
           workflow_conclusion: success
           name: datasets
-          path: datasets
+          path: datasets/openeb
 
       - name: Run ctest
         run: |
@@ -157,7 +157,7 @@ jobs:
           workflow: upload_datasets.yaml
           workflow_conclusion: success
           name: datasets
-          path: datasets
+          path: datasets\openeb
 
       - name: Ctest suite
         shell: powershell
