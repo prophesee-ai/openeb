@@ -1,6 +1,7 @@
 name: All Build
 
 on:
+  workflow_dispatch:
   push:
   pull_request:
 
@@ -146,7 +147,7 @@ jobs:
         shell: bash
         run: |
           mkdir build && cd build
-          cmake -A x64 -DCMAKE_TOOLCHAIN_FILE=$PWD/../../vcpkg/scripts/buildsystems/vcpkg.cmake \
+          cmake -A x64 -DCMAKE_TOOLCHAIN_FILE="../../vcpkg/scripts/buildsystems/vcpkg.cmake" \
                 -D Python3_EXECUTABLE=$python_executable \
                 -DBUILD_TESTING=ON ..
           cmake --build . --config Release --parallel 4
