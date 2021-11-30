@@ -11,6 +11,7 @@
 
 import pytest
 import os
+import re
 from metavision_utils import pytest_tools
 
 
@@ -20,7 +21,7 @@ def pytestcase_test_metavision_raw_info_with_sample_plugin(dataset_dir):
     '''
 
     filename = "sample_plugin_recording.raw"
-    filename_full = os.path.join(dataset_dir, "openeb", filename)
+    filename_full = os.path.realpath(os.path.join(dataset_dir, "openeb", filename))
 
     # Before launching the app, check the dataset file exists
     assert os.path.exists(filename_full)
@@ -31,7 +32,7 @@ def pytestcase_test_metavision_raw_info_with_sample_plugin(dataset_dir):
     # Check app exited without error
     assert error_code == 0, "******\nError while executing cmd '{}':{}\n******".format(cmd, output)
 
-    expected_output = """
+    expected_output = r"""
 ====================================================================================================
 
 Name                {}
@@ -41,7 +42,7 @@ Integrator          SampleIntegratorName
 Plugin name         hal_sample_plugin
 Event encoding      SAMPLE-FORMAT-1.0
 Camera generation   1.0
-Camera systemID     42
+Camera systemID     \d*
 Camera serial       000000
 
 ====================================================================================================
@@ -49,9 +50,9 @@ Camera serial       000000
 Type of event       Number of events    First timestamp     Last timestamp      Average event rate
 ----------------------------------------------------------------------------------------------------
 CD                  790840              0                   4805980             164.6 Kev/s
-""".format(filename, filename_full)
+""".format(filename, re.escape(filename_full))
 
     # Now check output ,after stripping them for trailing white spaces
     output_strip = "\n".join([line.strip() for line in output.splitlines()])
     expected_output_strip = "\n".join([line.strip() for line in expected_output.splitlines()])
-    assert output_strip.find(expected_output_strip) >= 0
+    assert re.search(expected_output_strip, output_strip)

@@ -29,7 +29,7 @@ def check_file_information(filename_full, expected_output):
     # Now check output, after stripping them for trailing whitespaces
     output_strip = "\n".join([line.strip() for line in output.splitlines()])
     expected_output_strip = "\n".join([line.strip() for line in expected_output.splitlines()])
-    assert output_strip.find(expected_output_strip) >= 0
+    assert re.search(expected_output_strip, output_strip)
 
 
 def pytestcase_test_metavision_raw_info_show_help():
@@ -87,19 +87,19 @@ def pytestcase_test_metavision_raw_info_on_gen31_recording(dataset_dir):
     """
 
     filename = "gen31_timer.raw"
-    filename_full = os.path.join(dataset_dir, "openeb", filename)
+    filename_full = os.path.realpath(os.path.join(dataset_dir, "openeb", filename))
 
-    expected_output = """
+    expected_output = r"""
 ====================================================================================================
 
 Name                {}
 Path                {}
 Duration            13s 43ms 33us
 Integrator          Prophesee
-Plugin name         hal_plugin_gen31_fx3
-Event encoding      EVT2
+Plugin name         hal_plugin_gen31_fx3\w*
+Event encoding      (?:EVT2|2.0)
 Camera generation   3.1
-Camera systemID     28
+Camera systemID     \d*
 Camera serial       00001621
 
 ====================================================================================================
@@ -107,7 +107,7 @@ Camera serial       00001621
 Type of event       Number of events    First timestamp     Last timestamp      Average event rate
 ----------------------------------------------------------------------------------------------------
 CD                  29450906            16                  13043033            2.3 Mev/s
-""".format(filename, filename_full)
+""".format(filename, re.escape(filename_full))
     check_file_information(filename_full, expected_output)
 
 
@@ -117,19 +117,19 @@ def pytestcase_test_metavision_raw_info_on_gen4_evt2_recording(dataset_dir):
     """
 
     filename = "gen4_evt2_hand.raw"
-    filename_full = os.path.join(dataset_dir, "openeb", filename)
+    filename_full = os.path.realpath(os.path.join(dataset_dir, "openeb", filename))
 
-    expected_output = """
+    expected_output = r"""
 ====================================================================================================
 
 Name                {}
 Path                {}
 Duration            10s 442ms 743us
 Integrator          Prophesee
-Plugin name         hal_plugin_gen4_fx3
-Event encoding      EVT2
+Plugin name         hal_plugin_gen4_fx3\w*
+Event encoding      (?:EVT2|2.0)
 Camera generation   4.0
-Camera systemID     26
+Camera systemID     \d*
 Camera subsystemID  537921537
 Camera serial       00001495
 
@@ -138,7 +138,7 @@ Camera serial       00001495
 Type of event       Number of events    First timestamp     Last timestamp      Average event rate
 ----------------------------------------------------------------------------------------------------
 CD                  17025195            49                  10442743            1.6 Mev/s
-""".format(filename, filename_full)
+""".format(filename, re.escape(filename_full))
     check_file_information(filename_full, expected_output)
 
 
@@ -148,19 +148,19 @@ def pytestcase_test_metavision_raw_info_on_gen4_evt3_recording(dataset_dir):
     """
 
     filename = "gen4_evt3_hand.raw"
-    filename_full = os.path.join(dataset_dir, "openeb", filename)
+    filename_full = os.path.realpath(os.path.join(dataset_dir, "openeb", filename))
 
-    expected_output = """
+    expected_output = r"""
 ====================================================================================================
 
 Name                {}
 Path                {}
 Duration            15s 445ms 502us
 Integrator          Prophesee
-Plugin name         hal_plugin_gen4_fx3
-Event encoding      EVT3
+Plugin name         hal_plugin_gen4_fx3\w*
+Event encoding      (?:EVT3|3.0)
 Camera generation   4.0
-Camera systemID     26
+Camera systemID     \d*
 Camera subsystemID  537921537
 Camera serial       00001495
 
@@ -169,5 +169,5 @@ Camera serial       00001495
 Type of event       Number of events    First timestamp     Last timestamp      Average event rate
 ----------------------------------------------------------------------------------------------------
 CD                  18453063            5714                15445502            1.2 Mev/s
-""".format(filename, filename_full)
+""".format(filename, re.escape(filename_full))
     check_file_information(filename_full, expected_output)
