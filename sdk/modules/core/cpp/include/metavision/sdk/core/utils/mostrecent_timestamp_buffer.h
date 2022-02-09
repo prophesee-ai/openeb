@@ -26,23 +26,23 @@ namespace Metavision {
 /// A most recent timestamp buffer is also called time surface.
 /// @note The interface follows the one of cv::Mat
 template<typename timestamp_type>
-class TMostRecentTimestampBuffer {
+class MostRecentTimestampBufferT {
 public:
     /// @brief Default constructor
-    TMostRecentTimestampBuffer();
+    MostRecentTimestampBufferT();
 
     /// @brief Initialization constructor
     /// @param rows Sensor's height
     /// @param cols Sensor's width
     /// @param channels Number of channels
-    inline TMostRecentTimestampBuffer(int rows, int cols, int channels = 1);
+    inline MostRecentTimestampBufferT(int rows, int cols, int channels = 1);
 
     /// @brief Copy constructor
     /// @param other The timestamp buffer to construct from
-    inline TMostRecentTimestampBuffer(const TMostRecentTimestampBuffer<timestamp_type> &other);
+    inline MostRecentTimestampBufferT(const MostRecentTimestampBufferT<timestamp_type> &other);
 
     /// @brief Destructor
-    virtual inline ~TMostRecentTimestampBuffer();
+    virtual inline ~MostRecentTimestampBufferT();
 
     /// @brief Allocates the buffer
     /// @param rows Sensor's height
@@ -74,11 +74,11 @@ public:
 
     /// @brief Copies this timestamp buffer into another timestamp buffer
     /// @param other The timestamp buffer to copy to
-    inline void copy_to(TMostRecentTimestampBuffer<timestamp_type> &other) const;
+    inline void copy_to(MostRecentTimestampBufferT<timestamp_type> &other) const;
 
     /// @brief Swaps the timestamp buffer with another one
     /// @param other The timestamp buffer to swap with
-    inline void swap(TMostRecentTimestampBuffer<timestamp_type> &other);
+    inline void swap(MostRecentTimestampBufferT<timestamp_type> &other);
 
     /// @brief Retrieves a const reference of the timestamp at the specified pixel
     /// @param y The pixel's ordinate
@@ -117,7 +117,7 @@ public:
     /// @brief Generates a CV_8UC1 image of the time surface for the 2 channels
     ///
     /// Side-by-side: negative polarity time surface, positive polarity time surface
-    /// The time surface is normalized between last_ts (0) and last_ts - delta_t (255)
+    /// The time surface is normalized between last_ts (255) and last_ts - delta_t (0)
     ///
     /// @param last_ts Last timestamp value stored in the buffer
     /// @param delta_t Delta time, with respect to @p last_t, above which timestamps are not considered for the image
@@ -127,7 +127,7 @@ public:
 
     /// @brief Generates a CV_8UC1 image of the time surface, merging the 2 channels
     ///
-    /// The time surface is normalized between last_ts (0) and last_ts - delta_t (255)
+    /// The time surface is normalized between last_ts (255) and last_ts - delta_t (0)
     ///
     /// @param last_ts Last timestamp value stored in the buffer
     /// @param delta_t Delta time, with respect to @p last_t, above which timestamps are not considered for the image
@@ -144,8 +144,15 @@ private:
 
 /// @brief Class representing a buffer of the most recent timestamps observed at each pixel of the camera
 /// @note The interface follows the one of cv::Mat
-/// @note This class is a template specialization of @ref TMostRecentTimestampBuffer for @ref timestamp
-using MostRecentTimestampBuffer = TMostRecentTimestampBuffer<Metavision::timestamp>;
+/// @note This class is a template specialization of @ref MostRecentTimestampBufferT for @ref timestamp
+using MostRecentTimestampBuffer = MostRecentTimestampBufferT<Metavision::timestamp>;
+
+/// @note TMostRecentTimestampBuffer is deprecated since version 2.3.1 and will be removed in later
+/// releases. Please use MostRecentTimestampBufferT instead
+template<typename>
+class [[deprecated(
+    "TMostRecentTimestampBuffer is deprecated since version 2.3.1 and will be removed in later releases. "
+    "Please use MostRecentTimestampBufferT instead")]] TMostRecentTimestampBuffer;
 
 } // namespace Metavision
 

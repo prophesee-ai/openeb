@@ -40,6 +40,9 @@ set(lib_plugin_list
     hal_plugin_gen41_evk3_raw
 )
 
+# Custom target to build all Raw Plugins
+add_custom_target(hal_plugins_raw)
+
 foreach(lib_plugin ${lib_plugin_list})
     add_library(${lib_plugin} SHARED $<TARGET_OBJECTS:hal_raw_common>)
     target_link_libraries(${lib_plugin} PRIVATE hal_raw_common)
@@ -47,6 +50,7 @@ foreach(lib_plugin ${lib_plugin_list})
         COMMAND ${CMAKE_COMMAND} -E make_directory "${HAL_BUILD_PLUGIN_PATH}"
         COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:${lib_plugin}>" "${HAL_BUILD_PLUGIN_PATH}")
 
+    add_dependencies(hal_plugins_raw ${lib_plugin})
     if(NOT ${CMAKE_VERSION} VERSION_LESS "3.13.3" AND NOT APPLE AND NOT MSVC)
         target_link_options(${lib_plugin} PRIVATE "LINKER:-z,defs")
     endif()

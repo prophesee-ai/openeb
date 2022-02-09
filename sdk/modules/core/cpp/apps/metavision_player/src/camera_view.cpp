@@ -128,11 +128,13 @@ CameraView::~CameraView() {
 
     if (live_) {
         // Update values of current biases
-        auto &cam  = camera();
-        auto *bias = cam.biases().get_facility();
-        for (auto p : biasLabelToName) {
-            current_biases[p.first] = bias->get(p.second);
-        }
+        auto &cam = camera();
+        try {
+            auto *bias = cam.biases().get_facility();
+            for (auto p : biasLabelToName) {
+                current_biases[p.first] = bias->get(p.second);
+            }
+        } catch (...) {}
     }
 }
 
@@ -143,90 +145,92 @@ void CameraView::setup() {
 
         const auto &params = parameters();
         if (params.show_biases) {
-            auto &cam       = camera();
-            const auto &gen = cam.generation();
-            auto *bias      = cam.biases().get_facility();
+            auto &cam = camera();
+            try {
+                const auto &gen = cam.generation();
+                auto *bias      = cam.biases().get_facility();
 
-            addTrackBar(DiffOffLabel, window_name, 0, 1, diff_off_trackbar_handler, this);
-            addTrackBar(DiffOnLabel, window_name, 0, 1, diff_on_trackbar_handler, this);
-            addTrackBar(HpfLabel, window_name, 0, 1, hpf_trackbar_handler, this);
-            addTrackBar(FoLabel, window_name, 0, 1, fo_trackbar_handler, this);
-            if (!(gen.version_major() == 4 && gen.version_minor() == 1)) {
-                addTrackBar(PrLabel, window_name, 0, 1, pr_trackbar_handler, this);
-            }
-            addTrackBar(RefrLabel, window_name, 0, 1, refr_trackbar_handler, this);
+                addTrackBar(DiffOffLabel, window_name, 0, 1, diff_off_trackbar_handler, this);
+                addTrackBar(DiffOnLabel, window_name, 0, 1, diff_on_trackbar_handler, this);
+                addTrackBar(HpfLabel, window_name, 0, 1, hpf_trackbar_handler, this);
+                addTrackBar(FoLabel, window_name, 0, 1, fo_trackbar_handler, this);
+                if (!(gen.version_major() == 4 && gen.version_minor() == 1)) {
+                    addTrackBar(PrLabel, window_name, 0, 1, pr_trackbar_handler, this);
+                }
+                addTrackBar(RefrLabel, window_name, 0, 1, refr_trackbar_handler, this);
 
-            if (gen.version_major() == 4) {
-                if (gen.version_minor() == 0) {
-                    biasLabelToName[FoLabel] = "bias_fo_n";
+                if (gen.version_major() == 4) {
+                    if (gen.version_minor() == 0) {
+                        biasLabelToName[FoLabel] = "bias_fo_n";
+                    } else {
+                        biasLabelToName.erase(PrLabel);
+                    }
+                }
+
+                if (current_biases.size() == 0) {
+                    // In this case it's the first time this view has been build :
+                    // we take the original biases
+                    for (auto p : biasLabelToName) {
+                        orig_biases[p.first]    = bias->get(p.second);
+                        current_biases[p.first] = orig_biases[p.first];
+                    }
                 } else {
-                    biasLabelToName.erase(PrLabel);
+                    // In this case we set the biases to their last value
+                    for (auto p : biasLabelToName) {
+                        bias->set(p.second, current_biases[p.first]);
+                    }
                 }
-            }
 
-            if (current_biases.size() == 0) {
-                // In this case it's the first time this view has been build :
-                // we take the original biases
-                for (auto p : biasLabelToName) {
-                    orig_biases[p.first]    = bias->get(p.second);
-                    current_biases[p.first] = orig_biases[p.first];
-                }
-            } else {
-                // In this case we set the biases to their last value
-                for (auto p : biasLabelToName) {
-                    bias->set(p.second, current_biases[p.first]);
-                }
-            }
-
-            int bias_diff = bias->get("bias_diff");
-            if (gen.version_major() == 3 && gen.version_minor() == 0) {
-                cv::setTrackbarMax(DiffOffLabel, window_name, bias_diff - 1);
-                cv::setTrackbarMin(DiffOffLabel, window_name, 0);
-                cv::setTrackbarMax(DiffOnLabel, window_name, 1800);
-                cv::setTrackbarMin(DiffOnLabel, window_name, bias_diff + 1);
-                cv::setTrackbarMax(HpfLabel, window_name, 1800);
-                cv::setTrackbarMin(HpfLabel, window_name, 0);
-                cv::setTrackbarMax(FoLabel, window_name, 1800);
-                cv::setTrackbarMin(FoLabel, window_name, 1650);
-                cv::setTrackbarMax(PrLabel, window_name, 1800);
-                cv::setTrackbarMin(PrLabel, window_name, 1200);
-                cv::setTrackbarMax(RefrLabel, window_name, 1800);
-                cv::setTrackbarMin(RefrLabel, window_name, 1300);
-            } else if (gen.version_major() == 3 && gen.version_minor() == 1) {
-                cv::setTrackbarMax(DiffOffLabel, window_name, bias_diff - 1);
-                cv::setTrackbarMin(DiffOffLabel, window_name, 0);
-                cv::setTrackbarMax(DiffOnLabel, window_name, 1800);
-                cv::setTrackbarMin(DiffOnLabel, window_name, bias_diff + 1);
-                cv::setTrackbarMax(HpfLabel, window_name, 1800);
-                cv::setTrackbarMin(HpfLabel, window_name, 0);
-                cv::setTrackbarMax(FoLabel, window_name, 1800);
-                cv::setTrackbarMin(FoLabel, window_name, 0);
-                cv::setTrackbarMax(PrLabel, window_name, 1800);
-                cv::setTrackbarMin(PrLabel, window_name, 0);
-                cv::setTrackbarMax(RefrLabel, window_name, 1800);
-                cv::setTrackbarMin(RefrLabel, window_name, 0);
-            } else if (gen.version_major() == 4) {
-                cv::setTrackbarMax(DiffOffLabel, window_name, bias_diff - 1);
-                cv::setTrackbarMin(DiffOffLabel, window_name, 0);
-                cv::setTrackbarMax(DiffOnLabel, window_name, 255);
-                cv::setTrackbarMin(DiffOnLabel, window_name, bias_diff + 1);
-                cv::setTrackbarMax(HpfLabel, window_name, 255);
-                cv::setTrackbarMin(HpfLabel, window_name, 0);
-                cv::setTrackbarMax(FoLabel, window_name, 255);
-                cv::setTrackbarMin(FoLabel, window_name, 0);
-                if (gen.version_minor() != 1) {
-                    cv::setTrackbarMax(PrLabel, window_name, 255);
+                int bias_diff = bias->get("bias_diff");
+                if (gen.version_major() == 3 && gen.version_minor() == 0) {
+                    cv::setTrackbarMax(DiffOffLabel, window_name, bias_diff - 1);
+                    cv::setTrackbarMin(DiffOffLabel, window_name, 0);
+                    cv::setTrackbarMax(DiffOnLabel, window_name, 1800);
+                    cv::setTrackbarMin(DiffOnLabel, window_name, bias_diff + 1);
+                    cv::setTrackbarMax(HpfLabel, window_name, 1800);
+                    cv::setTrackbarMin(HpfLabel, window_name, 0);
+                    cv::setTrackbarMax(FoLabel, window_name, 1800);
+                    cv::setTrackbarMin(FoLabel, window_name, 1650);
+                    cv::setTrackbarMax(PrLabel, window_name, 1800);
+                    cv::setTrackbarMin(PrLabel, window_name, 1200);
+                    cv::setTrackbarMax(RefrLabel, window_name, 1800);
+                    cv::setTrackbarMin(RefrLabel, window_name, 1300);
+                } else if (gen.version_major() == 3 && gen.version_minor() == 1) {
+                    cv::setTrackbarMax(DiffOffLabel, window_name, bias_diff - 1);
+                    cv::setTrackbarMin(DiffOffLabel, window_name, 0);
+                    cv::setTrackbarMax(DiffOnLabel, window_name, 1800);
+                    cv::setTrackbarMin(DiffOnLabel, window_name, bias_diff + 1);
+                    cv::setTrackbarMax(HpfLabel, window_name, 1800);
+                    cv::setTrackbarMin(HpfLabel, window_name, 0);
+                    cv::setTrackbarMax(FoLabel, window_name, 1800);
+                    cv::setTrackbarMin(FoLabel, window_name, 0);
+                    cv::setTrackbarMax(PrLabel, window_name, 1800);
                     cv::setTrackbarMin(PrLabel, window_name, 0);
+                    cv::setTrackbarMax(RefrLabel, window_name, 1800);
+                    cv::setTrackbarMin(RefrLabel, window_name, 0);
+                } else if (gen.version_major() == 4) {
+                    cv::setTrackbarMax(DiffOffLabel, window_name, bias_diff - 1);
+                    cv::setTrackbarMin(DiffOffLabel, window_name, 0);
+                    cv::setTrackbarMax(DiffOnLabel, window_name, 255);
+                    cv::setTrackbarMin(DiffOnLabel, window_name, bias_diff + 1);
+                    cv::setTrackbarMax(HpfLabel, window_name, 255);
+                    cv::setTrackbarMin(HpfLabel, window_name, 0);
+                    cv::setTrackbarMax(FoLabel, window_name, 255);
+                    cv::setTrackbarMin(FoLabel, window_name, 0);
+                    if (gen.version_minor() != 1) {
+                        cv::setTrackbarMax(PrLabel, window_name, 255);
+                        cv::setTrackbarMin(PrLabel, window_name, 0);
+                    }
+                    cv::setTrackbarMax(RefrLabel, window_name, 255);
+                    cv::setTrackbarMin(RefrLabel, window_name, 0);
+                } else {
+                    MV_LOG_ERROR() << "Unknown camera generation";
+                    return;
                 }
-                cv::setTrackbarMax(RefrLabel, window_name, 255);
-                cv::setTrackbarMin(RefrLabel, window_name, 0);
-            } else {
-                MV_LOG_ERROR() << "Unknown camera generation";
-                return;
-            }
-            for (auto p : biasLabelToName) {
-                cv::setTrackbarPos(p.first, window_name, current_biases[p.first]);
-            }
+                for (auto p : biasLabelToName) {
+                    cv::setTrackbarPos(p.first, window_name, current_biases[p.first]);
+                }
+            } catch (...) {}
         }
 
         // Update Roi if necessary :
@@ -303,26 +307,30 @@ void CameraView::update(cv::Mat &frame, int key_pressed) {
     switch (key_pressed) {
     case 'r': {
         if (params.show_biases) {
-            for (auto p : biasLabelToName) {
-                cam.biases().get_facility()->set(p.second, orig_biases[p.first]);
-                current_biases[p.first] = orig_biases[p.first];
-                cv::setTrackbarPos(p.first, window_name, orig_biases[p.first]);
-            }
-            if (!params.in_bias_file.empty()) {
-                setStatusMessage("Reset biases to values loaded from bias file");
-                MV_LOG_INFO() << "Reset biases to values loaded from bias file";
-            } else {
-                setStatusMessage("Reset biases to default values");
-                MV_LOG_INFO() << "Reset biases to default values";
-            }
+            try {
+                for (auto p : biasLabelToName) {
+                    cam.biases().get_facility()->set(p.second, orig_biases[p.first]);
+                    current_biases[p.first] = orig_biases[p.first];
+                    cv::setTrackbarPos(p.first, window_name, orig_biases[p.first]);
+                }
+                if (!params.in_bias_file.empty()) {
+                    setStatusMessage("Reset biases to values loaded from bias file");
+                    MV_LOG_INFO() << "Reset biases to values loaded from bias file";
+                } else {
+                    setStatusMessage("Reset biases to default values");
+                    MV_LOG_INFO() << "Reset biases to default values";
+                }
+            } catch (...) {}
         }
         break;
     }
     case 'b': {
         if (params.show_biases) {
-            cam.biases().save_to_file(params.out_bias_file);
-            setStatusMessage("Saved bias file at " + params.out_bias_file);
-            MV_LOG_INFO() << "Saved bias file at" << params.out_bias_file;
+            try {
+                cam.biases().save_to_file(params.out_bias_file);
+                setStatusMessage("Saved bias file at " + params.out_bias_file);
+                MV_LOG_INFO() << "Saved bias file at" << params.out_bias_file;
+            } catch (...) {}
         }
         break;
     }

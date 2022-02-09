@@ -41,9 +41,13 @@ int main(int argc, char *argv[]) {
         "Application to generate a video from RAW file.\n\n"
         "The frame rate of the output video (display rate) is fixed to 30.\n"
         "The frame rate to generate the frames from the events (generation rate) is driven by the slow motion factor "
-        "(-s option): generation rate = slow motion factor x 30.\n"
+        "(-s option): slow motion factor = generation rate / display rate\n"
+        "Hence, generation rate = slow motion factor x 30.\n"
         "For example, to create a video from frames generated at 1500 FPS that will be rendered in slow-motion at 30 "
-        "FPS, one has to set a slow-motion factor of 50.\n");
+        "FPS, one has to set a slow-motion factor of 50.\n"
+        "Note that in that case, the accumulation time (-a option) should be adapted accordingly. "
+        "For example to 666us (1/1500) if you want each event to appear in a single frame, \n"
+        "or 6666us (10/1500) if you want each event to appear in 10 frames");
 
     po::options_description options_desc("Options");
     // clang-format off

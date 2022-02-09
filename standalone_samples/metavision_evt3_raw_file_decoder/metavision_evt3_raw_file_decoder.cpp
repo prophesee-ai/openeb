@@ -25,19 +25,18 @@ enum class EventTypes : uint8_t {
     CD_Y  = 0x0,   // Identifies a CD event and its y coordinate
     EM_Y  = 0x1,   // Identifies a EM event and its y coordinate
     X_POS = 0x2,   // Marks a valid single event and identifies its polarity and X coordinate. The event's type and
-                   // timestamp are considered to be the last ones sent Note that X_POS also updates the X_BASE used for
-                   // VECT_12 and VECT_8 events: X_BASE.x = X_POS.x
+                   // timestamp are considered to be the last ones sent
     X_BASE = 0x3,  // Transmits the base address for a subsequent vector event and identifies its polarity and base X
                    // coordinate. This event does not represent a TD/EM sensor event in itself and should not be
                    // processed as such,  it only sets the base x value for following VECT_12 and VECT_8 events.
     VECT_12 = 0x4, // Vector event with 12 valid bits. This event encodes the validity bits for events of the same type,
                    // timestamp and y coordinate as previously sent events, while consecutive in x coordinate with
-                   // respect to the last sent X_POS or X_BASE event. After processing this event, the X position value
+                   // respect to the last sent X_BASE event. After processing this event, the X position value
                    // on the receiver side should be incremented by 12 with respect to the X position when the event was
                    // received, so that the X_BASE is updated like follows: X_BASE.x = X_BASE.x + 12
     VECT_8 = 0x5,  // Vector event with 8 valid bits. This event encodes the validity bits for events of the same type,
                    // timestamp and y coordinate as previously sent events, while consecutive in x coordinate with
-                   // respect to the last sent X_POS or X_BASE event. After processing this event, the X position value
+                   // respect to the last sent X_BASE event. After processing this event, the X position value
                    // on the receiver side should be incremented by 8 with respect to the X position when the event was
                    // received, so that the X_BASE is updated like follows: X_BASE.x = X_BASE.x + 8
     EVT_TIME_LOW = 0x6, // Encodes the lower 12b of the timebase range (range 11 to 0). Note that the TIME_LOW value is
@@ -212,14 +211,13 @@ int main(int argc, char *argv[]) {
             case Metavision::Evt3::EventTypes::X_POS: {
                 Metavision::Evt3::RawEventXPos *ev_cd_posx =
                     reinterpret_cast<Metavision::Evt3::RawEventXPos *>(current_word);
-                current_x_base = ev_cd_posx->x; // X_POS also updates the X_BASE
                 if (current_type == EvType::CD) {
                     // We have a new Event CD with
-                    // x = ev_cd_posx->x ( = current_x_base as we just updated this variable in previous statement)
+                    // x = ev_cd_posx->x
                     // y = current_cd_y
                     // polarity = ev_cd_posx->pol
                     // time = current_time (in us)
-                    cd_str += std::to_string(current_x_base) + "," + std::to_string(current_cd_y) + "," +
+                    cd_str += std::to_string(ev_cd_posx->x) + "," + std::to_string(current_cd_y) + "," +
                               std::to_string(ev_cd_posx->pol) + "," + std::to_string(current_time) + "\n";
                 }
                 break;

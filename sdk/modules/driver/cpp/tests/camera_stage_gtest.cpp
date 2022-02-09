@@ -9,6 +9,7 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
+#include <gtest/gtest.h>
 #include <iostream>
 #include <fstream>
 #include <memory>
@@ -16,6 +17,7 @@
 #include <array>
 #include <boost/filesystem.hpp>
 
+#include "metavision/hal/facilities/future/i_decoder.h"
 #include "metavision/sdk/base/events/event_cd.h"
 #include "metavision/utils/gtest/gtest_with_tmp_dir.h"
 #include "metavision/sdk/driver/camera_exception.h"
@@ -117,11 +119,26 @@ TEST_F(CameraStage_Gtest, camera_stage_produces_correct_events) {
     ASSERT_EQ(ref_data.size(), mock_stage.events_received_.size());
 
     timestamp tshift;
-    ASSERT_TRUE(cam_stage.camera().get_pimpl().device_->get_facility<Future::I_Decoder>()->get_timestamp_shift(tshift));
+    {
+        const auto &device = cam_stage.camera().get_pimpl().device_;
+        ASSERT_TRUE(device);
+
+        const auto &future_decoder = device->get_facility<Future::I_Decoder>();
+        const auto &decoder        = device->get_facility<I_Decoder>();
+
+        ASSERT_TRUE(future_decoder || decoder);
+
+        if (future_decoder) {
+            EXPECT_TRUE(future_decoder->get_timestamp_shift(tshift));
+        } else if (decoder) {
+            EXPECT_TRUE(decoder->get_timestamp_shift(tshift));
+        }
+    }
+
     for (size_t i = 0; i < ref_data.size(); ++i) {
-        ASSERT_EQ(ref_data[i].x, mock_stage.events_received_[i].x);
-        ASSERT_EQ(ref_data[i].y, mock_stage.events_received_[i].y);
-        ASSERT_EQ(ref_data[i].t, mock_stage.events_received_[i].t + tshift);
-        ASSERT_EQ(ref_data[i].p, mock_stage.events_received_[i].p);
+        EXPECT_EQ(ref_data[i].x, mock_stage.events_received_[i].x);
+        EXPECT_EQ(ref_data[i].y, mock_stage.events_received_[i].y);
+        EXPECT_EQ(ref_data[i].t, mock_stage.events_received_[i].t + tshift);
+        EXPECT_EQ(ref_data[i].p, mock_stage.events_received_[i].p);
     }
 }

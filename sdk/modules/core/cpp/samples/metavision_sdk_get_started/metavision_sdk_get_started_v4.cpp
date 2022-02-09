@@ -9,14 +9,14 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-// This code sample demonstrate how to use the Metavision SDK. The goal of this sample is to create a simple event
+// This code sample demonstrate how to use the Metavision C++ SDK. The goal of this sample is to create a simple event
 // counter and displayer by introducing some basic concepts of the Metavision SDK.
-// NOTE: this file is just for ease the integration with the docs. The main sample is metavision_sdk_get_started.cpp
-// NOTE: if you modify this file, please check that the docs references are correct (line numbers)
 
 #include <metavision/sdk/driver/camera.h>
 #include <metavision/sdk/base/events/event_cd.h>
-#include "metavision/sdk/core/utils/cd_frame_generator.h"
+#include <metavision/sdk/core/algorithms/periodic_frame_generation_algorithm.h>
+#include <metavision/sdk/ui/utils/window.h>
+#include <metavision/sdk/ui/utils/event_loop.h>
 
 // this class will be used to analyze the events
 class EventAnalyzer {
@@ -67,62 +67,65 @@ int main(int argc, char *argv[]) {
         cam = Metavision::Camera::from_first_available();
     }
 
-    // add the event callback. This callback will be called periodically to provide access to the most recent events
+    // to analyze the events, we add a callback that will be called periodically to give access to the latest events
     cam.cd().add_callback([&event_analyzer](const Metavision::EventCD *ev_begin, const Metavision::EventCD *ev_end) {
         event_analyzer.analyze_events(ev_begin, ev_end);
     });
 
-    // get camera resolution
+    // to visualize the events, we will need to build frames and render them.
+    // building frame will be done with a frame generator that will accumulate the events over time.
+    // we need to provide it the camera resolution that we can retrieve from the camera instance
     int camera_width  = cam.geometry().width();
     int camera_height = cam.geometry().height();
 
-    // create a frame generator for visualization
-    // this will get the events from the callback and accumulate them in a cv::Mat
-    Metavision::CDFrameGenerator cd_frame_generator(camera_width, camera_height);
+    // we also need to choose an accumulation time and a frame rate (here of 20ms and 50 fps)
+    const std::uint32_t acc = 20000;
+    double fps              = 50;
 
-    // this callback tells the camera to pass the events to the frame generator, who will then create the frame
-    cam.cd().add_callback(
-        [&cd_frame_generator](const Metavision::EventCD *ev_begin, const Metavision::EventCD *ev_end) {
-            cd_frame_generator.add_events(ev_begin, ev_end);
+    // now we can create our frame generator using previous variables
+    auto frame_gen = Metavision::PeriodicFrameGenerationAlgorithm(camera_width, camera_height, acc, fps);
+
+    // we add the callback that will pass the events to the frame generator
+    cam.cd().add_callback([&](const Metavision::EventCD *begin, const Metavision::EventCD *end) {
+        frame_gen.process_events(begin, end);
+    });
+
+    // to render the frames, we create a window using the Window class of the UI module
+    Metavision::Window window("Metavision SDK Get Started", camera_width, camera_height,
+                              Metavision::BaseWindow::RenderMode::BGR);
+
+    // we set a callback on the windows to close it when the Escape or Q key is pressed
+    window.set_keyboard_callback(
+        [&window](Metavision::UIKeyEvent key, int scancode, Metavision::UIAction action, int mods) {
+            if (action == Metavision::UIAction::RELEASE &&
+                (key == Metavision::UIKeyEvent::KEY_ESCAPE || key == Metavision::UIKeyEvent::KEY_Q)) {
+                window.set_close_flag();
+            }
         });
 
-    const int fps       = 25; // event-based cameras do not have a frame rate, but we need one for visualization
-    const int wait_time = static_cast<int>(std::round(1.f / fps * 1000)); // how much we should wait between two frames
-    cv::Mat cd_frame;                                                     // frame where events will be accumulated
-    const std::string window_name = "Metavision SDK Get Started";
-
-    // this function is used to tell the frame generator what to do with the frame and how often to generate it
-    cd_frame_generator.start(
-        fps, [&cd_frame](const Metavision::timestamp &ts, const cv::Mat &frame) { frame.copyTo(cd_frame); });
-
-    cv::namedWindow(window_name, CV_GUI_EXPANDED);
-    cv::resizeWindow(window_name, camera_width, camera_height);
+    // we set a callback on the frame generator so that it calls the window object to display the generated frames
+    frame_gen.set_output_callback([&](Metavision::timestamp, cv::Mat &frame) { window.show(frame); });
 
     // start the camera
     cam.start();
 
-    // keep running while the camera is on or the video is not finished
-    while (cam.is_running()) {
-        // display the frame if it's not empty
-        if (!cd_frame.empty()) {
-            cv::imshow(window_name, cd_frame);
-        }
-
-        // if the user presses the `q` key, quit the loop
-        if ((cv::waitKey(wait_time) & 0xff) == 'q') {
-            break;
-        }
+    // keep running until the camera is off, the recording is finished or the escape key was pressed
+    while (cam.is_running() && !window.should_close()) {
+        // we poll events (keyboard, mouse etc.) from the system with a 20ms sleep to avoid using 100% of a CPU's core
+        // and we push them into the window where the callback on the escape key will ask the windows to close
+        static constexpr std::int64_t kSleepPeriodMs = 20;
+        Metavision::EventLoop::poll_and_dispatch(kSleepPeriodMs);
     }
 
-    // the video is finished or the user wants to quit, stop the camera.
+    // the recording is finished or the user wants to quit, stop the camera.
     cam.stop();
 
     // print the global statistics
-    double length_in_seconds = event_analyzer.global_max_t / 1000000.0;
+    const double length_in_seconds = event_analyzer.global_max_t / 1000000.0;
     std::cout << "There were " << event_analyzer.global_counter << " events in total." << std::endl;
     std::cout << "The total duration was " << length_in_seconds << " seconds." << std::endl;
     if (length_in_seconds >= 1) { // no need to print this statistics if the video was too short
-        std::cout << "There were " << event_analyzer.global_counter / (event_analyzer.global_max_t / 1000000.0)
-                  << " events per seconds on average." << std::endl;
+        std::cout << "There were " << event_analyzer.global_counter / length_in_seconds
+                  << " events per second on average." << std::endl;
     }
 }

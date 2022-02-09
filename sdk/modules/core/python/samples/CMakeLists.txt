@@ -14,4 +14,4 @@ add_subdirectory(metavision_interop)
 add_subdirectory(metavision_raw_to_csv)
 add_subdirectory(metavision_sdk_get_started)
 add_subdirectory(metavision_simple_viewer)
-
+add_subdirectory(metavision_sync)

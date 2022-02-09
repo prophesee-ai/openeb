@@ -80,7 +80,7 @@ public:
     /// @param accumulation_time_us Time range of events to update the frame with (in us)
     /// @param palette The Prophesee's color palette to use
     /// @note Even if there's no events, a frame filled with the background color will be generated
-    /// @throw invalid_argument exception if @p frame does not have the expected type (CV_8U or CV_8UC3)
+    /// @throw invalid_argument if @p frame does not have the expected type (CV_8U or CV_8UC3)
     template<typename EventIt>
     static void generate_frame_from_events(EventIt it_begin, EventIt it_end, cv::Mat &frame,
                                            const uint32_t accumulation_time_us     = 0,
@@ -121,7 +121,7 @@ protected:
     /// @param bg_color Background color
     /// @param off_on_colors Colors of negative and positive events
     /// @param colored True if the frame is colored, false if it's in grayscale
-    /// @throw invalid_argument exception if @p frame does not have the expected type (CV_8U or CV_8UC3)
+    /// @throw invalid_argument if @p frame does not have the expected type (CV_8U or CV_8UC3)
     template<typename EventIt>
     static void generate_frame_from_events(EventIt it_begin, EventIt it_end, cv::Mat &frame, const cv::Vec3b &bg_color,
                                            const std::array<cv::Vec3b, 2> &off_on_colors, bool colored);

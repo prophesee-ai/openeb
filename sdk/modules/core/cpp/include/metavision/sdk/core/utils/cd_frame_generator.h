@@ -18,7 +18,8 @@
 
 namespace Metavision {
 
-/// @brief Utility class to display CD events
+/// @brief Utility class to display CD events that handles multithreading and is built on the top
+/// of PeriodicFrameGenerator
 class CDFrameGenerator {
 public:
     /// @brief Default constructor
@@ -97,7 +98,7 @@ private:
     std::vector<EventCD> events_front_, events_back_;
     size_t frames_count_{0};
 
-    // Is frame dropping allowed ?
+    // Is frame dropping allowed?
     bool process_all_frames_ = false;
     bool events_available_   = false;
     timestamp notify_slice_us_{0};

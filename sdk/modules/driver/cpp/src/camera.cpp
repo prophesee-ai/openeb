@@ -123,8 +123,8 @@ Camera::Private::Private(const Serial &serial) {
 }
 
 Camera::Private::Private(const std::string &rawfile, const Future::RawFileConfig &file_stream_config,
-                         bool reproduce_camera_behavior) {
-    open_raw_file(rawfile, file_stream_config, reproduce_camera_behavior);
+                         bool realtime_playback_speed) {
+    open_raw_file(rawfile, file_stream_config, realtime_playback_speed);
 }
 
 Camera::Private::~Private() {
@@ -134,7 +134,7 @@ Camera::Private::~Private() {
 }
 
 void Camera::Private::open_raw_file(const std::string &rawfile, const Future::RawFileConfig &file_stream_config,
-                                    bool reproduce_camera_behavior) {
+                                    bool realtime_playback_speed) {
     if (is_init_ && run_thread_.joinable()) {
         stop();
     }
@@ -171,7 +171,7 @@ void Camera::Private::open_raw_file(const std::string &rawfile, const Future::Ra
     }
 
     from_file_         = true;
-    emulate_real_time_ = reproduce_camera_behavior;
+    emulate_real_time_ = realtime_playback_speed;
 
     auto *board_id = device_->get_facility<I_HW_Identification>();
     if (!board_id) {
@@ -906,22 +906,22 @@ Camera Camera::from_serial(const std::string &serial) {
     return Camera(new Private(Private::Serial(serial)));
 }
 
-// TODO TEAM-10620: remove this overload
-Camera Camera::from_file(const std::string &rawfile, bool reproduce_camera_behavior, const RawFileConfig &file_config) {
+// TODO MV-166: remove this overload
+Camera Camera::from_file(const std::string &rawfile, bool realtime_playback_speed, const RawFileConfig &file_config) {
     Future::RawFileConfig raw_file_config;
     raw_file_config.do_time_shifting_ = file_config.do_time_shifting_;
     raw_file_config.n_events_to_read_ = file_config.n_events_to_read_;
     raw_file_config.n_read_buffers_   = file_config.n_read_buffers_;
     // to keep the same behavior as before, do not build index by default
     raw_file_config.build_index_ = false;
-    return Camera(new Private(rawfile, raw_file_config, reproduce_camera_behavior));
+    return Camera(new Private(rawfile, raw_file_config, realtime_playback_speed));
 }
 
-// TODO TEAM-10620: mention that RAW index files will automatically be constructed starting from next major release
+// TODO MV-166: mention that RAW index files will automatically be constructed starting from next major release
 // unless RawFileConfig::build_index_ is set to false
-Camera Camera::from_file(const std::string &rawfile, bool reproduce_camera_behavior,
+Camera Camera::from_file(const std::string &rawfile, bool realtime_playback_speed,
                          const Future::RawFileConfig &file_config) {
-    return Camera(new Private(rawfile, file_config, reproduce_camera_behavior));
+    return Camera(new Private(rawfile, file_config, realtime_playback_speed));
 }
 
 bool Camera::synchronize_and_start_cameras(Camera &master, Camera &slave) {

@@ -27,7 +27,7 @@ register_gtest(TEST hal-sample-plugin-test-lib
                HAL_PLUGIN_PATH "${HAL_BUILD_PLUGIN_PATH}/sample")
 
 set(apps_to_test metavision_platform_info metavision_raw_info metavision_raw_cutter metavision_raw_to_csv metavision_raw_to_dat)
-# TODO TEAM-9681 : add app metavision_hal_ls in list above
+# TODO MV-167 : add app metavision_hal_ls in list above
 foreach(app_name IN LISTS apps_to_test)
     string(REPLACE "_" "-" test_name "${app_name}")
     set(test_name "${test_name}-with-sample-plugin-test")

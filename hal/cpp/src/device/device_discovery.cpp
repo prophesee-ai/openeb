@@ -388,7 +388,7 @@ std::unique_ptr<Device> DeviceDiscovery::open_raw_file(const std::string &raw_fi
     return open_raw_file(raw_file, cfg);
 }
 
-// TODO TEAM-10620: remove this overload
+// TODO MV-166: remove this overload
 std::unique_ptr<Device> DeviceDiscovery::open_raw_file(const std::string &raw_file, RawFileConfig &file_config) {
     auto ifs = std::make_unique<std::ifstream>(raw_file, std::ios::in | std::ios::binary);
     if (!ifs->good()) {

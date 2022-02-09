@@ -16,7 +16,7 @@
 
 namespace Metavision {
 
-/// @brief Interface facility for Monitoring events (such as temperature and illumination)
+/// @brief Interface facility to monitor sensor parameters (such as temperature and illumination)
 class I_Monitoring : public I_RegistrableFacility<I_Monitoring> {
 public:
     /// @brief Gets temperature

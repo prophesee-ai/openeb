@@ -7,19 +7,7 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-set (sample metavision_sdk_get_started)
-set (common_libraries MetavisionSDK::core MetavisionSDK::driver MetavisionSDK::ui opencv_highgui)
-
-add_executable(${sample} ${sample}.cpp)
-target_link_libraries(${sample} PRIVATE ${common_libraries})
-
-install(FILES ${sample}.cpp
-        DESTINATION share/metavision/sdk/core/samples/${sample}
-        COMPONENT metavision-sdk-core-samples
-)
-
-install(FILES CMakeLists.txt.install
-        RENAME CMakeLists.txt
-        DESTINATION share/metavision/sdk/core/samples/${sample}
-        COMPONENT metavision-sdk-core-samples
+install(FILES metavision_sync.py
+        DESTINATION share/metavision/sdk/core/python_samples/metavision_sync
+        COMPONENT metavision-sdk-core-python-samples
 )

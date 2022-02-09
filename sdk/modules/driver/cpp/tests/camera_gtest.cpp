@@ -14,6 +14,7 @@
 #include <cmath>
 #include <condition_variable>
 #include <fstream>
+#include <gtest/gtest-message.h>
 #include <gtest/gtest.h>
 #include <numeric> // std::iota
 #include <sstream>
@@ -472,7 +473,7 @@ TYPED_TEST_CASE(Camera_GtestT, TestingTypes);
 TYPED_TEST_WITH_CAMERA(Camera_GtestT, camera_file_logger_n_events,
                        camera_params(camera_param().integrator("Prophesee").generation("3.0"),
                                      camera_param().integrator("Prophesee").generation("3.1"))) {
-    // This test is deactivated on gen 4.0 and 4.1 cameras until ticket TEAM-10660 is done.
+    // TODO MV-233 investigate why this test fails on gen 4.0 and 4.1 cameras
     std::string file = this->tmpdir_handler_->get_full_path("Camera_Gtest_log.raw");
     Camera camera;
     if (GtestsParameters::instance().serial.empty()) {
@@ -543,8 +544,7 @@ TEST_F(Camera_Gtest, raw_default_constructor) {
 
     try {
         Camera camera = Camera::from_file(tmp_file_);
-        camera.biases().set_from_file(tmpdir_handler_->get_tmpdir_path() +
-                                      ".bias"); // should throw exception (since TEAM-2633)
+        camera.biases().set_from_file(tmpdir_handler_->get_tmpdir_path() + ".bias"); // should throw exception
         FAIL();
     } catch (CameraException &e) {
         // internal errors should appear to the user as the main category error
@@ -875,6 +875,7 @@ TEST_F(Camera_Gtest, raw_events_callbacks_decoding_check) {
     } catch (CameraException &e) { FAIL(); }
 
     Future::I_Decoder *i_decoder                 = camera.get_pimpl().i_future_decoder_;
+    I_Decoder *i_old_decoder_                    = camera.get_pimpl().i_decoder_;
     I_EventDecoder<EventCD> *i_cd_events_decoder = camera.get_pimpl().device_->get_facility<I_EventDecoder<EventCD>>();
     ASSERT_TRUE(i_cd_events_decoder);
 
@@ -885,8 +886,14 @@ TEST_F(Camera_Gtest, raw_events_callbacks_decoding_check) {
             }
         });
 
-    camera.raw_data().add_callback([i_decoder](const uint8_t *data, size_t size) {
-        i_decoder->decode(const_cast<uint8_t *>(data), const_cast<uint8_t *>(data + size));
+    camera.raw_data().add_callback([i_decoder, i_old_decoder_](const uint8_t *data, size_t size) {
+        auto raw_data_begin = const_cast<uint8_t *>(data);
+        auto raw_data_end   = const_cast<uint8_t *>(data + size);
+        if (i_decoder) {
+            i_decoder->decode(raw_data_begin, raw_data_end);
+        } else {
+            i_old_decoder_->decode(raw_data_begin, raw_data_end);
+        }
     });
 
     camera.start();
@@ -896,7 +903,11 @@ TEST_F(Camera_Gtest, raw_events_callbacks_decoding_check) {
     }
 
     timestamp ts_shift;
-    ASSERT_TRUE(i_decoder->get_timestamp_shift(ts_shift));
+    if (i_decoder) {
+        ASSERT_TRUE(i_decoder->get_timestamp_shift(ts_shift));
+    } else {
+        ASSERT_TRUE(i_old_decoder_->get_timestamp_shift(ts_shift));
+    }
 
     ASSERT_EQ(expected_events.size(), received_events.size());
     for (size_t i = 0; i < expected_events.size(); ++i) {
@@ -1333,6 +1344,11 @@ TEST_F_WITH_DATASET(Camera_Gtest, offline_streaming_control_not_ready) {
         // With this function, index building is not requested, so OSC is never ready
         Camera camera = Camera::from_file(dataset);
 
+        if (camera.get_device().get_facility<Future::I_Decoder>() == nullptr) {
+            GTEST_SUCCESS_("Disabled while waiting for RAW plugins to support seeking in MV-227");
+            return;
+        }
+
         ASSERT_NO_THROW(camera.offline_streaming_control());
 
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -1353,6 +1369,11 @@ TEST_F_WITH_DATASET(Camera_Gtest, offline_streaming_control_ready) {
 
         // With this function, index building is requested, so OSC should be ready
         Camera camera = Camera::from_file(dataset, false, Metavision::Future::RawFileConfig());
+
+        if (camera.get_device().get_facility<Future::I_Decoder>() == nullptr) {
+            GTEST_SUCCESS_("Disabled while waiting for RAW plugins to support seeking in MV-227");
+            return;
+        }
 
         ASSERT_NO_THROW(camera.offline_streaming_control());
 
@@ -1382,6 +1403,11 @@ TEST_F_WITH_DATASET(Camera_Gtest, offline_streaming_control_seek_range) {
     for (const auto &dataset : datasets) {
         Camera camera = Camera::from_file(dataset, false, Metavision::Future::RawFileConfig());
 
+        if (camera.get_device().get_facility<Future::I_Decoder>() == nullptr) {
+            GTEST_SUCCESS_("Disabled while waiting for RAW plugins to support seeking in MV-227");
+            return;
+        }
+
         bool ready     = false;
         int max_trials = 1000;
         for (int i = 0; i < max_trials; ++i) {
@@ -1410,6 +1436,11 @@ TEST_F_WITH_DATASET(Camera_Gtest, offline_streaming_control_seeks) {
     size_t i = 0;
     for (const auto &dataset : datasets) {
         Camera camera = Camera::from_file(dataset, false, Metavision::Future::RawFileConfig());
+
+        if (camera.get_device().get_facility<Future::I_Decoder>() == nullptr) {
+            GTEST_SUCCESS_("Disabled while waiting for RAW plugins to support seeking in MV-227");
+            return;
+        }
 
         std::atomic<bool> decoded{false};
         Metavision::timestamp ts, last_ts = 0;

@@ -56,13 +56,12 @@ public:
     Private(bool empty_init);
     Private(OnlineSourceType input_source_type, uint32_t source_index);
     Private(const Serial &serial);
-    Private(const std::string &rawfile, const Future::RawFileConfig &file_stream_config,
-            bool reproduce_camera_behavior);
+    Private(const std::string &rawfile, const Future::RawFileConfig &file_stream_config, bool realtime_playback_speed);
 
     ~Private();
 
     void open_raw_file(const std::string &rawfile, const Future::RawFileConfig &file_stream_config,
-                       bool reproduce_camera_behavior);
+                       bool realtime_playback_speed);
 
     Future::RawFileConfig raw_file_stream_config_;
 
@@ -194,10 +193,10 @@ public:
     std::unique_ptr<Device> device_    = nullptr;
     I_DeviceControl *i_device_control_ = nullptr;
     I_EventsStream *i_events_stream_   = nullptr;
-    // TODO TEAM-10620: remove this field
+    // TODO MV-166: remove this field
     Future::I_EventsStream *i_future_events_stream_ = nullptr;
     I_Decoder *i_decoder_                           = nullptr;
-    // TODO TEAM-10620: remove this field
+    // TODO MV-166: remove this field
     Future::I_Decoder *i_future_decoder_ = nullptr;
 
     bool from_file_    = false;

@@ -1,1 +1,0 @@
-For information about the compilation and execution of this sample, refer to our online documentation: https://docs.prophesee.ai/

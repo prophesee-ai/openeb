@@ -139,7 +139,7 @@ if (COMPILE_PYTHON3_BINDINGS)
 endif()
 
 if (BUILD_TESTING)
-    # TODO : TEAM-9991, remove this part, there should be no more PYTEST_PYTHON_VERSION variable, and we
+    # TODO : MV-167, remove this part, there should be no more PYTEST_PYTHON_VERSION variable, and we
     # should test that pytest is available for all versions in the foreach loop above
     if (PYTEST_PYTHON_VERSION)
         find_package(Python3 ${PYTEST_PYTHON_VERSION} EXACT COMPONENTS Interpreter REQUIRED)

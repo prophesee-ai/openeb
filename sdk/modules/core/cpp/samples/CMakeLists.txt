@@ -7,10 +7,9 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-add_subdirectory(metavision_sdk_get_started)
-
 if (NOT ANDROID)
     add_subdirectory(metavision_composed_viewer)
     add_subdirectory(metavision_csv_viewer)
     add_subdirectory(metavision_filtering)
+    add_subdirectory(metavision_sdk_get_started)
 endif (NOT ANDROID)

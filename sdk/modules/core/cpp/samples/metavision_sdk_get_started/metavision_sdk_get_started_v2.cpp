@@ -9,9 +9,9 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-// This code sample demonstrate how to use the Metavision SDK. The goal of this sample is to create a simple event
+// This code sample demonstrate how to use the Metavision C++ SDK. The goal of this sample is to create a simple event
 // counter and displayer by introducing some basic concepts of the Metavision SDK.
-// NOTE: this file is just for ease the integration with the docs. The main sample is metavision_sdk_get_started.cpp
+// NOTE: this file is just here to ease the integration with the docs. The main sample is metavision_sdk_get_started.cpp
 // NOTE: if you modify this file, please check that the docs references are correct (line numbers)
 
 #include <metavision/sdk/driver/camera.h>
@@ -46,16 +46,16 @@ int main(int argc, char *argv[]) {
         cam = Metavision::Camera::from_first_available();
     }
 
-    // add the event callback. This callback will be called periodically to provide access to the most recent events
+    // to analyze the events, we add a callback that will be called periodically to give access to the latest events
     cam.cd().add_callback(count_events);
 
     // start the camera
     cam.start();
 
-    // keep running while the camera is on or the video is not finished
+    // keep running while the camera is on or the recording is not finished
     while (cam.is_running()) {}
 
-    // the video is finished, stop the camera.
+    // the recording is finished, stop the camera.
     // Note: we will never get here with a live camera
     cam.stop();
 }

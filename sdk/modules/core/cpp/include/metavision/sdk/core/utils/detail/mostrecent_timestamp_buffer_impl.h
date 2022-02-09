@@ -18,19 +18,19 @@ namespace Metavision {
 
 /// @brief Default constructor
 template<typename timestamp_type>
-TMostRecentTimestampBuffer<timestamp_type>::TMostRecentTimestampBuffer() :
+MostRecentTimestampBufferT<timestamp_type>::MostRecentTimestampBufferT() :
     rows_(0), cols_(0), channels_(0), cols_channels_(0) {}
 
 /// @brief Initialization constructor
 template<typename timestamp_type>
-inline TMostRecentTimestampBuffer<timestamp_type>::TMostRecentTimestampBuffer(int rows, int cols, int channels) :
+inline MostRecentTimestampBufferT<timestamp_type>::MostRecentTimestampBufferT(int rows, int cols, int channels) :
     rows_(0), cols_(0), channels_(0), cols_channels_(cols_ * channels_) {
     create(rows, cols, channels);
 }
 
 /// @brief Copy constructor
 template<typename timestamp_type>
-inline TMostRecentTimestampBuffer<timestamp_type>::TMostRecentTimestampBuffer(const TMostRecentTimestampBuffer &other) :
+inline MostRecentTimestampBufferT<timestamp_type>::MostRecentTimestampBufferT(const MostRecentTimestampBufferT &other) :
     rows_(other.rows_),
     cols_(other.cols_),
     channels_(other.channels_),
@@ -39,11 +39,11 @@ inline TMostRecentTimestampBuffer<timestamp_type>::TMostRecentTimestampBuffer(co
 
 /// @brief Destructor
 template<typename timestamp_type>
-inline TMostRecentTimestampBuffer<timestamp_type>::~TMostRecentTimestampBuffer() {}
+inline MostRecentTimestampBufferT<timestamp_type>::~MostRecentTimestampBufferT() {}
 
 /// @brief Allocates the buffer
 template<typename timestamp_type>
-inline void TMostRecentTimestampBuffer<timestamp_type>::create(int rows, int cols, int channels) {
+inline void MostRecentTimestampBufferT<timestamp_type>::create(int rows, int cols, int channels) {
     tsbuffer_.clear();
     tsbuffer_.resize(rows * cols * channels, 0);
     rows_          = rows;
@@ -53,7 +53,7 @@ inline void TMostRecentTimestampBuffer<timestamp_type>::create(int rows, int col
 }
 
 template<typename timestamp_type>
-inline void TMostRecentTimestampBuffer<timestamp_type>::release() {
+inline void MostRecentTimestampBufferT<timestamp_type>::release() {
     std::vector<timestamp_type>().swap(tsbuffer_);
     rows_          = 0;
     cols_          = 0;
@@ -63,43 +63,43 @@ inline void TMostRecentTimestampBuffer<timestamp_type>::release() {
 
 /// @brief accesses the number of rows of the buffer
 template<typename timestamp_type>
-inline int TMostRecentTimestampBuffer<timestamp_type>::rows() const {
+inline int MostRecentTimestampBufferT<timestamp_type>::rows() const {
     return rows_;
 }
 
 /// @brief Accesses the number of columns of the buffer
 template<typename timestamp_type>
-inline int TMostRecentTimestampBuffer<timestamp_type>::cols() const {
+inline int MostRecentTimestampBufferT<timestamp_type>::cols() const {
     return cols_;
 }
 
 /// @brief Accesses the size of the buffer
 template<typename timestamp_type>
-inline cv::Size TMostRecentTimestampBuffer<timestamp_type>::size() const {
+inline cv::Size MostRecentTimestampBufferT<timestamp_type>::size() const {
     return cv::Size(cols_, rows_);
 }
 
 /// @brief Accesses the number of channels of the buffer
 template<typename timestamp_type>
-inline int TMostRecentTimestampBuffer<timestamp_type>::channels() const {
+inline int MostRecentTimestampBufferT<timestamp_type>::channels() const {
     return channels_;
 }
 
 /// @brief Checks whether the buffer is empty
 template<typename timestamp_type>
-inline bool TMostRecentTimestampBuffer<timestamp_type>::empty() const {
+inline bool MostRecentTimestampBufferT<timestamp_type>::empty() const {
     return (rows_ * cols_ == 0);
 }
 
 /// @brief Sets all elements of the timestamp buffer to a constant
 template<typename timestamp_type>
-inline void TMostRecentTimestampBuffer<timestamp_type>::set_to(timestamp_type ts) {
+inline void MostRecentTimestampBufferT<timestamp_type>::set_to(timestamp_type ts) {
     std::fill(tsbuffer_.begin(), tsbuffer_.end(), ts);
 }
 
 template<typename timestamp_type>
 inline void
-    TMostRecentTimestampBuffer<timestamp_type>::copy_to(TMostRecentTimestampBuffer<timestamp_type> &other) const {
+    MostRecentTimestampBufferT<timestamp_type>::copy_to(MostRecentTimestampBufferT<timestamp_type> &other) const {
     other.rows_          = rows_;
     other.cols_          = cols_;
     other.channels_      = channels_;
@@ -109,7 +109,7 @@ inline void
 
 /// @brief Swaps the timestamp buffer with the specified one
 template<typename timestamp_type>
-inline void TMostRecentTimestampBuffer<timestamp_type>::swap(TMostRecentTimestampBuffer &other) {
+inline void MostRecentTimestampBufferT<timestamp_type>::swap(MostRecentTimestampBufferT &other) {
     std::swap(rows_, other.rows_);
     std::swap(cols_, other.cols_);
     std::swap(channels_, other.channels_);
@@ -119,7 +119,7 @@ inline void TMostRecentTimestampBuffer<timestamp_type>::swap(TMostRecentTimestam
 
 /// @brief Retrieves the reference of the timestamp at the specified pixel
 template<typename timestamp_type>
-inline const timestamp_type &TMostRecentTimestampBuffer<timestamp_type>::at(int y, int x, int c) const {
+inline const timestamp_type &MostRecentTimestampBufferT<timestamp_type>::at(int y, int x, int c) const {
     BOOST_ASSERT_MSG(x >= 0 && x < cols_ && y >= 0 && y < rows_ && c >= 0 && c < channels_,
                      "Input coordinates are outside the bounds of the buffer!");
     return tsbuffer_[y * cols_channels_ + x * channels_ + c];
@@ -127,7 +127,7 @@ inline const timestamp_type &TMostRecentTimestampBuffer<timestamp_type>::at(int 
 
 /// @brief Retrieves the reference of the timestamp at the specified pixel
 template<typename timestamp_type>
-inline timestamp_type &TMostRecentTimestampBuffer<timestamp_type>::at(int y, int x, int c) {
+inline timestamp_type &MostRecentTimestampBufferT<timestamp_type>::at(int y, int x, int c) {
     BOOST_ASSERT_MSG(x >= 0 && x < cols_ && y >= 0 && y < rows_ && c >= 0 && c < channels_,
                      "Input coordinates are outside the bounds of the buffer!");
     return tsbuffer_[y * cols_channels_ + x * channels_ + c];
@@ -135,7 +135,7 @@ inline timestamp_type &TMostRecentTimestampBuffer<timestamp_type>::at(int y, int
 
 /// @brief Retrieves the pointer to the timestamp at the specified pixel
 template<typename timestamp_type>
-inline const timestamp_type *TMostRecentTimestampBuffer<timestamp_type>::ptr(int y, int x, int c) const {
+inline const timestamp_type *MostRecentTimestampBufferT<timestamp_type>::ptr(int y, int x, int c) const {
     BOOST_ASSERT_MSG(x >= 0 && x < cols_ && y >= 0 && y < rows_ && c >= 0 && c < channels_,
                      "Input coordinates are outside the bounds of the buffer!");
     return &tsbuffer_[y * cols_channels_ + x * channels_ + c];
@@ -143,7 +143,7 @@ inline const timestamp_type *TMostRecentTimestampBuffer<timestamp_type>::ptr(int
 
 /// @brief Retrieves the pointer to the timestamp at the specified pixel
 template<typename timestamp_type>
-inline timestamp_type *TMostRecentTimestampBuffer<timestamp_type>::ptr(int y, int x, int c) {
+inline timestamp_type *MostRecentTimestampBufferT<timestamp_type>::ptr(int y, int x, int c) {
     BOOST_ASSERT_MSG(x >= 0 && x < cols_ && y >= 0 && y < rows_ && c >= 0 && c < channels_,
                      "Input coordinates are outside the bounds of the buffer!");
     return &tsbuffer_[y * cols_channels_ + x * channels_ + c];
@@ -151,7 +151,7 @@ inline timestamp_type *TMostRecentTimestampBuffer<timestamp_type>::ptr(int y, in
 
 /// @brief Retrieves the maximum timestamp across channels at the specified pixel
 template<typename timestamp_type>
-inline timestamp_type TMostRecentTimestampBuffer<timestamp_type>::max_across_channels_at(int y, int x) const {
+inline timestamp_type MostRecentTimestampBufferT<timestamp_type>::max_across_channels_at(int y, int x) const {
     BOOST_ASSERT_MSG(x >= 0 && x < cols_ && y >= 0 && y < rows_,
                      "Input coordinates are outside the bounds of the buffer!");
     const timestamp_type *pbuff_ts = &tsbuffer_[(y * cols_ + x) * channels_];
@@ -160,9 +160,9 @@ inline timestamp_type TMostRecentTimestampBuffer<timestamp_type>::max_across_cha
 
 // @brief Generates a CV_8UC1 image of the time surface for the 2 channels
 // Side-by-side: negative polarity time surface, positive polarity time surface
-// The time surface is normalized between last_ts (0) and last_ts - delta_t (255)
+// The time surface is normalized between last_ts (255) and last_ts - delta_t (0)
 template<typename timestamp_type>
-inline void TMostRecentTimestampBuffer<timestamp_type>::generate_img_time_surface(timestamp_type last_ts,
+inline void MostRecentTimestampBufferT<timestamp_type>::generate_img_time_surface(timestamp_type last_ts,
                                                                                   timestamp_type delta_t,
                                                                                   cv::Mat &out) const {
     out.create(this->rows(), this->channels() * this->cols(), CV_8UC1);
@@ -179,7 +179,7 @@ inline void TMostRecentTimestampBuffer<timestamp_type>::generate_img_time_surfac
             for (; img_ptr != last_ptr; ++img_ptr) {
                 auto diff = last_ts - *ts_ptr;
                 if (diff <= delta_t) {
-                    *img_ptr = (uint8_t)(diff * ratio);
+                    *img_ptr = static_cast<uint8_t>((delta_t - diff) * ratio);
                 }
                 ts_ptr += nb_channels /* channels are interleaved */;
             }
@@ -188,9 +188,9 @@ inline void TMostRecentTimestampBuffer<timestamp_type>::generate_img_time_surfac
 }
 
 // @brief Generates a CV_8UC1 image of the time surface, merging the 2 channels
-// The time surface is normalized between last_ts (0) and last_ts - delta_t (255)
+// The time surface is normalized between last_ts (255) and last_ts - delta_t (0)
 template<typename timestamp_type>
-inline void TMostRecentTimestampBuffer<timestamp_type>::generate_img_time_surface_collapsing_channels(
+inline void MostRecentTimestampBufferT<timestamp_type>::generate_img_time_surface_collapsing_channels(
     timestamp_type last_ts, timestamp_type delta_t, cv::Mat &out) const {
     out.create(this->rows(), this->cols(), CV_8UC1);
     out.setTo(cv::Scalar::all(0));
@@ -204,7 +204,7 @@ inline void TMostRecentTimestampBuffer<timestamp_type>::generate_img_time_surfac
             auto delta = last_ts - *std::max_element(ts_ptr, ts_ptr + this->channels());
 
             if (delta <= delta_t) {
-                *img_ptr = (uint8_t)(delta * ratio);
+                *img_ptr = static_cast<uint8_t>((delta_t - delta) * ratio);
             }
             ++img_ptr;
             ts_ptr += this->channels() /* channels are interleaved */;

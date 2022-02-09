@@ -61,9 +61,9 @@ public:
     /// @param allocate Allocates the frame if true. Otherwise, the user must ensure the validity of the input frame.
     /// This is to be used when the data ptr must not change (external allocation, ROI over another cv::Mat, ...)
     /// @warning This method is expected to be called with timestamps increasing monotonically.
-    /// @throw invalid_argument exception if @p ts is older than the last frame generation and @ref reset method hasn't
+    /// @throw invalid_argument if @p ts is older than the last frame generation and @ref reset method hasn't
     /// been called in the meantime
-    /// @throw invalid_argument exception if the frame doesn't have the expected type and geometry
+    /// @throw invalid_argument if the frame doesn't have the expected type and geometry
     void generate(timestamp ts, cv::Mat &frame, bool allocate = true);
 
     /// @brief Sets the accumulation time (in us) to use to generate a frame

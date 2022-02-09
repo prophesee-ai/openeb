@@ -8,8 +8,8 @@
 # See the License for the specific language governing permissions and limitations under the License.
 
 set(GIT_BRANCH "main")
-set(GIT_COMMIT_ID "9563348eafe82e4baddf6639fe8113821103f628")
-set(GIT_COMMIT_DATE "2021-10-08 17:33:30 +0200")
+set(GIT_COMMIT_ID "a8766f02ffea11e97676a5d4b1709b8555298c6d")
+set(GIT_COMMIT_DATE "2022-02-07 18:51:39 +0100")
 
 # If git information are not provided in command line when running cmake, try to automatically determine them
 if(NOT GIT_BRANCH OR NOT GIT_COMMIT_ID OR NOT GIT_COMMIT_DATE)

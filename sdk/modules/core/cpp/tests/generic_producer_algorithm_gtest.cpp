@@ -41,7 +41,6 @@ protected:
 };
 
 #ifndef ANDROID
-// created bug issue TEAM-6380
 TEST_F(GenericProducerAlgorithm_GTest, register_nothing) {
     std::vector<Event2d> events;
     ASSERT_EXIT((this->producer_algo_.register_new_event_buffer(events.begin(), events.end()), exit(0)),

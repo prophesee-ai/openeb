@@ -29,7 +29,7 @@
 #include <metavision/hal/facilities/i_decoder.h>
 #include <metavision/hal/facilities/i_event_decoder.h>
 #include <metavision/hal/facilities/i_plugin_software_info.h>
-#include "metavision/hal/facilities/i_hw_identification.h"
+#include <metavision/hal/facilities/i_hw_identification.h>
 #include <metavision/hal/device/device.h>
 #include <metavision/hal/device/device_discovery.h>
 #include <metavision/hal/facilities/i_events_stream.h>
@@ -148,14 +148,14 @@ int main(int argc, char *argv[]) {
         std::cout << "Plugin used: " << plugin_name << std::endl;
     }
 
-    Metavision::I_HW_Identification *i_hw_identifiction = device->get_facility<Metavision::I_HW_Identification>();
-    if (i_hw_identifiction) {
-        system_id = i_hw_identifiction->get_system_id();
+    Metavision::I_HW_Identification *i_hw_identification = device->get_facility<Metavision::I_HW_Identification>();
+    if (i_hw_identification) {
+        system_id = i_hw_identification->get_system_id();
         std::cout << "System ID: " << system_id << std::endl;
     }
 
     Metavision::I_DeviceControl *i_device_control = device->get_facility<Metavision::I_DeviceControl>();
-    if (!i_device_control) {
+    if (in_raw_file_path.empty() && !i_device_control) {
         std::cerr << "Could not get Device Control facility." << std::endl;
         return 1;
     }
@@ -183,7 +183,7 @@ int main(int argc, char *argv[]) {
         i_trigger_in->enable(trigger_in_channels[plugin_name].loopback_channel);
     }
 
-    if (system_id == 0x30) {
+    if (system_id == 0x30 || system_id == 0x31) {
         // Evk3 Gen41 system
         if (i_trigger_in && i_device_control) {
             i_device_control->set_mode_master();
@@ -272,7 +272,10 @@ int main(int argc, char *argv[]) {
                 std::cout << "End of file" << std::endl;
                 i_eventsstream->stop();
                 i_eventsstream->stop_log_raw_data();
-                i_device_control->stop();
+                if (in_raw_file_path.empty()) {
+                    i_device_control->stop();
+                    std::cout << "Camera stopped." << std::endl;
+                }
                 stop_decoding    = true;
                 stop_application = true;
             } else if (ret == 0) {

@@ -13,9 +13,9 @@ cmake_minimum_required(VERSION 3.5)
 
 set(CMAKE_CXX_STANDARD 14)
 
-find_package(MetavisionSDK COMPONENTS core driver REQUIRED)
+find_package(MetavisionSDK COMPONENTS core driver ui REQUIRED)
 find_package(OpenCV COMPONENTS highgui REQUIRED)
 
 set (sample metavision_sdk_get_started)
 add_executable(${sample} ${sample}.cpp)
-target_link_libraries(${sample} MetavisionSDK::core MetavisionSDK::driver opencv_highgui)
+target_link_libraries(${sample} MetavisionSDK::core MetavisionSDK::driver MetavisionSDK::ui opencv_highgui)

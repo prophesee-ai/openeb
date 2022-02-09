@@ -14,6 +14,7 @@
 #include <windows.h>
 #endif
 #include <iostream>
+#include <atomic>
 #include <signal.h>
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
@@ -112,30 +113,37 @@ bool parse_command_line(int argc, const char *argv[], Parameters &app_params) {
 }
 
 namespace {
-std::unique_ptr<Viewer> viewer;
+std::atomic<bool> signal_caught{false};
 
 void sig_handler(int s) {
     MV_LOG_TRACE() << "Interrupt signal received." << std::endl;
-    viewer->stop();
-
-    std::exit(s);
+    signal_caught = true;
 }
 } // anonymous namespace
 
 int main(int argc, const char *argv[]) {
+    signal(SIGINT, sig_handler);
+
     // Parse command line.
     Parameters params;
     if (!parse_command_line(argc, argv, params)) {
         return 1;
     }
 
+    Viewer viewer(params);
     try {
-        viewer = std::make_unique<Viewer>(params);
-        signal(SIGINT, sig_handler);
-        viewer->run();
+        viewer.start();
     } catch (Metavision::CameraException &e) {
         MV_LOG_ERROR() << e.what();
         return 1;
     }
-    return 0;
+
+    bool ret = true;
+    while (!signal_caught && ret) {
+        ret = viewer.update();
+    }
+
+    viewer.stop();
+
+    return signal_caught;
 }

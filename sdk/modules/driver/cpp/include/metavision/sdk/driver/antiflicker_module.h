@@ -45,7 +45,7 @@ public:
     ///
     /// @note band-stop removes all frequencies between min and max\n
     ///       band-pass removes all events outside of the band sequence defined
-    /// @throw runtime exception if frequency band is not in the range [50 - 500] Hz
+    /// @throw exception if frequency band is not in the range [50 - 500] Hz
     void set_frequency(uint32_t frequency_center, uint32_t bandwidth, bool stop = true);
 
     /// @brief Sets anti-flicker parameters.
@@ -58,7 +58,7 @@ public:
     ///
     /// @note band-stop removes all frequencies between min and max\n
     ///       band-pass removes all events outside of the band sequence defined
-    /// @throw runtime exception if frequencies are outside of the range [50 - 500] Hz
+    /// @throw exception if frequencies are outside of the range [50 - 500] Hz
     void set_frequency_band(uint32_t min_freq, uint32_t max_freq, bool stop = true);
 
     /// @brief Gets corresponding facility in HAL library

@@ -75,8 +75,8 @@ target_include_directories(metavision_hal
 )
 
 if (ANDROID)
-    # Fixme in TEAM-9084
-    # This is a temporary hack to force gradle to package libusb in the APK so that 
+    # TODO fix in MV-230
+    # This is a temporary hack to force gradle to package libusb in the APK so that
     # plugins can link correctly at run time.
     # A better solution is to make sure the plugins on Android do not link with libusb
     # since they don't need it (offline support only)

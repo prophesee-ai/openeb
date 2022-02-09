@@ -11,11 +11,10 @@
 
 // Example of using Metavision SDK Driver API for visualizing events stream.
 
-#include <iostream>
-#include <signal.h>
 #include <boost/program_options.hpp>
 #include <metavision/sdk/driver/camera.h>
 #include <thread>
+#include <atomic>
 #include <chrono>
 #include <opencv2/highgui/highgui.hpp>
 #if CV_MAJOR_VERSION >= 4
@@ -88,28 +87,15 @@ int setup_cd_callback_and_window(Metavision::Camera &camera, cv::Mat &cd_frame, 
 }
 
 namespace {
-std::unique_ptr<Metavision::Camera> camera;
-int cd_events_cb_id;
+std::atomic<bool> signal_caught{false};
 
 void sig_handler(int s) {
     MV_LOG_TRACE() << "Interrupt signal received." << std::endl;
-
-    if (cd_events_cb_id >= 0) {
-        camera->cd().remove_callback(cd_events_cb_id);
-    }
-
-    if (camera && camera->is_running()) {
-        MV_LOG_TRACE() << "Stopping camera." << std::endl;
-        camera->stop();
-    }
-
-    std::exit(s);
+    signal_caught = true;
 }
 } // anonymous namespace
 
 int main(int argc, char *argv[]) {
-    signal(SIGINT, sig_handler);
-
     std::string serial;
     std::string biases_file;
     std::string in_raw_file_path;
@@ -176,6 +162,7 @@ int main(int argc, char *argv[]) {
     }
 
     do {
+        Metavision::Camera camera;
         bool camera_is_opened = false;
 
         // If the filename is set, then read from the file
@@ -186,25 +173,24 @@ int main(int argc, char *argv[]) {
             }
 
             try {
-                camera = std::make_unique<Metavision::Camera>(
-                    Metavision::Camera::from_file(in_raw_file_path, true, Metavision::Future::RawFileConfig()));
+                camera = Metavision::Camera::from_file(in_raw_file_path, true, Metavision::Future::RawFileConfig());
                 camera_is_opened = true;
             } catch (Metavision::CameraException &e) { MV_LOG_ERROR() << e.what(); }
             // Otherwise, set the input source to the first available camera
         } else {
             try {
                 if (!serial.empty()) {
-                    camera = std::make_unique<Metavision::Camera>(Metavision::Camera::from_serial(serial));
+                    camera = Metavision::Camera::from_serial(serial);
                 } else {
-                    camera = std::make_unique<Metavision::Camera>(Metavision::Camera::from_first_available());
+                    camera = Metavision::Camera::from_first_available();
                 }
 
                 if (biases_file != "") {
-                    camera->biases().set_from_file(biases_file);
+                    camera.biases().set_from_file(biases_file);
                 }
 
                 if (!roi.empty()) {
-                    camera->roi().set({roi[0], roi[1], roi[2], roi[3]});
+                    camera.roi().set({roi[0], roi[1], roi[2], roi[3]});
                 }
                 camera_is_opened = true;
             } catch (Metavision::CameraException &e) { MV_LOG_ERROR() << e.what(); }
@@ -223,13 +209,13 @@ int main(int argc, char *argv[]) {
         }
 
         // Add runtime error callback
-        camera->add_runtime_error_callback([&do_retry](const Metavision::CameraException &e) {
+        camera.add_runtime_error_callback([&do_retry](const Metavision::CameraException &e) {
             MV_LOG_ERROR() << e.what();
             do_retry = true;
         });
 
         // Get the geometry of the camera
-        auto &geometry = camera->geometry(); // Get the geometry of the camera
+        auto &geometry = camera.geometry(); // Get the geometry of the camera
 
         // All cameras have CDs events
         std::string cd_window_name("CD Events");
@@ -237,11 +223,11 @@ int main(int argc, char *argv[]) {
         Metavision::timestamp cd_frame_ts{0};
         Metavision::CDFrameGenerator cd_frame_generator(geometry.width(), geometry.height());
         cd_frame_generator.set_display_accumulation_time_us(10000);
-        cd_events_cb_id =
-            setup_cd_callback_and_window(*camera, cd_frame, cd_frame_ts, cd_frame_generator, cd_window_name);
+        int cd_events_cb_id =
+            setup_cd_callback_and_window(camera, cd_frame, cd_frame_ts, cd_frame_generator, cd_window_name);
 
         // Start the camera streaming
-        camera->start();
+        camera.start();
 
         bool recording     = false;
         bool is_roi_set    = true;
@@ -251,18 +237,16 @@ int main(int argc, char *argv[]) {
 
         if (!in_raw_file_path.empty()) {
             try {
-                camera->offline_streaming_control().is_ready();
+                camera.offline_streaming_control().is_ready();
                 osc_available = true;
-            } catch (Metavision::CameraException &e) {
-                MV_LOG_INFO() << "A required facility is not available, seeking operations are disabled.";
-            }
+            } catch (Metavision::CameraException &e) { MV_LOG_ERROR() << e.what(); }
         }
 
-        while (camera->is_running()) {
+        while (!signal_caught && camera.is_running()) {
             if (!in_raw_file_path.empty() && osc_available) {
                 try {
                     bool was_osc_ready = osc_ready;
-                    osc_ready          = camera->offline_streaming_control().is_ready();
+                    osc_ready          = camera.offline_streaming_control().is_ready();
                     if (!was_osc_ready && osc_ready) {
                         osd = true;
                     }
@@ -273,7 +257,7 @@ int main(int argc, char *argv[]) {
                 if (osd) {
                     const std::string text =
                         human_readable_time(cd_frame_ts) + " / " +
-                        human_readable_time(camera->offline_streaming_control().get_seek_end_time());
+                        human_readable_time(camera.offline_streaming_control().get_seek_end_time());
                     cv::putText(cd_frame, text, cv::Point(10, 20), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(108, 143, 255),
                                 1, cv::LINE_AA);
                 }
@@ -285,21 +269,21 @@ int main(int argc, char *argv[]) {
             switch (key) {
             case 'q':
             case ESCAPE:
-                camera->stop();
+                camera.stop();
                 do_retry = false;
                 break;
             case SPACE:
                 if (!recording) {
-                    camera->start_recording(out_raw_file_path);
+                    camera.start_recording(out_raw_file_path);
                 } else {
-                    camera->stop_recording();
+                    camera.stop_recording();
                 }
                 recording = !recording;
                 break;
             case 'b':
                 if (osc_ready) {
                     Metavision::timestamp pos = cd_frame_ts - 1000 * 1000;
-                    if (camera->offline_streaming_control().seek(pos)) {
+                    if (camera.offline_streaming_control().seek(pos)) {
                         cd_frame_generator.reset();
                     }
                 }
@@ -307,7 +291,7 @@ int main(int argc, char *argv[]) {
             case 'f':
                 if (osc_ready) {
                     Metavision::timestamp pos = cd_frame_ts + 1000 * 1000;
-                    if (camera->offline_streaming_control().seek(pos)) {
+                    if (camera.offline_streaming_control().seek(pos)) {
                         cd_frame_generator.reset();
                     }
                 }
@@ -323,9 +307,9 @@ int main(int argc, char *argv[]) {
                     break;
                 }
                 if (!is_roi_set) {
-                    camera->roi().set({roi[0], roi[1], roi[2], roi[3]});
+                    camera.roi().set({roi[0], roi[1], roi[2], roi[3]});
                 } else {
-                    camera->roi().unset();
+                    camera.roi().unset();
                 }
                 is_roi_set = !is_roi_set;
                 break;
@@ -340,12 +324,12 @@ int main(int argc, char *argv[]) {
 
         // unregister callbacks to make sure they are not called anymore
         if (cd_events_cb_id >= 0) {
-            camera->cd().remove_callback(cd_events_cb_id);
+            camera.cd().remove_callback(cd_events_cb_id);
         }
 
         // Stop the camera streaming, optional, the destructor will automatically do it
-        camera->stop();
-    } while (do_retry);
+        camera.stop();
+    } while (!signal_caught && do_retry);
 
-    return 0;
+    return signal_caught;
 }

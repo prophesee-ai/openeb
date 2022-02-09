@@ -30,20 +30,27 @@ public:
 
     Viewer(const Parameters &params);
     ~Viewer();
-    void run();
+
+    void start();
+    bool update();
     void stop();
+
+    bool is_running();
 
 private:
     void setup_camera();
 
     std::unique_ptr<Metavision::GenericProducerAlgorithm<Metavision::Event2d>> prod_;
     Parameters parameters_;
+    bool paused_;
     Metavision::Camera camera_;
+    Metavision::timestamp ts_;
+    std::vector<Metavision::Event2d> input_evt_buffer_;
     EventBuffer event_buffer_;
     cv::Size sensor_size_;
     cv::Mat frame_;
     std::unique_ptr<View> view_;
-    int cd_events_cb_id;
+    int cd_events_cb_id_;
 };
 
 #endif // METAVISION_PLAYER_VIEWER_H

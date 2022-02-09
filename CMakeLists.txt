@@ -9,7 +9,7 @@
 
 cmake_minimum_required(VERSION 3.5)
 
-project(metavision VERSION 2.3.0)
+project(metavision VERSION 2.3.1)
 set(PROJECT_VERSION_SUFFIX "")
 
 if(PROJECT_VERSION_SUFFIX STREQUAL "")
@@ -276,7 +276,7 @@ if (BUILD_TESTING)
             message(FATAL_ERROR "ERROR : cannot add test for app ${app_name} because file ${pytest_file} does not exist")
         endif(NOT EXISTS "${pytest_file}")
 
-        # TODO : TEAM-9991, put this in a foreach loop for each python versions
+        # TODO : MV-167, put this in a foreach loop for each python versions
         add_pytest(NAME ${test_name} PATH ${pytest_file} WORKING_DIRECTORY $<TARGET_FILE_DIR:${app_name}>)
 
     endfunction(add_test_app)

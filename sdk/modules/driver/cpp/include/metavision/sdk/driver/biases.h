@@ -30,7 +30,7 @@ public:
     ~Biases();
 
     /// @brief Sets camera biases from a bias file at biases_filename
-    /// @throw A @ref CameraException in case of failure. This could happen for example if given path does not exists.
+    /// @throw CameraException in case of failure. This could happen for example if given path does not exists.
     /// @param biases_filename Path to the bias file used to configure the camera
     void set_from_file(const std::string &biases_filename);
 

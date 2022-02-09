@@ -1,19 +1,26 @@
 # OpenEB
 
-OpenEB enables anyone to get a better understanding of event-based vision, directly interact with events and build
+OpenEB is the open source project associated with [Metavision Intelligence](https://www.prophesee.ai/metavision-intelligence/)
+
+It enables anyone to get a better understanding of event-based vision, directly interact with events and build
 their own applications or plugins. As a camera manufacturer, ensure your customers benefit from the most advanced 
 event-based software suite available by building your own plugin. As a creator, scientist, academic, join and contribute
 to the fast-growing event-based vision community.
 
-OpenEB is composed of 5 fundamental software modules:
-* HAL: Hardware Abstraction Layer allowing Metavision Intelligence Suite to operate with any event-based vision device.
+OpenEB is composed of the 5 Open modules of Metavision Intelligence:
+* HAL: Hardware Abstraction Layer to operate any event-based vision device.
 * Base: Foundations and common definitions of event-based applications.
 * Core: Generic algorithms for visualization, event stream manipulation, applicative pipeline generation.
-* Driver: High-level abstraction to easily interact with event-based cameras.
+* Driver: High-level abstraction built on the top of HAL to easily interact with event-based cameras.
 * UI: Viewer and display controllers for event-based data.
 
-This document describes how to compile and install the **OpenEB** codebase.
-For more information, refer to our [online documentation](https://docs.prophesee.ai/).
+This document describes how to compile and install the OpenEB codebase.
+For further information, refer to our [online documentation](https://docs.prophesee.ai/) where you will find
+some [tutorials](https://docs.prophesee.ai/stable/metavision_sdk/tutorials/index.html) to get you started in C++ or Python,
+some [samples and applications](https://docs.prophesee.ai/stable/samples.html) to discover how to use
+[our API](https://docs.prophesee.ai/stable/api.html) and a more detailed
+[description of our modules and plans](https://docs.prophesee.ai/stable/modules.html).
+
 
 ## Compiling on Ubuntu
 
@@ -73,7 +80,7 @@ sudo cmake --build . --target install
 ### Compilation
 
  1. Retrieve the code `git clone https://github.com/prophesee-ai/openeb.git`
- 2. Create and open the build directory in the `openeb` folder (called `OPENEB_SRC_DIR` in next sections): `cd openeb; mkdir build && cd build`
+ 2. Create and open the build directory in the `openeb` folder (absolute path to this directory is called `OPENEB_SRC_DIR` in next sections): `cd openeb; mkdir build && cd build`
  3. Generate the makefiles using CMake: `cmake .. -DBUILD_TESTING=OFF`
  4. Compile: `cmake --build . --config Release -- -j 4`
  
@@ -106,7 +113,7 @@ sudo apt install metavision-hal-prophesee-plugins
 If you are using a previous version of OpenEB, specify the version number in your command: `sudo apt -y install 'metavision-hal-prophesee-plugins=x.y.z'`
 
 
-### (Optional) Running the test suite
+### Running the test suite (Optional)
 
 
 Running the test suite is a sure-fire way to ensure you did everything well with your compilation and installation process.
@@ -116,7 +123,7 @@ Running the test suite is a sure-fire way to ensure you did everything well with
  * Download [the files](https://dataset.prophesee.ai/index.php/s/VfhepWI4MPVWh9o) necessary to run the tests.
    Click `Download` on the top right folder. Beware of the size of the obtained archive which weighs around 500 Mb.
 
- * Extract and put the content of this archive to `<OPENEB_SRC_DIR>/datasets`. For instance, the correct path of sequence `gen31_timer.raw` should be `<OPENEB_SRC_DIR>/datasets/openeb/gen31_timer.raw`.
+ * Extract and put the content of this archive to `<OPENEB_SRC_DIR>/`. For instance, the correct path of sequence `gen31_timer.raw` should be `<OPENEB_SRC_DIR>/datasets/openeb/gen31_timer.raw`.
 
  * Regenerate the makefiles with the test options on.
 
@@ -150,18 +157,23 @@ To compile OpenEB, you will need to install some extra tools:
       * Select "C++ build tools", make sure Windows 10 SDK is checked, and add English Language Pack
     * For development, you can also download and run [Visual Studio Installer](https://visualstudio.microsoft.com/fr/downloads/)    
  * install [vcpkg](https://github.com/microsoft/vcpkg) that will be used for installing dependencies:
-    * download and extract [vcpkg](https://github.com/microsoft/vcpkg/archive/refs/tags/2020.11-1.zip) 
+    * download and extract [vcpkg version 2020.11-1](https://github.com/microsoft/vcpkg/archive/refs/tags/2020.11-1.zip)
+    * patch a configuration file to fix a known issue with this version of vcpkg. In the file `C:\vcpkg-2020.11-1\scripts\cmake\vcpkg_acquire_msys.cmake`,
+      on line 81, add `"https://mirrors.zju.edu.cn/msys2/"` (this is adding a new mirror server). This can be achieved with the following command
+      (to adapt to the path in which you extracted vcpkg): 
+      ```bash
+      powershell -command "& {&'Invoke-WebRequest' -OutFile C:\vcpkg-2020.11-1\scripts\cmake\vcpkg_acquire_msys.cmake -Uri https://files.prophesee.ai/share/dists/public/vcpkg/vcpkg_acquire_msys.cmake}"
+      ```
     * `cd <VCPKG_SRC_DIR>`
     * `bootstrap-vcpkg.bat`
-    * `bootstrap-vcpkg.bat`
-  * finally, install the libraries by running `vcpkg.exe --triplet x64-windows install libusb eigen3 boost opencv glfw3 glew gtest dirent`
+  * finally, install the libraries by running `vcpkg.exe install --triplet x64-windows libusb eigen3 boost opencv glfw3 glew gtest dirent`
     * Note that to avoid using `--triplet x64-windows`, which informs vcpkg to install packages for a x64-windows target,
       you can run `setx VCPKG_DEFAULT_TRIPLET x64-windows` (you need to close the command line and re-open it to ensure that this variable is set)
 
 #### Install pybind
 
 The Python bindings rely on the [pybind11](https://github.com/pybind) library (version 2.6.0).
-You should install pybind using vcpkg in order to get the appropriate version: `vcpkg.exe --triplet x64-windows install pybind11`
+You should install pybind using vcpkg in order to get the appropriate version: `vcpkg.exe install --triplet x64-windows pybind11`
 
 *Note* that pybind11 is required only if you plan to use the Python API.
 You can opt out of creating these bindings by passing the argument `-DCOMPILE_PYTHON3_BINDINGS=OFF` at step 2 during compilation (see section "Compilation using CMake").
@@ -199,10 +211,10 @@ git clone https://github.com/prophesee-ai/openeb.git
 
 #### Compilation using CMake
 
-Open a command prompt inside the `openeb` folder (called `OPENEB_SRC_DIR` in next sections) and do as follows:
+Open a command prompt inside the `openeb` folder (absolute path to this directory is called `OPENEB_SRC_DIR` in next sections) and do as follows:
 
  1. Create and open the build directory, where temporary files will be created: `mkdir build && cd build`
- 2. Generate the build using CMake: `cmake -A x64 -DCMAKE_TOOLCHAIN_FILE=<OPENEB_SRC_DIR>\cmake\toolchains\vcpkg.cmake -DVCPKG_DIRECTORY=<VCPKG_SRC_DIR> ..`.
+ 2. Generate the makefiles using CMake: `cmake -A x64 -DCMAKE_TOOLCHAIN_FILE=<OPENEB_SRC_DIR>\cmake\toolchains\vcpkg.cmake -DVCPKG_DIRECTORY=<VCPKG_SRC_DIR> ..`.
     Note that the value passed to the parameter `-DCMAKE_TOOLCHAIN_FILE` must be an absolute path, not a relative one. 
  3. Compile: `cmake --build . --config Release --parallel 4`
  
@@ -213,19 +225,25 @@ For this, you will need to update your environment variables using this script:
 <OPENEB_SRC_DIR>\build\utils\scripts\setup_env.bat
 ```
 
-Optionally, you can deploy the OpenEB files (applications, samples, Python packages etc.) in a directory of your choice.
-You can configure the target folder (`OPENEB_INSTALL_DIR`) with `CMAKE_INSTALL_PREFIX` variable (default value is `C:\Program Files\Prophesee`). 
-Use the following command (which you may need to execute as administrator, depending on the selected target folder):
+Optionally, you can deploy the OpenEB files (applications, samples, libraries etc.) in a directory of your choice.
+To do so, configure the target folder (`OPENEB_INSTALL_DIR`) with `CMAKE_INSTALL_PREFIX` variable 
+(default value is `C:\Program Files\Prophesee`) when generating the makefiles in step 2:
 
 ```bash
-cmake --build . --config Release --target install -DCMAKE_INSTALL_PREFIX=<OPENEB_INSTALL_DIR>
+cmake -A x64 -DCMAKE_TOOLCHAIN_FILE=<OPENEB_SRC_DIR>\cmake\toolchains\vcpkg.cmake -DVCPKG_DIRECTORY=<VCPKG_SRC_DIR> -DCMAKE_INSTALL_PREFIX=<OPENEB_INSTALL_DIR> -DBUILD_TESTING=OFF ..
 ```
 
-When you perform the optional installation, you will need to edit your environment variable `PYTHONPATH` 
-and append the following path:
+You can also configure the directory where the Python packages will be deployed using the `PYTHON3_SITE_PACKAGES` variable
+(note that in that case, you will also need to edit your environment variable `PYTHONPATH` and append the `<PYTHON3_PACKAGES_INSTALL_DIR>` path):
 
 ```bash
-"<OPENEB_INSTALL_DIR>\lib\python3\site-packages"
+cmake -A x64 -DCMAKE_TOOLCHAIN_FILE=<OPENEB_SRC_DIR>\cmake\toolchains\vcpkg.cmake -DVCPKG_DIRECTORY=<VCPKG_SRC_DIR> -DCMAKE_INSTALL_PREFIX=<OPENEB_INSTALL_DIR> -DPYTHON3_SITE_PACKAGES=<PYTHON3_PACKAGES_INSTALL_DIR> -DBUILD_TESTING=OFF ..
+```
+
+Once you performed this configuration, you can launch the actual installation of the OpenEB files:
+
+```bash
+cmake --build . --config Release --target install
 ```
 
 #### Compilation using MS Visual Studio
@@ -247,7 +265,7 @@ However, if you are planning to use a Prophesee camera, then you need to install
  * Among the list of Camera Plugins installers, download the one with the version number matching your OpenEB version
  * Run the installer
 
-### (Optional) Running the test suite
+### Running the test suite (Optional)
 
 
 Running the test suite is a sure-fire way to ensure you did everything well with your compilation and installation process.
@@ -257,7 +275,7 @@ Running the test suite is a sure-fire way to ensure you did everything well with
  * Download [the files](https://dataset.prophesee.ai/index.php/s/VfhepWI4MPVWh9o) necessary to run the tests.
    Click `Download` on the top right folder. Beware of the size of the obtained archive which weighs around 500 Mb.
    
- * Extract and put the content of this archive to `<OPENEB_SRC_DIR>/datasets/`. For instance, the correct path of sequence `gen31_timer.raw` should be `<OPENEB_SRC_DIR>/datasets/openeb/gen31_timer.raw`.
+ * Extract and put the content of this archive to `<OPENEB_SRC_DIR>/`. For instance, the correct path of sequence `gen31_timer.raw` should be `<OPENEB_SRC_DIR>/datasets/openeb/gen31_timer.raw`.
 
  * To run the test suite you need to reconfigure your build environment using CMake and to recompile
 

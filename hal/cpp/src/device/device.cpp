@@ -16,7 +16,7 @@
 namespace Metavision {
 
 Device::~Device() {
-    // TODO TEAM-10620: remove this block of code
+    // TODO MV-166: remove this block of code
     // keep a pointer to the I_EventsStream facility, it must be destroyed after all other facilities
     // to make sure we keep the stream pointer alive for another potential Future::I_EventsStream facility using it
     std::shared_ptr<I_Facility> facility;

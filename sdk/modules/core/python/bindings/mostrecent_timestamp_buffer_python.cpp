@@ -58,14 +58,14 @@ py::buffer_info buffer_info_time_surface_helper(MostRecentTimestampBuffer &time_
 void generate_img_time_surface_helper(MostRecentTimestampBuffer &time_surface, timestamp last_ts, timestamp delta_t,
                                       py::array &image) {
     cv::Mat img_cv;
-    Metavision::py_array_to_cv_mat(image, img_cv, true);
+    Metavision::py_array_to_cv_mat(image, img_cv, false);
     time_surface.generate_img_time_surface(last_ts, delta_t, img_cv);
 }
 
 void generate_img_time_surface_collapsing_channels_helper(MostRecentTimestampBuffer &time_surface, timestamp last_ts,
                                                           timestamp delta_t, py::array &image) {
     cv::Mat img_cv;
-    Metavision::py_array_to_cv_mat(image, img_cv, true);
+    Metavision::py_array_to_cv_mat(image, img_cv, false);
     time_surface.generate_img_time_surface_collapsing_channels(last_ts, delta_t, img_cv);
 }
 } // anonymous namespace
@@ -75,28 +75,28 @@ void export_mostrecent_timestamp_buffer(py::module &m) {
 
     py::class_<MostRecentTimestampBuffer, std::shared_ptr<MostRecentTimestampBuffer>>(
         m, "MostRecentTimestampBuffer", py::buffer_protocol(),
-        pybind_doc_core["Metavision::TMostRecentTimestampBuffer"])
+        pybind_doc_core["Metavision::MostRecentTimestampBufferT"])
         .def_buffer(&buffer_info_time_surface_helper)
         .def(py::init<int, int, int>(), "rows"_a, "cols"_a, "channels"_a = 1,
-             pybind_doc_core["Metavision::TMostRecentTimestampBuffer::TMostRecentTimestampBuffer(int rows, int cols, "
+             pybind_doc_core["Metavision::MostRecentTimestampBufferT::MostRecentTimestampBufferT(int rows, int cols, "
                              "int channels=1)"])
         .def("numpy", &numpy_time_surface_helper, "Converts to a numpy array", "copy"_a = false)
         .def("_buffer_info", &buffer_info_time_surface_helper)
         .def("set_to", &MostRecentTimestampBuffer::set_to, "ts"_a,
-             pybind_doc_core["Metavision::TMostRecentTimestampBuffer::set_to"])
+             pybind_doc_core["Metavision::MostRecentTimestampBufferT::set_to"])
         .def("max_across_channels_at", &MostRecentTimestampBuffer::max_across_channels_at, "y"_a, "x"_a,
-             pybind_doc_core["Metavision::TMostRecentTimestampBuffer::max_across_channels_at"])
+             pybind_doc_core["Metavision::MostRecentTimestampBufferT::max_across_channels_at"])
         .def_property_readonly("rows", &MostRecentTimestampBuffer::rows,
-                               pybind_doc_core["Metavision::TMostRecentTimestampBuffer::rows"])
+                               pybind_doc_core["Metavision::MostRecentTimestampBufferT::rows"])
         .def_property_readonly("cols", &MostRecentTimestampBuffer::cols,
-                               pybind_doc_core["Metavision::TMostRecentTimestampBuffer::cols"])
+                               pybind_doc_core["Metavision::MostRecentTimestampBufferT::cols"])
         .def_property_readonly("channels", &MostRecentTimestampBuffer::channels,
-                               pybind_doc_core["Metavision::TMostRecentTimestampBuffer::channels"])
+                               pybind_doc_core["Metavision::MostRecentTimestampBufferT::channels"])
         .def("generate_img_time_surface", &generate_img_time_surface_helper, "last_ts"_a, "delta_t"_a, "out"_a,
-             pybind_doc_core["Metavision::TMostRecentTimestampBuffer::generate_img_time_surface"])
+             pybind_doc_core["Metavision::MostRecentTimestampBufferT::generate_img_time_surface"])
         .def("generate_img_time_surface_collapsing_channels", &generate_img_time_surface_collapsing_channels_helper,
              "last_ts"_a, "delta_t"_a, "out"_a,
-             pybind_doc_core["Metavision::TMostRecentTimestampBuffer::generate_img_time_surface_collapsing_channels"]);
+             pybind_doc_core["Metavision::MostRecentTimestampBufferT::generate_img_time_surface_collapsing_channels"]);
 }
 
 } // namespace Metavision

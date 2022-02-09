@@ -45,10 +45,10 @@ public:
     /// @brief Enables or disables data logging.
     /// @param state Flag to enable/disable the logger
     /// @param reset_ts Flag to reset the timestamp, the timestamp used in the
-    ///              last call to update will be considered as timestamp zero
+    /// last call to update will be considered as timestamp zero
     /// @param split_time_seconds Time in seconds to split the file. By default is disabled: InvalidTimestamp (-1).
-    /// @throw It will throw an exception if the user tries to reset the timestamp
-    ///        or split the stream while the StreamLogger is enabled and running.
+    /// @throw std::runtime_error If the user tries to reset the timestamp or split the stream while the StreamLogger
+    /// is enabled and running.
     inline void enable(bool state, bool reset_ts = true, std::int32_t split_time_seconds = InvalidTimestamp);
 
     /// @brief Returns state of data logging.

@@ -20,12 +20,12 @@
 namespace Metavision {
 namespace Future {
 
-// TODO TEAM-10620: remove this overload
+// TODO MV-166: remove this overload
 FileDataTransfer::FileDataTransfer(std::unique_ptr<std::istream> stream, uint32_t raw_event_size_bytes,
                                    const RawFileConfig &config) :
     FileDataTransfer(std::shared_ptr<std::istream>(std::move(stream)), raw_event_size_bytes, config) {}
 
-// TODO TEAM-10620: remove this overload
+// TODO MV-166: remove this overload
 FileDataTransfer::FileDataTransfer(std::istream *stream, uint32_t raw_event_size_bytes, const RawFileConfig &config) :
     FileDataTransfer(std::shared_ptr<std::istream>(std::shared_ptr<std::istream>(), stream), raw_event_size_bytes,
                      config) {}

@@ -185,7 +185,7 @@ public:
     /// please specify the @ref OnlineSourceType and use the @ref Camera::from_source function,
     /// or else specify the serial number and use the @ref Camera::from_serial function.\n
     /// Serial numbers and types of available sources can be found with @ref Camera::list_online_sources function.
-    /// @throw A @ref CameraException in case of initialization failure.
+    /// @throw CameraException in case of initialization failure.
     static Camera from_first_available();
 
     /// @brief Initializes a camera instance from an @ref OnlineSourceType and a source index
@@ -193,8 +193,8 @@ public:
     /// Open the source_index camera of online input_source_type if available from @ref list_online_sources\.\n
     /// By default, it opens the first available camera listed by @ref list_online_sources of type input_source_type.\n
     /// Serial numbers and types of available sources can be found with @ref Camera::list_online_sources function.
-    /// @throw A @ref CameraException in case if the camera corresponding
-    /// to the input source type and the source index has not been found.
+    /// @throw CameraException if the camera corresponding to the input source type and the source index has not been
+    /// found.
     /// @param input_source_type @ref OnlineSourceType
     /// @param source_index Index of the source in the list of available online sources
     /// @return @ref Camera instance initialized from the source
@@ -204,72 +204,72 @@ public:
     ///
     /// Serial numbers of available sources can be found by with @ref Camera::list_online_sources function.\n
     /// If 'serial' is an empty string, the function works as the main constructor.
-    /// @throw A @ref CameraException in case if the camera with the input serial number has not been found.
+    /// @throw CameraException if the camera with the input serial number has not been found.
     /// @param serial Serial number of the camera
     /// @return @ref Camera instance initialized from the serial number
     static Camera from_serial(const std::string &serial);
 
     /// @brief Initializes a camera instance from a RAW file
-    /// @throw A @ref CameraException in case of initialization failure.
+    /// @throw CameraException in case of initialization failure.
     /// @param rawfile Path to the RAW file
-    /// @param reproduce_camera_behavior If true, the RAW file will be read at the same speed as was sent by the camera
+    /// @param realtime_playback_speed If true, the RAW file will be read at the same speed as was sent by the camera
     ///                                  when the file was recorded, and the events will be available after the same
     ///                                  amount of time it took for them to be received when recording the RAW file. If
     ///                                  false, the file will be read as fast as possible and the events will be
     ///                                  available as soon as possible as well. The max_event_lifespan will only be
     ///                                  taken into account when reproducing the camera behavior.
     /// @param file_config Configuration describing how to read the file (see @ref RawFileConfig)
-    /// @note Since 2.1.0, the @p reproduce_camera_behavior is only taken into account if at least one event callback
+    /// @note Since 2.1.0, the @p realtime_playback_speed is only taken into account if at least one event callback
     ///       is registered (CD or ExtTrigger), it will have no effect if only a RawData callback is registered.
     /// @return @ref Camera instance initialized from the input RAW file
     /// @return @ref Camera instance initialized from the input RAW file
-    static Camera from_file(const std::string &rawfile, bool reproduce_camera_behavior = true,
+    static Camera from_file(const std::string &rawfile, bool realtime_playback_speed = true,
                             const RawFileConfig &file_config = RawFileConfig());
 
     /// @brief Initializes a camera instance from a RAW file
-    /// @throw A @ref CameraException in case of initialization failure.
+    /// @throw CameraException in case of initialization failure.
     /// @param rawfile Path to the RAW file
-    /// @param reproduce_camera_behavior If true, the RAW file will be read at the same speed as was sent by the camera
+    /// @param realtime_playback_speed If true, the RAW file will be read at the same speed as was sent by the camera
     ///                                  when the file was recorded, and the events will be available after the same
     ///                                  amount of time it took for them to be received when recording the RAW file. If
     ///                                  false, the file will be read as fast as possible and the events will be
     ///                                  available as soon as possible as well. The max_event_lifespan will only be
     ///                                  taken into account when reproducing the camera behavior.
     /// @param file_config Configuration describing how to read the file (see @ref Future::RawFileConfig)
-    /// @note Since 2.1.0, the @p reproduce_camera_behavior is only taken into account if at least one event callback
+    /// @note Since 2.1.0, the @p realtime_playback_speed is only taken into account if at least one event callback
     ///       is registered (CD or ExtTrigger), it will have no effect if only a RawData callback is registered.
     /// @return @ref Camera instance initialized from the input RAW file
-    static Camera from_file(const std::string &rawfile, bool reproduce_camera_behavior,
+    static Camera from_file(const std::string &rawfile, bool realtime_playback_speed,
                             const Future::RawFileConfig &file_config);
 
     /// @note This method is deprecated since version 2.1.0 and will be removed in next releases
     METAVISION_DEPRECATED_FEATURE(2.1.0) static bool synchronize_and_start_cameras(Camera &master, Camera &slave);
 
     /// @brief Gets class to handle RAW data from the camera
-    /// @throw A @ref CameraException if the camera has not been initialized.
+    /// @throw CameraException if the camera has not been initialized.
     RawData &raw_data();
 
     /// @brief Gets class to handle CD events
-    /// @throw A @ref CameraException if the camera has not been initialized.
+    /// @throw CameraException if the camera has not been initialized.
     CD &cd();
 
     /// @note This method is deprecated since version 2.1.0 and will be removed in next releases
     METAVISION_DEPRECATED_FEATURE(2.1.0) EM &em();
 
     /// @brief Gets class to handle External Triggers events
-    /// @throw A @ref CameraException if the camera has not been initialized.
+    /// @throw CameraException if the camera has not been initialized.
     ExtTrigger &ext_trigger();
 
     /// @note This method is deprecated since version 2.1.0 and will be removed in next releases
     METAVISION_DEPRECATED_FEATURE(2.1.0) Imu &imu();
 
     /// @brief Gets class to handle trigger out signal
-    /// @throw A @ref CameraException if the camera has not been initialized.
-    /// @throw A @ref CameraException in case of failure (for example if camera runs from an offline source).
+    /// @throw CameraException if the camera has not been initialized.
+    /// @throw CameraException in case of failure (for example if camera runs from an offline source).
     TriggerOut &trigger_out();
 
     /// @brief Gets class to handle Roi on the sensor
-    /// @throw A @ref CameraException in case of failure (for instance if the camera is not initialized or the camera is
+    /// @throw CameraException in case of failure (for instance if the camera is not initialized or the camera is
     /// running from an offline source).
     Roi &roi();
 
@@ -283,17 +283,17 @@ public:
     METAVISION_DEPRECATED_FEATURE(2.1.0) ImuModule &imu_module();
 
     /// @brief Gets class to handle AFK on the hardware side
-    /// @throw A @ref CameraException in case of failure (for instance if the camera is not initialized or the camera is
+    /// @throw CameraException in case of failure (for instance if the camera is not initialized or the camera is
     /// running from an offline source).
     AntiFlickerModule &antiflicker_module();
 
     /// @brief Gets class to handle Event Rater Controller on the hardware side
-    /// @throw A @ref CameraException in case of failure (for instance if the camera is not initialized or the camera is
+    /// @throw CameraException in case of failure (for instance if the camera is not initialized or the camera is
     /// running from an offline source).
     ErcModule &erc_module();
 
     /// @brief Gets class to handle STC or TRAIL Noise Filter Module on the hardware side
-    /// @throw A @ref CameraException in case of failure (for instance if the camera is not initialized or the camera is
+    /// @throw CameraException in case of failure (for instance if the camera is not initialized or the camera is
     /// running from an offline source).
     NoiseFilterModule &noise_filter_module();
 
@@ -307,7 +307,7 @@ public:
     ///
     /// When a camera runtime error occurs, the camera thread is left and events are no longer sent.
     /// You are notified by this callback whenever this happens.
-    /// @throw A @ref CameraException if the camera has not been initialized.
+    /// @throw CameraException if the camera has not been initialized.
     /// @param error_callback The error callback to call
     /// @return ID of the added callback
     /// @warning It is forbidden to call the @ref Camera::stop from a runtime error callback.
@@ -348,26 +348,26 @@ public:
     METAVISION_DEPRECATED_FEATURE(2.1.0) bool unset_exposure_frame_callback();
 
     /// @brief Gets class to handle camera biases
-    /// @throw A @ref CameraException in case of failure, (for example if camera runs from an offline source).
+    /// @throw CameraException in case of failure (for example if camera runs from an offline source).
     Biases &biases();
 
     /// @brief Gets class to control offline streaming
-    /// @throw A @ref CameraException if the camera has not been initialized or if the feature is not available.
+    /// @throw CameraException if the camera has not been initialized or if the feature is not available.
     OfflineStreamingControl &offline_streaming_control();
 
     /// @brief Gets the device's geometry
-    /// @throw A @ref CameraException if the camera has not been initialized.
+    /// @throw CameraException if the camera has not been initialized.
     const Geometry &geometry() const;
 
     /// @brief Gets the device's generation
-    /// @throw A @ref CameraException if the camera has not been initialized.
+    /// @throw CameraException if the camera has not been initialized.
     const CameraGeneration &generation() const;
 
     /// @brief Starts the camera from the given input source
     ///
     /// It will start polling events from the source and calling specified events callbacks.\n
     /// It has no effect if the start function has been already called and not the @ref stop function.
-    /// @throw A @ref CameraException if the camera has not been initialized.
+    /// @throw CameraException if the camera has not been initialized.
     /// @sa @ref CD::add_callback
     /// @sa @ref ExtTrigger::add_callback
     /// @return true if the camera started successfully, false otherwise. Also returns false, if the camera is already
@@ -384,7 +384,7 @@ public:
     /// @brief Stops polling events from the camera or from the file
     ///
     /// Stops ongoing streaming.
-    /// @throw A @ref CameraException if the camera has not been initialized.
+    /// @throw CameraException if the camera has not been initialized.
     /// @return true if the camera instance has been stopped successfully, false otherwise. If the camera was not
     /// running, this function returns false.
     bool stop();
@@ -401,12 +401,12 @@ public:
     /// The function creates a new file at the given path or overwrites the already existing file.\n
     /// In case of an offline input source, the function can be used to split the RAW file.
     /// In case of not having rights to write at the provided path, the function will not record anything.
-    /// @throw A @ref CameraException if the camera has not been initialized.
+    /// @throw CameraException if the camera has not been initialized.
     /// @param rawfile_path Path to the RAW file used for data recording.
     void start_recording(const std::string &rawfile_path);
 
     /// @brief Stops an ongoing recording
-    /// @throw A @ref CameraException if the camera has not been initialized.
+    /// @throw CameraException if the camera has not been initialized.
     void stop_recording();
 
     /// @brief Returns @ref CameraConfiguration of the camera that holds the camera properties (dimensions, camera
