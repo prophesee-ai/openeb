@@ -9,57 +9,55 @@ env:
   #General variables
   numpy_version: "numpy==1.19.5" # replace with only 'numpy' if no version needed
   python_versions: 3.8
-  pybind_version: "2.4.3"
+  pybind_version: "2.6.0"
   #Windows variables
   python_executable: "C:/hostedtoolcache/windows/Python/3.8.10/x64/python.exe" #Cmake needs this to find python on windows
-  HAL_plugins_win: "https://files.prophesee.ai/share/dists/public/windows/cp51Vn3b/Metavision_HAL_Prophesee_plugins_222_Setup.exe"
-  #Ubuntu variables
-  HAL_plugins_source: "https://files.prophesee.ai/redir/quah3Xei9ahgaiKa"
-  VCPKG_export_name: "vcpkg-export-20210915-112542"
-  
-jobs:
 
+jobs:
   job1:
     name: Ubuntu 20
     runs-on: ubuntu-20.04
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
 
-    - name: Checkout Repository
-      uses: actions/checkout@v2
-
-    - name: Install dependencies
-      run: |
+      - name: Install dependencies
+        run: |
           sudo apt-get -y update && sudo apt-get install -y sudo apt-utils wget cmake build-essential \
           libglew-dev git g++ libusb-1.0-0-dev libeigen3-dev libgtest-dev libssl-dev \
           python3-pip python3-distutils xvfb libglfw3 libglfw3-dev libglew-dev libopencv-dev ffmpeg \
           libboost-dev libboost-program-options-dev libboost-filesystem-dev libboost-timer-dev \
-          libboost-chrono-dev libboost-thread-dev zip unzip python3-pybind11 git-lfs
+          libboost-chrono-dev libboost-thread-dev zip unzip git-lfs
           pip install opencv-python $numpy_version pytest
 
-    - name: Build openEB
-      run: |
-          mkdir build ; cd build
+      - name: Build pybind
+        run: |
+          openebfolder=${PWD}
+          cd ..
+          wget https://github.com/pybind/pybind11/archive/v$pybind_version.zip
+          unzip v$pybind_version.zip
+          cd pybind11-$pybind_version/
+          mkdir build && cd build
+          cmake .. -DPYBIND11_TEST=OFF
+          cmake --build . --config Release --parallel 4
+          sudo make install
+
+      - name: Build openEB
+        run: |
+          mkdir build && cd build
           cmake .. -DBUILD_TESTING=ON
           cmake --build . --config Release --parallel 4
 
-    - name: Download and Install HAL Plugins
-      shell: bash
-      run: |
-          curl -L -o source.list $HAL_plugins_source
-          cat source.list | sudo tee -a /etc/apt/sources.list
-          sudo apt update
-          sudo apt install metavision-hal-prophesee-plugins
+      - name: Getting datasets from storage
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: upload_datasets.yaml
+          workflow_conclusion: success
+          name: datasets
+          path: datasets
 
-    - name : Getting datasets from storage
-      uses: dawidd6/action-download-artifact@v2
-      with:
-        workflow: upload_datasets.yaml
-        workflow_conclusion: success
-        name: datasets
-        path: datasets
-
-    - name: Run ctest
-      run: |
+      - name: Run ctest
+        run: |
           cd build
           ctest --output-on-failure
 
@@ -67,12 +65,11 @@ jobs:
     name: Ubuntu 18
     runs-on: ubuntu-18.04
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
 
-    - name: Checkout Repository
-      uses: actions/checkout@v2
-
-    - name: Install dependencies
-      run: |
+      - name: Install dependencies
+        run: |
           sudo apt-get -y update && sudo apt-get install -y sudo apt-utils wget cmake build-essential \
           libglew-dev git g++ libusb-1.0-0-dev libeigen3-dev libgtest-dev libssl-dev \
           python3-pip python3-distutils xvfb libglfw3 libglfw3-dev libglew-dev libopencv-dev ffmpeg \
@@ -81,8 +78,8 @@ jobs:
           python3 -m pip install --upgrade pip
           python3 -m pip install opencv-python $numpy_version pytest
 
-    - name: Build pybind, gtest, and openEB
-      run: |
+      - name: Build pybind and gtest
+        run: |
           openebfolder=${PWD}
           cd ..
           wget https://github.com/pybind/pybind11/archive/v$pybind_version.zip
@@ -90,36 +87,31 @@ jobs:
           cd pybind11-$pybind_version/
           mkdir build && cd build
           cmake .. -DPYBIND11_TEST=OFF
-          cmake --build .
-          make
+          cmake --build . --config Release --parallel 4
           sudo make install
-          cd /usr/src/gtest/
-          sudo cmake .
-          sudo make
-          sudo cp libgtest.a libgtest_main.a /usr/local/lib/
-          cd $openebfolder
-          mkdir build ; cd build
+          cp -r /usr/src/googletest/googletest ${openebfolder}/../
+          cd ${openebfolder}/../googletest
+          mkdir build && cd build
+          cmake ..
+          cmake --build . --config Release --parallel 4
+          sudo make install
+
+      - name: Build openEB
+        run: |
+          mkdir build && cd build
           cmake .. -DBUILD_TESTING=ON
           cmake --build . --config Release --parallel 4
 
-    - name: Download and Install HAL Plugins
-      shell: bash
-      run: |
-          curl -L -o source.list $HAL_plugins_source
-          cat source.list | sudo tee -a /etc/apt/sources.list
-          sudo apt update
-          sudo apt install metavision-hal-prophesee-plugins
+      - name: Getting datasets from storage
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: upload_datasets.yaml
+          workflow_conclusion: success
+          name: datasets
+          path: datasets
 
-    - name : Getting datasets from storage
-      uses: dawidd6/action-download-artifact@v2
-      with:
-        workflow: upload_datasets.yaml
-        workflow_conclusion: success
-        name: datasets
-        path: datasets
-
-    - name: Run ctest
-      run: |
+      - name: Run ctest
+        run: |
           cd build
           ctest --output-on-failure
 
@@ -127,64 +119,49 @@ jobs:
     name: Windows
     runs-on: windows-2019
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
 
-    - name: Checkout Repository
-      uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v2.2.2
+        with:
+          python-version: ${{ env.python_versions }}
 
-    - name: Setup Python
-      uses: actions/setup-python@v2.2.2
-      with: 
-       python-version: ${{ env.python_versions }}
+      - name: Download vcpkg binaries
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: upload_win_binaries.yaml
+          workflow_conclusion: success
+          name: vcpkg_binaries
+          path: ".."
 
-    - name: Download vcpkg binaries
-      uses: dawidd6/action-download-artifact@v2
-      with:
-        workflow: upload_win_binaries.yaml
-        workflow_conclusion: success
-        name: vcpkg_binaries
-        path: ".."
-
-    - name: Install python and vcpkg dependencies
-      shell: bash
-      run: |
+      - name: Install python and vcpkg dependencies
+        shell: bash
+        run: |
           cd ..
           unzip -q "vcpkg-export.zip"
           py -$python_versions -m pip install pytest $numpy_version opencv-python
           cd openeb
 
-    - name: Build openEB
-      shell: bash
-      run: |
+      - name: Build openEB
+        shell: bash
+        run: |
           mkdir build && cd build
-          cmake -A x64 -DCMAKE_TOOLCHAIN_FILE="../../$VCPKG_export_name/scripts/buildsystems/vcpkg.cmake" \
+          cmake -A x64 -DCMAKE_TOOLCHAIN_FILE="../../vcpkg/scripts/buildsystems/vcpkg.cmake" \
                 -D Python3_EXECUTABLE=$python_executable \
                 -DBUILD_TESTING=ON ..
           cmake --build . --config Release --parallel 4
 
-    - name: Download HAL Plugins
-      shell: bash
-      env:
-        HAL_CREDENTIALS: ${{ secrets.PROPHESEE_HAL_PLUGIN_CURL_DOWNLOAD_CREDENTIALS }}
-      run: |
-        find ../$VCPKG_export_name -name '*.dll' -exec cp "{}" build/py3/Release \;
-        cp -r build/py3/Release/{boost,lib}*.dll build/bin/Release
-        curl -L -u "$HAL_CREDENTIALS" -o Metavision_Hal_Prophesee_plugins_Setup.exe $HAL_plugins_win
+      - name: Getting datasets from storage
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: upload_datasets.yaml
+          workflow_conclusion: success
+          name: datasets
+          path: datasets
 
-    - name: Install HAL Plugins
-      shell: powershell
-      run: d:\a\openeb\openeb\Metavision_Hal_Prophesee_plugins_Setup.exe /VERYSILENT /SUPPRESSMSGBOXES
-      
-    - name : Getting datasets from storage
-      uses: dawidd6/action-download-artifact@v2
-      with:
-        workflow: upload_datasets.yaml
-        workflow_conclusion: success
-        name: datasets
-        path: datasets
-
-    - name: Ctest suite
-      shell: powershell
-      run: |
-        cd build
-        utils\scripts\setup_env.bat
-        ctest -C Release --output-on-failure
+      - name: Ctest suite
+        shell: powershell
+        run: |
+          cd build
+          ctest -C Release --output-on-failure

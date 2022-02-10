@@ -32,7 +32,7 @@ def pytestcase_iterator_csv_zip_eth(dataset_dir):
     """Tests initialization of all member variables after creation of RawReader object from a file"""
     # GIVEN
     filename = os.path.join(dataset_dir,
-                            "metavision_core", "csv_zip_eth", "events.zip")
+                            "openeb", "core", "event_io", "csv_zip_eth", "events.zip")
     mv_iterator = ExtendedEventsIterator(filename, delta_t=10000)
 
     # WHEN
