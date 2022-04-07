@@ -296,7 +296,7 @@ void do_systems_diagnosis() {
     if (do_usb_port_analysis) {
         print_section("SYSTEM'S USB PORTS");
 
-        std::vector<std::string> vendor_and_product_ids = {"04b4:00f4", "03fd:5832"};
+        std::vector<std::string> vendor_and_product_ids = {"04b4:00f4", "04b4:00f5", "03fd:5832"};
 
         bool usb2_found           = false;
         int nr_usb_port_found     = 0;

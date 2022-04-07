@@ -22,23 +22,22 @@ namespace Evt3 {
 // necessity and vector event data support.
 // This EVT3.0 event format avoids transmitting redundant event data for the time, y and x values.
 enum class EventTypes : uint8_t {
-    CD_Y  = 0x0,   // Identifies a CD event and its y coordinate
-    EM_Y  = 0x1,   // Identifies a EM event and its y coordinate
-    X_POS = 0x2,   // Marks a valid single event and identifies its polarity and X coordinate. The event's type and
-                   // timestamp are considered to be the last ones sent
-    X_BASE = 0x3,  // Transmits the base address for a subsequent vector event and identifies its polarity and base X
-                   // coordinate. This event does not represent a TD/EM sensor event in itself and should not be
-                   // processed as such,  it only sets the base x value for following VECT_12 and VECT_8 events.
+    EVT_ADDR_Y = 0x0,  // Identifies a CD event and its y coordinate
+    EVT_ADDR_X = 0x2,  // Marks a valid single event and identifies its polarity and X coordinate. The event's type and
+                       // timestamp are considered to be the last ones sent
+    VECT_BASE_X = 0x3, // Transmits the base address for a subsequent vector event and identifies its polarity and base
+                       // X coordinate. This event does not represent a CD sensor event in itself and should not be
+                       // processed as such,  it only sets the base x value for following VECT_12 and VECT_8 events.
     VECT_12 = 0x4, // Vector event with 12 valid bits. This event encodes the validity bits for events of the same type,
                    // timestamp and y coordinate as previously sent events, while consecutive in x coordinate with
-                   // respect to the last sent X_BASE event. After processing this event, the X position value
+                   // respect to the last sent VECT_BASE_X event. After processing this event, the X position value
                    // on the receiver side should be incremented by 12 with respect to the X position when the event was
-                   // received, so that the X_BASE is updated like follows: X_BASE.x = X_BASE.x + 12
+                   // received, so that the VECT_BASE_X is updated like follows: VECT_BASE_X.x = VECT_BASE_X.x + 12
     VECT_8 = 0x5,  // Vector event with 8 valid bits. This event encodes the validity bits for events of the same type,
                    // timestamp and y coordinate as previously sent events, while consecutive in x coordinate with
-                   // respect to the last sent X_BASE event. After processing this event, the X position value
+                   // respect to the last sent VECT_BASE_X event. After processing this event, the X position value
                    // on the receiver side should be incremented by 8 with respect to the X position when the event was
-                   // received, so that the X_BASE is updated like follows: X_BASE.x = X_BASE.x + 8
+                   // received, so that the VECT_BASE_X is updated like follows: VECT_BASE_X.x = VECT_BASE_X.x + 8
     EVT_TIME_LOW = 0x6, // Encodes the lower 12b of the timebase range (range 11 to 0). Note that the TIME_LOW value is
                         // only monotonic for a same event source, but can be non-monotonic when multiple event sources
                         // are considered. They should however refer to the same TIME_HIGH value. As the time low has
@@ -63,19 +62,19 @@ struct RawEventTime {
     uint16_t type : 4; // Event type : EventTypes::EVT_TIME_LOW OR EventTypes::EVT_TIME_HIGH
 };
 
-struct RawEventXPos {
+struct RawEventXAddr {
     uint16_t x : 11;   // Pixel X coordinate
     uint16_t pol : 1;  // Event polarity:
                        // '0': decrease in illumination
                        // '1': increase in illumination
-    uint16_t type : 4; // Event type : EventTypes::X_POS
+    uint16_t type : 4; // Event type : EventTypes::EVT_ADDR_X
 };
 
 struct RawEventVect12 {
     uint16_t valid : 12; // Encodes the validity of the events in the vector :
                          // foreach i in 0 to 11
                          //   if valid[i] is '1'
-                         //      valid event at X = X_BASE.x + i
+                         //      valid event at X = VECT_BASE_X.x + i
     uint16_t type : 4;   // Event type : EventTypes::VECT_12
 };
 
@@ -83,7 +82,7 @@ struct RawEventVect8 {
     uint16_t valid : 8; // Encodes the validity of the events in the vector :
                         // foreach i in  0 to 7
                         //   if valid[i] is '1'
-                        //      valid event at X = X_BASE.x + i
+                        //      valid event at X = VECT_BASE_X.x + i
     uint16_t unused : 4;
     uint16_t type : 4; // Event type : EventTypes::VECT_8
 };
@@ -93,7 +92,7 @@ struct RawEventY {
     uint16_t orig : 1; // Identifies the System Type:
                        // '0': Master Camera (Left Camera in Stereo Systems)
                        // '1': Slave Camera (Right Camera in Stereo Systems)
-    uint16_t type : 4; // Event type : EventTypes::CD_Y OR EventTypes::EM_Y
+    uint16_t type : 4; // Event type : EventTypes::EVT_ADDR_Y
 };
 
 struct RawEventXBase {
@@ -101,7 +100,7 @@ struct RawEventXBase {
     uint16_t pol : 1;  // Event polarity:
                        // '0': decrease in illumination
                        // '1': increase in illumination
-    uint16_t type : 4; // Event type : EventTypes::X_BASE
+    uint16_t type : 4; // Event type : EventTypes::VECT_BASE_X
 };
 
 struct RawEventExtTrigger {
@@ -172,14 +171,12 @@ int main(int argc, char *argv[]) {
     std::vector<Metavision::Evt3::RawEvent> buffer_read(WORDS_TO_READ);
 
     // State variables needed for decoding
-    enum class EvType { CD, EM }; // To keep track of the current event type, event if we just decode CD in this example
-    EvType current_type                             = EvType::CD;
     bool first_time_base_set                        = false;
     Metavision::Evt3::timestamp_t current_time_base = 0; // time high bits
     Metavision::Evt3::timestamp_t current_time_low  = 0;
     Metavision::Evt3::timestamp_t current_time      = 0;
-    uint16_t current_cd_y                           = 0;
-    uint16_t current_x_base                         = 0;
+    uint16_t current_ev_addr_y                      = 0;
+    uint16_t current_base_x                         = 0;
     uint16_t current_polarity                       = 0;
     unsigned int n_time_high_loop                   = 0; // Counter of the time high loops
 
@@ -208,84 +205,70 @@ int main(int argc, char *argv[]) {
         for (; current_word != last_word; ++current_word) {
             Metavision::Evt3::EventTypes type = static_cast<Metavision::Evt3::EventTypes>(current_word->type);
             switch (type) {
-            case Metavision::Evt3::EventTypes::X_POS: {
-                Metavision::Evt3::RawEventXPos *ev_cd_posx =
-                    reinterpret_cast<Metavision::Evt3::RawEventXPos *>(current_word);
-                if (current_type == EvType::CD) {
-                    // We have a new Event CD with
-                    // x = ev_cd_posx->x
-                    // y = current_cd_y
-                    // polarity = ev_cd_posx->pol
-                    // time = current_time (in us)
-                    cd_str += std::to_string(ev_cd_posx->x) + "," + std::to_string(current_cd_y) + "," +
-                              std::to_string(ev_cd_posx->pol) + "," + std::to_string(current_time) + "\n";
-                }
+            case Metavision::Evt3::EventTypes::EVT_ADDR_X: {
+                Metavision::Evt3::RawEventXAddr *ev_addr_x =
+                    reinterpret_cast<Metavision::Evt3::RawEventXAddr *>(current_word);
+                // We have a new Event CD with
+                // x = ev_addr_x->x
+                // y = current_ev_addr_y
+                // polarity = ev_addr_x->pol
+                // time = current_time (in us)
+                cd_str += std::to_string(ev_addr_x->x) + "," + std::to_string(current_ev_addr_y) + "," +
+                          std::to_string(ev_addr_x->pol) + "," + std::to_string(current_time) + "\n";
                 break;
             }
             case Metavision::Evt3::EventTypes::VECT_12: {
-                uint16_t end = current_x_base + 12;
+                uint16_t end = current_base_x + 12;
 
-                if (current_type == EvType::CD) {
-                    Metavision::Evt3::RawEventVect12 *ev_vec_12 =
-                        reinterpret_cast<Metavision::Evt3::RawEventVect12 *>(current_word);
-                    uint32_t valid = ev_vec_12->valid;
-                    for (uint16_t i = current_x_base; i != end; ++i) {
-                        if (valid & 0x1) {
-                            // We have a new Event CD with
-                            // x = i
-                            // y = current_cd_y
-                            // polarity = current_polarity
-                            // time = current_time (in us)
-                            cd_str += std::to_string(i) + "," + std::to_string(current_cd_y) + "," +
-                                      std::to_string(current_polarity) + "," + std::to_string(current_time) + "\n";
-                        }
-                        valid >>= 1;
+                Metavision::Evt3::RawEventVect12 *ev_vec_12 =
+                    reinterpret_cast<Metavision::Evt3::RawEventVect12 *>(current_word);
+                uint32_t valid = ev_vec_12->valid;
+                for (uint16_t i = current_base_x; i != end; ++i) {
+                    if (valid & 0x1) {
+                        // We have a new Event CD with
+                        // x = i
+                        // y = current_ev_addr_y
+                        // polarity = current_polarity
+                        // time = current_time (in us)
+                        cd_str += std::to_string(i) + "," + std::to_string(current_ev_addr_y) + "," +
+                                  std::to_string(current_polarity) + "," + std::to_string(current_time) + "\n";
                     }
+                    valid >>= 1;
                 }
-                current_x_base = end;
+                current_base_x = end;
                 break;
             }
             case Metavision::Evt3::EventTypes::VECT_8: {
-                uint16_t end = current_x_base + 8;
+                uint16_t end = current_base_x + 8;
 
-                if (current_type == EvType::CD) {
-                    Metavision::Evt3::RawEventVect8 *ev_vec_8 =
-                        reinterpret_cast<Metavision::Evt3::RawEventVect8 *>(current_word);
-                    uint32_t valid = ev_vec_8->valid;
-                    for (uint16_t i = current_x_base; i != end; ++i) {
-                        if (valid & 0x1) {
-                            // We have a new Event CD with
-                            // x = i
-                            // y = current_cd_y
-                            // polarity = current_polarity
-                            // time = current_time (in us)
-                            cd_str += std::to_string(i) + "," + std::to_string(current_cd_y) + "," +
-                                      std::to_string(current_polarity) + "," + std::to_string(current_time) + "\n";
-                        }
-                        valid >>= 1;
+                Metavision::Evt3::RawEventVect8 *ev_vec_8 =
+                    reinterpret_cast<Metavision::Evt3::RawEventVect8 *>(current_word);
+                uint32_t valid = ev_vec_8->valid;
+                for (uint16_t i = current_base_x; i != end; ++i) {
+                    if (valid & 0x1) {
+                        // We have a new Event CD with
+                        // x = i
+                        // y = current_ev_addr_y
+                        // polarity = current_polarity
+                        // time = current_time (in us)
+                        cd_str += std::to_string(i) + "," + std::to_string(current_ev_addr_y) + "," +
+                                  std::to_string(current_polarity) + "," + std::to_string(current_time) + "\n";
                     }
+                    valid >>= 1;
                 }
-                current_x_base = end;
+                current_base_x = end;
                 break;
             }
-            case Metavision::Evt3::EventTypes::CD_Y: {
-                current_type = EvType::CD;
-
-                Metavision::Evt3::RawEventY *ev_cd_y = reinterpret_cast<Metavision::Evt3::RawEventY *>(current_word);
-                current_cd_y                         = ev_cd_y->y;
+            case Metavision::Evt3::EventTypes::EVT_ADDR_Y: {
+                Metavision::Evt3::RawEventY *ev_addr_y = reinterpret_cast<Metavision::Evt3::RawEventY *>(current_word);
+                current_ev_addr_y                      = ev_addr_y->y;
                 break;
             }
-            case Metavision::Evt3::EventTypes::EM_Y: {
-                current_type = EvType::EM;
-                // Even if we are not decoding EM, we still need to update this state variable, so that we know if the
-                // current state refers to CD or EM
-                break;
-            }
-            case Metavision::Evt3::EventTypes::X_BASE: {
+            case Metavision::Evt3::EventTypes::VECT_BASE_X: {
                 Metavision::Evt3::RawEventXBase *ev_xbase =
                     reinterpret_cast<Metavision::Evt3::RawEventXBase *>(current_word);
                 current_polarity = ev_xbase->pol;
-                current_x_base   = ev_xbase->x;
+                current_base_x   = ev_xbase->x;
                 break;
             }
             case Metavision::Evt3::EventTypes::EVT_TIME_HIGH: {

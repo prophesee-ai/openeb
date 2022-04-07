@@ -230,14 +230,14 @@ To do so, configure the target folder (`OPENEB_INSTALL_DIR`) with `CMAKE_INSTALL
 (default value is `C:\Program Files\Prophesee`) when generating the makefiles in step 2:
 
 ```bash
-cmake -A x64 -DCMAKE_TOOLCHAIN_FILE=<OPENEB_SRC_DIR>\cmake\toolchains\vcpkg.cmake -DVCPKG_DIRECTORY=<VCPKG_SRC_DIR> -DCMAKE_INSTALL_PREFIX=<OPENEB_INSTALL_DIR> -DBUILD_TESTING=OFF ..
+cmake .. -A x64 -DCMAKE_TOOLCHAIN_FILE=<OPENEB_SRC_DIR>\cmake\toolchains\vcpkg.cmake -DVCPKG_DIRECTORY=<VCPKG_SRC_DIR> -DCMAKE_INSTALL_PREFIX=<OPENEB_INSTALL_DIR> -DBUILD_TESTING=OFF
 ```
 
 You can also configure the directory where the Python packages will be deployed using the `PYTHON3_SITE_PACKAGES` variable
 (note that in that case, you will also need to edit your environment variable `PYTHONPATH` and append the `<PYTHON3_PACKAGES_INSTALL_DIR>` path):
 
 ```bash
-cmake -A x64 -DCMAKE_TOOLCHAIN_FILE=<OPENEB_SRC_DIR>\cmake\toolchains\vcpkg.cmake -DVCPKG_DIRECTORY=<VCPKG_SRC_DIR> -DCMAKE_INSTALL_PREFIX=<OPENEB_INSTALL_DIR> -DPYTHON3_SITE_PACKAGES=<PYTHON3_PACKAGES_INSTALL_DIR> -DBUILD_TESTING=OFF ..
+cmake .. -A x64 -DCMAKE_TOOLCHAIN_FILE=<OPENEB_SRC_DIR>\cmake\toolchains\vcpkg.cmake -DVCPKG_DIRECTORY=<VCPKG_SRC_DIR> -DCMAKE_INSTALL_PREFIX=<OPENEB_INSTALL_DIR> -DPYTHON3_SITE_PACKAGES=<PYTHON3_PACKAGES_INSTALL_DIR> -DBUILD_TESTING=OFF
 ```
 
 Once you performed this configuration, you can launch the actual installation of the OpenEB files:

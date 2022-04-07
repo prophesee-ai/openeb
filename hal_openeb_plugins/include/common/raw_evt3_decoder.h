@@ -69,9 +69,9 @@ struct EventTime {
 };
 
 enum class TypesEnum : EventTypesUnderlying_t {
-    TD_Y         = 0x0,
-    X_POS        = 0x2,
-    X_BASE       = 0x3,
+    EVT_ADDR_Y   = 0x0,
+    EVT_ADDR_X   = 0x2,
+    VECT_BASE_X  = 0x3,
     VECT_12      = 0x4,
     VECT_8       = 0x5,
     TIME_LOW     = 0x6,
@@ -169,10 +169,10 @@ private:
         auto &trigger_forwarder = trigger_event_forwarder();
         for (; cur_raw_ev != raw_ev_end;) {
             const uint16_t type = cur_raw_ev->type;
-            if (type == static_cast<EventTypesUnderlying_t>(TypesEnum::X_POS)) {
+            if (type == static_cast<EventTypesUnderlying_t>(TypesEnum::EVT_ADDR_X)) {
                 if (is_valid) {
                     EventPosX *ev_posx = reinterpret_cast<EventPosX *>(cur_raw_ev);
-                    cd_forwarder.forward(static_cast<unsigned short>(ev_posx->x), state[(int)TypesEnum::TD_Y],
+                    cd_forwarder.forward(static_cast<unsigned short>(ev_posx->x), state[(int)TypesEnum::EVT_ADDR_Y],
                                          static_cast<short>(ev_posx->pol), last_timestamp<DO_TIMESHIFT>());
                 }
                 ++cur_raw_ev;
@@ -200,29 +200,29 @@ private:
 
                 uint32_t valid = m.valid;
 
-                uint16_t last_x  = state[(int)TypesEnum::X_BASE] & NOT_POLARITY_MASK;
+                uint16_t last_x  = state[(int)TypesEnum::VECT_BASE_X] & NOT_POLARITY_MASK;
                 uint16_t nb_bits = 32;
 #if defined(__x86_64__) || defined(__aarch64__)
                 uint16_t off = 0;
                 while (valid) {
                     off = __builtin_ctz(valid);
                     valid &= ~(1 << off);
-                    cd_forwarder.forward_unsafe(last_x + off, state[(int)TypesEnum::TD_Y],
-                                                (bool)(state[(int)TypesEnum::X_BASE] & POLARITY_MASK),
+                    cd_forwarder.forward_unsafe(last_x + off, state[(int)TypesEnum::EVT_ADDR_Y],
+                                                (bool)(state[(int)TypesEnum::VECT_BASE_X] & POLARITY_MASK),
                                                 last_timestamp<DO_TIMESHIFT>());
                 }
 #else
                 uint16_t end = last_x + nb_bits;
                 for (uint16_t i = last_x; i != end; ++i) {
                     if (valid & 0x1) {
-                        cd_forwarder.forward_unsafe(i, state[(int)TypesEnum::TD_Y],
-                                                    (bool)(state[(int)TypesEnum::X_BASE] & POLARITY_MASK),
+                        cd_forwarder.forward_unsafe(i, state[(int)TypesEnum::EVT_ADDR_Y],
+                                                    (bool)(state[(int)TypesEnum::VECT_BASE_X] & POLARITY_MASK),
                                                     last_timestamp<DO_TIMESHIFT>());
                     }
                     valid >>= 1;
                 }
 #endif
-                state[(int)TypesEnum::X_BASE] += nb_bits;
+                state[(int)TypesEnum::VECT_BASE_X] += nb_bits;
                 cur_raw_ev += vect12_size;
 
             } else if (type == static_cast<EventTypesUnderlying_t>(TypesEnum::TIME_HIGH)) {
@@ -239,11 +239,11 @@ private:
                 ++cur_raw_ev;
             } else {
                 // The objective is to reduce the number of possible cases
-                // The content of each type is store into a state because the encoding is statefull
+                // The content of each type is store into a state because the encoding is stateful
                 state[type] = cur_raw_ev->content;
                 // Some event outside of the sensor may occur, to limit the number of test the check is done
-                // every TD_Y
-                is_valid = state[(int)TypesEnum::TD_Y] < height_;
+                // every EVT_ADDR_Y
+                is_valid = state[(int)TypesEnum::EVT_ADDR_Y] < height_;
 
                 last_timestamp_.bitfield_time.low = type != static_cast<EventTypesUnderlying_t>(TypesEnum::TIME_LOW) ?
                                                         last_timestamp_.bitfield_time.low :

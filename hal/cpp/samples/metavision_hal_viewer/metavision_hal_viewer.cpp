@@ -173,21 +173,21 @@ int main(int argc, char *argv[]) {
     /// [RawfileCreation]
 
     /// [triggers]
-    // We enable Trigger Out and duplicate the signal on Trigger In using the loopback channel
+    // On camera providing Trigger Out, we enable it and duplicate the signal on Trigger In using the loopback channel
+    // On the other cameras, we enable Trigger In, but we will need to plug a signal generator to create trigger events
+    // and we also set the camera as Master so that we can test the Sync Out signal if needed.
     Metavision::I_TriggerOut *i_trigger_out = device->get_facility<Metavision::I_TriggerOut>();
     Metavision::I_TriggerIn *i_trigger_in   = device->get_facility<Metavision::I_TriggerIn>();
-    if (i_trigger_in && i_trigger_out) {
-        i_trigger_out->set_period(100000);
-        i_trigger_out->set_duty_cycle(0.5);
-        i_trigger_out->enable();
-        i_trigger_in->enable(trigger_in_channels[plugin_name].loopback_channel);
-    }
-
-    if (system_id == 0x30 || system_id == 0x31) {
-        // Evk3 Gen41 system
-        if (i_trigger_in && i_device_control) {
-            i_device_control->set_mode_master();
+    if (i_trigger_in) {
+        if (i_trigger_out) {
+            i_trigger_out->set_period(100000);
+            i_trigger_out->set_duty_cycle(0.5);
+            i_trigger_out->enable();
+            i_trigger_in->enable(trigger_in_channels[plugin_name].loopback_channel);
+        } else if (i_device_control) {
+            std::cout << "Could not get Trigger Out facility" << std::endl;
             i_trigger_in->enable(0);
+            i_device_control->set_mode_master();
         }
     }
     /// [triggers]
