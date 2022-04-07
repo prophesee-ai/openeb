@@ -128,13 +128,16 @@ CameraView::~CameraView() {
 
     if (live_) {
         // Update values of current biases
-        auto &cam = camera();
-        try {
-            auto *bias = cam.biases().get_facility();
-            for (auto p : biasLabelToName) {
-                current_biases[p.first] = bias->get(p.second);
-            }
-        } catch (...) {}
+        auto &cam          = camera();
+        const auto &params = parameters();
+        if (params.show_biases) {
+            try {
+                auto *bias = cam.biases().get_facility();
+                for (auto p : biasLabelToName) {
+                    current_biases[p.first] = bias->get(p.second);
+                }
+            } catch (...) {}
+        }
     }
 }
 

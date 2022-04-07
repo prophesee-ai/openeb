@@ -7,6 +7,6 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-lfs_download("datasets/metavision_core/csv_zip_eth")
+lfs_download("datasets/openeb/core/event_io/csv_zip_eth")
 
 add_sdk_python_module_test(core)
