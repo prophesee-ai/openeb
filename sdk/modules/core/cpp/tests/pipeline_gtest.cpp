@@ -515,10 +515,10 @@ TEST(PipelineTest, cancel_when_consuming_with_undetached_consumer) {
     // actually cancels the pipeline, at multiple stages of consumption
     size_t count = 5;
     std::vector<int> datas(count);
-    for (int i = 0; i < count; ++i) {
+    for (size_t i = 0; i < count; ++i) {
         datas[i] = i;
     }
-    for (int i = 1; i <= count; ++i) {
+    for (size_t i = 1; i <= count; ++i) {
         Pipeline p;
         auto &s1 = p.add_stage(std::make_unique<VectorProducingStage>(datas));
         auto &s2 = p.add_stage(std::make_unique<Stage>(), s1);
@@ -543,14 +543,14 @@ TEST(PipelineTest, cancel_when_consuming_with_detached_consumer) {
     // actually cancels the pipeline, at multiple stages of consumption
     size_t count = 5;
     std::vector<int> datas(count);
-    for (int i = 0; i < count; ++i) {
+    for (size_t i = 0; i < count; ++i) {
         datas[i] = i;
     }
-    for (int i = 0; i < count; ++i) {
+    for (size_t i = 0; i < count; ++i) {
         Pipeline p(true);
         auto &s1 = p.add_stage(std::make_unique<VectorProducingStage>(datas));
         auto &s2 = p.add_stage(std::make_unique<Stage>(), s1);
-        int j    = 0;
+        size_t j = 0;
         s2.set_consuming_callback([&p, &j, i](const boost::any &data) {
             try {
                 if (j++ == i)
@@ -642,7 +642,8 @@ TEST(PipelineTest, step_callbacks_are_called_in_sequence) {
 
     auto step_cb_data_it  = outputs.cbegin();
     auto consumed_data_it = outputs.cend();
-    for (size_t i = 0; i < inputs.size(); ++i) {
+    using SizeType        = std::vector<int>::size_type;
+    for (SizeType i = 0; i < inputs.size(); ++i) {
         consumed_data_it = std::find(step_cb_data_it, outputs.cend(), PRODUCED_DATA_ID);
         EXPECT_TRUE(consumed_data_it != outputs.cend());            // the produced data is found in the output vector
         EXPECT_TRUE(std::prev(consumed_data_it) != outputs.cend()); // there is data before the produced data
@@ -659,7 +660,7 @@ TEST(PipelineTest, step_callbacks_are_called_in_sequence) {
         EXPECT_EQ(0, n_elts % 2); // if so, they have been called the same number of times
 
         // even indexes correspond to the pre-step callbacks while the odd ones correspond to the post-step callbacks
-        for (size_t j = 0; j < n_elts; ++j)
+        for (int j = 0; j < n_elts; ++j)
             EXPECT_EQ((j % 2) ? POST_STEP_DATA_ID : PRE_STEP_DATA_ID, *(step_cb_data_it + j));
 
         step_cb_data_it = consumed_data_it + 2;
@@ -670,7 +671,7 @@ TEST(PipelineTest, step_callbacks_are_called_in_sequence) {
         const auto n_elts = std::distance(step_cb_data_it, outputs.cend());
         EXPECT_EQ(0, n_elts % 2);
 
-        for (size_t j = 0; j < n_elts; ++j)
+        for (int j = 0; j < n_elts; ++j)
             EXPECT_EQ((j % 2) ? POST_STEP_DATA_ID : PRE_STEP_DATA_ID, *(step_cb_data_it + j));
     }
 }

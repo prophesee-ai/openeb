@@ -39,7 +39,7 @@ public:
             throw std::logic_error(oss.str());
         }
         auto nb_keys = sequence_of_strings.size() / 2;
-        for (auto idx = 0; idx < nb_keys; ++idx) {
+        for (uint32_t idx = 0; idx < nb_keys; ++idx) {
             map_doc_[sequence_of_strings[2 * idx]] = sequence_of_strings[2 * idx + 1];
         }
     }

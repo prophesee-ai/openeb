@@ -42,27 +42,6 @@ public:
     template<class OutputIt>
     inline void process_events(OutputIt d_first, timestamp ts);
 
-    /// @note process(...) is deprecated since version 2.2.0 and will be removed in later releases.
-    ///       Please use process_events(...) instead
-    template<class OutputIt>
-    // clang-format off
-    [[deprecated("process(...) is deprecated since version 2.2.0 and will be removed in later releases. "
-                 "Please use process_events(...) instead")]]
-    inline void process(OutputIt d_first, timestamp ts)
-    // clang-format on
-    {
-        static bool warning_already_logged = false;
-        if (!warning_already_logged) {
-            std::ostringstream oss;
-            oss << "FileProducerAlgorithmT::process(...) is deprecated since version 2.2.0 ";
-            oss << "and will be removed in later releases. ";
-            oss << "Please use FileProducerAlgorithmT::process_events(...) instead" << std::endl;
-            MV_SDK_LOG_WARNING() << oss.str();
-            warning_already_logged = true;
-        }
-        process_events(d_first, ts);
-    }
-
     /// @brief If all events have been processed, returns true
     bool is_done();
 

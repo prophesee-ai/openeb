@@ -133,17 +133,6 @@ public:
     /// @param stream_config Configuration describing how to read the stream (see @ref RawFileConfig)
     /// @return A new Device
     static std::unique_ptr<Device> open_stream(std::unique_ptr<std::istream> stream, RawFileConfig &stream_config);
-
-    /// @note type_ListSerial is deprecated since version 2.2.0 and will be removed in later
-    /// releases. Please use SerialList instead.
-    using type_ListSerial [[deprecated("type_ListSerial is deprecated since version 2.2.0 and will be removed in later "
-                                       "releases. Please use SerialList instead.")]] = std::list<std::string>;
-
-    /// @note type_ListSystems is deprecated since version 2.2.0 and will be removed in later
-    /// releases. Please use SystemList instead.
-    using type_ListSystems [[deprecated("type_ListSystems is deprecated since version 2.2.0 and will be removed in "
-                                        "later releases. Please use SystemList instead.")]] =
-        std::list<CameraDescription>;
 };
 
 } // namespace Metavision

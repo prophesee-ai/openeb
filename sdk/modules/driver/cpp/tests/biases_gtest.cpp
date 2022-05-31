@@ -307,22 +307,6 @@ TEST_F(Biases_GTest, save_to_file_when_passing_invalid_filename) {
     }
 }
 
-DISABLE_WARNING("deprecated-declarations", "deprecated-declarations", 4996)
-TEST_F(Biases_GTest, get_current_biases_file_path) {
-    // GIVEN a Biases instance
-    // Biases instance already built in the ctor of class Biases_GTest
-
-    try {
-        // WHEN trying to get current biases file path
-        biases_->get_current_biases_file_path();
-        FAIL() << "Expected exception Metavision::CameraErrorCode::DeprecatedFeature";
-    } catch (const Metavision::CameraException &err) {
-        // THEN it throws an exception
-        EXPECT_EQ(err.code().value(), Metavision::CameraErrorCode::DeprecatedFeature);
-    }
-}
-ENABLE_WARNING("deprecated-declarations", "deprecated-declarations", 4996)
-
 TEST_F(Biases_GTest, get_facility) {
     // GIVEN a Biases instance
     // Biases instance already built in the ctor of class Biases_GTest

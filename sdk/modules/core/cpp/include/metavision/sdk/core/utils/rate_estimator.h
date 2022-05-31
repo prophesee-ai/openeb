@@ -27,11 +27,19 @@ public:
     using Callback = std::function<void(timestamp, double, double)>;
 
     /// @brief Constructor
-    /// @param cb Callback that will be called every @p step_time with the current timestamp, estimated average and
+    /// @param cb Callback that will be called with the current timestamp, estimated average and
     ///           peak rates over the counts added in the @p window time span
     /// @param step_time Minimum period between two successive callbacks
     /// @param window_time Time window used to compute the average and peak rates
-    RateEstimator(const Callback &cb = Callback(), timestamp step_time = 100000, timestamp window_time = 1000000);
+    /// @param system_time_flag Flag indicating when the callback will be called;
+    ///                         if false, the callback is called with a multiple of @p step_time as current
+    ///                         timestamp, when data with a timestamp higher than the previous callback
+    ///                         timestamp plus @p step_time is added;
+    ///                         if true, the callback is called with the timestamp of the last added data as
+    ///                         current timestamp, when data is added while system time delay greater than
+    ///                         @p step_time since the last time the callback was called has elapsed.
+    RateEstimator(const Callback &cb = Callback(), timestamp step_time = 100000, timestamp window_time = 1000000,
+                  bool system_time_flag = false);
 
     /// @brief Adds a sample @p count at t = @p time
     /// @param time Time of the sample
@@ -60,6 +68,7 @@ private:
     Callback cb_;
     timestamp window_time_, step_time_, next_time_;
     std::deque<std::pair<timestamp, size_t>> counts_;
+    bool system_time_flag_;
 };
 
 } // namespace Metavision

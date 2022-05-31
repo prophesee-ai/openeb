@@ -93,13 +93,13 @@ public:
     /// @return True if the reset operation could complete, false otherwise.
     /// @note It is expected after this call has succeeded, that @ref get_last_timestamp returns @p timestamp
     /// @warning If time shifting is enabled, the @p timestamp must be in the shifted time reference
-    virtual bool reset_timestamp(const Metavision::timestamp &timestamp);
+    bool reset_timestamp(const Metavision::timestamp &timestamp);
 
     /// @brief Resets the decoder timestamp shift
     /// @param shift Timestamp shift to reset the decoder to
     /// @return True if the reset operation could complete, false otherwise.
     /// @note If time shifting is disabled, this function does nothing
-    virtual bool reset_timestamp_shift(const Metavision::timestamp &shift);
+    bool reset_timestamp_shift(const Metavision::timestamp &shift);
 
 protected:
     /// @cond DEV
@@ -163,6 +163,19 @@ private:
     /// @param raw_data_begin A reference to a pointer on first event.
     /// @param raw_data_end Pointer after the last event
     virtual void decode_impl(const RawData *const raw_data_begin, const RawData *const raw_data_end) = 0;
+
+    /// @brief Implementation of "reset the decoder last timestamp" operation
+    /// @param timestamp Timestamp to reset the decoder to
+    /// @return True if the reset operation could complete, false otherwise.
+    /// @note It is expected after this call has succeeded, that @ref get_last_timestamp returns @p timestamp
+    /// @warning If time shifting is enabled, the @p timestamp must be in the shifted time reference
+    virtual bool reset_timestamp_impl(const Metavision::timestamp &timestamp) = 0;
+
+    /// @brief Implementation of "reset the decoder timestamp shift" operation
+    /// @param shift Timestamp shift to reset the decoder to
+    /// @return True if the reset operation could complete, false otherwise.
+    /// @note If time shifting is disabled, this function does nothing
+    virtual bool reset_timestamp_shift_impl(const Metavision::timestamp &shift) = 0;
 
     const bool is_time_shifting_enabled_;
     std::vector<RawData> incomplete_raw_data_;

@@ -36,7 +36,9 @@ set(CPACK_COMPONENT_METAVISION-HAL-SAMPLES_DEPENDS metavision-hal-dev)
 ############################
 # metavision-hal-python3.X #
 ############################
-foreach (py_suffix ${PYTHON3_ALL_VERSIONS})
-    set(CPACK_COMPONENT_METAVISION-HAL-PYTHON${py_suffix}_DESCRIPTION "Metavision HAL Python 3 libraries.\n${OPEN_PACKAGE_LICENSE}")
-    set(CPACK_COMPONENT_METAVISION-HAL-PYTHON${py_suffix}_DEPENDS metavision-hal-lib metavision-sdk-base-python${py_suffix})
-endforeach()
+if (COMPILE_PYTHON3_BINDINGS)
+    foreach (py_suffix ${PYTHON3_ALL_VERSIONS})
+      set(CPACK_COMPONENT_METAVISION-HAL-PYTHON${py_suffix}_DESCRIPTION "Metavision HAL Python 3 libraries.\n${OPEN_PACKAGE_LICENSE}")
+      set(CPACK_COMPONENT_METAVISION-HAL-PYTHON${py_suffix}_DEPENDS metavision-hal-lib metavision-sdk-base-python${py_suffix})
+    endforeach()
+endif (COMPILE_PYTHON3_BINDINGS)

@@ -34,8 +34,9 @@ protected:
     void assert_ring_size(size_t max_size) {
         std::unique_lock<std::mutex> lock(producer_algo_.underfilled_wait_mut_);
         std::unique_lock<std::mutex> lock2(producer_algo_.overfilled_wait_mut_);
-        if (producer_algo_.ring_event_.data_available())
+        if (producer_algo_.ring_event_.data_available()) {
             ASSERT_GE(size_t(5), producer_algo_.ring_event_.get_last_time() - get_ring().get_first_time());
+        }
     }
     GenericProducerAlgorithm<Event2d> producer_algo_;
 };

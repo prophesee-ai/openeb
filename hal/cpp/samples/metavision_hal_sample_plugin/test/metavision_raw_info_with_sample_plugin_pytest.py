@@ -53,6 +53,6 @@ CD                  790840              0                   4805980             
 """.format(filename, re.escape(filename_full))
 
     # Now check output ,after stripping them for trailing white spaces
-    output_strip = "\n".join([line.strip() for line in output.splitlines()])
-    expected_output_strip = "\n".join([line.strip() for line in expected_output.splitlines()])
+    output_strip = pytest_tools.get_mv_info_stripped_output(output)
+    expected_output_strip = pytest_tools.get_mv_info_stripped_output(expected_output)
     assert re.search(expected_output_strip, output_strip)

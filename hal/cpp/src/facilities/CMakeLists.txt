@@ -18,5 +18,4 @@ target_sources(metavision_hal PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/i_hw_identification.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/i_plugin_software_info.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/i_roi.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/i_trigger_out.cpp
 )

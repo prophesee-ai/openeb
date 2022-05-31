@@ -44,27 +44,6 @@ public:
         return Metavision::detail::insert_if(it_begin, it_end, inserter, std::ref(*this));
     }
 
-    /// @note process(...) is deprecated since version 2.2.0 and will be removed in later releases.
-    ///       Please use process_events(...) instead
-    template<class InputIt, class OutputIt>
-    // clang-format off
-    [[deprecated("process(...) is deprecated since version 2.2.0 and will be removed in later releases. "
-                 "Please use process_events(...) instead")]]
-    inline OutputIt process(InputIt first, InputIt last, OutputIt d_first)
-    // clang-format on
-    {
-        static bool warning_already_logged = false;
-        if (!warning_already_logged) {
-            std::ostringstream oss;
-            oss << "PolarityFilterAlgorithm::process(...) is deprecated since version 2.2.0 ";
-            oss << "and will be removed in later releases. ";
-            oss << "Please use PolarityFilterAlgorithm::process_events(...) instead" << std::endl;
-            MV_SDK_LOG_WARNING() << oss.str();
-            warning_already_logged = true;
-        }
-        return process_events(first, last, d_first);
-    }
-
     /// @brief Basic operator to check if an event is accepted
     /// @param ev Event2D to be tested
     inline bool operator()(const Event2d &ev) const;

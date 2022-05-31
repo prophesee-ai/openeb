@@ -67,8 +67,8 @@ def cut_and_check_info(input_raw, start, end, expected_output_info=None):
     expected_output_info_formatted = expected_output_info.format(
         output_file_name, re.escape(os.path.realpath(output_file_path)))
 
-    output_strip = "\n".join([line.strip() for line in info_cut_file.splitlines()])
-    expected_output_strip = "\n".join([line.strip() for line in expected_output_info_formatted.splitlines()])
+    output_strip = pytest_tools.get_mv_info_stripped_output(info_cut_file)
+    expected_output_strip = pytest_tools.get_mv_info_stripped_output(expected_output_info_formatted)
     assert re.search(expected_output_strip, output_strip)
 
 
@@ -179,8 +179,8 @@ Name                {}
 Path                {}
 Duration            6s 0ms 187us
 Integrator          Prophesee
-Plugin name         hal_plugin_gen31_fx3\w*
-Event encoding      (?:EVT2|2.0)
+Plugin name         hal_plugin_gen31_fx3
+Event encoding      EVT2
 Camera generation   3.1
 Camera systemID     \d*
 Camera serial       00001621
@@ -212,8 +212,8 @@ Name                {}
 Path                {}
 Duration            3s 0ms 210us
 Integrator          Prophesee
-Plugin name         hal_plugin_gen31_fx3\w*
-Event encoding      (?:EVT2|2.0)
+Plugin name         hal_plugin_gen31_fx3
+Event encoding      EVT2
 Camera generation   3.1
 Camera systemID     \d*
 Camera serial       00001621
@@ -245,8 +245,8 @@ Name                {}
 Path                {}
 Duration            10s 442ms 743us
 Integrator          Prophesee
-Plugin name         hal_plugin_gen4_fx3\w*
-Event encoding      (?:EVT2|2.0)
+Plugin name         hal_plugin_gen41_evk3
+Event encoding      EVT2
 Camera generation   4.0
 Camera systemID     \d*(?:
 Camera subsystemID  537921537)?
@@ -279,8 +279,8 @@ Name                {}
 Path                {}
 Duration            999ms 977us
 Integrator          Prophesee
-Plugin name         hal_plugin_gen4_fx3\w*
-Event encoding      (?:EVT2|2.0)
+Plugin name         hal_plugin_gen41_evk3
+Event encoding      EVT2
 Camera generation   4.0
 Camera systemID     \d*(?:
 Camera subsystemID  537921537)?
@@ -313,8 +313,8 @@ Name                {}
 Path                {}
 Duration            6s 0ms 53us
 Integrator          Prophesee
-Plugin name         hal_plugin_gen4_fx3\w*
-Event encoding      (?:EVT2|2.0)
+Plugin name         hal_plugin_gen41_evk3
+Event encoding      EVT2
 Camera generation   4.0
 Camera systemID     \d*(?:
 Camera subsystemID  537921537)?
@@ -345,10 +345,10 @@ def pytestcase_test_metavision_raw_cutter_on_gen4_evt3_recording_full_cut(datase
 
 Name                {}
 Path                {}
-Duration            15s 445ms 502us
+Duration            15s 441ms 920us
 Integrator          Prophesee
-Plugin name         hal_plugin_gen4_fx3\w*
-Event encoding      (?:EVT3|3.0)
+Plugin name         hal_plugin_gen41_evk3
+Event encoding      EVT3
 Camera generation   4.0
 Camera systemID     \d*(?:
 Camera subsystemID  537921537)?
@@ -358,7 +358,7 @@ Camera serial       00001495
 
 Type of event       Number of events    First timestamp     Last timestamp      Average event rate
 ----------------------------------------------------------------------------------------------------
-CD                  18453063            5714                15445502            1.2 Mev/s
+CD                  18094969            5714                15000125            1.2 Mev/s
 """
     cut_and_check_info(filename_full, start, end, expected_output_info)
 
@@ -381,8 +381,8 @@ Name                {}
 Path                {}
 Duration            4s 6ms 217us
 Integrator          Prophesee
-Plugin name         hal_plugin_gen4_fx3\w*
-Event encoding      (?:EVT3|3.0)
+Plugin name         hal_plugin_gen41_evk3
+Event encoding      EVT3
 Camera generation   4.0
 Camera systemID     \d*(?:
 Camera subsystemID  537921537)?
@@ -415,8 +415,8 @@ Name                {}
 Path                {}
 Duration            1s 4ms 655us
 Integrator          Prophesee
-Plugin name         hal_plugin_gen4_fx3\w*
-Event encoding      (?:EVT3|3.0)
+Plugin name         hal_plugin_gen41_evk3
+Event encoding      EVT3
 Camera generation   4.0
 Camera systemID     \d*(?:
 Camera subsystemID  537921537)?
@@ -449,8 +449,8 @@ Name                {}
 Path                {}
 Duration            11s 6ms 525us
 Integrator          Prophesee
-Plugin name         hal_plugin_gen4_fx3\w*
-Event encoding      (?:EVT3|3.0)
+Plugin name         hal_plugin_gen41_evk3
+Event encoding      EVT3
 Camera generation   4.0
 Camera systemID     \d*(?:
 Camera subsystemID  537921537)?

@@ -28,7 +28,7 @@ jobs:
           python3-pip python3-distutils xvfb libglfw3 libglfw3-dev libglew-dev libopencv-dev ffmpeg \
           libboost-dev libboost-program-options-dev libboost-filesystem-dev libboost-timer-dev \
           libboost-chrono-dev libboost-thread-dev zip unzip git-lfs
-          pip install opencv-python $numpy_version pytest
+          pip install opencv-python $numpy_version pytest torch scipy sk-video numba h5py
 
       - name: Build pybind
         run: |
@@ -76,7 +76,7 @@ jobs:
           libboost-dev libboost-program-options-dev libboost-filesystem-dev libboost-timer-dev \
           libboost-chrono-dev libboost-thread-dev zip unzip
           python3 -m pip install --upgrade pip
-          python3 -m pip install opencv-python $numpy_version pytest
+          python3 -m pip install opencv-python $numpy_version pytest torch scipy sk-video numba h5py
 
       - name: Build pybind and gtest
         run: |
@@ -135,19 +135,30 @@ jobs:
           name: vcpkg_binaries
           path: ".."
 
-      - name: Install python and vcpkg dependencies
+      - name: Download ffmpeg archive
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: upload_win_binaries.yaml
+          workflow_conclusion: success
+          name: ffmpeg_archive
+          path: ".."
+
+      - name: Install build and tests dependencies
         shell: bash
         run: |
           cd ..
           unzip -q "vcpkg-export.zip"
-          py -$python_versions -m pip install pytest $numpy_version opencv-python
+          7z x ffmpeg-archive.7z
+          $python_executable -m pip install pytest $numpy_version opencv-python torch scipy sk-video numba h5py
           cd openeb
 
       - name: Build openEB
         shell: bash
         run: |
+          export PATH=$PATH:`realpath ../ffmpeg-5.0.1-full_build/bin`
           mkdir build && cd build
-          cmake -A x64 -DCMAKE_TOOLCHAIN_FILE="../../vcpkg/scripts/buildsystems/vcpkg.cmake" \
+          cmake -A x64 -DCMAKE_TOOLCHAIN_FILE="../cmake/toolchains/vcpkg.cmake" \
+                -DVCPKG_DIRECTORY=`realpath ../../vcpkg`
                 -D Python3_EXECUTABLE=$python_executable \
                 -DBUILD_TESTING=ON ..
           cmake --build . --config Release --parallel 4

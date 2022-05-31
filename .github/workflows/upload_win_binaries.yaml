@@ -6,7 +6,8 @@ on:
     - cron: "15 2 1 */2 *"
 
 env:
-  win_binaries_download_address: "https://prophesee-bamboo.s3.eu-west-1.amazonaws.com/build-env/vcpkg-export-20210831-MV2.3.0.zip"
+  win_binaries_download_address: "https://prophesee-bamboo.s3.eu-west-1.amazonaws.com/build-env/vcpkg-export-20220511-MV3.0.0.zip"
+  ffmpeg_archive_download_address: "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full.7z"
 
 jobs:
   get_artifacts:
@@ -17,12 +18,19 @@ jobs:
         timeout-minutes: 10
         run: |
           curl -L -o vcpkg-export.zip $win_binaries_download_address
+          curl -L -o ffmpeg-archive.7z $ffmpeg_archive_download_address
 
       - name: Uploading binaries to storage
         uses: actions/upload-artifact@master
         with:
           name: vcpkg_binaries
           path: vcpkg-export.zip
+
+      - name: Uploading ffmpeg to storage
+        uses: actions/upload-artifact@master
+        with:
+          name: ffmpeg_archive
+          path: ffmpeg-archive.7z
 
       - name: Slack Notification
         if: always()

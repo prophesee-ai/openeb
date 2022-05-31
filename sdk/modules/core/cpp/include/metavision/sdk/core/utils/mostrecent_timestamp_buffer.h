@@ -147,13 +147,6 @@ private:
 /// @note This class is a template specialization of @ref MostRecentTimestampBufferT for @ref timestamp
 using MostRecentTimestampBuffer = MostRecentTimestampBufferT<Metavision::timestamp>;
 
-/// @note TMostRecentTimestampBuffer is deprecated since version 2.3.1 and will be removed in later
-/// releases. Please use MostRecentTimestampBufferT instead
-template<typename>
-class [[deprecated(
-    "TMostRecentTimestampBuffer is deprecated since version 2.3.1 and will be removed in later releases. "
-    "Please use MostRecentTimestampBufferT instead")]] TMostRecentTimestampBuffer;
-
 } // namespace Metavision
 
 // Function definitions

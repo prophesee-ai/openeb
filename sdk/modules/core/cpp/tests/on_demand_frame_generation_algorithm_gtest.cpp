@@ -634,7 +634,8 @@ TEST(OnDemandFrameGenerationAlgorithm_GTest, delay_overlapping_frame_generation)
     // THEN we generate the expected frames
     cv::Mat expected_frame(sensor_height, sensor_width, CV_8UC3);
     ASSERT_EQ(events_gt.size(), generated_frames.size());
-    for (int i = 0; i < events_gt.size(); i++) {
+    using SizeType = std::vector<std::vector<EventCD>>::size_type;
+    for (SizeType i = 0; i < events_gt.size(); ++i) {
         expected_frame.setTo(bg_color);
         const auto &evs = events_gt[i];
         for (const auto &ev : evs)

@@ -12,6 +12,7 @@ target_sources(metavision_sdk_core PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/base_frame_generation_algorithm.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/cd_frame_generator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/cv_video_recorder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/data_synchronizer_from_triggers.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/periodic_frame_generation_algorithm.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/on_demand_frame_generation_algorithm.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/rate_estimator.cpp

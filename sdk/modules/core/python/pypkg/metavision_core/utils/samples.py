@@ -36,7 +36,7 @@ SAMPLES_DICT = {
     "195_falling_particles.raw": "https://dataset.prophesee.ai/index.php/s/kSfKSZfCLKPIblT/download",
     # generic/
     # --------
-    "laser.raw ": "https://dataset.prophesee.ai/index.php/s/bX0CnMiQ2XVGGjv/download",
+    "laser.raw": "https://dataset.prophesee.ai/index.php/s/bX0CnMiQ2XVGGjv/download",
     "spinner.dat": "https://dataset.prophesee.ai/index.php/s/YAri3vpPZHhEZfc/download",
     "spinner.raw": "https://dataset.prophesee.ai/index.php/s/mwiILym2zD8ud2b/download",
     "hand_spinner.raw": "https://dataset.prophesee.ai/index.php/s/nOcN4Fzlv5qCAxt/download",

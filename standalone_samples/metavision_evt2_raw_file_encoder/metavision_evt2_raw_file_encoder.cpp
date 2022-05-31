@@ -248,7 +248,7 @@ int main(int argc, char *argv[]) {
     Metavision::Evt2::RawEvent *raw_events_end_ptr     = raw_events_current_ptr + kSizeBuffer;
 
     // Determine the timestamp of the oldest event
-    Metavision::Evt2::Timestamp first_ts;
+    Metavision::Evt2::Timestamp first_ts = 0;
     if (!cd_done) {
         first_ts = CD_events_encoder.t;
     }

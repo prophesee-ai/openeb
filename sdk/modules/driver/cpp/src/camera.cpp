@@ -924,12 +924,6 @@ Camera Camera::from_file(const std::string &rawfile, bool realtime_playback_spee
     return Camera(new Private(rawfile, file_config, realtime_playback_speed));
 }
 
-bool Camera::synchronize_and_start_cameras(Camera &master, Camera &slave) {
-    throw CameraException(
-        CameraErrorCode::DeprecatedFeature,
-        "Cameras synchronization not available with Metavision SDK Driver. Use Metavision HAL instead.");
-}
-
 RawData &Camera::raw_data() {
     return pimpl_->raw_data();
 }
@@ -938,16 +932,8 @@ CD &Camera::cd() {
     return pimpl_->cd();
 }
 
-EM &Camera::em() {
-    throw CameraException(CameraErrorCode::DeprecatedFeature, "EM not available.");
-}
-
 ExtTrigger &Camera::ext_trigger() {
     return pimpl_->ext_trigger();
-}
-
-Imu &Camera::imu() {
-    throw CameraException(CameraErrorCode::DeprecatedFeature, "Imu not available.");
 }
 
 AntiFlickerModule &Camera::antiflicker_module() {
@@ -968,35 +954,6 @@ TriggerOut &Camera::trigger_out() {
 
 Roi &Camera::roi() {
     return pimpl_->roi();
-}
-
-Temperature &Camera::temperature() {
-    throw CameraException(CameraErrorCode::DeprecatedFeature, "Temperature not available.");
-}
-
-Illuminance &Camera::illuminance() {
-    throw CameraException(CameraErrorCode::DeprecatedFeature, "Illuminance not available.");
-}
-
-ImuModule &Camera::imu_module() {
-    throw CameraException(CameraErrorCode::DeprecatedFeature, "ImuModule not available.");
-}
-
-TemperatureModule &Camera::temperature_module() {
-    throw CameraException(CameraErrorCode::DeprecatedFeature, "TemperatureModule not available.");
-}
-
-IlluminanceModule &Camera::illuminance_module() {
-    throw CameraException(CameraErrorCode::DeprecatedFeature, "IlluminanceModule not available.");
-}
-
-void Camera::set_exposure_frame_callback(std::uint16_t fps, ExposureFrameCallback exposure_frame_callback,
-                                         bool allow_skipped_frames) {
-    throw CameraException(CameraErrorCode::DeprecatedFeature, "Exposure Frame Callback not available.");
-}
-
-bool Camera::unset_exposure_frame_callback() {
-    throw CameraException(CameraErrorCode::DeprecatedFeature, "Exposure Frame Callback not available.");
 }
 
 CallbackId Camera::add_runtime_error_callback(RuntimeErrorCallback error_callback) {
@@ -1029,14 +986,6 @@ const Geometry &Camera::geometry() const {
 
 const CameraGeneration &Camera::generation() const {
     return pimpl_->generation();
-}
-
-bool Camera::set_max_event_rate_limit(uint32_t rate_kEV_s) {
-    throw CameraException(CameraErrorCode::DeprecatedFeature, "Cannot set event rate limit.");
-}
-
-bool Camera::set_max_events_lifespan(timestamp max_events_lifespan_us) {
-    throw CameraException(CameraErrorCode::DeprecatedFeature, "Cannot set max events lifespan.");
 }
 
 bool Camera::start() {

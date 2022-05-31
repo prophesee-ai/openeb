@@ -7,24 +7,30 @@ their own applications or plugins. As a camera manufacturer, ensure your custome
 event-based software suite available by building your own plugin. As a creator, scientist, academic, join and contribute
 to the fast-growing event-based vision community.
 
-OpenEB is composed of the 5 Open modules of Metavision Intelligence:
+OpenEB is composed of the Open modules of Metavision Intelligence:
 * HAL: Hardware Abstraction Layer to operate any event-based vision device.
 * Base: Foundations and common definitions of event-based applications.
 * Core: Generic algorithms for visualization, event stream manipulation, applicative pipeline generation.
+* Core ML: Generic functions for Machine Learning, event_to_video and video_to_event pipelines.
 * Driver: High-level abstraction built on the top of HAL to easily interact with event-based cameras.
 * UI: Viewer and display controllers for event-based data.
+
+OpenEB also contains the source code of Prophesee camera plugins, enabling to stream data from our event-based cameras
+and to read recordings of event-based data. 
 
 This document describes how to compile and install the OpenEB codebase.
 For further information, refer to our [online documentation](https://docs.prophesee.ai/) where you will find
 some [tutorials](https://docs.prophesee.ai/stable/metavision_sdk/tutorials/index.html) to get you started in C++ or Python,
-some [samples and applications](https://docs.prophesee.ai/stable/samples.html) to discover how to use
+some [samples](https://docs.prophesee.ai/stable/samples.html) to discover how to use
 [our API](https://docs.prophesee.ai/stable/api.html) and a more detailed
-[description of our modules and plans](https://docs.prophesee.ai/stable/modules.html).
+[description of our modules and packaging](https://docs.prophesee.ai/stable/modules.html).
 
 
 ## Compiling on Ubuntu
 
-Currently, we support Ubuntu 18.04 and 20.04.
+Currently, we support Ubuntu 18.04 and 20.04. 
+Compilation on other versions of Ubuntu or other Linux distributions was not tested.
+For those platforms some adjustments to this guide or to the code itself may be required (specially for non-Debian Linux).
 
 ### Prerequisites
 
@@ -32,22 +38,52 @@ Install the following dependencies:
 
 ```bash
 sudo apt update
-sudo apt -y install apt-utils build-essential software-properties-common wget unzip curl
-sudo apt -y install cmake libopencv-dev git
-sudo apt -y install libboost-all-dev libusb-1.0-0-dev libeigen3-dev
-sudo apt -y install libglew-dev libglfw3-dev
-sudo apt -y install libgtest-dev
+sudo apt -y install apt-utils build-essential software-properties-common wget unzip curl git cmake
+sudo apt -y install libopencv-dev libgtest-dev libboost-all-dev libusb-1.0-0-dev libeigen3-dev
+sudo apt -y install libglew-dev libglfw3-dev libcanberra-gtk-module
 ```
 
 For the Python API, you will need Python and some additional libraries.
 If Python is not available on your system, install it
 (we support Python 3.6 and 3.7 on Ubuntu 18.04 and Python 3.7 and 3.8 on Ubuntu 20.04).
-Then install some extra libraries:
 
+Then install `pip`:
 ```bash
 sudo apt -y install python3-pip python3-distutils
 python3 -m pip install pip --upgrade
-python3 -m pip install "numpy==1.19.5" "opencv-python>=4.2.0.34" pytest
+```
+
+To use Machine Learning features, you need to install some additional dependencies.
+
+First, if you have some Nvidia hardware with GPUs, install `CUDA (10.2, 11.1 or 11.3) <https://developer.nvidia.com/cuda-downloads>`_
+and `cuDNN <https://docs.nvidia.com/deeplearning/cudnn/install-guide/index.html>`_ to leverage them with pytorch and libtorch.
+
+Make sure that you install a version of CUDA that is compatible with your GPUs by checking
+`Nvidia compatibility page <https://docs.nvidia.com/deeplearning/cudnn/support-matrix/index.html>`_.
+
+Note that, at the moment, we don't support `OpenCL <https://www.khronos.org/opencl/>`_ and AMD GPUs.
+
+Then, install pytorch. Go to `pytorch.org <https://pytorch.org>`_ to retrieve the pip command that you
+will launch in a console to install PyTorch 1.8.2 LTS. Here is an example of a command that can be retrieved for
+pytorch using CUDA 11.1:
+
+```bash
+python3 -m pip install torch==1.8.2+cu111 torchvision==0.9.2+cu111 torchaudio==0.8.2 -f https://download.pytorch.org/whl/lts/1.8/torch_lts.html
+```
+
+Then install some extra Python libraries:
+
+```bash
+python3 -m pip install "opencv-python>=4.5.5.64" "sk-video==1.1.10" "fire==0.4.0" "numpy<=1.21" pandas scipy numba profilehooks h5py pytest
+python3 -m pip install jupyter jupyterlab matplotlib "ipywidgets==7.6.5"
+python3 -m pip install "pytorch_lightning==1.5.10" "tqdm==4.63.0" "kornia==0.6.1"
+
+```
+
+Finally, you will need to install ffmpeg:
+
+```bash
+sudo apt -y install ffmpeg
 ```
 
 If you want to run tests, then you need to compile **gtest** package (this is optional):
@@ -84,8 +120,7 @@ sudo cmake --build . --target install
  3. Generate the makefiles using CMake: `cmake .. -DBUILD_TESTING=OFF`
  4. Compile: `cmake --build . --config Release -- -j 4`
  
-You can now use OpenEB directly from the build folder.
-For this, you will need to update your environment variables using this script
+To use OpenEB directly from the build folder, update your environment variables using this script
 (which you may add to your ~/.bashrc to make it permanent):
 
 ```bash
@@ -97,30 +132,19 @@ with the following command: `sudo cmake --build . --target install`. In that cas
 `LD_LIBRARY_PATH` with `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib` (If you want to update this path
 permanently, you should add the previous command in your ~/.bashrc)
 
-To get started with OpenEB, you can download some [sample recordings](https://docs.prophesee.ai/stable/datasets.html) and stream them with [metavision_viewer](https://docs.prophesee.ai/stable/metavision_sdk/modules/driver/guides/viewer.html#chapter-sdk-driver-samples-viewer). The RAW plugins included in OpenEB will allow you to read the RAW files.
-However, if you are planning to use a Prophesee camera, then you need to install **Prophesee plugins** by following this procedure:
+*Note* that since OpenEB 3.0.0, Prophesee camera plugins are included in the OpenEB repository, so you don't need to perform
+any extra step to install them. 
 
- * Go to the [sign-up page for Prophesee Camera Plugins](https://www.prophesee.ai/metavision-intelligence-plugins-download/)
- * Download the `.list` file for your version of Ubuntu and add it to the folder `/etc/apt/sources.list.d`
- * Install Prophesee plugins:
-
-```
-sudo apt update
-sudo apt install metavision-hal-prophesee-plugins
-```
-
-*Note* that the previous command will download the Prophesee Camera Plugins for the latest version of OpenEB. 
-If you are using a previous version of OpenEB, specify the version number in your command: `sudo apt -y install 'metavision-hal-prophesee-plugins=x.y.z'`
-
+To get started with OpenEB, you can download some [sample recordings](https://docs.prophesee.ai/stable/datasets.html) 
+and visualize them with [metavision_viewer](https://docs.prophesee.ai/stable/metavision_sdk/modules/driver/guides/viewer.html#chapter-sdk-driver-samples-viewer)
+or you can stream data from your Prophesee-compatible event-based camera.
 
 ### Running the test suite (Optional)
 
 
 Running the test suite is a sure-fire way to ensure you did everything well with your compilation and installation process.
 
-*Note* that the [Prophesee Camera Plugins](https://www.prophesee.ai/metavision-intelligence-plugins-download/) must be installed for most of these tests to run.
-
- * Download [the files](https://dataset.prophesee.ai/index.php/s/VfhepWI4MPVWh9o) necessary to run the tests.
+ * Download [the files](https://dataset.prophesee.ai/index.php/s/hyCzGM4tpR8w5bx) necessary to run the tests.
    Click `Download` on the top right folder. Beware of the size of the obtained archive which weighs around 500 Mb.
 
  * Extract and put the content of this archive to `<OPENEB_SRC_DIR>/`. For instance, the correct path of sequence `gen31_timer.raw` should be `<OPENEB_SRC_DIR>/datasets/openeb/gen31_timer.raw`.
@@ -157,13 +181,7 @@ To compile OpenEB, you will need to install some extra tools:
       * Select "C++ build tools", make sure Windows 10 SDK is checked, and add English Language Pack
     * For development, you can also download and run [Visual Studio Installer](https://visualstudio.microsoft.com/fr/downloads/)    
  * install [vcpkg](https://github.com/microsoft/vcpkg) that will be used for installing dependencies:
-    * download and extract [vcpkg version 2020.11-1](https://github.com/microsoft/vcpkg/archive/refs/tags/2020.11-1.zip)
-    * patch a configuration file to fix a known issue with this version of vcpkg. In the file `C:\vcpkg-2020.11-1\scripts\cmake\vcpkg_acquire_msys.cmake`,
-      on line 81, add `"https://mirrors.zju.edu.cn/msys2/"` (this is adding a new mirror server). This can be achieved with the following command
-      (to adapt to the path in which you extracted vcpkg): 
-      ```bash
-      powershell -command "& {&'Invoke-WebRequest' -OutFile C:\vcpkg-2020.11-1\scripts\cmake\vcpkg_acquire_msys.cmake -Uri https://files.prophesee.ai/share/dists/public/vcpkg/vcpkg_acquire_msys.cmake}"
-      ```
+    * download and extract [vcpkg version 2022.03.10](https://github.com/microsoft/vcpkg/archive/refs/tags/2022.03.10.zip)
     * `cd <VCPKG_SRC_DIR>`
     * `bootstrap-vcpkg.bat`
   * finally, install the libraries by running `vcpkg.exe install --triplet x64-windows libusb eigen3 boost opencv glfw3 glew gtest dirent`
@@ -172,7 +190,7 @@ To compile OpenEB, you will need to install some extra tools:
 
 #### Install pybind
 
-The Python bindings rely on the [pybind11](https://github.com/pybind) library (version 2.6.0).
+The Python bindings rely on the [pybind11](https://github.com/pybind) library.
 You should install pybind using vcpkg in order to get the appropriate version: `vcpkg.exe install --triplet x64-windows pybind11`
 
 *Note* that pybind11 is required only if you plan to use the Python API.
@@ -194,12 +212,35 @@ C:\Users\Username\AppData\Local\Programs\Python\Python37
 C:\Users\Username\AppData\Local\Programs\Python\Python37\Scripts
 ````
 
-* Finally, install additionally required Python packages using pip:
+* Then make sure `pip` is up to date:
 
 ```bash
 python -m pip install pip --upgrade
-python -m pip install "numpy==1.19.5" "opencv-python>=4.2.0.34" pytest
 ```
+
+To use Machine Learning features, you need to install some additional dependencies.
+
+First, if you have some Nvidia hardware with GPUs, install `CUDA (10.2, 11.1 or 11.3) <https://developer.nvidia.com/cuda-downloads>`_
+and `cuDNN <https://docs.nvidia.com/deeplearning/cudnn/install-guide/index.html>`_ to leverage them with pytorch and libtorch.
+
+Then, install pytorch. Go to `pytorch.org <https://pytorch.org>`_ to retrieve the pip command that you
+will launch in a console to install PyTorch 1.8.2 LTS. Here is an example of a command that can be retrieved for
+pytorch using CUDA 11.1:
+
+```bash
+python -m pip install torch==1.8.2+cu111 torchvision==0.9.2+cu111 torchaudio==0.8.2 -f https://download.pytorch.org/whl/lts/1.8/torch_lts.html
+```
+
+Then install some extra Python libraries:
+
+```bash
+python -m pip install "opencv-python>=4.5.5.64" "sk-video==1.1.10" "fire==0.4.0" "numpy<=1.21" pandas scipy numba profilehooks h5py pytest
+python -m pip install jupyter jupyterlab matplotlib "ipywidgets==7.6.5"
+python -m pip install "pytorch_lightning==1.5.10" "tqdm==4.63.0" "kornia==0.6.1"
+```
+
+Finally, you will need to download [ffmpeg](https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full.7z) and add it to your PATH.
+
 
 ### Compilation
 
@@ -218,8 +259,7 @@ Open a command prompt inside the `openeb` folder (absolute path to this director
     Note that the value passed to the parameter `-DCMAKE_TOOLCHAIN_FILE` must be an absolute path, not a relative one. 
  3. Compile: `cmake --build . --config Release --parallel 4`
  
-You can now use OpenEB directly from the build folder.
-For this, you will need to update your environment variables using this script:
+To use OpenEB directly from the build folder, update your environment variables using this script:
 
 ```bash
 <OPENEB_SRC_DIR>\build\utils\scripts\setup_env.bat
@@ -255,24 +295,20 @@ Open a command prompt inside the `openeb` folder and do as follows:
     Note that the value passed to the parameter `-DCMAKE_TOOLCHAIN_FILE` must be an absolute path, not a relative one.
  3. Open the solution file `metavision.sln`, select the `Release` configuration and build the `ALL_BUILD` project.
 
-#### Installing Prophesee Plugins
+#### Getting Started
 
-To get started with OpenEB, you can download some [sample recordings](https://docs.prophesee.ai/stable/datasets.html) and stream them with [metavision_viewer](https://docs.prophesee.ai/stable/metavision_sdk/modules/driver/guides/viewer.html#chapter-sdk-driver-samples-viewer). The RAW plugins included in OpenEB will allow you to read the RAW files.
-However, if you are planning to use a Prophesee camera, then you need to install **Prophesee plugins** by following this procedure:
+To get started with OpenEB, you can download some [sample recordings](https://docs.prophesee.ai/stable/datasets.html) 
+and visualize them with [metavision_viewer](https://docs.prophesee.ai/stable/metavision_sdk/modules/driver/guides/viewer.html#chapter-sdk-driver-samples-viewer)
+or you can stream data from your Prophesee-compatible event-based camera.
 
- * Go to the [sign-up page for Prophesee Camera Plugins](https://www.prophesee.ai/metavision-intelligence-plugins-download/)
- * Follow the Camera Plugins download link provided after sign-up
- * Among the list of Camera Plugins installers, download the one with the version number matching your OpenEB version
- * Run the installer
+*Note* that since OpenEB 3.0.0, Prophesee camera plugins are included in the OpenEB repository, so you don't need to perform
+any extra step to install them.
 
 ### Running the test suite (Optional)
 
-
 Running the test suite is a sure-fire way to ensure you did everything well with your compilation and installation process.
 
-*Note* that the [Prophesee Camera Plugins](https://www.prophesee.ai/metavision-intelligence-plugins-download/) must be installed for most of these tests to run.
-
- * Download [the files](https://dataset.prophesee.ai/index.php/s/VfhepWI4MPVWh9o) necessary to run the tests.
+ * Download [the files](https://dataset.prophesee.ai/index.php/s/hyCzGM4tpR8w5bx) necessary to run the tests.
    Click `Download` on the top right folder. Beware of the size of the obtained archive which weighs around 500 Mb.
    
  * Extract and put the content of this archive to `<OPENEB_SRC_DIR>/`. For instance, the correct path of sequence `gen31_timer.raw` should be `<OPENEB_SRC_DIR>/datasets/openeb/gen31_timer.raw`.

@@ -44,12 +44,6 @@ static HALFacilityPythonBinder<I_HW_Identification> bind(
                  pybind_doc_hal["Metavision::I_HW_Identification::get_available_raw_format"])
             .def("get_integrator", &I_HW_Identification::get_integrator,
                  pybind_doc_hal["Metavision::I_HW_Identification::get_integrator"])
-            .def(
-                "get_manufacturer",
-                +[](I_HW_Identification &self) {
-                    throw DeprecationWarningException("get_manufacturer", "get_integrator");
-                },
-                pybind_doc_hal["Metavision::I_HW_Identification::get_manufacturer"])
             .def("get_system_info", &get_system_info_wrapper,
                  pybind_doc_hal["Metavision::I_HW_Identification::get_system_info"])
             .def("get_connection_type", &I_HW_Identification::get_connection_type,

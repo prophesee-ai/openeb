@@ -44,27 +44,6 @@ public:
         Metavision::detail::transform(it_begin, it_end, inserter, std::ref(*this));
     }
 
-    /// @note process(...) is deprecated since version 2.2.0 and will be removed in later releases.
-    ///       Please use process_events(...) instead
-    template<class InputIt, class OutputIt>
-    // clang-format off
-    [[deprecated("process(...) is deprecated since version 2.2.0 and will be removed in later releases. "
-                 "Please use process_events(...) instead")]]
-    inline void process(InputIt first, InputIt last, OutputIt d_first)
-    // clang-format on
-    {
-        static bool warning_already_logged = false;
-        if (!warning_already_logged) {
-            std::ostringstream oss;
-            oss << "PolarityInverterAlgorithm::process(...) is deprecated since version 2.2.0 ";
-            oss << "and will be removed in later releases. ";
-            oss << "Please use PolarityInverterAlgorithm::process_events(...) instead" << std::endl;
-            MV_SDK_LOG_WARNING() << oss.str();
-            warning_already_logged = true;
-        }
-        process_events(first, last, d_first);
-    }
-
     /// @brief Changes the polarity of an events
     /// @param ev Event2D that want to be changed
     inline void operator()(Event2d &ev) const;

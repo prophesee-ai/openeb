@@ -28,10 +28,12 @@ set(CPACK_COMPONENT_METAVISION-SDK-BASE-DEV_DEPENDS metavision-sdk-base-lib)
 string(REPLACE ";" ", " CPACK_DEBIAN_METAVISION-SDK-BASE-DEV_PACKAGE_DEPENDS "${CPACK_DEBIAN_METAVISION-SDK-BASE-DEV_PACKAGE_DEPENDS}")
 
 # Python bindings
-foreach (py_suffix ${PYTHON3_ALL_VERSIONS})
-    set(CPACK_COMPONENT_METAVISION-SDK-BASE-PYTHON${py_suffix}_DESCRIPTION "Metavision SDK Base Python 3 libraries.\n${OPEN_PACKAGE_LICENSE}")
-    set(CPACK_COMPONENT_METAVISION-SDK-BASE-PYTHON${py_suffix}_DEPENDS metavision-sdk-base-lib)
-endforeach()
+if (COMPILE_PYTHON3_BINDINGS)
+    foreach (py_suffix ${PYTHON3_ALL_VERSIONS})
+        set(CPACK_COMPONENT_METAVISION-SDK-BASE-PYTHON${py_suffix}_DESCRIPTION "Metavision SDK Base Python 3 libraries.\n${OPEN_PACKAGE_LICENSE}")
+        set(CPACK_COMPONENT_METAVISION-SDK-BASE-PYTHON${py_suffix}_DEPENDS metavision-sdk-base-lib)
+      endforeach()
+endif (COMPILE_PYTHON3_BINDINGS)
 
 # Samples
 set(CPACK_COMPONENT_METAVISION-SDK-BASE-SAMPLES_DESCRIPTION "Samples for Metavision SDK Base library.\n${OPEN_PACKAGE_LICENSE}")

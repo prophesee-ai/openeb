@@ -14,6 +14,8 @@ add_custom_target(create_metavision_open_archive_folder
         -DGIT_COMMAND_GET_BRANCH="${GIT_COMMAND_GET_BRANCH}"
         -DGIT_COMMAND_GET_COMMIT_ID="${GIT_COMMAND_GET_COMMIT_ID}"
         -DGIT_COMMAND_GET_COMMIT_DATE="${GIT_COMMAND_GET_COMMIT_DATE}"
+        -DCMAKE_MODULE_PATH="${CMAKE_MODULE_PATH}"
+        -DGENERATE_FILES_DIRECTORY="${GENERATE_FILES_DIRECTORY}"
         -P ${CMAKE_CURRENT_LIST_DIR}/create_metavision_open_archive_folder.cmake
 )
 

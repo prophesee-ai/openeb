@@ -309,6 +309,7 @@ void AsyncAlgorithm<Impl>::initialize(timestamp ts) {
     }
     case Processing::MIXED:
         next_processing_n_events_ = delta_n_events_;
+        [[fallthrough]];
     case Processing::N_US: {
         processing_ts_      = delta_ts_ * (ts / delta_ts_);
         next_processing_ts_ = processing_ts_ + delta_ts_;

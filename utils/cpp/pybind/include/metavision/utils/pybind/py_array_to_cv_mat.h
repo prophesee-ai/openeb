@@ -31,7 +31,7 @@ inline void py_array_to_cv_mat(const py::array &py_image, cv::Mat &output_cv_mat
         throw std::invalid_argument("Incompatible input dtype. Must be np.ubyte.");
 
     const size_t num_channels = (colored ? 3 : 2);
-    if (py_image.ndim() != num_channels) {
+    if (static_cast<size_t>(py_image.ndim()) != num_channels) {
         std::stringstream ss;
         ss << "Incompatible dimensions number. Must be a " << num_channels << " dimensional image.";
         throw std::invalid_argument(ss.str());

@@ -40,6 +40,13 @@ def run_cmd_setting_mv_log_file(cmd, **kwargs):
     return output, error_code
 
 
+def get_mv_info_stripped_output(res):
+    lines = res.splitlines()
+    for i in range(len(lines)):
+        if lines[i].startswith("="):
+            return "\n".join([line.strip() for line in lines[i:]])
+
+
 def compare_lists(list_1, list_2):
     """"Compares two lists
 

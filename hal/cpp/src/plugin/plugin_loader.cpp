@@ -209,8 +209,6 @@ void PluginLoader::insert_folders(const std::vector<std::string> &folders) {
 }
 
 void PluginLoader::load_plugins() {
-    std::string suffix = "_raw";
-    std::vector<PluginInfo> raw_plugin_infos;
     for (auto folder : folders_) {
         DIR *dir_descriptor;
         dir_descriptor = opendir(folder.c_str());
@@ -219,17 +217,10 @@ void PluginLoader::load_plugins() {
             while ((entries = readdir(dir_descriptor)) != NULL) {
                 std::string filename = entries->d_name;
                 auto plugin_info     = PluginInfo(folder, filename);
-                if (ends_with(plugin_info.name, suffix)) {
-                    raw_plugin_infos.push_back(plugin_info);
-                } else {
-                    insert_plugin(plugin_info);
-                }
+                insert_plugin(plugin_info);
             }
             closedir(dir_descriptor);
         }
-    }
-    for (auto plugin_info : raw_plugin_infos) {
-        insert_plugin(plugin_info);
     }
 }
 

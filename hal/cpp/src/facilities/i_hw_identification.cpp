@@ -27,17 +27,6 @@ I_HW_Identification::I_HW_Identification(const std::shared_ptr<I_PluginSoftwareI
     }
 }
 
-std::string I_HW_Identification::get_manufacturer() const {
-    static bool warning_already_logged = false;
-    if (!warning_already_logged) {
-        MV_HAL_LOG_WARNING() << "I_HW_Identification::get_manufacturer() is deprecated since version 2.2.0 and will "
-                                "be removed in later releases.";
-        MV_HAL_LOG_WARNING() << "Please use I_HW_Identification::get_integrator() instead." << std::endl;
-        warning_already_logged = true;
-    }
-    return get_integrator();
-}
-
 I_HW_Identification::SystemInfo I_HW_Identification::get_system_info() const {
     SystemInfo infos;
     infos.insert({"Serial", get_serial()});

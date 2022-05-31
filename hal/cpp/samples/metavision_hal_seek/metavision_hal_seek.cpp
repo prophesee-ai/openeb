@@ -149,8 +149,8 @@ int main(int argc, char **argv) {
     cv::createTrackbar(
         "Pos. (%)", window_name, nullptr, 100,
         [](int value, void *data) { reinterpret_cast<SeekBarOperator *>(data)->set(value); }, &seek_op);
-    cv::setTrackbarMin("Pos. (%)", "Seek Control", 0);
-    cv::setTrackbarMax("Pos. (%)", "Seek Control", 100);
+    cv::setTrackbarMin("Pos. (%)", window_name, 0);
+    cv::setTrackbarMax("Pos. (%)", window_name, 100);
 
     // Start reading the file
     i_eventsstream->start();

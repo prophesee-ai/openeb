@@ -35,23 +35,17 @@ set(CPACK_COMPONENT_METAVISION-SDK-CORE-SAMPLES_DESCRIPTION "Samples for Metavis
 set(CPACK_COMPONENT_METAVISION-SDK-CORE-SAMPLES_DEPENDS metavision-sdk-base-dev metavision-sdk-core-dev metavision-sdk-driver-dev metavision-sdk-ui-dev)
 
 # Pure python library
-set(CPACK_COMPONENT_METAVISION-SDK-CORE-PYTHON_DESCRIPTION "Metavision SDK Core Python 3 library.\n${OPEN_PACKAGE_LICENSE}")
-set(CPACK_COMPONENT_METAVISION-SDK-CORE-PYTHON_DEPENDS metavision-sdk-core-lib metavision-sdk-base-python${PYTHON3_DEFAULT_VERSION})
+if (COMPILE_PYTHON3_BINDINGS)
+    set(CPACK_COMPONENT_METAVISION-SDK-CORE-PYTHON_DESCRIPTION "Metavision SDK Core Python 3 library.\n${OPEN_PACKAGE_LICENSE}")
+    set(CPACK_COMPONENT_METAVISION-SDK-CORE-PYTHON_DEPENDS metavision-sdk-core-lib metavision-sdk-base-python${PYTHON3_DEFAULT_VERSION})
 
-# Python bindings
-foreach (py_suffix ${PYTHON3_ALL_VERSIONS})
-    set(CPACK_COMPONENT_METAVISION-SDK-CORE-PYTHON${py_suffix}_DESCRIPTION "Metavision SDK Core Python 3 libraries.\n${OPEN_PACKAGE_LICENSE}")
-    set(CPACK_COMPONENT_METAVISION-SDK-CORE-PYTHON${py_suffix}_DEPENDS metavision-sdk-core-lib metavision-sdk-base-python${py_suffix})
-endforeach()
+    # Python bindings
+    foreach (py_suffix ${PYTHON3_ALL_VERSIONS})
+        set(CPACK_COMPONENT_METAVISION-SDK-CORE-PYTHON${py_suffix}_DESCRIPTION "Metavision SDK Core Python 3 libraries.\n${OPEN_PACKAGE_LICENSE}")
+        set(CPACK_COMPONENT_METAVISION-SDK-CORE-PYTHON${py_suffix}_DEPENDS metavision-sdk-core-lib metavision-sdk-base-python${py_suffix})
+    endforeach()
 
-# Python samples of metavision-sdk-core-python
-set(CPACK_COMPONENT_METAVISION-SDK-CORE-PYTHON-SAMPLES_DESCRIPTION "Samples for Metavision SDK Core Python 3 library.\n${OPEN_PACKAGE_LICENSE}")
-set(CPACK_COMPONENT_METAVISION-SDK-CORE-PYTHON-SAMPLES_DEPENDS metavision-hal-python${PYTHON3_DEFAULT_VERSION} metavision-sdk-core-python${PYTHON3_DEFAULT_VERSION} metavision-sdk-base-python${PYTHON3_DEFAULT_VERSION} metavision-sdk-ui-python${PYTHON3_DEFAULT_VERSION})
-
-# Metavision Studio
-set(CPACK_COMPONENT_METAVISION-STUDIO-CLIENT_DESCRIPTION "Metavision Studio client.\n${OPEN_PACKAGE_LICENSE}")
-set(CPACK_COMPONENT_METAVISION-STUDIO-SERVER_DESCRIPTION "Metavision Studio server.\n${OPEN_PACKAGE_LICENSE}")
-set(CPACK_COMPONENT_METAVISION-STUDIO-SERVER_DEPENDS metavision-sdk-core-lib metavision-sdk-driver-lib)
-set(CPACK_COMPONENT_METAVISION-STUDIO_DESCRIPTION "Metavision Studio.\n${OPEN_PACKAGE_LICENSE}")
-set(CPACK_COMPONENT_METAVISION-STUDIO-SAMPLE_DESCRIPTION "Metavision Studio source code.\n${OPEN_PACKAGE_LICENSE}")
-set(CPACK_COMPONENT_METAVISION-STUDIO-SAMPLE_DEPENDS metavision-sdk-base-dev metavision-sdk-core-dev metavision-sdk-driver-dev)
+    # Python samples of metavision-sdk-core-python
+    set(CPACK_COMPONENT_METAVISION-SDK-CORE-PYTHON-SAMPLES_DESCRIPTION "Samples for Metavision SDK Core Python 3 library.\n${OPEN_PACKAGE_LICENSE}")
+    set(CPACK_COMPONENT_METAVISION-SDK-CORE-PYTHON-SAMPLES_DEPENDS metavision-hal-python${PYTHON3_DEFAULT_VERSION} metavision-sdk-core-python${PYTHON3_DEFAULT_VERSION} metavision-sdk-base-python${PYTHON3_DEFAULT_VERSION} metavision-sdk-ui-python${PYTHON3_DEFAULT_VERSION})
+endif (COMPILE_PYTHON3_BINDINGS)

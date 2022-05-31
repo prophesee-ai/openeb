@@ -38,7 +38,7 @@ void I_Decoder::decode(const RawData *const raw_data_begin, const RawData *const
     if (!incomplete_raw_data_.empty()) {
         // Computes how many raw data from this input need to be copied to get a complete raw event and append
         // them to the incomplete raw data..
-        const auto raw_data_to_insert_count = get_raw_event_size_bytes() - incomplete_raw_data_.size();
+        const int raw_data_to_insert_count = get_raw_event_size_bytes() - incomplete_raw_data_.size();
 
         // Check that the input buffer has enough data to complete the raw event
         if (raw_data_to_insert_count > std::distance(cur_raw_data, raw_data_end)) {
@@ -95,12 +95,13 @@ bool I_Decoder::remove_time_callback(size_t callback_id) {
     return false;
 }
 
-bool I_Decoder::reset_timestamp(const timestamp &) {
-    return false;
+bool I_Decoder::reset_timestamp(const timestamp &t) {
+    incomplete_raw_data_.clear();
+    return reset_timestamp_impl(t);
 }
 
-bool I_Decoder::reset_timestamp_shift(const timestamp &) {
-    return false;
+bool I_Decoder::reset_timestamp_shift(const timestamp &t) {
+    return reset_timestamp_shift_impl(t);
 }
 
 } // namespace Future

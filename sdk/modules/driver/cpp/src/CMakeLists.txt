@@ -14,19 +14,12 @@ target_sources(metavision_sdk_driver PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/camera_generation.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/camera.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/cd.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/em.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/erc_module.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ext_trigger.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/geometry.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/illuminance.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/illuminance_module.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/imu.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/imu_module.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/offline_streaming_control.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/noise_filter_module.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/raw_data.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/roi.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/temperature.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/temperature_module.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/trigger_out.cpp
 )

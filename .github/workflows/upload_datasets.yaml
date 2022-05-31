@@ -6,7 +6,7 @@ on:
     - cron: "15 2 1 */2 *"
 
 env:
-  dataset_download_address: "https://dataset.prophesee.ai/index.php/s/VfhepWI4MPVWh9o/download"
+  dataset_download_address: "https://dataset.prophesee.ai/index.php/s/hyCzGM4tpR8w5bx/download"
 
 jobs:
   get_artifacts:

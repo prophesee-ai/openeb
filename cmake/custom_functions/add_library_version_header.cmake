@@ -8,8 +8,8 @@
 # See the License for the specific language governing permissions and limitations under the License.
 
 set(GIT_BRANCH "main")
-set(GIT_COMMIT_ID "c6f4e8a3c4fa56f8954b23643c0c60174997930b")
-set(GIT_COMMIT_DATE "2022-04-05 18:40:34 +0200")
+set(GIT_COMMIT_ID "f48bec34040818c1b922dcd9e63f656999e61753")
+set(GIT_COMMIT_DATE "2022-05-25 21:02:57 +0200")
 
 # If git information are not provided in command line when running cmake, try to automatically determine them
 if(NOT GIT_BRANCH OR NOT GIT_COMMIT_ID OR NOT GIT_COMMIT_DATE)
@@ -44,35 +44,49 @@ endforeach(cmd)
 # contain spaces (and even if passing it between quotes id does not work because it keeps the quotes)
 set(cmake_script ${GENERATE_FILES_DIRECTORY}/scripts/configure_version_file.cmake)
 file(WRITE ${cmake_script} "
+include(CMakeParseArguments)
+function(wrap_command)
+    cmake_parse_arguments(ARGS \"\" \"OUTPUT\" \"COMMAND\" \${ARGN})
+    # if cmake is executed as sudo, run the command as the underlying user
+    if (UNIX AND (NOT \"\$ENV{SUDO_USER}\" STREQUAL \"\"))
+        string (REPLACE \";\" \" \" _cmd \"\${ARGS_COMMAND}\")
+        set (\${ARGS_OUTPUT} su \$ENV{SUDO_USER} -c \"\${_cmd}\" PARENT_SCOPE)
+    else ()
+        set (\${ARGS_OUTPUT} \"\${ARGS_COMMAND}\" PARENT_SCOPE)
+    endif ()
+endfunction()
+wrap_command(COMMAND ${GIT_COMMAND_GET_BRANCH} OUTPUT cmd)
 execute_process(
-    COMMAND ${GIT_COMMAND_GET_BRANCH}
+    COMMAND \${cmd}
     OUTPUT_VARIABLE GIT_BRANCH_RAW
     OUTPUT_STRIP_TRAILING_WHITESPACE
     ERROR_VARIABLE err
     RESULT_VARIABLE ret
 )
 if(ret AND NOT ret EQUAL 0)
-    message(FATAL_ERROR \"Error execuding command \n'${GIT_COMMAND_GET_BRANCH_QUOTES_ESCAPED}' :\n\${err}\")
+    message(FATAL_ERROR \"Error execuding command \n'\${cmd}' :\n\${err}\")
 endif()
+wrap_command(COMMAND ${GIT_COMMAND_GET_COMMIT_ID} OUTPUT cmd)
 execute_process(
-    COMMAND ${GIT_COMMAND_GET_COMMIT_ID}
+    COMMAND \${cmd}
     OUTPUT_VARIABLE GIT_HASH_RAW
     OUTPUT_STRIP_TRAILING_WHITESPACE
     ERROR_VARIABLE err
     RESULT_VARIABLE ret
 )
 if(ret AND NOT ret EQUAL 0)
-    message(FATAL_ERROR \"Error execuding command \n'${GIT_COMMAND_GET_COMMIT_ID_QUOTES_ESCAPED}' :\n\${err}\")
+    message(FATAL_ERROR \"Error execuding command \n'\${cmd}' :\n\${err}\")
 endif()
+wrap_command(COMMAND ${GIT_COMMAND_GET_COMMIT_DATE} OUTPUT cmd)
 execute_process(
-    COMMAND ${GIT_COMMAND_GET_COMMIT_DATE}
+    COMMAND \${cmd}
     OUTPUT_VARIABLE GIT_COMMIT_DATE
     OUTPUT_STRIP_TRAILING_WHITESPACE
     ERROR_VARIABLE err
     RESULT_VARIABLE ret
 )
 if(ret AND NOT ret EQUAL 0)
-    message(FATAL_ERROR \"Error execuding command \n'${GIT_COMMAND_GET_COMMIT_DATE_QUOTES_ESCAPED}' :\n\${err}\")
+    message(FATAL_ERROR \"Error execuding command \n'\${cmd}' :\n\${err}\")
 endif()
 
 configure_file(\"${CMAKE_CURRENT_LIST_DIR}/version.h.in\" \"\${OUTPUTFILE}\" @ONLY)

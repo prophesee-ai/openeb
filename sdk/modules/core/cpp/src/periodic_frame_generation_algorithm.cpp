@@ -91,16 +91,18 @@ void PeriodicFrameGenerationAlgorithm::process_async(const timestamp processing_
     // Fill the frame from the time surface
     const size_t num_pixels = time_surface_.size();
     if (colored_) {
-        auto img_it = frame_.begin<cv::Vec3b>();
-        for (size_t i = 0; i < num_pixels; ++i, ++img_it) {
+        // Matrices allocated with the create() method are always continuous in memory
+        auto img_ptr = frame_.ptr<cv::Vec3b>(0);
+        for (size_t i = 0; i < num_pixels; ++i) {
             const auto &last_pix_data = time_surface_[i];
-            *img_it = last_pix_data.first < min_display_event_ts ? bg_color_ : off_on_colors_[last_pix_data.second];
+            img_ptr[i] = last_pix_data.first < min_display_event_ts ? bg_color_ : off_on_colors_[last_pix_data.second];
         }
     } else {
-        auto img_it = frame_.begin<uint8_t>();
-        for (size_t i = 0; i < num_pixels; ++i, ++img_it) {
+        // Matrices allocated with the create() method are always continuous in memory
+        auto img_ptr = frame_.ptr<uint8_t>(0);
+        for (size_t i = 0; i < num_pixels; ++i) {
             const auto &last_pix_data = time_surface_[i];
-            *img_it =
+            img_ptr[i] =
                 last_pix_data.first < min_display_event_ts ? bg_color_[0] : off_on_colors_[last_pix_data.second][0];
         }
     }

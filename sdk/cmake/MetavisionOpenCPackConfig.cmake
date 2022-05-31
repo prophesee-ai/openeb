@@ -60,33 +60,39 @@ endforeach(available_open_module)
 ###############################
 #  metavision-open-python3.X  #
 ###############################
-foreach (py_suffix ${PYTHON3_ALL_VERSIONS})
-    set(CPACK_COMPONENT_METAVISION-OPEN-PYTHON${py_suffix}_DESCRIPTION "Metavision Open Python 3 libraries.\n${OPEN_PACKAGE_LICENSE}")
-    set(CPACK_COMPONENT_METAVISION-OPEN-PYTHON${py_suffix}_DEPENDS metavision-hal-python${py_suffix})
-    foreach(available_open_module IN LISTS METAVISION_SDK_OPEN_MODULES_AVAILABLE)
-        if(metavision-sdk-${available_open_module}-python${py_suffix} IN_LIST components_to_install_public)
-            list(APPEND CPACK_COMPONENT_METAVISION-OPEN-PYTHON${py_suffix}_DEPENDS metavision-sdk-${available_open_module}-python${py_suffix})
-        endif()
-    endforeach(available_open_module)
-endforeach()
+if (COMPILE_PYTHON3_BINDINGS)
+    foreach (py_suffix ${PYTHON3_ALL_VERSIONS})
+        set(CPACK_COMPONENT_METAVISION-OPEN-PYTHON${py_suffix}_DESCRIPTION "Metavision Open Python 3 libraries.\n${OPEN_PACKAGE_LICENSE}")
+        set(CPACK_COMPONENT_METAVISION-OPEN-PYTHON${py_suffix}_DEPENDS metavision-hal-python${py_suffix})
+        foreach(available_open_module IN LISTS METAVISION_SDK_OPEN_MODULES_AVAILABLE)
+           if(metavision-sdk-${available_open_module}-python${py_suffix} IN_LIST components_to_install_public)
+               list(APPEND CPACK_COMPONENT_METAVISION-OPEN-PYTHON${py_suffix}_DEPENDS metavision-sdk-${available_open_module}-python${py_suffix})
+           endif()
+        endforeach(available_open_module)
+    endforeach()
+endif (COMPILE_PYTHON3_BINDINGS)
 
 ###########################
 #  metavision-open-python #
 ###########################
-set(CPACK_COMPONENT_METAVISION-OPEN-PYTHON_DESCRIPTION "Metavision Open Python 3 Python Modules.\n${OPEN_PACKAGE_LICENSE}")
-set(CPACK_COMPONENT_METAVISION-OPEN-PYTHON_DEPENDS)
-list(APPEND CPACK_COMPONENT_METAVISION-OPEN-PYTHON_DEPENDS metavision-sdk-core-python)
+if (COMPILE_PYTHON3_BINDINGS)
+    set(CPACK_COMPONENT_METAVISION-OPEN-PYTHON_DESCRIPTION "Metavision Open Python 3 Python Modules.\n${OPEN_PACKAGE_LICENSE}")
+    set(CPACK_COMPONENT_METAVISION-OPEN-PYTHON_DEPENDS)
+    # TODO: handle dependencies with a loop over modules with MV-517
+    list(APPEND CPACK_COMPONENT_METAVISION-OPEN-PYTHON_DEPENDS metavision-sdk-core-python metavision-sdk-core-ml-python)
+endif (COMPILE_PYTHON3_BINDINGS)
 
 
 ####################################
 #  metavision-open-python-samples  #
 ####################################
-set(CPACK_COMPONENT_METAVISION-OPEN-PYTHON-SAMPLES_DESCRIPTION "Samples for Metavision Open Python 3 libraries.\n${OPEN_PACKAGE_LICENSE}")
-set(CPACK_COMPONENT_METAVISION-OPEN-PYTHON-SAMPLES_DEPENDS)
-foreach(available_open_module IN LISTS METAVISION_SDK_OPEN_MODULES_AVAILABLE)
-    if(metavision-sdk-${available_open_module}-python-samples IN_LIST components_to_install_public)
-        list(APPEND CPACK_COMPONENT_METAVISION-OPEN-PYTHON-SAMPLES_DEPENDS metavision-sdk-${available_open_module}-python-samples)
-    endif()
-endforeach(available_open_module)
-
-
+if (COMPILE_PYTHON3_BINDINGS)
+    set(CPACK_COMPONENT_METAVISION-OPEN-PYTHON-SAMPLES_DESCRIPTION "Samples for Metavision Open Python 3 libraries.\n${OPEN_PACKAGE_LICENSE}")
+    # TODO: handle core-ml dependency inside loop with MV-517
+    set(CPACK_COMPONENT_METAVISION-OPEN-PYTHON-SAMPLES_DEPENDS metavision-sdk-core-ml-python-samples)
+    foreach(available_open_module IN LISTS METAVISION_SDK_OPEN_MODULES_AVAILABLE)
+        if(metavision-sdk-${available_open_module}-python-samples IN_LIST components_to_install_public)
+            list(APPEND CPACK_COMPONENT_METAVISION-OPEN-PYTHON-SAMPLES_DEPENDS metavision-sdk-${available_open_module}-python-samples)
+        endif()
+    endforeach(available_open_module)
+endif (COMPILE_PYTHON3_BINDINGS)

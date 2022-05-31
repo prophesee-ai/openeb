@@ -495,8 +495,7 @@ std::unique_ptr<Device> DeviceDiscovery::open_stream(std::unique_ptr<std::istrea
                 continue;
             }
         } else if ((!input_integrator_name.empty() && input_integrator_name != integrator_name) ||
-                   (!input_plugin_name.empty() && input_plugin_name != plugin_name &&
-                    (input_plugin_name + "_raw") != plugin_name)) {
+                   (!input_plugin_name.empty() && input_plugin_name != plugin_name)) {
             MV_HAL_LOG_TRACE() << Log::no_space << "  Plugin [" << plugin_name << "] (" << integrator_name
                                << ") does not match the header";
             continue;

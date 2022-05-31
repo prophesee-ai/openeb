@@ -35,23 +35,7 @@ std::string version_suffix_type_to_string(int version_suffix_type) {
     }
 }
 
-int validate_version_suffix_type(int version_suffix_type) {
-    // Map the input version suffix type to one of the supported values. Unsupported types are mapped to
-    // (int)SoftwareInfo::VersionSuffix::NONE for backward-compatibility.
-    return version_suffix_string_to_type(version_suffix_type_to_string(version_suffix_type));
-}
-
 } // namespace detail
-
-SoftwareInfo::SoftwareInfo(int version_major, int version_minor, int version_patch, int version_suffix_type,
-                           const std::string &vcs_branch, const std::string &vcs_commit, const std::string &vcs_date) :
-    version_major_(version_major),
-    version_minor_(version_minor),
-    version_patch_(version_patch),
-    version_suffix_type_(detail::validate_version_suffix_type(version_suffix_type)),
-    vcs_branch_(vcs_branch),
-    vcs_commit_(vcs_commit),
-    vcs_date_(vcs_date) {}
 
 SoftwareInfo::SoftwareInfo(int version_major, int version_minor, int version_patch,
                            const std::string &version_suffix_string, const std::string &vcs_branch,
@@ -74,12 +58,6 @@ int SoftwareInfo::get_version_minor() const {
 
 int SoftwareInfo::get_version_patch() const {
     return version_patch_;
-}
-
-int SoftwareInfo::get_version_dev() const {
-    try {
-        return std::stoi(vcs_date_);
-    } catch (const std::exception &) { return 0; }
 }
 
 std::string SoftwareInfo::get_version_suffix() const {

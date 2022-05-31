@@ -45,49 +45,6 @@ void I_EventDecoder<Event>::add_event_buffer(EventIterator_t begin, EventIterato
 }
 /// @endcond
 
-template<typename Event>
-void I_EventDecoder<Event>::set_add_decoded_event_callback(AddEventCallback_t cb, bool add) {
-    static bool warning_already_logged = false;
-    if (!warning_already_logged) {
-        MV_HAL_LOG_WARNING() << "I_EventDecoder<Event>::set_add_decoded_event_callback(...) is deprecated since "
-                                "version 2.2.0 and will be removed in later releases.";
-        MV_HAL_LOG_WARNING() << "Please use I_Decoder<Event>::add_event_buffer_callback(...) instead." << std::endl;
-        warning_already_logged = true;
-    }
-    if (!add) {
-        for (size_t i = 0; i < next_cb_idx_; ++i)
-            remove_callback(i);
-    }
-    add_event_buffer_callback([cb](EventIterator_t begin, EventIterator_t end) {
-        for (auto it = begin; it != end; ++it) {
-            cb(*it);
-        }
-    });
-}
-
-template<typename Event>
-void I_EventDecoder<Event>::set_add_decoded_vevent_callback(AddVEventCallback_t cb, bool add) {
-    static bool warning_already_logged = false;
-    if (!warning_already_logged) {
-        MV_HAL_LOG_WARNING() << "I_EventDecoder<Event>::set_add_decoded_vevent_callback(...) is deprecated since "
-                                "version 2.2.0 and will be removed in later releases.";
-        MV_HAL_LOG_WARNING() << "Please use I_Decoder<Event>::add_event_buffer_callback(...) instead." << std::endl;
-        warning_already_logged = true;
-    }
-    if (!add) {
-        for (size_t i = 0; i < next_cb_idx_; ++i)
-            remove_callback(i);
-    }
-    add_event_buffer_callback([cb](EventIterator_t begin, EventIterator_t end) { cb(begin, end); });
-}
-
-template<typename Event>
-void I_EventDecoder<Event>::set_end_decode_callback(EndDecodeCallback_t, bool) {
-    throw HalException(HalErrorCode::DeprecatedFunctionCalled,
-                       "I_EventDecoder<Event>::set_end_decode_callback(...) is deprecated since "
-                       "version 2.2.0 and will be removed in later releases.");
-}
-
 } // namespace Metavision
 
 #endif // METAVISION_HAL_I_EVENT_DECODER_IMPL_H

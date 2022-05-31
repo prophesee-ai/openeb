@@ -56,7 +56,7 @@ set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 ###########################
 
 # Include cpack configuration from the public packages of MetavisionSDK
-include(${PROJECT_SOURCE_DIR}/sdk/cmake/MetavisionSDKCPackConfig.cmake)
+include(${PROJECT_SOURCE_DIR}/sdk/cmake/MetavisionOffersCPackConfig.cmake)
 
 # Include cpack configuration from the public packages of Metavision Designer (if available)
 get_filename_component(designer_cpack_config "${PROJECT_SOURCE_DIR}/designer/cmake/MetavisionDesignerCPackConfig.cmake" REALPATH)
@@ -73,10 +73,6 @@ include(${PROJECT_SOURCE_DIR}/hal/cmake/MetavisionHALCPackConfig.cmake)
 if(EXISTS "${PROJECT_SOURCE_DIR}/hal_psee_plugins/cmake/MetavisionHALPseePluginsCPackConfig.cmake")
     include("${PROJECT_SOURCE_DIR}/hal_psee_plugins/cmake/MetavisionHALPseePluginsCPackConfig.cmake")
 endif(EXISTS "${PROJECT_SOURCE_DIR}/hal_psee_plugins/cmake/MetavisionHALPseePluginsCPackConfig.cmake")
-
-if(EXISTS "${PROJECT_SOURCE_DIR}/hal_openeb_plugins/cmake/MetavisionHALOpenEBPluginsCPackConfig.cmake")
-    include("${PROJECT_SOURCE_DIR}/hal_openeb_plugins/cmake/MetavisionHALOpenEBPluginsCPackConfig.cmake")
-endif(EXISTS "${PROJECT_SOURCE_DIR}/hal_openeb_plugins/cmake/MetavisionHALOpenEBPluginsCPackConfig.cmake")
 
 ################################
 #      Standalone samples     ##

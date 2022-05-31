@@ -10,7 +10,7 @@
 #   YARN_VERSION  - The version number of the yarn executable
 
 find_program(YARN_EXECUTABLE
-    NAMES yarn.cmd yarn
+    NAMES yarn.cmd yarnpkg yarn
     HINTS /usr
           /usr/local
           /opt

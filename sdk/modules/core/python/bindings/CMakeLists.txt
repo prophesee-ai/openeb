@@ -10,6 +10,7 @@
 set(sdk_core_python_srcs
     ${CMAKE_CURRENT_SOURCE_DIR}/adaptive_rate_events_splitter_algorithm_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/base_frame_generation_algorithm_python.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/event_bbox_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/colors_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/flip_x_algorithm_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/flip_y_algorithm_python.cpp
@@ -30,7 +31,7 @@ if (GENERATE_DOC_PYTHON_BINDINGS)
     set (sdk_core_python_compile_definitions GENERATE_DOC_PYTHON_BINDINGS_USING_CPP_COMMENTS)
 endif()
 
-add_sdk_python_bindings(core 
+add_sdk_python_bindings(core
     SOURCES ${sdk_core_python_srcs}
     LINK_LIBRARIES
         PRIVATE

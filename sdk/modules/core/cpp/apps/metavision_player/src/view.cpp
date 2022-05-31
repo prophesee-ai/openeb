@@ -66,7 +66,7 @@ void View::showHelp(cv::Mat &frame) {
     const int LetterWidth = 8, LineHeight = 20;
     cv::Size size;
     for (auto &msg : msgs) {
-        if (msg.size() * LetterWidth > size.width)
+        if (msg.size() * LetterWidth > static_cast<size_t>(size.width))
             size.width = msg.size() * LetterWidth;
         size.height += LineHeight;
     }

@@ -47,15 +47,7 @@ static HALFacilityPythonBinder<I_EventsStream> bind(
             .def("log_raw_data", &I_EventsStream::log_raw_data, py::arg("f"),
                  pybind_doc_hal["Metavision::I_EventsStream::log_raw_data"])
             .def("stop_log_raw_data", &I_EventsStream::stop_log_raw_data,
-                 pybind_doc_hal["Metavision::I_EventsStream::stop_log_raw_data"])
-            .def(
-                "get_byte_size_events",
-                +[](I_EventsStream &self) { throw DeprecationWarningException("get_byte_size_events"); },
-                "get_byte_size_events() is deprecated since version 2.2.0 and will be removed in later releases.")
-            .def(
-                "set_byte_size_events",
-                +[](I_EventsStream &self, uint32_t) { throw DeprecationWarningException("set_byte_size_events"); },
-                "set_byte_size_events() is deprecated since version 2.2.0 and will be removed in later releases.");
+                 pybind_doc_hal["Metavision::I_EventsStream::stop_log_raw_data"]);
     },
     "I_EventsStream", pybind_doc_hal["Metavision::I_EventsStream"]);
 

@@ -16,7 +16,6 @@
 #include <string>
 
 #include "metavision/hal/facilities/i_ll_biases.h"
-#include "metavision/sdk/base/utils/detail/deprecated_feature.h"
 
 namespace Metavision {
 
@@ -37,9 +36,6 @@ public:
     /// @brief Save the current biases into a file
     /// @param dest_file the destination file
     void save_to_file(const std::string &dest_file) const;
-
-    /// @note This method is deprecated since version 2.1.0 and will be removed in next releases
-    METAVISION_DEPRECATED_FEATURE(2.1.0) std::string get_current_biases_file_path() const;
 
     /// @brief Get corresponding facility in HAL library
     I_LL_Biases *get_facility() const;

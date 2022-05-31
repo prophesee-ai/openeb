@@ -49,12 +49,6 @@ public:
     /// @brief Checks if trigger out is enabled
     /// @return true if trigger out is enabled, False otherwise
     virtual bool is_enabled() = 0;
-
-    /// @note loopback(bool) is deprecated since version 2.2.0 and will be removed later releases.
-    // clang-format off
-    [[deprecated("loopback(bool) is deprecated since version 2.2.0 and will be removed in later releases.")]]
-    bool loopback(bool enable);
-    // clang-format on
 };
 
 } // namespace Metavision

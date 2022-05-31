@@ -38,7 +38,6 @@ void SampleDataTransfer::run_impl() {
     // events, and sleep for the necessary time
     Metavision::timestamp time_start = current_time_;
     uint64_t first_ts_clock_         = Metavision::get_system_time_us();
-    auto start                       = std::chrono::system_clock::now();
     while (!should_stop()) {
         // Fill fake_events
         buffer_->resize(SIZE_FAKE_EVENTS);

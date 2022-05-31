@@ -11,5 +11,5 @@
 
 export PATH=@CMAKE_RUNTIME_OUTPUT_DIRECTORY@:$PATH
 export MV_HAL_PLUGIN_PATH=@HAL_BUILD_PLUGIN_PATH@
-export PYTHONPATH=@PYTHON3_OUTPUT_DIR@:@CMAKE_SOURCE_DIR@/sdk/modules/core/python/pypkg:@CMAKE_SOURCE_DIR@/sdk/modules/ml/python/pypkg:@CMAKE_SOURCE_DIR@/sdk/modules/ml/python_extended/pypkg:$PYTHONPATH
+export PYTHONPATH=@PYTHON3_OUTPUT_DIR@:@CMAKE_SOURCE_DIR@/sdk/modules/core/python/pypkg:@CMAKE_SOURCE_DIR@/sdk/modules/ml/python/pypkg:@CMAKE_SOURCE_DIR@/sdk/modules/ml/python_extended/pypkg:@CMAKE_SOURCE_DIR@/sdk/modules/core_ml/python/pypkg:$PYTHONPATH
 exec "$@"

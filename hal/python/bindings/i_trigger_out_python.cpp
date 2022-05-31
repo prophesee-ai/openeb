@@ -25,10 +25,7 @@ static HALFacilityPythonBinder<I_TriggerOut> bind(
             .def("set_period", &I_TriggerOut::set_period, py::arg("period_us"),
                  pybind_doc_hal["Metavision::I_TriggerOut::set_period"])
             .def("set_duty_cycle", &I_TriggerOut::set_duty_cycle, py::arg("period_ratio"),
-                 pybind_doc_hal["Metavision::I_TriggerOut::set_duty_cycle"])
-            .def(
-                "loopback", +[](bool) { throw DeprecationWarningException("loopback"); },
-                "loopback() is deprecated since version 2.2.0 and will be removed in later releases.");
+                 pybind_doc_hal["Metavision::I_TriggerOut::set_duty_cycle"]);
     },
     "I_TriggerOut", pybind_doc_hal["Metavision::I_TriggerOut"]);
 

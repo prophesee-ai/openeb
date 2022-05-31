@@ -82,7 +82,7 @@ int main(int argc, char *argv[]) {
     std::string out_raw_file_path;
     std::string serial;
     std::string plugin_name;
-    long system_id;
+    long system_id = -1;
     /// [TriggerInChannels]
     struct TriggerInConfiguration {
         int main_channel;

@@ -37,6 +37,7 @@ PythonBindingsDoc pybind_doc_core(Metavision::PythonDoc::python_doc_strings_core
 PythonBindingsDoc pybind_doc_core;
 #endif
 
+void export_event_bbox(py::module &);
 void export_base_frame_generation_algorithm(py::module &);
 void export_colors(py::module &);
 void export_adaptive_rate_events_splitter_algorithm(py::module &);
@@ -64,6 +65,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     }
 
     // 2. Export event types
+    Metavision::export_event_bbox(m);
     Metavision::export_colors(m);
     Metavision::export_mostrecent_timestamp_buffer(m);
 

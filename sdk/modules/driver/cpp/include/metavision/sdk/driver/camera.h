@@ -29,14 +29,8 @@
 // Metavision SDK Driver CD handler class
 #include "metavision/sdk/driver/cd.h"
 
-// Metavision EM handler class
-#include "metavision/sdk/driver/em.h"
-
 // Metavision SDK Driver External Trigger handler class
 #include "metavision/sdk/driver/ext_trigger.h"
-
-// Metavision SDK IMU events handler class
-#include "metavision/sdk/driver/imu.h"
 
 // Metavision SDK Driver Trigger Out handler class
 #include "metavision/sdk/driver/trigger_out.h"
@@ -46,21 +40,6 @@
 
 // Metavision SDK Driver camera ROI handler
 #include "metavision/sdk/driver/roi.h"
-
-// Metavision SDK Driver temperature events handler class
-#include "metavision/sdk/driver/temperature.h"
-
-// Metavision SDK Driver illuminance events handler class
-#include "metavision/sdk/driver/illuminance.h"
-
-// Metavision SDK driver camera IMU handler
-#include "metavision/sdk/driver/imu_module.h"
-
-// Metavision SDK driver Temperature handler
-#include "metavision/sdk/driver/temperature_module.h"
-
-// Metavision SDK driver Illuminance handler
-#include "metavision/sdk/driver/illuminance_module.h"
 
 // Metavision SDK driver Biases class
 #include "metavision/sdk/driver/biases.h"
@@ -91,9 +70,6 @@
 
 // Metavision SDK Driver NoiseFilterModule class
 #include "metavision/sdk/driver/noise_filter_module.h"
-
-// Metavision SDK core deprecated feature util
-#include "metavision/sdk/base/utils/detail/deprecated_feature.h"
 
 namespace Metavision {
 
@@ -126,10 +102,6 @@ using RuntimeErrorCallback = std::function<void(const CameraException &)>;
 
 /// @brief Callback type alias to be used with @ref Camera::add_status_change_callback
 using StatusChangeCallback = std::function<void(const CameraStatus &)>;
-
-/// @note This alias is deprecated since version 2.1.0 and will be removed in next releases
-/// @brief Callback type alias to be used with @ref Camera::set_exposure_frame_callback
-using ExposureFrameCallback = std::function<void(timestamp, const cv::Mat &)>;
 
 /// @brief Struct with the current camera configuration.
 struct CameraConfiguration {
@@ -242,9 +214,6 @@ public:
     static Camera from_file(const std::string &rawfile, bool realtime_playback_speed,
                             const Future::RawFileConfig &file_config);
 
-    /// @note This method is deprecated since version 2.1.0 and will be removed in next releases
-    METAVISION_DEPRECATED_FEATURE(2.1.0) static bool synchronize_and_start_cameras(Camera &master, Camera &slave);
-
     /// @brief Gets class to handle RAW data from the camera
     /// @throw CameraException if the camera has not been initialized.
     RawData &raw_data();
@@ -253,15 +222,9 @@ public:
     /// @throw CameraException if the camera has not been initialized.
     CD &cd();
 
-    /// @note This method is deprecated since version 2.1.0 and will be removed in next releases
-    METAVISION_DEPRECATED_FEATURE(2.1.0) EM &em();
-
     /// @brief Gets class to handle External Triggers events
     /// @throw CameraException if the camera has not been initialized.
     ExtTrigger &ext_trigger();
-
-    /// @note This method is deprecated since version 2.1.0 and will be removed in next releases
-    METAVISION_DEPRECATED_FEATURE(2.1.0) Imu &imu();
 
     /// @brief Gets class to handle trigger out signal
     /// @throw CameraException if the camera has not been initialized.
@@ -272,15 +235,6 @@ public:
     /// @throw CameraException in case of failure (for instance if the camera is not initialized or the camera is
     /// running from an offline source).
     Roi &roi();
-
-    /// @note This method is deprecated since version 2.1.0 and will be removed in next releases
-    METAVISION_DEPRECATED_FEATURE(2.1.0) Temperature &temperature();
-
-    /// @note This method is deprecated since version 2.1.0 and will be removed in next releases
-    METAVISION_DEPRECATED_FEATURE(2.1.0) Illuminance &illuminance();
-
-    /// @note This method is deprecated since version 2.1.0 and will be removed in next releases
-    METAVISION_DEPRECATED_FEATURE(2.1.0) ImuModule &imu_module();
 
     /// @brief Gets class to handle AFK on the hardware side
     /// @throw CameraException in case of failure (for instance if the camera is not initialized or the camera is
@@ -296,12 +250,6 @@ public:
     /// @throw CameraException in case of failure (for instance if the camera is not initialized or the camera is
     /// running from an offline source).
     NoiseFilterModule &noise_filter_module();
-
-    /// @note This method is deprecated since version 2.1.0 and will be removed in next releases
-    METAVISION_DEPRECATED_FEATURE(2.1.0) TemperatureModule &temperature_module();
-
-    /// @note This method is deprecated since version 2.1.0 and will be removed in next releases
-    METAVISION_DEPRECATED_FEATURE(2.1.0) IlluminanceModule &illuminance_module();
 
     /// @brief Registers a callback that will be called when a runtime error occurs
     ///
@@ -338,14 +286,6 @@ public:
     /// @param callback_id Callback ID
     /// @return true if the callback has been unregistered correctly, false otherwise.
     bool remove_status_change_callback(CallbackId callback_id);
-
-    /// @note This method is deprecated since version 2.1.0 and will be removed in next releases
-    METAVISION_DEPRECATED_FEATURE(2.1.0)
-    void set_exposure_frame_callback(std::uint16_t fps, ExposureFrameCallback exposure_frame_callback,
-                                     bool allow_skipped_frames = false);
-
-    /// @note This method is deprecated since version 2.1.0 and will be removed in next releases
-    METAVISION_DEPRECATED_FEATURE(2.1.0) bool unset_exposure_frame_callback();
 
     /// @brief Gets class to handle camera biases
     /// @throw CameraException in case of failure (for example if camera runs from an offline source).
@@ -388,12 +328,6 @@ public:
     /// @return true if the camera instance has been stopped successfully, false otherwise. If the camera was not
     /// running, this function returns false.
     bool stop();
-
-    /// @note This method is deprecated since version 2.1.0 and will be removed in next releases
-    METAVISION_DEPRECATED_FEATURE(2.1.0) bool set_max_event_rate_limit(uint32_t rate_kEV_s);
-
-    /// @note This method is deprecated since version 2.1.0 and will be removed in next releases
-    METAVISION_DEPRECATED_FEATURE(2.1.0) bool set_max_events_lifespan(timestamp max_events_lifespan_us);
 
     /// @brief Records data from camera to a file with .raw extension
     ///

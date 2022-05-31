@@ -139,7 +139,7 @@ def pytestcase_test_metavision_raw_to_video_on_gen4_evt3_recording_default_args(
 
     filename = "gen4_evt3_hand.raw"
     filename_full = os.path.join(dataset_dir, "openeb", filename)
-    expected_video_info = {'width': 1280, 'height': 720, 'frame-count': 464}
+    expected_video_info = {'width': 1280, 'height': 720, 'frame-count': 451}
     generate_video(filename_full, 10000, 1, expected_video_info)
 
 
@@ -172,5 +172,5 @@ def pytestcase_test_metavision_raw_to_video_on_gen4_evt3_recording_slow_motion_3
 
     filename = "gen4_evt3_hand.raw"
     filename_full = os.path.join(dataset_dir, "openeb", filename)
-    expected_video_info = {'width': 1280, 'height': 720, 'frame-count': 1391}
+    expected_video_info = {'width': 1280, 'height': 720, 'frame-count': 1351}
     generate_video(filename_full, 20000, 3, expected_video_info)

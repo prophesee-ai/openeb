@@ -178,27 +178,6 @@ public:
         MV_SDK_LOG_DEBUG() << "--> GenericProducerAlgorithm::process() with ts:" << ts;
     }
 
-    /// @note process(...) is deprecated since version 2.2.0 and will be removed in later releases.
-    ///       Please use process_events(...) instead
-    template<class OutputIt, typename TimingProfilerType = TimingProfiler<false>>
-    // clang-format off
-    [[deprecated("process(...) is deprecated since version 2.2.0 and will be removed in later releases. "
-                 "Please use process_events(...) instead")]]
-    void process(timestamp ts, OutputIt inserter, TimingProfilerType *timing_profiler = TimingProfilerType::instance())
-    // clang-format on
-    {
-        static bool warning_already_logged = false;
-        if (!warning_already_logged) {
-            std::ostringstream oss;
-            oss << "GenericProducerAlgorithm::process(...) is deprecated since version 2.2.0 ";
-            oss << "and will be removed in later releases. ";
-            oss << "Please use GenericProducerAlgorithm::process_events(...) instead" << std::endl;
-            MV_SDK_LOG_WARNING() << oss.str();
-            warning_already_logged = true;
-        }
-        process_events(ts, inserter, timing_profiler);
-    }
-
     /// @brief Sets timeout
     /// @param timeout Maximum time to wait for events (in us). If equal 0, no timeout is set (equivalent to
     /// infinite timeout); if negative, there will be no wait at all.

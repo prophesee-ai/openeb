@@ -21,12 +21,6 @@ namespace Metavision {
 
 void export_software_info(py::module &m) {
     py::class_<SoftwareInfo>(m, "SoftwareInfo", pybind_doc_base["Metavision::SoftwareInfo"])
-        .def(py::init<int, int, int, int, const std::string &, const std::string &, const std::string &>(),
-             py::arg("version_major"), py::arg("version_minor"), py::arg("version_patch"),
-             py::arg("version_suffix_type"), py::arg("vcs_branch"), py::arg("vcs_commit"), py::arg("vcs_date"),
-             pybind_doc_base["Metavision::SoftwareInfo::SoftwareInfo(int version_major, int version_minor, int "
-                             "version_patch, int version_suffix_type, const std::string &vcs_branch, const std::string "
-                             "&vcs_commit, const std::string &vcs_date)"])
         .def(py::init<int, int, int, const std::string &, const std::string &, const std::string &,
                       const std::string &>(),
              py::arg("version_major"), py::arg("version_minor"), py::arg("version_patch"),
@@ -40,8 +34,6 @@ void export_software_info(py::module &m) {
              pybind_doc_base["Metavision::SoftwareInfo::get_version_minor"])
         .def("get_version_patch", &Metavision::SoftwareInfo::get_version_patch,
              pybind_doc_base["Metavision::SoftwareInfo::get_version_patch"])
-        .def("get_version_dev", &Metavision::SoftwareInfo::get_version_dev,
-             pybind_doc_base["Metavision::SoftwareInfo::get_version_dev"])
         .def("get_version_suffix", &Metavision::SoftwareInfo::get_version_suffix,
              pybind_doc_base["Metavision::SoftwareInfo::get_version_suffix"])
         .def("get_version", &Metavision::SoftwareInfo::get_version,

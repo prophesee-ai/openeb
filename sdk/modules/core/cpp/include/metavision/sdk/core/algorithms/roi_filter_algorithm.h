@@ -50,27 +50,6 @@ public:
     template<class InputIt, class OutputIt>
     inline OutputIt process_events(InputIt it_begin, InputIt it_end, OutputIt inserter);
 
-    /// @note process(...) is deprecated since version 2.2.0 and will be removed in later releases.
-    ///       Please use process_events(...) instead
-    template<class InputIt, class OutputIt>
-    // clang-format off
-    [[deprecated("process(...) is deprecated since version 2.2.0 and will be removed in later releases. "
-                 "Please use process_events(...) instead")]]
-    inline OutputIt process(InputIt first, InputIt last, OutputIt d_first)
-    // clang-format on
-    {
-        static bool warning_already_logged = false;
-        if (!warning_already_logged) {
-            std::ostringstream oss;
-            oss << "RoiFilterAlgorithm::process(...) is deprecated since version 2.2.0 ";
-            oss << "and will be removed in later releases. ";
-            oss << "Please use RoiFilterAlgorithm::process_events(...) instead" << std::endl;
-            MV_SDK_LOG_WARNING() << oss.str();
-            warning_already_logged = true;
-        }
-        return process_events(first, last, d_first);
-    }
-
     /// @brief Returns true if the algorithm returns events expressed in coordinates relative to the ROI
     /// @return true if the algorithm is resetting the filtered events
     inline bool is_resetting() const;

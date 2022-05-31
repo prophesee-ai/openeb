@@ -117,8 +117,6 @@ bool GenericHeader::check_prefix_and_read_header_line(std::istream &stream) {
 }
 
 void GenericHeader::parse_header(std::istream &stream) {
-    std::streampos start_pos = stream.tellg();
-
     while (check_prefix_and_read_header_line(stream)) {
         // In order for the value to be insert in the map, the line of the header has to be:
         // % Key value

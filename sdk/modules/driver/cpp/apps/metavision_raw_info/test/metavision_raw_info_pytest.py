@@ -27,8 +27,8 @@ def check_file_information(filename_full, expected_output):
     assert error_code == 0
 
     # Now check output, after stripping them for trailing whitespaces
-    output_strip = "\n".join([line.strip() for line in output.splitlines()])
-    expected_output_strip = "\n".join([line.strip() for line in expected_output.splitlines()])
+    output_strip = pytest_tools.get_mv_info_stripped_output(output)
+    expected_output_strip = pytest_tools.get_mv_info_stripped_output(expected_output)
     assert re.search(expected_output_strip, output_strip)
 
 
@@ -96,8 +96,8 @@ Name                {}
 Path                {}
 Duration            13s 43ms 33us
 Integrator          Prophesee
-Plugin name         hal_plugin_gen31_fx3\w*
-Event encoding      (?:EVT2|2.0)
+Plugin name         hal_plugin_gen31_fx3
+Event encoding      EVT2
 Camera generation   3.1
 Camera systemID     \d*
 Camera serial       00001621
@@ -126,8 +126,8 @@ Name                {}
 Path                {}
 Duration            10s 442ms 743us
 Integrator          Prophesee
-Plugin name         hal_plugin_gen4_fx3\w*
-Event encoding      (?:EVT2|2.0)
+Plugin name         hal_plugin_gen41_evk3
+Event encoding      EVT2
 Camera generation   4.0
 Camera systemID     \d*
 Camera subsystemID  537921537
@@ -155,19 +155,18 @@ def pytestcase_test_metavision_raw_info_on_gen4_evt3_recording(dataset_dir):
 
 Name                {}
 Path                {}
-Duration            15s 445ms 502us
+Duration            15s 441ms 920us
 Integrator          Prophesee
-Plugin name         hal_plugin_gen4_fx3\w*
-Event encoding      (?:EVT3|3.0)
+Plugin name         hal_plugin_gen41_evk3
+Event encoding      EVT3
 Camera generation   4.0
 Camera systemID     \d*
-Camera subsystemID  537921537
 Camera serial       00001495
 
 ====================================================================================================
 
 Type of event       Number of events    First timestamp     Last timestamp      Average event rate
 ----------------------------------------------------------------------------------------------------
-CD                  18453063            5714                15445502            1.2 Mev/s
+CD                  18094969            5714                15000125            1.2 Mev/s
 """.format(filename, re.escape(filename_full))
     check_file_information(filename_full, expected_output)

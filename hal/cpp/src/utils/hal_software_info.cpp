@@ -9,6 +9,8 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
+#include <string.h>
+
 #include "metavision/hal/utils/hal_software_info.h"
 #include "metavision/hal/version.h"
 

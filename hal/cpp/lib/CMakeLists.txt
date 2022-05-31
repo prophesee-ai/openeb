@@ -74,17 +74,6 @@ target_include_directories(metavision_hal
         "$<BUILD_INTERFACE:${GENERATE_FILES_DIRECTORY}/include>"
 )
 
-if (ANDROID)
-    # TODO fix in MV-230
-    # This is a temporary hack to force gradle to package libusb in the APK so that
-    # plugins can link correctly at run time.
-    # A better solution is to make sure the plugins on Android do not link with libusb
-    # since they don't need it (offline support only)
-    target_link_libraries(metavision_hal
-        PUBLIC
-            libusb-1.0
-    )
-endif (ANDROID)
 
 #### metavision_hal_discovery
 add_library(metavision_hal_discovery SHARED)

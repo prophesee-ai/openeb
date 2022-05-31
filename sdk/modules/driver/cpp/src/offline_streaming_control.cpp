@@ -104,10 +104,17 @@ timestamp OfflineStreamingControl::Private::get_duration() const {
         return duration_;
     }
     Camera cam = Camera::from_file(i_events_stream_->get_underlying_filename(), false, Future::RawFileConfig());
-    cam.cd().add_callback([this](const EventCD *begin, const EventCD *end) { duration_ = std::prev(end)->t; });
+    cam.cd().add_callback(
+        [this](const EventCD *begin, const EventCD *end) { duration_ = std::max(duration_, std::prev(end)->t); });
     cam.offline_streaming_control().seek(get_seek_end_time());
     cam.start();
+    bool seek_done = false;
     while (cam.is_running()) {
+        if (!seek_done && cam.offline_streaming_control().is_ready()) {
+            cam.offline_streaming_control().seek(cam.offline_streaming_control().get_seek_end_time());
+            duration_ = std::max(duration_, cam.offline_streaming_control().get_seek_end_time());
+            seek_done = true;
+        }
         std::this_thread::yield();
     }
     return duration_;

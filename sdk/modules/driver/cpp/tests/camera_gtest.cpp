@@ -294,23 +294,6 @@ TEST_F(Camera_Gtest, basic_exceptions) {
     } catch (CameraException &e) { ASSERT_EQ(e.code().value(), CameraErrorCode::CameraNotFound); }
 
     try {
-        camera.em().add_callback([](const EventEM *, const EventEM *) {});
-        std::cout << "Should have thrown exception..." << std::endl;
-        FAIL();
-    } catch (CameraException &e) { ASSERT_EQ(e.code().value(), CameraErrorCode::DeprecatedFeature); }
-
-    try {
-        camera.set_max_event_rate_limit(12);
-        std::cout << "Should have thrown exception..." << std::endl;
-        FAIL();
-    } catch (CameraException &e) { ASSERT_EQ(e.code().value(), CameraErrorCode::DeprecatedFeature); }
-
-    try {
-        camera.set_max_events_lifespan(12);
-        std::cout << "Should have thrown exception..." << std::endl;
-        FAIL();
-    } catch (CameraException &e) { ASSERT_EQ(e.code().value(), CameraErrorCode::DeprecatedFeature); }
-    try {
         camera.stop_recording();
         std::cout << "Should have thrown exception..." << std::endl;
         FAIL();
@@ -357,15 +340,6 @@ TEST_F_WITH_CAMERA(Camera_Gtest, camera_set_biases) {
         camera = Camera::from_first_available();
     } else {
         camera = Camera::from_serial(GtestsParameters::instance().serial);
-    }
-
-    try {
-        camera.biases().get_current_biases_file_path();
-        std::cout << "Should have thrown exception..." << std::endl;
-        FAIL();
-    } catch (CameraException &e) {
-        // internal errors should appear to the user as the main category error
-        ASSERT_EQ(CameraErrorCode::DeprecatedFeature, e.code().value());
     }
 
     try {
@@ -689,19 +663,6 @@ TEST_F(Camera_Gtest, raw_file_logger) {
     ASSERT_TRUE(boost::filesystem::exists(file));
 }
 
-#ifndef _WIN32 // REMARK We skip the following tests because on Bamboo we do not do make install to avoid conflicts when
-               // building different branches
-               // (it is not in docker as on linux), so the config file is not installed
-#ifndef __ANDROID__
-
-TEST_F(Camera_Gtest, drop_is_deprecated) {
-    write_evt2_raw_data();
-    Camera camera = Camera::from_file(tmp_file_);
-    ASSERT_THROW(camera.set_max_event_rate_limit(10), CameraException);
-}
-#endif // __ANDROID__
-#endif // _WIN32
-
 TEST_F(Camera_Gtest, start_stop) {
     write_evt2_raw_data();
 
@@ -875,7 +836,6 @@ TEST_F(Camera_Gtest, raw_events_callbacks_decoding_check) {
     } catch (CameraException &e) { FAIL(); }
 
     Future::I_Decoder *i_decoder                 = camera.get_pimpl().i_future_decoder_;
-    I_Decoder *i_old_decoder_                    = camera.get_pimpl().i_decoder_;
     I_EventDecoder<EventCD> *i_cd_events_decoder = camera.get_pimpl().device_->get_facility<I_EventDecoder<EventCD>>();
     ASSERT_TRUE(i_cd_events_decoder);
 
@@ -886,14 +846,10 @@ TEST_F(Camera_Gtest, raw_events_callbacks_decoding_check) {
             }
         });
 
-    camera.raw_data().add_callback([i_decoder, i_old_decoder_](const uint8_t *data, size_t size) {
+    camera.raw_data().add_callback([i_decoder](const uint8_t *data, size_t size) {
         auto raw_data_begin = const_cast<uint8_t *>(data);
         auto raw_data_end   = const_cast<uint8_t *>(data + size);
-        if (i_decoder) {
-            i_decoder->decode(raw_data_begin, raw_data_end);
-        } else {
-            i_old_decoder_->decode(raw_data_begin, raw_data_end);
-        }
+        i_decoder->decode(raw_data_begin, raw_data_end);
     });
 
     camera.start();
@@ -903,14 +859,12 @@ TEST_F(Camera_Gtest, raw_events_callbacks_decoding_check) {
     }
 
     timestamp ts_shift;
-    if (i_decoder) {
-        ASSERT_TRUE(i_decoder->get_timestamp_shift(ts_shift));
-    } else {
-        ASSERT_TRUE(i_old_decoder_->get_timestamp_shift(ts_shift));
-    }
+    ASSERT_TRUE(i_decoder->get_timestamp_shift(ts_shift));
 
     ASSERT_EQ(expected_events.size(), received_events.size());
-    for (size_t i = 0; i < expected_events.size(); ++i) {
+
+    using SizeType = std::vector<EventCD>::size_type;
+    for (SizeType i = 0; i < expected_events.size(); ++i) {
         ASSERT_EQ(expected_events[i].x, received_events[i].x);
         ASSERT_EQ(expected_events[i].y, received_events[i].y);
         ASSERT_EQ(expected_events[i].p, received_events[i].p);
@@ -1294,7 +1248,9 @@ TEST_F(Camera_Gtest, decode_evt2_data) {
 
     ASSERT_EQ(expected_events.size(), received_events.size());
     timestamp time_shift = -1;
-    for (size_t i = 0, i_end = expected_events.size(); i < i_end; ++i) {
+
+    using SizeType = std::vector<EventCD>::size_type;
+    for (SizeType i = 0, i_end = expected_events.size(); i < i_end; ++i) {
         ASSERT_EQ(expected_events[i].x, received_events[i].x);
         ASSERT_EQ(expected_events[i].y, received_events[i].y);
         ASSERT_EQ(expected_events[i].p, received_events[i].p);
@@ -1327,8 +1283,8 @@ TEST_F_WITH_DATASET(Camera_Gtest, decode_evt3_data) {
     }
 
     camera.stop();
-    ASSERT_EQ(18453063, n_cd_decoded);
-    ASSERT_EQ(98794244, n_raw);
+    ASSERT_EQ(18094969, n_cd_decoded);
+    ASSERT_EQ(96786804, n_raw);
 }
 
 TEST_F_WITH_DATASET(Camera_Gtest, offline_streaming_control_not_ready) {
@@ -1343,11 +1299,6 @@ TEST_F_WITH_DATASET(Camera_Gtest, offline_streaming_control_not_ready) {
 
         // With this function, index building is not requested, so OSC is never ready
         Camera camera = Camera::from_file(dataset);
-
-        if (camera.get_device().get_facility<Future::I_Decoder>() == nullptr) {
-            GTEST_SUCCESS_("Disabled while waiting for RAW plugins to support seeking in MV-227");
-            return;
-        }
 
         ASSERT_NO_THROW(camera.offline_streaming_control());
 
@@ -1369,11 +1320,6 @@ TEST_F_WITH_DATASET(Camera_Gtest, offline_streaming_control_ready) {
 
         // With this function, index building is requested, so OSC should be ready
         Camera camera = Camera::from_file(dataset, false, Metavision::Future::RawFileConfig());
-
-        if (camera.get_device().get_facility<Future::I_Decoder>() == nullptr) {
-            GTEST_SUCCESS_("Disabled while waiting for RAW plugins to support seeking in MV-227");
-            return;
-        }
 
         ASSERT_NO_THROW(camera.offline_streaming_control());
 
@@ -1397,22 +1343,15 @@ TEST_F_WITH_DATASET(Camera_Gtest, offline_streaming_control_seek_range) {
         (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen4_evt3_hand.raw").string()};
 
     std::vector<std::pair<Metavision::timestamp, Metavision::timestamp>> ranges = {
-        {16, 13040000}, {49, 10440000}, {5714, 15442000}};
+        {16, 13042000}, {49, 10442000}, {5714, 15441920}};
 
     size_t i = 0;
     for (const auto &dataset : datasets) {
         Camera camera = Camera::from_file(dataset, false, Metavision::Future::RawFileConfig());
 
-        if (camera.get_device().get_facility<Future::I_Decoder>() == nullptr) {
-            GTEST_SUCCESS_("Disabled while waiting for RAW plugins to support seeking in MV-227");
-            return;
-        }
-
-        bool ready     = false;
         int max_trials = 1000;
         for (int i = 0; i < max_trials; ++i) {
             if (camera.offline_streaming_control().is_ready()) {
-                ready = true;
                 break;
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -1431,16 +1370,11 @@ TEST_F_WITH_DATASET(Camera_Gtest, offline_streaming_control_seeks) {
         (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen4_evt3_hand.raw").string()};
 
     std::vector<std::pair<Metavision::timestamp, Metavision::timestamp>> ranges = {
-        {16, 13042000}, {49, 10442000}, {4096, 15444000}};
+        {16, 13042000}, {49, 10442000}, {5714, 15441920}};
 
     size_t i = 0;
     for (const auto &dataset : datasets) {
         Camera camera = Camera::from_file(dataset, false, Metavision::Future::RawFileConfig());
-
-        if (camera.get_device().get_facility<Future::I_Decoder>() == nullptr) {
-            GTEST_SUCCESS_("Disabled while waiting for RAW plugins to support seeking in MV-227");
-            return;
-        }
 
         std::atomic<bool> decoded{false};
         Metavision::timestamp ts, last_ts = 0;
@@ -1453,11 +1387,9 @@ TEST_F_WITH_DATASET(Camera_Gtest, offline_streaming_control_seeks) {
             last_ts = std::prev(end)->t;
         });
 
-        bool ready     = false;
         int max_trials = 1000;
         for (int i = 0; i < max_trials; ++i) {
             if (camera.offline_streaming_control().is_ready()) {
-                ready = true;
                 break;
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -1482,11 +1414,12 @@ TEST_F_WITH_DATASET(Camera_Gtest, offline_streaming_control_seeks) {
 
         std::vector<timestamp> targets;
         const timestamp timestamp_step = (ranges[i].second - ranges[i].first) / 10;
-        for (uint32_t step = 1; step <= 10; ++step) {
+        for (uint32_t step = 0; step < 10; ++step) {
             targets.push_back(ranges[i].first + step * timestamp_step);
         }
 
-        for (size_t j = 0; j < targets.size(); ++j) {
+        using SizeType = std::vector<timestamp>::size_type;
+        for (SizeType j = 0; j < targets.size(); ++j) {
             auto target = j % 2 ? targets[targets.size() - j] : targets[j];
             decoded     = false;
 

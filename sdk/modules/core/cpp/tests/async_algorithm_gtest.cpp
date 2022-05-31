@@ -18,6 +18,8 @@
 
 using namespace Metavision;
 
+using SizeType = std::vector<size_t>::size_type;
+
 class AsyncAlgorithmImpl : public AsyncAlgorithm<AsyncAlgorithmImpl> {
 public:
     using State  = std::vector<Event2d>;
@@ -186,7 +188,7 @@ TEST_F(AsyncAlgorithm_GTest, us_1) {
     ASSERT_EQ(49, timestamps.back());
     ASSERT_EQ(49, algo_.current_processing_ts_us_);
 
-    for (size_t i = 0; i < buffer_sizes.size(); ++i)
+    for (SizeType i = 0; i < buffer_sizes.size(); ++i)
         ASSERT_EQ(1, buffer_sizes[i]);
 
     ASSERT_EQ(49, timestamps.size());
@@ -232,7 +234,7 @@ TEST_F(AsyncAlgorithm_GTest, us_10) {
     ASSERT_EQ(40, timestamps.back());
     ASSERT_EQ(40, algo_.current_processing_ts_us_);
 
-    for (size_t i = 0; i < buffer_sizes.size(); ++i)
+    for (SizeType i = 0; i < buffer_sizes.size(); ++i)
         ASSERT_EQ(10, buffer_sizes[i]);
 
     ASSERT_EQ(4, timestamps.size());
@@ -381,7 +383,7 @@ TEST_F(AsyncAlgorithm_GTest, timeshift_round_ts) {
     // buffer not being pcreated because async algo wait an events we greater timestamp to trig the process online
     ASSERT_EQ(40, sum_ev);
     ASSERT_EQ(4, buffer_sizes.size());
-    for (size_t i = 0; i < buffer_sizes.size(); ++i)
+    for (SizeType i = 0; i < buffer_sizes.size(); ++i)
         ASSERT_EQ(10, buffer_sizes[i]);
 
     ASSERT_EQ(4, timestamps.size());
@@ -420,7 +422,7 @@ TEST_F(AsyncAlgorithm_GTest, timeshift_not_round_ts) {
 
     ASSERT_EQ(5, buffer_sizes.size());
     ASSERT_EQ(7, buffer_sizes[0]);
-    for (size_t i = 1; i < buffer_sizes.size(); ++i)
+    for (SizeType i = 1; i < buffer_sizes.size(); ++i)
         ASSERT_EQ(10, buffer_sizes[i]);
 
     ASSERT_EQ(5, timestamps.size());

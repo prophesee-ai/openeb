@@ -72,27 +72,6 @@ public:
     template<class InputIt>
     inline void process_events(InputIt it_begin, InputIt it_end, timestamp ts);
 
-    /// @note process(...) is deprecated since version 2.2.0 and will be removed in later releases.
-    ///       Please use process_events(...) instead
-    template<class InputIterator>
-    // clang-format off
-    [[deprecated("process(...) is deprecated since version 2.2.0 and will be removed in later releases. Please use "
-                 "process_events(...) instead")]]
-    inline void process(InputIterator first, InputIterator last, timestamp ts)
-    // clang-format on
-    {
-        static bool warning_already_logged = false;
-        if (!warning_already_logged) {
-            std::ostringstream oss;
-            oss << "StreamLoggerAlgorithm::process(...) is deprecated since version 2.2.0 ";
-            oss << "and will be removed in later releases. ";
-            oss << "Please use StreamLoggerAlgorithm::process_events(...) instead" << std::endl;
-            MV_SDK_LOG_WARNING() << oss.str();
-            warning_already_logged = true;
-        }
-        process_events(first, last, ts);
-    }
-
     /// @brief Closes the streaming.
     inline void close();
 

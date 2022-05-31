@@ -48,7 +48,8 @@ void DataTransfer::start() {
         std::lock(suspend_mutex_, running_mutex_);
         std::unique_lock<std::mutex> lock1(suspend_mutex_, std::adopt_lock);
         std::unique_lock<std::mutex> lock2(running_mutex_, std::adopt_lock);
-        stop_ = false;
+        stop_    = false;
+        running_ = false;
     }
     start_impl(get_buffer());
 

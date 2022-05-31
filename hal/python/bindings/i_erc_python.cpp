@@ -25,17 +25,8 @@ static HALFacilityPythonBinder<I_Erc> bind(
             .def("erc_from_file", &I_Erc::erc_from_file)
             .def("set_cd_event_rate", &I_Erc::set_cd_event_rate, py::arg("events_per_sec"),
                  pybind_doc_hal["Metavision::I_Erc::set_cd_event_rate"])
-            .def("get_cd_event_rate", &I_Erc::get_cd_event_rate, pybind_doc_hal["Metavision::I_Erc::get_cd_event_rate"])
-            .def(
-                "set_td_event_rate",
-                +[](I_Erc &self, uint32_t) {
-                    throw DeprecationWarningException("set_td_event_rate", "set_cd_event_rate");
-                },
-                pybind_doc_hal["Metavision::I_Erc::set_td_event_rate"])
-            .def(
-                "get_td_event_rate",
-                +[](I_Erc &self) { throw DeprecationWarningException("get_td_event_rate", "get_cd_event_rate"); },
-                pybind_doc_hal["Metavision::I_Erc::get_td_event_rate"]);
+            .def("get_cd_event_rate", &I_Erc::get_cd_event_rate,
+                 pybind_doc_hal["Metavision::I_Erc::get_cd_event_rate"]);
     },
     "I_Erc", pybind_doc_hal["Metavision::I_Erc"]);
 

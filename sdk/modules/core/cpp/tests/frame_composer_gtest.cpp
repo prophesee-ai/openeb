@@ -72,7 +72,8 @@ TEST_F(FrameComposer_GTest, fit_size) {
     FrameComposer composer(cv::Vec3b(0, 0, 0));
     std::vector<std::pair<int, int>> sizes;
     sizes.reserve(frames.size());
-    for (int i = 0; i < frames.size(); ++i) {
+    using SizeType = std::vector<cv::Mat>::size_type;
+    for (SizeType i = 0; i < frames.size(); ++i) {
         const cv::Rect &roi = rois[i];
         FrameComposer::ResizingOptions resize_options(roi.width, roi.height);
         FrameComposer::GrayToColorOptions gray_o;

@@ -56,11 +56,9 @@ def cut_and_check_infos(dataset_dir, start, end, expected_output_info):
     # Now check output
     expected_output_info_formatted = expected_output_info.format(output_file_name, os.path.realpath(output_file_path))
 
-    output_strip = "\n".join([line.strip() for line in info_cut_file.splitlines()])
-    expected_output_strip = "\n".join([line.strip() for line in expected_output_info_formatted.splitlines()])
+    output_strip = pytest_tools.get_mv_info_stripped_output(info_cut_file)
+    expected_output_strip = pytest_tools.get_mv_info_stripped_output(expected_output_info_formatted)
 
-    print(output_strip)
-    print(expected_output_strip)
     assert output_strip.find(expected_output_strip) >= 0
 
 

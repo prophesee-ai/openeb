@@ -53,8 +53,8 @@ void OnDemandFrameGenerationAlgorithm::generate(timestamp ts, cv::Mat &frame, bo
 }
 
 void OnDemandFrameGenerationAlgorithm::set_accumulation_time_us(uint32_t accumulation_time_us) {
-    if (accumulation_time_us < 0)
-        throw std::invalid_argument("Accumulation time must be positive.");
+    if (accumulation_time_us == 0)
+        throw std::invalid_argument("Accumulation time must be strictly positive.");
 
     accumulation_time_us_ = accumulation_time_us;
 }

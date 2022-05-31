@@ -22,10 +22,6 @@ namespace Metavision {
 
 class PeriodicFrameGenerationAlgorithm;
 
-using FrameGenerationAlgorithm
-    [[deprecated("This alias is deprecated since version 2.2.0 and will be removed in next releases")]] =
-        PeriodicFrameGenerationAlgorithm;
-
 /// @brief Algorithm that generates frames from events at a fixed rate (fps). The reference clock used is the one of
 /// the input events.
 ///
@@ -57,23 +53,6 @@ public:
     /// @throw std::invalid_argument If the input fps is negative
     PeriodicFrameGenerationAlgorithm(int sensor_width, int sensor_height, uint32_t accumulation_time_us = 10000,
                                      double fps = 0., const Metavision::ColorPalette &palette = default_palette());
-
-    /// @brief Constructor for backward compatibility with 2.1 API.
-    /// @param sensor_width Sensor's width (in pixels)
-    /// @param sensor_height Sensor's height (in pixels)
-    /// @param accumulation_time_us Accumulation time (in us) (@ref set_accumulation_time_us)
-    /// @param colored If true, the frame generator will use the Dark color palette, otherwise it will use the Gray
-    /// color palette.
-    /// @param fps The fps at which to generate the frames. The time reference used is the one from the input events. If
-    /// the fps is 0, the accumulation time is used to compute it (@ref set_fps).
-    /// @throw std::invalid_argument If the input fps is negative
-    [[deprecated("This constructor with boolean 'colored' is deprecated since version 2.2.0 and will be removed in "
-                 "later releases. Please use the constructor using the Metavision::ColorPalette "
-                 "instead")]] PeriodicFrameGenerationAlgorithm(int sensor_width, int sensor_height,
-                                                               uint32_t accumulation_time_us, bool colored,
-                                                               double fps) :
-        PeriodicFrameGenerationAlgorithm(sensor_width, sensor_height, accumulation_time_us, fps,
-                                         (colored ? default_palette() : Metavision::ColorPalette::Gray)) {}
 
     /// @brief Sets the callback to call when an image has been generated
     ///

@@ -37,7 +37,8 @@ void I_Decoder::decode(RawData *raw_data_begin, RawData *raw_data_end) {
     if (!incomplete_raw_data_.empty()) {
         // Computes how many raw data from this input need to be copied to get a complete raw event and append
         // them to the incomplete raw data..
-        const auto raw_data_to_insert_count = get_raw_event_size_bytes() - incomplete_raw_data_.size();
+        const auto raw_data_to_insert_count =
+            static_cast<int>(get_raw_event_size_bytes() - incomplete_raw_data_.size());
 
         // Check that the input buffer has enough data to complete the raw event
         if (raw_data_to_insert_count > std::distance(cur_raw_data, raw_data_end)) {

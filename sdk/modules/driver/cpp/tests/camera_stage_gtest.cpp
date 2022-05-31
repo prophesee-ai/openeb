@@ -123,19 +123,15 @@ TEST_F(CameraStage_Gtest, camera_stage_produces_correct_events) {
         const auto &device = cam_stage.camera().get_pimpl().device_;
         ASSERT_TRUE(device);
 
-        const auto &future_decoder = device->get_facility<Future::I_Decoder>();
-        const auto &decoder        = device->get_facility<I_Decoder>();
+        const auto &decoder = device->get_facility<Future::I_Decoder>();
 
-        ASSERT_TRUE(future_decoder || decoder);
+        ASSERT_TRUE(decoder);
 
-        if (future_decoder) {
-            EXPECT_TRUE(future_decoder->get_timestamp_shift(tshift));
-        } else if (decoder) {
-            EXPECT_TRUE(decoder->get_timestamp_shift(tshift));
-        }
+        EXPECT_TRUE(decoder->get_timestamp_shift(tshift));
     }
 
-    for (size_t i = 0; i < ref_data.size(); ++i) {
+    using SizeType = std::vector<EventCD>::size_type;
+    for (SizeType i = 0; i < ref_data.size(); ++i) {
         EXPECT_EQ(ref_data[i].x, mock_stage.events_received_[i].x);
         EXPECT_EQ(ref_data[i].y, mock_stage.events_received_[i].y);
         EXPECT_EQ(ref_data[i].t, mock_stage.events_received_[i].t + tshift);

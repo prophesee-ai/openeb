@@ -27,26 +27,4 @@ uint32_t I_Erc::get_cd_event_rate() {
     return static_cast<uint32_t>(static_cast<uint64_t>(evt_count) * 1000000 / count_period);
 }
 
-void I_Erc::set_td_event_rate(uint32_t rate) {
-    static bool warning_already_logged = false;
-    if (!warning_already_logged) {
-        MV_HAL_LOG_WARNING()
-            << "I_Erc::set_td_event_rate(...) is deprecated since version 2.2.0 and will be removed in later releases.";
-        MV_HAL_LOG_WARNING() << "Please use I_Erc::set_cd_event_rate(...) instead." << std::endl;
-        warning_already_logged = true;
-    }
-    set_cd_event_rate(rate);
-}
-
-uint32_t I_Erc::get_td_event_rate() {
-    static bool warning_already_logged = false;
-    if (!warning_already_logged) {
-        MV_HAL_LOG_WARNING()
-            << "I_Erc::get_td_event_rate() is deprecated since version 2.2.0 and will be removed in later releases.";
-        MV_HAL_LOG_WARNING() << "Please use I_Erc::get_cd_event_rate() instead." << std::endl;
-        warning_already_logged = true;
-    }
-    return get_cd_event_rate();
-}
-
 } // namespace Metavision

@@ -38,15 +38,6 @@ TEST_F(SharedCdEventsBufferProducer_Gtest, shared_cd_buffer_producer_0_size_fail
     ASSERT_THROW(
         Metavision::SharedCdEventsBufferProducerAlgorithm(params, [&](Metavision::timestamp ts, const auto &ev) {}),
         std::invalid_argument);
-
-    // GIVEN A bounded buffer pool of size 0
-
-    params.bounded_memory_pool_ = false;
-    // WHEN trying to allocate
-    // THEN it throws
-    ASSERT_THROW(
-        Metavision::SharedCdEventsBufferProducerAlgorithm(params, [&](Metavision::timestamp ts, const auto &ev) {}),
-        std::invalid_argument);
 }
 
 TEST_F(SharedCdEventsBufferProducer_Gtest, unbounded_shared_cd_buffer_producer_0_size_allocates_new_buffer) {

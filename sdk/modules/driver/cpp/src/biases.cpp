@@ -122,10 +122,6 @@ void Biases::save_to_file(const std::string &dest_file) const {
     output_file.close();
 }
 
-std::string Biases::get_current_biases_file_path() const {
-    throw CameraException(CameraErrorCode::DeprecatedFeature, "Current biases file not available.");
-}
-
 I_LL_Biases *Biases::get_facility() const {
     return pimpl_;
 }

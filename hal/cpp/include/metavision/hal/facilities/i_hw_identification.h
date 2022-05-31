@@ -84,14 +84,6 @@ public:
     /// @return Name of the integrator
     virtual std::string get_integrator() const = 0;
 
-    /// @note get_manufacturer() is deprecated since version 2.2.0 and will be removed in later
-    /// releases. Please use @ref get_integrator instead
-    // clang-format off
-    [[deprecated("get_manufacturer() is deprecated since version 2.2.0 and will be removed in later releases. "
-                 "Please use get_integrator() instead")]]
-    std::string get_manufacturer() const;
-    // clang-format on
-
     /// @brief Returns all available information
     /// @return Map of key-value
     /// @note The purpose of this function is mainly for debug and display system information

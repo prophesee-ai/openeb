@@ -11,8 +11,27 @@
 file(REMOVE_RECURSE "${OUTPUT_DIR}")
 file(MAKE_DIRECTORY "${OUTPUT_DIR}")
 
+# For some reason, CMAKE_MODULE_PATH passed by create_metavision_open_archive
+# has spaces instead of semicolumns
+string(REPLACE " " ";" CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}")
+include(overridden_cmake_functions)
+
+set(HAL_OPEN_PLUGIN_FILES apps biasgen cmake CMakeLists.txt lib resources test)
+set(HAL_OPEN_INCLUDES boards decoders facilities geometries plugin utils devices/common devices/utils)
+set(HAL_OPEN_SOURCES boards CMakeLists.txt facilities plugin utils devices/common devices/utils devices/CMakeLists.txt)
+set(HAL_OPEN_DEVICES gen3 gen31 gen41 golden_fallbacks imx636 others treuzell)
+
+foreach (open_device ${HAL_OPEN_DEVICES})
+    list(APPEND HAL_OPEN_INCLUDES devices/${open_device})
+    list(APPEND HAL_OPEN_SOURCES devices/${open_device})
+endforeach(open_device)
+list_transform_prepend (HAL_OPEN_INCLUDES include/)
+list_transform_prepend (HAL_OPEN_SOURCES src/)
+list(APPEND HAL_OPEN_PLUGIN_FILES ${HAL_OPEN_INCLUDES} ${HAL_OPEN_SOURCES})
+list_transform_prepend (HAL_OPEN_PLUGIN_FILES hal_psee_plugins/)
+
 # Add the files and folders needed to compile open :
-foreach (file_or_dir CMakeLists.txt licensing/LICENSE_OPEN .gitignore conftest.py pytest.ini cmake standalone_samples hal hal_openeb_plugins utils/python/metavision_utils utils/cpp utils/scripts utils/CMakeLists.txt sdk/cmake sdk/CMakeLists.txt sdk/modules/CMakeLists.txt)
+foreach (file_or_dir CMakeLists.txt licensing/LICENSE_OPEN .gitignore conftest.py pytest.ini cmake standalone_samples hal ${HAL_OPEN_PLUGIN_FILES} utils/python/metavision_utils utils/cpp utils/scripts utils/CMakeLists.txt sdk/cmake sdk/CMakeLists.txt sdk/modules/CMakeLists.txt)
     get_filename_component(dest "${OUTPUT_DIR}/${file_or_dir}" DIRECTORY)
     file(COPY "${PROJECT_SOURCE_DIR}/${file_or_dir}"
          DESTINATION "${dest}"
@@ -25,15 +44,16 @@ file(COPY "${PROJECT_SOURCE_DIR}/utils/github_actions/openeb/"
      PATTERN "*"
 )
 
-# Remove professional targets
-file(REMOVE_RECURSE "${OUTPUT_DIR}/cmake/custom_targets_metavision_professional")
+# Remove SDK targets
+file(REMOVE_RECURSE "${OUTPUT_DIR}/cmake/custom_targets_metavision_sdk")
 file(REMOVE "${OUTPUT_DIR}/cmake/custom_functions/create_addon_module_archive_folder.cmake")
 file(REMOVE "${OUTPUT_DIR}/cmake/custom_functions/documentation.cmake")
 # Remove unwanted files
-file(REMOVE "${OUTPUT_DIR}/sdk/cmake/MetavisionEssentialsCPackConfig.cmake")
+file(REMOVE "${OUTPUT_DIR}/sdk/cmake/MetavisionSDKCPackConfig.cmake")
+file(REMOVE "${OUTPUT_DIR}/sdk/cmake/MetavisionStudioCPackConfig.cmake")
 file(REMOVE_RECURSE "${OUTPUT_DIR}/hal/cpp/doc")
 file(REMOVE_RECURSE "${OUTPUT_DIR}/hal/python/doc")
-foreach (mod base core driver ui)
+foreach (mod base core driver ui core_ml)
     file(COPY "${PROJECT_SOURCE_DIR}/sdk/modules/${mod}" DESTINATION "${OUTPUT_DIR}/sdk/modules")
     # Remove the code we don't want from the SDK modules (doc):
     foreach(subdir doc)

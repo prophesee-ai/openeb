@@ -62,34 +62,8 @@ public:
     /// @note See @ref set_cd_event_count to define the event count parameter.
     virtual uint32_t get_cd_event_count() = 0;
 
-    /// @note set_td_event_rate(...) is deprecated since version 2.2.0 and will be removed in later releases.
-    /// Please use @ref set_cd_event_rate instead
-    // clang-format off
-    [[deprecated("set_td_event_rate(...) is deprecated since version 2.2.0 and will be removed in later releases. "
-                 "Please use set_cd_event_rate(...) instead")]]
-    void set_td_event_rate(uint32_t rate);
-    // clang-format on
-
-    /// @note get_td_event_rate() is deprecated since version 2.2.0 and will be removed in later releases.\n
-    /// Please use @ref get_cd_event_rate instead
-    // clang-format off
-    [[deprecated("get_td_event_rate() is deprecated since version 2.2.0 and will be removed in later releases. "
-                 "Please use get_cd_event_rate() instead")]]
-    uint32_t get_td_event_rate();
-    // clang-format on
-
     /// @cond DEV
     virtual void erc_from_file(const std::string &) = 0;
-    // clang-format off
-    [[deprecated("set_em_event_rate(...) is deprecated since version 2.2.0 and will be removed in later releases. "
-                 "Please use set_cd_event_rate(...) instead")]]
-    void set_em_event_rate(uint32_t rate);
-
-    [[deprecated("get_em_event_rate() is deprecated since version 2.2.0 and will be removed in later releases. "
-                 "Please use get_cd_event_rate() instead")]]
-    uint32_t get_em_event_rate();
-    // clang-format on
-
     /// @endcond
 };
 

@@ -25,8 +25,10 @@ string(REPLACE ";" ", " CPACK_DEBIAN_METAVISION-SDK-UI-DEV_PACKAGE_DEPENDS "${CP
 set(CPACK_COMPONENT_METAVISION-SDK-UI-SAMPLES_DESCRIPTION "Samples for Metavision SDK UI library.\n${OPEN_PACKAGE_LICENSE}")
 set(CPACK_COMPONENT_METAVISION-SDK-UI-SAMPLES_DEPENDS metavision-sdk-ui-dev metavision-sdk-base-dev)
 
-# Python bindings
-foreach (py_suffix ${PYTHON3_ALL_VERSIONS})
-    set(CPACK_COMPONENT_METAVISION-SDK-UI-PYTHON${py_suffix}_DESCRIPTION "Metavision SDK UI Python 3 libraries.\n${OPEN_PACKAGE_LICENSE}")
-    set(CPACK_COMPONENT_METAVISION-SDK-UI-PYTHON${py_suffix}_DEPENDS metavision-sdk-base-lib metavision-sdk-ui-lib metavision-sdk-base-python${py_suffix} metavision-sdk-core-python${py_suffix})
-endforeach()
+if (COMPILE_PYTHON3_BINDINGS)
+    # Python bindings
+    foreach (py_suffix ${PYTHON3_ALL_VERSIONS})
+        set(CPACK_COMPONENT_METAVISION-SDK-UI-PYTHON${py_suffix}_DESCRIPTION "Metavision SDK UI Python 3 libraries.\n${OPEN_PACKAGE_LICENSE}")
+        set(CPACK_COMPONENT_METAVISION-SDK-UI-PYTHON${py_suffix}_DEPENDS metavision-sdk-base-lib metavision-sdk-ui-lib metavision-sdk-base-python${py_suffix} metavision-sdk-core-python${py_suffix})
+    endforeach()
+endif (COMPILE_PYTHON3_BINDINGS)

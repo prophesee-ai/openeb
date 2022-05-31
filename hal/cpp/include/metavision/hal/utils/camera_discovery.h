@@ -58,17 +58,6 @@ public:
     /// @brief Tells if this CameraDiscovery detect camera locally plugged (USB/MIPI/...) as opposed to remote
     /// camera shared over a network
     virtual bool is_for_local_camera() const;
-
-    /// @note type_ListSerial is deprecated since version 2.2.0 and will be removed in later
-    /// releases. Please use SerialList instead.
-    using type_ListSerial [[deprecated("type_ListSerial is deprecated since version 2.2.0 and will be removed in later "
-                                       "releases. Please use SerialList instead.")]] = std::list<std::string>;
-
-    /// @note type_ListSystems is deprecated since version 2.2.0 and will be removed in later
-    /// releases. Please use SystemList instead.
-    using type_ListSystems [[deprecated("type_ListSystems is deprecated since version 2.2.0 and will be removed in "
-                                        "later releases. Please use SystemList instead.")]] =
-        std::list<PluginCameraDescription>;
 };
 
 } // namespace Metavision

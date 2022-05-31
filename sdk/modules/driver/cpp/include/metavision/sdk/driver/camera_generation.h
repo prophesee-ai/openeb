@@ -14,16 +14,11 @@
 
 #include <memory>
 
-#include "metavision/sdk/base/utils/detail/deprecated_feature.h"
-
 namespace Metavision {
 
 /// @brief Facility class to handle camera generation
 class CameraGeneration {
 public:
-    /// @deprecated This enum class is deprecated since version 2.1.0 and will be removed in next releases
-    enum class Type { CD, EM };
-
     /// @brief Destructor
     ///
     /// Deletes a CameraGeneration class instance.
@@ -34,9 +29,6 @@ public:
 
     /// @brief Returns the minor version of the camera's generation
     short version_minor() const;
-
-    /// @deprecated This method is deprecated since version 2.1.0 and will be removed in next releases
-    METAVISION_DEPRECATED_FEATURE(2.1.0) Type type() const;
 
     /// @brief overrides "equal to" operator
     bool operator==(const CameraGeneration &c) const;

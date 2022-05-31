@@ -303,7 +303,8 @@ template<typename T>
 void LoggingOperation<Level>::log(const std::vector<T> &v) {
     if (stream_ && should_output_) {
         (*stream_) << "[ ";
-        for (size_t i = 0; i < v.size() - 1; ++i) {
+        using SizeType = typename std::vector<T>::size_type;
+        for (SizeType i = 0; i < v.size() - 1; ++i) {
             (*stream_) << v[i] << ", ";
         }
         (*stream_) << v.back();

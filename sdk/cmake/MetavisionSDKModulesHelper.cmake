@@ -387,15 +387,16 @@ endfunction(MetavisionSDK_add_module)
 
 #####################################################################
 #
-# Forward call to MetavisionSDK_add_module and install extra files related to Professional offer
+# Forward call to MetavisionSDK_add_module and install sdk advanced files
 #
 #
-function(MetavisionSDK_add_pro_module module_name)
+function(MetavisionSDK_add_advanced_module module_name)
 
     MetavisionSDK_add_module(${module_name} ${ARGN})
 
-    install(FILES "${PROJECT_SOURCE_DIR}/licensing/LICENSE_PROFESSIONAL"
-            DESTINATION share/metavision/licensing
-    )
+    if(EXISTS "${PROJECT_SOURCE_DIR}/licensing/LICENSE_METAVISION_INTELLIGENCE")
+        install(FILES ${PROJECT_SOURCE_DIR}/licensing/LICENSE_METAVISION_INTELLIGENCE
+                DESTINATION share/metavision/licensing)
+    endif()
 
-endfunction(MetavisionSDK_add_pro_module)
+endfunction(MetavisionSDK_add_advanced_module)

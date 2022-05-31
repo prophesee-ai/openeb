@@ -12,6 +12,8 @@ Simple Iterator built around the Metavision Reader classes.
 """
 from .raw_reader import RawReaderBase
 from .py_reader import EventDatReader
+from .h5_io import H5EventsReader
+from .meta_event_producer import MetaEventBufferProducer
 from metavision_sdk_base import EventCD
 
 import numpy as np
@@ -19,8 +21,8 @@ import numpy as np
 
 class EventsIterator(object):
     """
-    EventsIterator is a small convenience class to iterate through either a camera, a DAT file
-    or a RAW file.
+    EventsIterator is a small convenience class to iterate through either a camera, a DAT file, a RAW file
+    or a H5 file containing events.
 
     Attributes:
         reader : class handling the file or camera.
@@ -79,6 +81,9 @@ class EventsIterator(object):
         if isinstance(input_path, type("")):
             if input_path.endswith(".dat"):
                 self.reader = EventDatReader(input_path, **kwargs)
+            elif input_path.endswith(".h5"):
+                h5_reader = H5EventsReader(input_path)
+                self.reader = MetaEventBufferProducer(h5_reader, self.mode, self.delta_t, self.n_events, self.start_ts)
             else:
                 self.reader = RawReaderBase(input_path, delta_t=self.delta_t, ev_count=self.n_events, **kwargs)
         else:

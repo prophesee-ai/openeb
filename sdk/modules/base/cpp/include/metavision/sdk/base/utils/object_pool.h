@@ -158,7 +158,7 @@ private:
         /// @brief Constructor
         template<typename... Args>
         Impl(size_t num_initial_objects, bool bounded_memory, Args &&...args) : bounded_memory_(bounded_memory) {
-            if (num_initial_objects == 0) {
+            if (num_initial_objects == 0 && bounded_memory) {
                 throw std::invalid_argument(
                     "Failed to allocate memory for the bounded object pool: pool's size can not be 0.");
             }

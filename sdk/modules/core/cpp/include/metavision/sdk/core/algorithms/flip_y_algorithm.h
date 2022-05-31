@@ -47,27 +47,6 @@ public:
         detail::transform(it_begin, it_end, inserter, std::ref(*this));
     }
 
-    /// @note process(...) is deprecated since version 2.2.0 and will be removed in later releases.
-    ///       Please use process_events(...) instead
-    template<class InputIt, class OutputIt>
-    // clang-format off
-    [[deprecated("process(...) is deprecated since version 2.2.0 and will be removed in later releases. "
-                 "Please use process_events(...) instead")]]
-    inline void process(InputIt first, InputIt last, OutputIt d_first)
-    // clang-format on
-    {
-        static bool warning_already_logged = false;
-        if (!warning_already_logged) {
-            std::ostringstream oss;
-            oss << "FlipYAlgorithm::process(...) is deprecated since version 2.2.0 ";
-            oss << "and will be removed in later releases. ";
-            oss << "Please use FlipYAlgorithm::process_events(...) instead" << std::endl;
-            MV_SDK_LOG_WARNING() << oss.str();
-            warning_already_logged = true;
-        }
-        process_events(first, last, d_first);
-    }
-
     /// @brief Returns the maximum Y coordinate of the events
     /// @return Maximum Y coordinate of the events
     inline std::int16_t height_minus_one() const;

@@ -144,8 +144,8 @@ int main(int argc, char *argv[]) {
     // 0) Stage producing events from a CSV file
     auto &csv_stage = p.add_stage(std::make_unique<CSVReadingStage>(in_csv_file_path));
 
-    // 1) Stage generating a frame with events previously produced
-    auto &frame_stage = p.add_stage(std::make_unique<Metavision::FrameGenerationStage>(width, height, 30), csv_stage);
+    // 1) Stage generating a frame with events previously produced using accumulation time of 10ms
+    auto &frame_stage = p.add_stage(std::make_unique<Metavision::FrameGenerationStage>(width, height, 10), csv_stage);
 
     // 2) Stage displaying the generated frame
     auto &disp_stage =

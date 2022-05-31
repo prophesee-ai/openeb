@@ -9,7 +9,7 @@
 
 cmake_minimum_required(VERSION 3.5)
 
-project(metavision VERSION 2.3.2)
+project(metavision VERSION 3.0.0)
 set(PROJECT_VERSION_SUFFIX "")
 
 if(PROJECT_VERSION_SUFFIX STREQUAL "")
@@ -168,24 +168,27 @@ set(DATASET_DIR "" CACHE PATH "Folder with dataset for testing")
 ################################################### Detect which SDK modules are available
 
 set(METAVISION_SDK_MODULES_OPEN base core driver CACHE STRING "SDK Open modules")
-set(METAVISION_SDK_MODULES_PROFESSIONAL analytics calibration cv ml CACHE STRING "SDK Professional modules")
+if (COMPILE_PYTHON3_BINDINGS)
+    list(APPEND METAVISION_SDK_MODULES_OPEN core_ml)
+endif (COMPILE_PYTHON3_BINDINGS)
+set(METAVISION_SDK_MODULES_ADVANCED analytics calibration cv ml CACHE STRING "SDK Advanced modules")
 
 if (NOT ANDROID)
     list(APPEND METAVISION_SDK_MODULES_OPEN ui)
-    list(APPEND METAVISION_SDK_MODULES_PROFESSIONAL 3dview cv3d)
+    list(APPEND METAVISION_SDK_MODULES_ADVANCED 3dview cv3d)
 endif (NOT ANDROID)
 
 set(METAVISION_SDK_MODULES_AVAILABLE)
-foreach(metavision_offer OPEN PROFESSIONAL)
-    set(METAVISION_SDK_${metavision_offer}_MODULES_AVAILABLE)
-    message(STATUS "Building METAVISION_SDK_MODULES_${metavision_offer} modules : ${METAVISION_SDK_MODULES_${metavision_offer}}")
-    foreach(module_name IN LISTS METAVISION_SDK_MODULES_${metavision_offer})
+foreach(metavision_modules_set OPEN ADVANCED)
+    set(METAVISION_SDK_${metavision_modules_set}_MODULES_AVAILABLE)
+    message(STATUS "Building METAVISION_SDK_MODULES_${metavision_modules_set} modules : ${METAVISION_SDK_MODULES_${metavision_modules_set}}")
+    foreach(module_name IN LISTS METAVISION_SDK_MODULES_${metavision_modules_set})
         if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/sdk/modules/${module_name}/CMakeLists.txt")
-            list(APPEND METAVISION_SDK_${metavision_offer}_MODULES_AVAILABLE "${module_name}")
+            list(APPEND METAVISION_SDK_${metavision_modules_set}_MODULES_AVAILABLE "${module_name}")
         endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/sdk/modules/${module_name}/CMakeLists.txt")
     endforeach(module_name)
-    list(APPEND METAVISION_SDK_MODULES_AVAILABLE ${METAVISION_SDK_${metavision_offer}_MODULES_AVAILABLE})
-endforeach(metavision_offer)
+    list(APPEND METAVISION_SDK_MODULES_AVAILABLE ${METAVISION_SDK_${metavision_modules_set}_MODULES_AVAILABLE})
+endforeach(metavision_modules_set)
 
 ################################################### Find needed packages and programs
 
@@ -229,8 +232,8 @@ if (BUILD_TESTING)
     if(NOT EXISTS "${PROJECT_SOURCE_DIR}/datasets" AND GIT_LFS_NOT_AVAILABLE)
         message("---------------------------------------------------------------------------------------------------------")
         message("|  Test data was not found. To run the tests, please download the test data adapted to your project:    |")
-        message("|  - OpenEB: https://dataset.prophesee.ai/index.php/s/VfhepWI4MPVWh9o (500 Mb archive)                  |")
-        message("|  - Metavision Professional: https://dataset.prophesee.ai/index.php/s/JJ5xStgd8GSUWFz (3 Gb archive)   |")
+        message("|  - OpenEB: https://dataset.prophesee.ai/index.php/s/hyCzGM4tpR8w5bx (500 Mb archive)                  |")
+        message("|  - Metavision SDK: https://dataset.prophesee.ai/index.php/s/TF6yotuIukg5dcB (3 Gb archive)            |")
         message("---------------------------------------------------------------------------------------------------------\n")
     endif()
     
@@ -308,10 +311,10 @@ include(uninstall)
 include(add_library_version_header)
 include(add_cpack_component)
 include(create_metavision_open_archive)
-if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/cmake/custom_targets_metavision_professional")
-    list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/custom_targets_metavision_professional)
-    include(create_metavision_professional_archives)
-endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/cmake/custom_targets_metavision_professional")
+if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/cmake/custom_targets_metavision_sdk")
+    list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/custom_targets_metavision_sdk)
+    include(create_metavision_sdk_source_archives)
+endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/cmake/custom_targets_metavision_sdk")
 
 # Add Metavision Open debian packages :
 add_cpack_component(PUBLIC metavision-open-lib metavision-open-bin metavision-open-dev metavision-open-samples)
@@ -320,27 +323,33 @@ if(COMPILE_PYTHON3_BINDINGS)
     add_python_cpack_components(PUBLIC metavision-open)
 endif(COMPILE_PYTHON3_BINDINGS)
 
-# Add Metavision Essentials and SDK Pro debian packages :
-if (METAVISION_SDK_PROFESSIONAL_MODULES_AVAILABLE)
-    # SDK Pro
-    add_cpack_component(PUBLIC metavision-sdk-pro-lib metavision-sdk-pro-bin)
+# Add Metavision SDK debian packages :
+if (METAVISION_SDK_ADVANCED_MODULES_AVAILABLE)
+    # Advanced
+    add_cpack_component(PUBLIC metavision-sdk-advanced-lib metavision-sdk-advanced-bin metavision-sdk-advanced-dev metavision-sdk-advanced-samples)
     if(COMPILE_PYTHON3_BINDINGS)
-        add_cpack_component(PUBLIC metavision-sdk-pro-python-samples)
-        add_python_cpack_components(PUBLIC metavision-sdk-pro)
-    endif(COMPILE_PYTHON3_BINDINGS)
-    # Essentials
-    add_cpack_component(PUBLIC metavision-essentials-licence metavision-essentials-lib metavision-essentials-bin metavision-essentials)
-    if(COMPILE_PYTHON3_BINDINGS)
-        add_cpack_component(PUBLIC metavision-essentials-python-samples)
-        add_python_cpack_components(PUBLIC metavision-essentials)
+        add_cpack_component(PUBLIC metavision-sdk-advanced-python metavision-sdk-advanced-python-samples)
+        add_python_cpack_components(PUBLIC metavision-sdk-advanced)
     endif(COMPILE_PYTHON3_BINDINGS)
 
-    if(EXISTS "${PROJECT_SOURCE_DIR}/licensing/LICENSE_ESSENTIALS")
-        install(FILES ${PROJECT_SOURCE_DIR}/licensing/LICENSE_ESSENTIALS
+    # SDK
+    add_cpack_component(PUBLIC metavision-sdk-lib metavision-sdk-bin metavision-sdk-dev metavision-sdk-samples metavision-sdk)
+    if(COMPILE_PYTHON3_BINDINGS)
+        add_cpack_component(PUBLIC metavision-sdk-python metavision-sdk-python-samples)
+        add_python_cpack_components(PUBLIC metavision-sdk)
+    endif(COMPILE_PYTHON3_BINDINGS)
+
+    if(EXISTS "${PROJECT_SOURCE_DIR}/licensing/LICENSE_METAVISION_INTELLIGENCE")
+        install(FILES ${PROJECT_SOURCE_DIR}/licensing/LICENSE_METAVISION_INTELLIGENCE
                 DESTINATION share/metavision/licensing
-                COMPONENT metavision-essentials-licence)
+                COMPONENT metavision-sdk-base-lib)
     endif()
-endif (METAVISION_SDK_PROFESSIONAL_MODULES_AVAILABLE)
+else ()
+    # Installing metavision open
+    install(FILES ${PROJECT_SOURCE_DIR}/licensing/LICENSE_OPEN
+            DESTINATION share/metavision/licensing
+            COMPONENT metavision-sdk-base-lib)
+endif (METAVISION_SDK_ADVANCED_MODULES_AVAILABLE)
 
 ################################
 #            Utils            ##
@@ -356,9 +365,6 @@ add_subdirectory(hal)
 if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/hal_psee_plugins/CMakeLists.txt")
     add_subdirectory(hal_psee_plugins)
 endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/hal_psee_plugins/CMakeLists.txt")
-if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/hal_openeb_plugins/CMakeLists.txt")
-    add_subdirectory(hal_openeb_plugins)
-endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/hal_openeb_plugins/CMakeLists.txt")
 
 ################################
 #             SDK             ##
@@ -403,8 +409,8 @@ set(cpack_all_components ${cpack_public_components} ${cpack_internal_components}
 list(REMOVE_DUPLICATES cpack_all_components)
 file(WRITE ${GENERATE_FILES_DIRECTORY}/meta-package.log "")
 foreach(comp ${cpack_all_components})
-    if ("${comp}" MATCHES "^metavision-(open|essentials|sdk-pro|designer)-(lib|bin|dev|samples|python3.*|python|python-samples)$" OR
-        "${comp}" STREQUAL "metavision-essentials") 
+    if ("${comp}" MATCHES "^metavision-(open|sdk|sdk-advanced|designer)-(lib|bin|dev|samples|python3.*|python|python-samples)$" OR
+        "${comp}" STREQUAL "metavision-sdk")
         install(FILES ${GENERATE_FILES_DIRECTORY}/meta-package.log
                 DESTINATION share/metavision/log/${comp}
                 COMPONENT ${comp}

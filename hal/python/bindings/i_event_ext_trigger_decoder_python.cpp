@@ -19,20 +19,6 @@
 
 namespace Metavision {
 
-namespace {
-void set_add_decoded_event_callback_deprecated_helper(I_EventDecoder<EventExtTrigger> &, py::object) {
-    throw DeprecationWarningException("set_add_decoded_event_callback", "add_event_buffer_callback");
-}
-
-void set_add_decoded_vevent_callback_deprecated_helper(I_EventDecoder<EventExtTrigger> &, py::object) {
-    throw DeprecationWarningException("set_add_decoded_vevent_callback", "add_event_buffer_callback");
-}
-
-void set_end_decode_callback_deprecated_helper(I_EventDecoder<EventExtTrigger> &, py::object) {
-    throw DeprecationWarningException("set_end_decode_callback");
-}
-} // anonymous namespace
-
 static DeviceFacilityGetter<I_EventDecoder<EventExtTrigger>> getter("get_i_event_ext_trigger_decoder");
 
 static HALFacilityPythonBinder<I_EventDecoder<EventExtTrigger>> bind_decoder(
@@ -55,13 +41,7 @@ static HALFacilityPythonBinder<I_EventDecoder<EventExtTrigger>> bind_decoder(
                 },
                 pybind_doc_hal["Metavision::I_EventDecoder::add_event_buffer_callback"])
             .def("remove_callback", &I_EventDecoder<EventExtTrigger>::remove_callback,
-                 pybind_doc_hal["Metavision::I_EventDecoder::remove_callback"])
-            .def("set_add_decoded_event_callback", set_add_decoded_event_callback_deprecated_helper,
-                 pybind_doc_hal["Metavision::I_EventDecoder::set_add_decoded_event_callback"])
-            .def("set_add_decoded_vevent_callback", set_add_decoded_vevent_callback_deprecated_helper,
-                 pybind_doc_hal["Metavision::I_EventDecoder::set_add_decoded_vevent_callback"])
-            .def("set_end_decode_callback", set_end_decode_callback_deprecated_helper,
-                 pybind_doc_hal["Metavision::I_EventDecoder::set_end_decode_callback"]);
+                 pybind_doc_hal["Metavision::I_EventDecoder::remove_callback"]);
     },
     "I_EventDecoder_EventExtTrigger");
 

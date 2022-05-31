@@ -12,5 +12,5 @@ rem See the License for the specific language governing permissions and limitati
 if not "%~1" == "" setlocal
 set PATH=@_CMAKE_RUNTIME_OUTPUT_DIRECTORY@;%PATH%
 set MV_HAL_PLUGIN_PATH=@_HAL_BUILD_PLUGIN_PATH@
-set PYTHONPATH=@_PYTHON3_OUTPUT_DIR@;@_CMAKE_SOURCE_DIR@\sdk\modules\core\python\pypkg;@_CMAKE_SOURCE_DIR@\sdk\modules\ml\python\pypkg;@_CMAKE_SOURCE_DIR@\sdk\modules\ml\python_extended\pypkg;%PYTHONPATH%
+set PYTHONPATH=@_PYTHON3_OUTPUT_DIR@;@_CMAKE_SOURCE_DIR@\sdk\modules\core\python\pypkg;@_CMAKE_SOURCE_DIR@\sdk\modules\ml\python\pypkg;@_CMAKE_SOURCE_DIR@\sdk\modules\ml\python_extended\pypkg;@_CMAKE_SOURCE_DIR@\sdk\modules\core_ml\python\pypkg;%PYTHONPATH%
 if not "%~1" == "" cmd /c %*

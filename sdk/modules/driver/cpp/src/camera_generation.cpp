@@ -45,10 +45,6 @@ short CameraGeneration::version_minor() const {
     return pimpl_->minor_;
 }
 
-CameraGeneration::Type CameraGeneration::type() const {
-    throw CameraException(CameraErrorCode::DeprecatedFeature, "type not supported anymore.");
-}
-
 CameraGeneration::Private &CameraGeneration::get_pimpl() {
     return *pimpl_;
 }

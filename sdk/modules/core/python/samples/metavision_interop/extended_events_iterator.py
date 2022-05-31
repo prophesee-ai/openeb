@@ -96,5 +96,5 @@ class ExtendedEventsIterator(EventsIterator):
 
                 raise BaseException("format not handled!")
         else:
-            # we assume input_path is a actually device
+            # we assume input_path is an actual device
             self.reader = RawReaderBase.from_device(input_path, delta_t=self.delta_t, ev_count=self.n_events, **kwargs)

@@ -106,7 +106,7 @@ int main(int argc, char *argv[]) {
     Metavision::RawFileHeader header(ifs);
     Metavision::Camera camera;
     try {
-        camera = Metavision::Camera::from_file(in_raw_file_path, false);
+        camera = Metavision::Camera::from_file(in_raw_file_path, false, Metavision::Future::RawFileConfig());
     } catch (Metavision::CameraException &e) {
         MV_LOG_ERROR() << e.what();
         return 1;
@@ -115,13 +115,21 @@ int main(int argc, char *argv[]) {
     struct EventType {
         enum { CD = 0, ExtTrigger, Count };
     };
-    Metavision::timestamp duration = -1;
     std::array<Metavision::timestamp, EventType::Count> first_ts, last_ts;
     std::array<size_t, EventType::Count> num_events;
     std::array<std::string, EventType::Count> label_events{"CD", "External triggers"};
     std::fill(first_ts.begin(), first_ts.end(), std::numeric_limits<Metavision::timestamp>::max());
     std::fill(last_ts.begin(), last_ts.end(), -1);
     std::fill(num_events.begin(), num_events.end(), 0);
+
+    Metavision::timestamp duration = -1;
+    try {
+        auto &osc = camera.offline_streaming_control();
+        while (!osc.is_ready()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        }
+        duration = osc.get_duration();
+    } catch (Metavision::CameraException &e) {}
 
     try {
         Metavision::CD &cd = camera.cd();
@@ -158,7 +166,8 @@ int main(int argc, char *argv[]) {
     }
     camera.stop();
 
-    // update duration as the maximum timestamp ever found
+    // if needed (i.e if OfflineStreamingControl facility is unavailable), update duration as the maximum timestamp ever
+    // found
     for (size_t i = 0; i < EventType::Count; ++i) {
         duration = std::max(duration, last_ts[i]);
     }

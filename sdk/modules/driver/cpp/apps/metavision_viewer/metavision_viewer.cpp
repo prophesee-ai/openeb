@@ -83,13 +83,17 @@ int setup_cd_callback_and_window(Metavision::Camera &camera, cv::Mat &cd_frame, 
     cv::namedWindow(window_name, CV_GUI_EXPANDED);
     cv::resizeWindow(window_name, geometry.width(), geometry.height());
     cv::moveWindow(window_name, 0, 0);
+#if (CV_MAJOR_VERSION == 3 && (CV_MINOR_VERSION * 100 + CV_SUBMINOR_VERSION) >= 408) || \
+    (CV_MAJOR_VERSION == 4 && (CV_MINOR_VERSION * 100 + CV_SUBMINOR_VERSION) >= 102)
+    cv::setWindowProperty(window_name, cv::WND_PROP_TOPMOST, 1);
+#endif
     return id;
 }
 
 namespace {
 std::atomic<bool> signal_caught{false};
 
-void sig_handler(int s) {
+[[maybe_unused]] void sig_handler(int s) {
     MV_LOG_TRACE() << "Interrupt signal received." << std::endl;
     signal_caught = true;
 }
@@ -255,9 +259,8 @@ int main(int argc, char *argv[]) {
 
             if (!cd_frame.empty()) {
                 if (osd) {
-                    const std::string text =
-                        human_readable_time(cd_frame_ts) + " / " +
-                        human_readable_time(camera.offline_streaming_control().get_seek_end_time());
+                    const std::string text = human_readable_time(cd_frame_ts) + " / " +
+                                             human_readable_time(camera.offline_streaming_control().get_duration());
                     cv::putText(cd_frame, text, cv::Point(10, 20), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(108, 143, 255),
                                 1, cv::LINE_AA);
                 }

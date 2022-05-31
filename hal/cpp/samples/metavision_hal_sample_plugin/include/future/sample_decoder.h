@@ -48,19 +48,6 @@ public:
     /// @brief Gets size (byte) of raw event
     uint8_t get_raw_event_size_bytes() const override final;
 
-    /// @brief Resets the decoder last timestamp
-    /// @param timestamp Timestamp to reset the decoder to
-    /// @return True if the reset operation could complete, false otherwise.
-    /// @note It is expected after this call has succeeded, that @ref get_last_timestamp returns @p timestamp
-    /// @warning If time shifting is enabled, the @p timestamp must be in the shifted time reference
-    bool reset_timestamp(const Metavision::timestamp &timestamp) override final;
-
-    /// @brief Resets the decoder timestamp shift
-    /// @param shift Timestamp shift to reset the decoder to
-    /// @return True if the reset operation could complete, false otherwise.
-    /// @note If time shifting is disabled, this function does nothing and returns false
-    bool reset_timestamp_shift(const Metavision::timestamp &shift) override final;
-
 private:
     /// @brief Decodes raw data.
     ///
@@ -71,6 +58,20 @@ private:
     /// @param ev Pointer on first event
     /// @param evend Pointer after the last event
     void decode_impl(const RawData *const ev, const RawData *const evend) override final;
+
+    /// @brief Resets the decoder last timestamp
+    ///
+    /// @param timestamp Timestamp to reset the decoder to
+    /// @return True if the reset operation could complete, false otherwise.
+    /// @note It is expected after this call has succeeded, that @ref get_last_timestamp returns @p timestamp
+    /// @warning If time shifting is enabled, the @p timestamp must be in the shifted time reference
+    bool reset_timestamp_impl(const Metavision::timestamp &timestamp) override final;
+
+    /// @brief Resets the decoder timestamp shift
+    /// @param shift Timestamp shift to reset the decoder to
+    /// @return True if the reset operation could complete, false otherwise.
+    /// @note If time shifting is disabled, this function does nothing and returns false
+    bool reset_timestamp_shift_impl(const Metavision::timestamp &shift) override final;
 
     Metavision::timestamp last_timestamp_{0};
     Metavision::timestamp time_shift_{0};

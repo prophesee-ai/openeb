@@ -46,38 +46,6 @@ public:
     void add_event_buffer(EventIterator_t begin, EventIterator_t end);
     /// @endcond
 
-    /// @note This alias is deprecated since version 2.2.0 and will be removed in next releases
-    typedef std::function<void(const Event &)> AddEventCallback_t;
-
-    /// @note This alias is deprecated since version 2.2.0 and will be removed in next releases
-    typedef std::function<void(const Event *begin, const Event *end)> AddVEventCallback_t;
-
-    /// @note This alias is deprecated since version 2.2.0 and will be removed in next releases
-    typedef std::function<void(timestamp base_time)> EndDecodeCallback_t;
-
-    /// @note set_add_decoded_event_callback(...) is deprecated since version 2.2.0 and will be removed in later
-    /// releases. Please use add_event_buffer_callback(...) instead
-    // clang-format off
-    [[deprecated("set_add_decoded_event_callback(...) is deprecated since version 2.2.0 and will be removed in later releases. "
-                 "Please use add_event_buffer_callback(...) instead")]]
-    void set_add_decoded_event_callback(AddEventCallback_t, bool=true);
-    // clang-format on
-
-    /// @note set_add_decoded_vevent_callback(...) is deprecated since version 2.2.0 and will be removed in later
-    /// releases. Please use add_event_buffer_callback(...) instead
-    // clang-format off
-    [[deprecated("set_add_decoded_vevent_callback(...) is deprecated since version 2.2.0 and will be removed in later releases. "
-                 "Please use add_event_buffer_callback(...) instead")]]
-    void set_add_decoded_vevent_callback(AddVEventCallback_t, bool=true);
-    // clang-format on
-
-    /// @note set_end_decode_callback(...) is deprecated since version 2.2.0 and will be removed in later
-    /// releases. Please use add_event_buffer_callback(...) instead
-    // clang-format off
-    [[deprecated("set_end_decode_callback(...) is deprecated since version 2.2.0 and will be removed in later releases.")]]
-    void set_end_decode_callback(EndDecodeCallback_t, bool=true);
-    // clang-format on
-
 private:
     std::map<size_t, EventBufferCallback_t> cbs_map_;
     size_t next_cb_idx_{0};

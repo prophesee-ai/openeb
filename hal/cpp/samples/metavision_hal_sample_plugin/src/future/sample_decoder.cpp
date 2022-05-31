@@ -62,7 +62,7 @@ uint8_t SampleDecoder::get_raw_event_size_bytes() const {
     return sizeof(SampleEventsFormat);
 }
 
-bool SampleDecoder::reset_timestamp(const Metavision::timestamp &t) {
+bool SampleDecoder::reset_timestamp_impl(const Metavision::timestamp &t) {
     if (is_time_shifting_enabled() && !time_shift_set_) {
         return false;
     }
@@ -73,7 +73,7 @@ bool SampleDecoder::reset_timestamp(const Metavision::timestamp &t) {
     return false;
 }
 
-bool SampleDecoder::reset_timestamp_shift(const Metavision::timestamp &shift) {
+bool SampleDecoder::reset_timestamp_shift_impl(const Metavision::timestamp &shift) {
     if (shift >= 0 && is_time_shifting_enabled()) {
         time_shift_     = shift;
         time_shift_set_ = true;

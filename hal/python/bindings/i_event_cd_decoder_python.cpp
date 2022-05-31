@@ -23,20 +23,6 @@ namespace py = pybind11;
 
 namespace Metavision {
 
-namespace {
-void set_add_decoded_event_callback_deprecated_helper(I_EventDecoder<EventCD> &, py::object) {
-    throw DeprecationWarningException("set_add_decoded_event_callback", "add_event_buffer_callback");
-}
-
-void set_add_decoded_vevent_callback_deprecated_helper(I_EventDecoder<EventCD> &, py::object) {
-    throw DeprecationWarningException("set_add_decoded_vevent_callback", "add_event_buffer_callback");
-}
-
-void set_end_decode_callback_deprecated_helper(I_EventDecoder<EventCD> &, py::object) {
-    throw DeprecationWarningException("set_end_decode_callback");
-}
-} // anonymous namespace
-
 static DeviceFacilityGetter<I_EventDecoder<EventCD>> getter("get_i_event_cd_decoder");
 
 static HALFacilityPythonBinder<I_EventDecoder<EventCD>> bind_decoder(
@@ -79,10 +65,7 @@ static HALFacilityPythonBinder<I_EventDecoder<EventCD>> bind_decoder(
                 },
                 "Pass a native function as event callback (faster than a python one).\n",
                 "\nIts signature has to be `void function(const Metavision::EventCD * begin,",
-                "const Metavision::EventCD * end)`.")
-            .def("set_add_decoded_event_callback", set_add_decoded_event_callback_deprecated_helper)
-            .def("set_add_decoded_vevent_callback", set_add_decoded_vevent_callback_deprecated_helper)
-            .def("set_end_decode_callback", set_end_decode_callback_deprecated_helper);
+                "const Metavision::EventCD * end)`.");
     },
     "I_EventDecoder_EventCD");
 

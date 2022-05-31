@@ -1,0 +1,102 @@
+/**********************************************************************************************************************
+ * Copyright (c) Prophesee S.A.                                                                                       *
+ *                                                                                                                    *
+ * Licensed under the Apache License, Version 2.0 (the "License");                                                    *
+ * you may not use this file except in compliance with the License.                                                   *
+ * You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0                                 *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed   *
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.                      *
+ * See the License for the specific language governing permissions and limitations under the License.                 *
+ **********************************************************************************************************************/
+
+#include <stdlib.h>
+#include <algorithm>
+#include <iostream>
+#include <list>
+#include <memory>
+
+#include "boards/treuzell/tz_camera_discovery.h"
+#include "boards/treuzell/tz_libusb_board_command.h"
+#include "utils/device_builder_factory.h"
+#include "devices/utils/device_system_id.h"
+#include "metavision/hal/utils/hal_exception.h"
+#include "utils/psee_hal_plugin_error_code.h"
+#include "metavision/hal/utils/hal_log.h"
+
+namespace Metavision {
+
+TzCameraDiscovery::TzCameraDiscovery() :
+    libusb_ctx(std::make_shared<LibUSBContext>()), builder(std::make_unique<TzDeviceBuilder>()) {}
+
+std::vector<std::shared_ptr<TzLibUSBBoardCommand>> TzCameraDiscovery::list_boards() {
+    std::vector<std::shared_ptr<TzLibUSBBoardCommand>> boards;
+    libusb_device **devs;
+
+    ssize_t cnt = libusb_get_device_list(libusb_ctx->ctx(), &devs); // get the list of devices
+    if (cnt <= 0) {
+        MV_HAL_LOG_TRACE() << "libusb BC: USB Device list empty cnt=" << cnt;
+        return boards;
+    }
+
+    MV_HAL_LOG_TRACE() << "libusb BC: libusb_get_device_list found" << cnt << "devices";
+
+    for (ssize_t i = 0; i < cnt; i++) {
+        libusb_device_descriptor desc;
+        int r = libusb_get_device_descriptor(devs[i], &desc);
+        if (r < 0) {
+            MV_HAL_LOG_TRACE() << "Failed to get device descriptor";
+            continue;
+        }
+
+        try {
+            MV_HAL_LOG_TRACE() << "Create board command for device " << std::hex << desc.idVendor << ":"
+                               << desc.idProduct << std::dec;
+            std::shared_ptr<TzLibUSBBoardCommand> cmd =
+                std::make_shared<TzLibUSBBoardCommand>(libusb_ctx, devs[i], desc);
+            if (builder->can_build(cmd))
+                boards.push_back(cmd);
+        } catch (const HalException &e) {
+            MV_HAL_LOG_TRACE() << e.what();
+            continue;
+        }
+    }
+    libusb_free_device_list(devs, 1); // free the list, unref the devices in it
+
+    return boards;
+}
+
+CameraDiscovery::SerialList TzCameraDiscovery::list() {
+    CameraDiscovery::SerialList ret;
+    auto boards = list_boards();
+    for (auto board : boards) {
+        ret.push_back(board->get_serial());
+    }
+    return ret;
+}
+
+CameraDiscovery::SystemList TzCameraDiscovery::list_available_sources() {
+    CameraDiscovery::SystemList system_list;
+    auto boards = list_boards();
+    for (auto board : boards) {
+        // Last argument is the system ID, but we can't know how many the board has before building the devices
+        system_list.push_back({board->get_serial(), USB_LINK, 0});
+    }
+    return system_list;
+}
+
+bool TzCameraDiscovery::discover(DeviceBuilder &device_builder, const std::string &serial, const DeviceConfig &config) {
+    auto boards = list_boards();
+    for (auto board : boards) {
+        if (serial != "" && (board->get_serial() != serial))
+            continue;
+        if (board->get_board_speed() < LIBUSB_SPEED_SUPER) {
+            MV_HAL_LOG_ERROR() << "Your EVK camera" << serial
+                               << "isn't connected in USB3. Please check your connection.";
+            continue;
+        }
+        return builder->build_devices(board, device_builder, config);
+    }
+    return false;
+}
+
+} // namespace Metavision

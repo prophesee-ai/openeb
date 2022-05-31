@@ -11,6 +11,8 @@
 
 #include <chrono>
 #include <algorithm>
+#include <random>
+#include <functional>
 
 #include "metavision/hal/device/device.h"
 #include "metavision/hal/facilities/future/i_decoder.h"
@@ -32,6 +34,24 @@ bool contains(const Container &container, const typename Container::value_type &
     return (std::find(container.begin(), container.end(), value) != container.end());
 }
 
+union BookmarkOrMagicNumber {
+    I_EventsStream::Bookmark bookmark;
+    std::array<std::uint8_t, sizeof(I_EventsStream::Bookmark)> array;
+
+    BookmarkOrMagicNumber() {}
+    BookmarkOrMagicNumber(const I_EventsStream::Bookmark &b) : bookmark(b) {}
+
+    static BookmarkOrMagicNumber magic_number() {
+        BookmarkOrMagicNumber m;
+        std::mt19937 mt(0x6d76); // MV = 0x6d 0x76
+        std::generate(m.array.begin(), m.array.end(), std::ref(mt));
+        return m;
+    }
+};
+static constexpr size_t BookmarkPackedSize = sizeof(I_EventsStream::Bookmark::timestamp_) +
+                                             sizeof(I_EventsStream::Bookmark::byte_offset_) +
+                                             sizeof(I_EventsStream::Bookmark::cd_event_count_);
+
 static const std::string platform_key           = "platform";
 static const std::string hal_version_key        = "hal_version";
 static const std::string hal_plugin_version_key = "hal_plugin_version";
@@ -40,7 +60,7 @@ static const std::string bookmark_period_key    = "bookmark_period_us";
 static const std::string index_version_key      = "index_version";
 static const std::string ts_shift_key           = "ts_shift_us";
 
-static const std::string index_version          = "1.0";
+static const std::string index_version          = "2.0";
 static const uint32_t bookmark_period_us        = 2000;
 static const std::string bookmark_period_us_str = std::to_string(bookmark_period_us);
 
@@ -53,30 +73,83 @@ const std::string get_raw_file_index_name(const std::string &raw_file_name) {
     return raw_file_name + get_raw_file_index_extension_suffix();
 }
 
-void serialize_bookmark(I_EventsStream::Bookmark &bookmark, std::ofstream &output_index_file) {
-    output_index_file.write(reinterpret_cast<char *>(&bookmark.timestamp_), sizeof(bookmark.timestamp_));
-    output_index_file.write(reinterpret_cast<char *>(&bookmark.byte_offset_), sizeof(bookmark.byte_offset_));
-    output_index_file.write(reinterpret_cast<char *>(&bookmark.cd_event_count_), sizeof(bookmark.cd_event_count_));
+bool serialize_bookmark(I_EventsStream::Bookmark &bookmark, std::ofstream &output_index_file) {
+    if (!output_index_file.write(reinterpret_cast<char *>(&bookmark.timestamp_), sizeof(bookmark.timestamp_))) {
+        return false;
+    }
+    if (!output_index_file.write(reinterpret_cast<char *>(&bookmark.byte_offset_), sizeof(bookmark.byte_offset_))) {
+        return false;
+    }
+    if (!output_index_file.write(reinterpret_cast<char *>(&bookmark.cd_event_count_),
+                                 sizeof(bookmark.cd_event_count_))) {
+        return false;
+    }
+    return true;
 }
 
-void deserialize_bookmark(I_EventsStream::Bookmark &bookmark, std::ifstream &input_index_file) {
-    input_index_file.read(reinterpret_cast<char *>(&bookmark.timestamp_), sizeof(bookmark.timestamp_));
-    input_index_file.read(reinterpret_cast<char *>(&bookmark.byte_offset_), sizeof(bookmark.byte_offset_));
-    input_index_file.read(reinterpret_cast<char *>(&bookmark.cd_event_count_), sizeof(bookmark.cd_event_count_));
+bool deserialize_bookmark(I_EventsStream::Bookmark &bookmark, std::ifstream &input_index_file) {
+    if (!input_index_file.read(reinterpret_cast<char *>(&bookmark.timestamp_), sizeof(bookmark.timestamp_))) {
+        return false;
+    }
+    if (!input_index_file.read(reinterpret_cast<char *>(&bookmark.byte_offset_), sizeof(bookmark.byte_offset_))) {
+        return false;
+    }
+    if (!input_index_file.read(reinterpret_cast<char *>(&bookmark.cd_event_count_), sizeof(bookmark.cd_event_count_))) {
+        return false;
+    }
+    return true;
 }
 
-void add_bookmarks(size_t last_bookmark_index, size_t bookmark_index, I_EventsStream::Bookmark &bookmark,
+bool add_bookmarks(size_t last_bookmark_index, size_t bookmark_index, I_EventsStream::Bookmark &bookmark,
                    I_EventsStream::Index &index, std::ofstream &output_index_file) {
-    if (bookmark_index > last_bookmark_index) {
-        for (; last_bookmark_index < bookmark_index; ++last_bookmark_index) {
-            index.bookmarks_.push_back(bookmark);
-            if (output_index_file) {
-                serialize_bookmark(bookmark, output_index_file);
+    for (; last_bookmark_index < bookmark_index; ++last_bookmark_index) {
+        index.bookmarks_.push_back(bookmark);
+        if (output_index_file) {
+            if (!serialize_bookmark(bookmark, output_index_file)) {
+                return false;
             }
-            // reset event count
-            bookmark.cd_event_count_ = 0;
+        }
+        // reset event count
+        bookmark.cd_event_count_ = 0;
+    }
+    return true;
+}
+
+bool add_magic_number(std::ofstream &output_index_file) {
+    BookmarkOrMagicNumber m = BookmarkOrMagicNumber::magic_number();
+    if (output_index_file) {
+        if (!serialize_bookmark(m.bookmark, output_index_file)) {
+            return false;
         }
     }
+    return true;
+}
+
+bool is_bookmark_magic_number(const I_EventsStream::Bookmark &bookmark) {
+    BookmarkOrMagicNumber b(bookmark);
+    BookmarkOrMagicNumber m = BookmarkOrMagicNumber::magic_number();
+    return std::equal(b.array.begin(), b.array.begin() + BookmarkPackedSize, m.array.begin());
+}
+
+bool check_magic_number_presence(std::ifstream &input_index_file) {
+    const auto start_pos = input_index_file.tellg();
+    // Seek to last bookmark pos
+    input_index_file.clear();
+    if (!input_index_file.seekg(-BookmarkPackedSize, std::ios::end)) {
+        return false;
+    }
+
+    I_EventsStream::Bookmark bookmark;
+    if (!deserialize_bookmark(bookmark, input_index_file)) {
+        return false;
+    }
+
+    // Reset pos
+    input_index_file.clear();
+    input_index_file.seekg(start_pos);
+
+    // Check that the last bookmark is indeed the magic number
+    return is_bookmark_magic_number(bookmark);
 }
 
 bool build_and_try_writing_bookmarks(Device &device, I_EventsStream::Index &index, const std::string &raw_file_name,
@@ -165,21 +238,29 @@ bool build_and_try_writing_bookmarks(Device &device, I_EventsStream::Index &inde
                 bookmark.cd_event_count_ = last_event_count;
                 bookmark.timestamp_      = last_ts;
                 bookmark.byte_offset_    = last_byte_offset;
-                add_bookmarks(last_bookmark_index, bookmark_index, bookmark, index, output_index_file);
+                if (!add_bookmarks(last_bookmark_index, bookmark_index, bookmark, index, output_index_file)) {
+                    MV_HAL_LOG_ERROR() << "Could not write index to the file" << raw_file_name;
+                    return false;
+                }
                 last_byte_offset    = current_byte_offset;
                 last_ts             = new_ts;
                 last_event_count    = event_count;
                 last_bookmark_index = bookmark_index;
             }
         }
+    }
 
-        const size_t bookmark_index = last_ts / bookmark_period_us + 1;
-        if (bookmark_index > last_bookmark_index) {
-            bookmark.cd_event_count_ = last_event_count;
-            bookmark.timestamp_      = last_ts;
-            bookmark.byte_offset_    = last_byte_offset;
-            add_bookmarks(last_bookmark_index, bookmark_index, bookmark, index, output_index_file);
-        }
+    bookmark.cd_event_count_ = last_event_count;
+    bookmark.timestamp_      = last_ts;
+    bookmark.byte_offset_    = last_byte_offset;
+    if (!add_bookmarks(last_bookmark_index, last_bookmark_index + 1, bookmark, index, output_index_file)) {
+        MV_HAL_LOG_ERROR() << "Could not write index to the file" << raw_file_name;
+        return false;
+    }
+
+    if (!add_magic_number(output_index_file)) {
+        MV_HAL_LOG_ERROR() << "Could not write index to the file" << raw_file_name;
+        return false;
     }
 
     return true;
@@ -193,8 +274,20 @@ I_EventsStream::Bookmarks load_bookmarks(std::ifstream &input_index_file, const 
     // The current implementation loads the whole index file in memory, which inevitably puts a limit on the maximum
     // size of a RAW file we support seeking. A better option would be to load the index on demand.
     while (input_index_file.good() && !abort) {
-        deserialize_bookmark(bookmark, input_index_file);
-        bookmarks.push_back(bookmark);
+        if (deserialize_bookmark(bookmark, input_index_file)) {
+            bookmarks.push_back(bookmark);
+        }
+    }
+    if (!abort) {
+        // if we reach here, a magic number should be present since we check for its presence before trying to load the
+        // bookmarks but to be on the safe side ...
+        if (bookmarks.empty() || !is_bookmark_magic_number(bookmarks.back())) {
+            MV_HAL_LOG_ERROR() << "Unexpected error with index for RAW file, magic number expected but not found.";
+            bookmarks = I_EventsStream::Bookmarks();
+        } else {
+            // this is not a real bookmark, let's remove it
+            bookmarks.pop_back();
+        }
     }
 
     return bookmarks;
@@ -269,8 +362,16 @@ I_EventsStream::Index build_index(Device &device, const std::string &raw_file_na
         // Compare bookmark version in the index vs the current one
         do_build_index = do_build_index || (index_version_in_file != index_version);
 
-        // Checks that the timestamp shift is present
+        // Checks that the timestamp shift is present ...
         do_build_index = do_build_index || index_file_header.get_field(ts_shift_key).empty();
+        {
+            // ... and is indeed a valid integer
+            long long ts_shift;
+            std::istringstream iss(index_file_header.get_field(ts_shift_key));
+            if (!(iss >> ts_shift)) {
+                do_build_index = true;
+            }
+        }
 
         // Compares header of the indexed RAW file and the input one
         auto raw_file_header_map   = raw_file_header.get_header_map();
@@ -284,6 +385,9 @@ I_EventsStream::Index build_index(Device &device, const std::string &raw_file_na
             }
             do_build_index = do_build_index || (found->second != it->second);
         }
+
+        // Make sure that magic number is present
+        do_build_index = do_build_index || !check_magic_number_presence(index_file);
     };
     index_file.close();
 
@@ -352,7 +456,12 @@ I_EventsStream::Index build_index(Device &device, const std::string &raw_file_na
         index.bookmark_period_ = std::atol(index_file_header.get_field(bookmark_period_key).c_str());
         index.ts_shift_us_     = std::atoll(index_file_header.get_field(ts_shift_key).c_str());
         index.bookmarks_       = load_bookmarks(index_file, abort);
-        index.status_          = I_EventsStream::IndexStatus::Good;
+        if (index.bookmarks_.empty()) {
+            MV_HAL_LOG_ERROR() << "Failed to open index for RAW file at" << raw_file_index_name;
+            index.status_ = I_EventsStream::IndexStatus::Bad;
+            return index;
+        }
+        index.status_ = I_EventsStream::IndexStatus::Good;
         MV_HAL_LOG_TRACE() << "Index for input RAW file" << raw_file_name << "loaded";
     }
 
@@ -415,6 +524,11 @@ I_EventsStream::I_EventsStream(std::unique_ptr<DataTransfer> data_transfer,
             }
             if (should_notify) {
                 new_buffer_cond_.notify_all();
+            }
+        } else {
+            while (seeking_) {
+                // wait for any seek operation to complete before resuming the actual data transfer
+                std::this_thread::yield();
             }
         }
     });
@@ -578,7 +692,12 @@ I_EventsStream::SeekStatus I_EventsStream::seek(timestamp target_ts_us, timestam
         }
 
         if (file_data_transfer->stopped()) {
-            // if the data transfer was stopped because the end of file was reached, restart it
+            // if the data transfer was stopped because the end of file was reached before seeking, restart it
+            //
+            // Note : even if we start the data transfer now (while seeking_ = true), there is no risk of missing a EOF
+            // (which would be signaled by a Stopped status change ... but ignored because a seek is ongoing) since the
+            // data transfer won't resume reading (and thus reach a potential EOF) before seeking_ = false (c.f wait
+            // loop in status change callback)
             file_data_transfer->start();
         }
     } else {
@@ -595,9 +714,8 @@ I_EventsStream::SeekStatus I_EventsStream::seek(timestamp target_ts_us, timestam
         }
     }
 
-    file_data_transfer->resume();
-
     seeking_ = false;
+    file_data_transfer->resume();
 
     return seek_status;
 }

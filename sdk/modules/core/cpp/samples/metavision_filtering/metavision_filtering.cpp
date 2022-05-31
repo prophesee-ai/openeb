@@ -94,7 +94,7 @@ int main(int argc, char *argv[]) {
     // 2) Stage wrapping a polarity filter algorithm
     auto &pol_stage = p.add_algorithm_stage(std::make_unique<Metavision::PolarityFilterAlgorithm>(0), roi_stage, false);
 
-    // 3) Stage generating a frame from filtered events
+    // 3) Stage generating a frame from filtered events using accumulation time of 30ms
     auto &frame_stage = p.add_stage(std::make_unique<Metavision::FrameGenerationStage>(width, height, 30), pol_stage);
 
     // 4) Stage displaying the frame

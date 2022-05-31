@@ -1,0 +1,41 @@
+/**********************************************************************************************************************
+ * Copyright (c) Prophesee S.A.                                                                                       *
+ *                                                                                                                    *
+ * Licensed under the Apache License, Version 2.0 (the "License");                                                    *
+ * you may not use this file except in compliance with the License.                                                   *
+ * You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0                                 *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed   *
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.                      *
+ * See the License for the specific language governing permissions and limitations under the License.                 *
+ **********************************************************************************************************************/
+
+#include "devices/treuzell/ti_tmp103.h"
+#include "boards/treuzell/tz_libusb_board_command.h"
+
+namespace Metavision {
+
+TiTmp103::TiTmp103(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent) :
+    TzDevice(cmd, dev_id, parent) {}
+
+std::shared_ptr<TzDevice> TiTmp103::build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id,
+                                          std::shared_ptr<TzDevice> parent) {
+    return std::make_shared<TiTmp103>(cmd, dev_id, parent);
+}
+
+void TiTmp103::spawn_facilities(DeviceBuilder &device_builder) {}
+
+TiTmp103::~TiTmp103() {}
+
+void TiTmp103::start() {}
+
+void TiTmp103::stop() {}
+
+TzDevice::StreamFormat TiTmp103::get_output_format() {
+    return {std::string("NONE"), nullptr};
+}
+
+int TiTmp103::get_temperature() {
+    return cmd->read_device_register(tzID, 0)[0];
+}
+
+} // namespace Metavision

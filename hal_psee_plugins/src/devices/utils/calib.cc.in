@@ -1,0 +1,10 @@
+// auto-generated (bin2h)
+
+const unsigned char @CALIB_NAME_NO_EXT@_UC[] = {
+@CALIB_DATA@,
+0x00
+};
+
+const size_t @CALIB_NAME_NO_EXT@_SIZE = @CALIB_SIZE@;
+
+const char *@CALIB_NAME_NO_EXT@ = (const char *)@CALIB_NAME_NO_EXT@_UC;
