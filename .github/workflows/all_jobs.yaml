@@ -158,7 +158,7 @@ jobs:
           export PATH=$PATH:`realpath ../ffmpeg-5.0.1-full_build/bin`
           mkdir build && cd build
           cmake -A x64 -DCMAKE_TOOLCHAIN_FILE="../cmake/toolchains/vcpkg.cmake" \
-                -DVCPKG_DIRECTORY=`realpath ../../vcpkg`
+                -DVCPKG_DIRECTORY=`realpath ../../vcpkg` \
                 -D Python3_EXECUTABLE=$python_executable \
                 -DBUILD_TESTING=ON ..
           cmake --build . --config Release --parallel 4
