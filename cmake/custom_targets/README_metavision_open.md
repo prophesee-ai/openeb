@@ -16,7 +16,11 @@ OpenEB is composed of the Open modules of Metavision Intelligence:
 * UI: Viewer and display controllers for event-based data.
 
 OpenEB also contains the source code of Prophesee camera plugins, enabling to stream data from our event-based cameras
-and to read recordings of event-based data. 
+and to read recordings of event-based data. The supported cameras are:
+* EVK1 - Gen3.1 VGA
+* EVK2 - Gen4.1 HD
+* EVK3 - Gen 3.1 VGA / Gen4.1 HD
+* EVK4 - HD
 
 This document describes how to compile and install the OpenEB codebase.
 For further information, refer to our [online documentation](https://docs.prophesee.ai/) where you will find
@@ -40,7 +44,7 @@ Install the following dependencies:
 sudo apt update
 sudo apt -y install apt-utils build-essential software-properties-common wget unzip curl git cmake
 sudo apt -y install libopencv-dev libgtest-dev libboost-all-dev libusb-1.0-0-dev libeigen3-dev
-sudo apt -y install libglew-dev libglfw3-dev libcanberra-gtk-module
+sudo apt -y install libglew-dev libglfw3-dev libcanberra-gtk-module ffmpeg
 ```
 
 For the Python API, you will need Python and some additional libraries.
@@ -78,12 +82,6 @@ python3 -m pip install "opencv-python>=4.5.5.64" "sk-video==1.1.10" "fire==0.4.0
 python3 -m pip install jupyter jupyterlab matplotlib "ipywidgets==7.6.5"
 python3 -m pip install "pytorch_lightning==1.5.10" "tqdm==4.63.0" "kornia==0.6.1"
 
-```
-
-Finally, you will need to install ffmpeg:
-
-```bash
-sudo apt -y install ffmpeg
 ```
 
 If you want to run tests, then you need to compile **gtest** package (this is optional):
@@ -184,9 +182,11 @@ To compile OpenEB, you will need to install some extra tools:
     * download and extract [vcpkg version 2022.03.10](https://github.com/microsoft/vcpkg/archive/refs/tags/2022.03.10.zip)
     * `cd <VCPKG_SRC_DIR>`
     * `bootstrap-vcpkg.bat`
-  * finally, install the libraries by running `vcpkg.exe install --triplet x64-windows libusb eigen3 boost opencv glfw3 glew gtest dirent`
+  * install the libraries by running `vcpkg.exe install --triplet x64-windows libusb eigen3 boost opencv glfw3 glew gtest dirent`
     * Note that to avoid using `--triplet x64-windows`, which informs vcpkg to install packages for a x64-windows target,
       you can run `setx VCPKG_DEFAULT_TRIPLET x64-windows` (you need to close the command line and re-open it to ensure that this variable is set)
+  * Finally, download and install [ffmpeg](https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full.7z) and add the `bin` directory to your PATH.
+
 
 #### Install pybind
 
@@ -238,9 +238,6 @@ python -m pip install "opencv-python>=4.5.5.64" "sk-video==1.1.10" "fire==0.4.0"
 python -m pip install jupyter jupyterlab matplotlib "ipywidgets==7.6.5"
 python -m pip install "pytorch_lightning==1.5.10" "tqdm==4.63.0" "kornia==0.6.1"
 ```
-
-Finally, you will need to download [ffmpeg](https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full.7z) and add it to your PATH.
-
 
 ### Compilation
 

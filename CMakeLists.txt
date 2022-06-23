@@ -9,7 +9,7 @@
 
 cmake_minimum_required(VERSION 3.5)
 
-project(metavision VERSION 3.0.0)
+project(metavision VERSION 3.0.1)
 set(PROJECT_VERSION_SUFFIX "")
 
 if(PROJECT_VERSION_SUFFIX STREQUAL "")
