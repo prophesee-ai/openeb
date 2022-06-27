@@ -9,6 +9,7 @@
 
 if((NOT WIN32) AND (NOT APPLE) AND (NOT ANDROID))
 
+    option(UDEV_RULES_SYSTEM_INSTALL  "Install udev rules on your system files" ON)
     set(rules
         ${CMAKE_CURRENT_SOURCE_DIR}/88-cyusb.rules
         ${CMAKE_CURRENT_SOURCE_DIR}/99-evkv2.rules
@@ -18,10 +19,12 @@ if((NOT WIN32) AND (NOT APPLE) AND (NOT ANDROID))
                 DESTINATION share/metavision/hal/resources/rules
                 COMPONENT metavision-hal-prophesee-plugins
         )
-        install(FILES ${rule}
-                DESTINATION /etc/udev/rules.d
-                COMPONENT metavision-hal-prophesee-plugins
-        )
+        if(UDEV_RULES_SYSTEM_INSTALL) 
+            install(FILES ${rule}
+                    DESTINATION /etc/udev/rules.d
+                    COMPONENT metavision-hal-prophesee-plugins
+            )
+        endif()
     endforeach(rule)
 
 endif((NOT WIN32) AND (NOT APPLE) AND (NOT ANDROID))
