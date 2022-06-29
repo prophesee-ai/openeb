@@ -130,7 +130,7 @@ if (COMPILE_PYTHON3_BINDINGS)
 
     # this variable is used to set the default version for package dependency, i.e this version
     # is always available for the current installation
-    if (UNIX AND NOT APPLE)
+    if (UNIX AND NOT APPLE AND (NOT DEFINED PYTHON3_DEFAULT_VERSION))
         set (PYTHON3_DEFAULT_VERSION "3.6")
         find_program(_lsb_release_exec lsb_release)
         if (_lsb_release_exec)
