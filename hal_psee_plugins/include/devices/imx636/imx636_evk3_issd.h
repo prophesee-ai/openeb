@@ -20,9 +20,9 @@
 // sensor_version=None
 // args=-s evk3_imx636_cd
 // sensor=PseeEvk3IMX636
-// date=2021-12-17T08:54:08
-// psee_issd_version=1.2.0.182+gb2ca43260.d20210009
-// psee_sensor_lib_version=3.4.0.145+gef81c7c75.d20210025
+// date=2022-03-15T12:30:57
+// psee_issd_version=1.2.0.126+gc69d7e811
+// psee_sensor_lib_version=3.4.0.122+g035d29760
 // issd_data_format_version=1.0
 
 // clang-format off
@@ -53,8 +53,8 @@ const std::vector<RegisterOperation> issd_evk3_imx636_init = {
     RegisterOperation::Write(0x0000B07C, 0x00000000),
     RegisterOperation::Write(0x0000B074, 0x00000002),
     RegisterOperation::Write(0x0000B078, 0x000000A0),
-    RegisterOperation::Write(0x000000C0, 0x00000108),
-    RegisterOperation::Write(0x000000C0, 0x00000208),
+    RegisterOperation::Write(0x000000C0, 0x00000110),
+    RegisterOperation::Write(0x000000C0, 0x00000210),
     RegisterOperation::Write(0x0000B120, 0x00000001),
     RegisterOperation::Write(0x0000E120, 0x00000000),
     RegisterOperation::Write(0x0000B068, 0x00000004),
@@ -78,7 +78,7 @@ const std::vector<RegisterOperation> issd_evk3_imx636_init = {
     RegisterOperation::Write(0x0000B0A4, 0x0000002F),
     RegisterOperation::Write(0x0000B0AC, 0x00000028),
     RegisterOperation::Write(0x0000B0CC, 0x00000001),
-    RegisterOperation::Write(0x0000B000, 0x000002DC),
+    RegisterOperation::Write(0x0000B000, 0x000002F8),
     RegisterOperation::Write(0x0000B004, 0x0000008A),
     RegisterOperation::Write(0x0000B01C, 0x00000030),
     RegisterOperation::Write(0x0000B020, 0x00002000),
@@ -102,7 +102,7 @@ const std::vector<RegisterOperation> issd_evk3_imx636_init = {
     RegisterOperation::Write(0x0000B0C8, 0x00000003),
     RegisterOperation::Delay(200),
     RegisterOperation::Write(0x0000B044, 0x00000001),
-    RegisterOperation::Write(0x0000B000, 0x000002DD),
+    RegisterOperation::Write(0x0000B000, 0x000002F9),
     RegisterOperation::Write(0x00009008, 0x00000644),
     RegisterOperation::Write(0x00000004, 0xF0005042),
     RegisterOperation::Write(0x00000018, 0x00000200),
@@ -112,7 +112,7 @@ const std::vector<RegisterOperation> issd_evk3_imx636_init = {
 };
 
 const std::vector<RegisterOperation> issd_evk3_imx636_start = {
-    RegisterOperation::Write(0x0000B000, 0x000002DD),
+    RegisterOperation::Write(0x0000B000, 0x000002F9),
     RegisterOperation::Write(0x00009028, 0x00000000),
     RegisterOperation::WriteField(0x00009008, 0x645, 0x00000001),
 
@@ -129,8 +129,8 @@ const std::vector<RegisterOperation> issd_evk3_imx636_stop = {
     RegisterOperation::Write(0x00009028, 0x00000002),
     RegisterOperation::Delay(1000),
     RegisterOperation::WriteField(0x00009008, 0x00000644, 0x00000001),
-    RegisterOperation::Write(0x0000B000, 0x000002DC),
-    RegisterOperation::Delay(300),
+    RegisterOperation::Write(0x0000B000, 0x000002F8),
+    RegisterOperation::Delay(300)
 };
 
 const std::vector<RegisterOperation> issd_evk3_imx636_destroy = {
