@@ -15,7 +15,7 @@
 #endif
 
 #include <pybind11/pybind11.h>
-
+#include <iostream>
 #include "metavision/utils/pybind/deprecation_warning_exception.h"
 #include "hal_python_binder.h"
 #include "metavision/hal/device/device.h"
