@@ -155,7 +155,7 @@ jobs:
       - name: Build openEB
         shell: bash
         run: |
-          export PATH=$PATH:`realpath ../ffmpeg-5.0.1-full_build/bin`
+          export PATH=$PATH:`realpath ../ffmpeg-*-full_build/bin`
           mkdir build && cd build
           cmake -A x64 -DCMAKE_TOOLCHAIN_FILE="../cmake/toolchains/vcpkg.cmake" \
                 -DVCPKG_DIRECTORY=`realpath ../../vcpkg` \
