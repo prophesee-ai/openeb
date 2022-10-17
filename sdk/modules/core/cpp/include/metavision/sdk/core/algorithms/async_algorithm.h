@@ -114,6 +114,7 @@ public:
     /// This is especially useful if the condition to trigger the creation of a buffer is independent from the content
     /// of the processed events (for instance, an external trigger events, an other algorithm condition, etc.). The
     /// user must then call @ref flush when the condition is fulfilled.
+    ///
     /// @note This call can trigger a flush if some events have already been processed
     void set_processing_external();
 
@@ -121,6 +122,7 @@ public:
     ///
     /// This is to be called when one wants to process events older than those already processed (e.g. in the case one
     /// wants to switch the source producing the events).
+    ///
     /// @note This method doesn't change the algorithm's processing mode (see @ref Processing) nor flushes the ongoing
     /// time slice. It is the user's responsibility to call @ref flush before this method to retrieve the incomplete
     /// time slice if needed.
@@ -130,6 +132,7 @@ public:
     ///
     /// The resulting processed time slice corresponds to all the events processed since the last call to process_async
     /// (i.e. the time slice's timestamp is the last processed event's timestamp + 1)
+    ///
     /// @note The internal state is updated so that the next time slice will start just after this one (i.e.
     /// [last event's timestamp + 1, next_processing_ts_[).
     inline void flush();

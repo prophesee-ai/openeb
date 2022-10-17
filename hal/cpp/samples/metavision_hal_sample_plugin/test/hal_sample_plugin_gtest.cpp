@@ -13,6 +13,7 @@
 #include <atomic>
 
 #include "metavision/utils/gtest/gtest_with_tmp_dir.h"
+#include "metavision/utils/gtest/gtest_custom.h"
 #include "metavision/hal/device/device.h"
 #include "metavision/hal/device/device_discovery.h"
 #include "metavision/hal/facilities/i_hw_identification.h"
@@ -76,7 +77,7 @@ public:
     }
 };
 
-TEST_F(HalSamplePlugin_GTest, list_sources_and_open_it) {
+TEST_F_WITHOUT_CAMERA(HalSamplePlugin_GTest, list_sources_and_open_it) {
     // GIVEN the sample plugin library
     // WHEN we get the list of available sources
     auto v = Metavision::DeviceDiscovery::list();

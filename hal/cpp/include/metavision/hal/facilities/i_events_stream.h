@@ -18,6 +18,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <queue>
+#include <unordered_set>
 
 #include "metavision/hal/facilities/i_registrable_facility.h"
 #include "metavision/hal/utils/data_transfer.h"
@@ -63,6 +64,7 @@ public:
     /// @brief Gets latest raw data from the event buffer
     ///
     /// Gets raw data from the event buffer received since the last time this function was called.
+    ///
     /// @param n_rawbytes Address of a variable in which to put the number of bytes contained in the buffer
     /// @return Pointer to an array of Event structures
     /// @note This function must be called to write the buffer of events in the log file defined in @ref log_raw_data
@@ -73,6 +75,7 @@ public:
     /// This methods first writes the header retrieved through @ref I_HW_Identification.
     /// Buffers of data are then written each time @ref get_latest_raw_data is called (i.e. in the same thread it is
     /// called).
+    ///
     /// @param f The file to log into
     /// @return true if the file could be opened for writing, false otherwise or if the file name @a f is the same as
     /// the one read from
@@ -109,7 +112,7 @@ private:
     // buffer pool full when resuming streaming
     const bool stop_should_release_buffers_;
     DataTransfer::BufferPool tmp_buffer_pool_;
-    std::vector<DataTransfer::BufferPtr::element_type *>
+    std::unordered_set<DataTransfer::BufferPtr::element_type *>
         data_transfer_buffer_ptrs_; // for quick check if copying is necessary
 
     std::mutex start_stop_safety_;

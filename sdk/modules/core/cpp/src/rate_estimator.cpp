@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <stdexcept>
 #include "metavision/sdk/core/utils/rate_estimator.h"
 
 namespace Metavision {
@@ -19,12 +20,26 @@ RateEstimator::RateEstimator(const Callback &cb, timestamp step_time, timestamp 
     cb_               = cb;
     step_time_        = step_time;
     window_time_      = window_time;
+    peak_time_        = step_time;
+    next_time_        = step_time;
+    system_time_flag_ = system_time_flag;
+}
+
+RateEstimator::RateEstimator(timestamp step_time, timestamp window_time, timestamp peak_time, const Callback &cb,
+                             bool system_time_flag) {
+    cb_          = cb;
+    step_time_   = step_time;
+    window_time_ = window_time;
+    if (peak_time < window_time) {
+        peak_time_ = peak_time;
+    } else {
+        throw std::runtime_error("Peak time must be <= window time");
+    }
     next_time_        = step_time;
     system_time_flag_ = system_time_flag;
 }
 
 void RateEstimator::add_data(timestamp time, size_t count) {
-    std::unique_lock<std::mutex> guard(mutex_);
     long long current_time = time;
     if (!counts_.empty() && counts_.back().first == time) {
         counts_.back().second += count;
@@ -45,31 +60,28 @@ void RateEstimator::add_data(timestamp time, size_t count) {
             next_time_ += step_time_;
         }
         if (cb_) {
-            timestamp last_time     = 0;
-            timestamp callback_time = (system_time_flag_ ? time : next_time_);
-            int count               = 0;
-            double peak_rate = 0., avg_rate = 0.;
+            timestamp next_peak_time = peak_time_;
+            timestamp callback_time  = (system_time_flag_ ? time : next_time_);
+            double cur_peak_rate = 0., peak_rate = 0., avg_rate = 0.;
 
             // find the first count corresponding to the next callback timestamp minus the time window
             auto begin_it = std::lower_bound(counts_.begin(), counts_.end(), callback_time - window_time_ + 1,
                                              [](const auto &p, const timestamp &t) { return p.first < t; }),
                  end_it   = std::lower_bound(counts_.begin(), counts_.end(), callback_time + 1,
                                            [](const auto &p, const timestamp &t) { return p.first < t; });
-            if (begin_it != counts_.begin()) {
-                last_time = std::prev(begin_it)->first;
-            }
 
-            // update the average and peak rate from countime in the window timespan
+            // update the average and peak rate from counts in the window timespan
             for (auto it = begin_it; it != end_it; ++it) {
-                double rate = it->second / static_cast<double>(it->first - last_time);
-                avg_rate += rate;
-                peak_rate = std::max(peak_rate, rate);
-                last_time = it->first;
-                ++count;
+                avg_rate += it->second;
+                cur_peak_rate += it->second;
+                if (it->first >= next_peak_time) {
+                    cur_peak_rate /= peak_time_;
+                    peak_rate      = std::max(peak_rate, cur_peak_rate);
+                    cur_peak_rate  = 0;
+                    next_peak_time = static_cast<timestamp>(1 + it->first / peak_time_) * peak_time_;
+                }
             }
-            if (count != 0) {
-                avg_rate /= count;
-            }
+            avg_rate /= std::min(callback_time, window_time_);
             cb_(callback_time, avg_rate * 1.e6, peak_rate * 1.e6);
 
             // remove older countime from the map, they won't be needed anymore
@@ -80,7 +92,6 @@ void RateEstimator::add_data(timestamp time, size_t count) {
 }
 
 void RateEstimator::reset_data() {
-    std::unique_lock<std::mutex> guard(mutex_);
     counts_.clear();
     next_time_ = step_time_;
 }
@@ -91,6 +102,10 @@ timestamp RateEstimator::step_time() const {
 
 timestamp RateEstimator::window_time() const {
     return window_time_;
+}
+
+timestamp RateEstimator::peak_time() const {
+    return peak_time_;
 }
 
 } // namespace Metavision

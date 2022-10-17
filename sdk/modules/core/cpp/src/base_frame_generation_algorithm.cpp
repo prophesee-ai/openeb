@@ -43,14 +43,34 @@ void BaseFrameGenerationAlgorithm::set_colors(const cv::Scalar &bg_color, const 
         off_on_colors_[1][i] = static_cast<uchar>(on_color[i]);
         off_on_colors_[0][i] = static_cast<uchar>(off_color[i]);
     }
-    colored_ = colored;
+    bg_color_[3]         = 255;
+    off_on_colors_[0][3] = 255;
+    off_on_colors_[1][3] = 255;
+    flags_               = (colored ? Parameters::BGR : Parameters::GRAY);
 }
 
 void BaseFrameGenerationAlgorithm::set_color_palette(const Metavision::ColorPalette &palette) {
-    bg_color_         = get_cv_color(palette, Metavision::ColorType::Background);
-    off_on_colors_[0] = get_cv_color(palette, Metavision::ColorType::Negative);
-    off_on_colors_[1] = get_cv_color(palette, Metavision::ColorType::Positive);
-    colored_          = palette != Metavision::ColorPalette::Gray;
+    bg_color_         = detail::bgra(get_cv_color(palette, Metavision::ColorType::Background));
+    off_on_colors_[0] = detail::bgra(get_cv_color(palette, Metavision::ColorType::Negative));
+    off_on_colors_[1] = detail::bgra(get_cv_color(palette, Metavision::ColorType::Positive));
+    flags_            = (palette != Metavision::ColorPalette::Gray ? Parameters::BGR : Parameters::GRAY);
+}
+
+void BaseFrameGenerationAlgorithm::set_parameters(const cv::Vec4b &bg_color, const cv::Vec4b &on_color,
+                                                  const cv::Vec4b &off_color, int flags) {
+    for (int i = 0; i < 4; ++i) {
+        bg_color_[i]         = bg_color[i];
+        off_on_colors_[1][i] = on_color[i];
+        off_on_colors_[0][i] = off_color[i];
+    }
+    flags_ = flags;
+}
+
+void BaseFrameGenerationAlgorithm::set_parameters(const Metavision::ColorPalette &palette, int flags) {
+    bg_color_         = detail::bgra(get_cv_color(palette, Metavision::ColorType::Background));
+    off_on_colors_[0] = detail::bgra(get_cv_color(palette, Metavision::ColorType::Negative));
+    off_on_colors_[1] = detail::bgra(get_cv_color(palette, Metavision::ColorType::Positive));
+    flags_            = flags;
 }
 
 cv::Vec3b BaseFrameGenerationAlgorithm::get_cv_color(const Metavision::ColorPalette &palette,
@@ -61,9 +81,15 @@ cv::Vec3b BaseFrameGenerationAlgorithm::get_cv_color(const Metavision::ColorPale
 }
 
 void BaseFrameGenerationAlgorithm::get_dimension(uint32_t &height, uint32_t &width, uint32_t &channels) const {
-    height   = height_;
-    width    = width_;
-    channels = (colored_ ? 3 : 1);
+    height = height_;
+    width  = width_;
+    if (flags_ & Parameters::GRAY) {
+        channels = 1;
+    } else if (flags_ & Parameters::RGB || flags_ & Parameters::BGR) {
+        channels = 3;
+    } else {
+        channels = 4;
+    }
 }
 
 } // namespace Metavision

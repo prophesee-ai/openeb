@@ -25,6 +25,7 @@ if (NOT ANDROID)
             metavision_hal_treuzell_protocol_obj
             metavision_hal_ccam3_obj
             metavision_hal_psee_video_obj
+            metavision_hal_psee_video_build_obj
             metavision_hal_ti_tmp103_obj
             metavision_hal_gen31_fx3_system_obj
             metavision_hal_gen31_evk2_system_obj
@@ -141,29 +142,24 @@ foreach(plugin ${plugin_list})
 
     list(APPEND hal_psee_plugins_target_file_list $<TARGET_FILE:${plugin}>)
 
-    if(NOT plugin STREQUAL "hal_plugin_prophesee")
-        # instead of setting the RUNTIME/LIBRARY_OUTPUT_DIRECTORY property on the target, we manually copy
-        # the library : this will work for linux and windows and avoid the automatic copy of the DLLs the
-        # plugin depends on by MSVC
-        add_custom_command(TARGET ${plugin} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E make_directory "${HAL_BUILD_PLUGIN_PATH}"
-            COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:${plugin}>" "${HAL_BUILD_PLUGIN_PATH}")
-
-        list(APPEND hal_psee_plugins_target_file_list "${HAL_BUILD_PLUGIN_PATH}/$<TARGET_FILE_NAME:${plugin}>")
-
+    if(plugin STREQUAL "hal_plugin_prophesee")
+        set(HAL_COPY_PLUGIN_PATH "${HAL_BUILD_PLUGIN_PATH}/universal")
+    else()
+        set(HAL_COPY_PLUGIN_PATH "${HAL_BUILD_PLUGIN_PATH}")
         install(TARGETS ${plugin}
                 LIBRARY DESTINATION "${HAL_INSTALL_PLUGIN_RELATIVE_PATH}" COMPONENT metavision-hal-prophesee-plugins
                 RUNTIME DESTINATION "${HAL_INSTALL_PLUGIN_RELATIVE_PATH}" COMPONENT metavision-hal-prophesee-plugins
                 #ARCHIVE : we don't want to install .lib files for the plugins, it's useless
         )
-    else()
-        # We put the Universal plugin in a separate folder, and don't install it with Metavision
-        add_custom_command(TARGET ${plugin} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E make_directory "${HAL_BUILD_PLUGIN_PATH}_universal"
-            COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:${plugin}>" "${HAL_BUILD_PLUGIN_PATH}_universal")
-
-        list(APPEND hal_psee_plugins_target_file_list "${HAL_BUILD_PLUGIN_PATH}_universal/$<TARGET_FILE_NAME:${plugin}>")
     endif()
+    # instead of setting the RUNTIME/LIBRARY_OUTPUT_DIRECTORY property on the target, we manually copy
+    # the library : this will work for linux and windows and avoid the automatic copy of the DLLs the
+    # plugin depends on by MSVC
+    add_custom_command(TARGET ${plugin} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${HAL_COPY_PLUGIN_PATH}"
+        COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:${plugin}>" "${HAL_COPY_PLUGIN_PATH}")
+
+    list(APPEND hal_psee_plugins_target_file_list "${HAL_COPY_PLUGIN_PATH}/$<TARGET_FILE_NAME:${plugin}>")
 
 endforeach()
 

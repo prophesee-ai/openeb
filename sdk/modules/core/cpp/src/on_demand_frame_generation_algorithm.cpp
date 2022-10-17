@@ -22,8 +22,15 @@ OnDemandFrameGenerationAlgorithm::OnDemandFrameGenerationAlgorithm(int width, in
 }
 
 void OnDemandFrameGenerationAlgorithm::generate(timestamp ts, cv::Mat &frame, bool allocate) {
-    if (allocate)
-        frame.create(height_, width_, colored_ ? CV_8UC3 : CV_8U);
+    if (allocate) {
+        if (flags_ & Parameters::GRAY) {
+            frame.create(height_, width_, CV_8U);
+        } else if (flags_ & Parameters::RGB || flags_ & Parameters::BGR) {
+            frame.create(height_, width_, CV_8UC3);
+        } else {
+            frame.create(height_, width_, CV_8UC4);
+        }
+    }
 
     if (ts < last_frame_ts_us_) {
         std::ostringstream ss;
@@ -44,7 +51,7 @@ void OnDemandFrameGenerationAlgorithm::generate(timestamp ts, cv::Mat &frame, bo
         std::upper_bound(begin, events_queue_.end(), ts, [](timestamp t, const auto &ev) { return t < ev.t; });
 
     // Generate frame using events from the queue
-    generate_frame_from_events(begin, end, frame, bg_color_, off_on_colors_, colored_);
+    generate_frame_from_events(begin, end, frame, bg_color_, off_on_colors_, flags_);
     // Remove events older than ts - accumulation_time,
     // Or remove all the processed events if the accumulation time is null
     events_queue_.erase(events_queue_.begin(), (accumulation_time_us_ == 0 ? end : begin));

@@ -17,8 +17,6 @@
 
 #include "boards/treuzell/tz_camera_discovery.h"
 #include "boards/treuzell/tz_libusb_board_command.h"
-#include "utils/device_builder_factory.h"
-#include "devices/utils/device_system_id.h"
 #include "metavision/hal/utils/hal_exception.h"
 #include "utils/psee_hal_plugin_error_code.h"
 #include "metavision/hal/utils/hal_log.h"
@@ -89,10 +87,10 @@ bool TzCameraDiscovery::discover(DeviceBuilder &device_builder, const std::strin
     for (auto board : boards) {
         if (serial != "" && (board->get_serial() != serial))
             continue;
-        if (board->get_board_speed() < LIBUSB_SPEED_SUPER) {
-            MV_HAL_LOG_ERROR() << "Your EVK camera" << serial
-                               << "isn't connected in USB3. Please check your connection.";
-            continue;
+        const long kLibUSBSpeedSuper = 5000;
+        if (board->get_board_speed() < kLibUSBSpeedSuper) {
+            MV_HAL_LOG_WARNING() << "Your EVK camera" << serial
+                                 << "isn't connected in USB3. Please check your connection.";
         }
         return builder->build_devices(board, device_builder, config);
     }

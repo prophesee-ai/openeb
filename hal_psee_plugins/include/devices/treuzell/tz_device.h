@@ -57,11 +57,16 @@ protected:
     friend TzDeviceBuilder;
 };
 
+class TzRegisterBuildMethod;
 class TzDeviceBuilder {
 public:
     using Build_Fun = std::function<std::shared_ptr<TzDevice>(std::shared_ptr<TzLibUSBBoardCommand>, uint32_t id,
                                                               std::shared_ptr<TzDevice> parent)>;
     using Check_Fun = std::function<bool(std::shared_ptr<TzLibUSBBoardCommand>, uint32_t id)>;
+    using Build_Map = std::unordered_map<std::string, std::pair<Build_Fun, Check_Fun>>;
+
+    TzDeviceBuilder() : map(generic_map()) {}
+
     void insert(std::string key, Build_Fun method, Check_Fun buildable = nullptr) {
         map.insert({key, {method, buildable}});
     }
@@ -86,8 +91,18 @@ public:
                        const DeviceConfig &config);
 
 private:
-    std::unordered_map<std::string, std::pair<Build_Fun, Check_Fun>> map;
+    Build_Map map;
+    static Build_Map &generic_map();
     friend TzDevice;
+    friend TzRegisterBuildMethod;
+};
+
+class TzRegisterBuildMethod {
+public:
+    TzRegisterBuildMethod(std::string key, TzDeviceBuilder::Build_Fun method,
+                          TzDeviceBuilder::Check_Fun buildable = nullptr) {
+        TzDeviceBuilder::generic_map().insert({key, {method, buildable}});
+    }
 };
 
 } // namespace Metavision

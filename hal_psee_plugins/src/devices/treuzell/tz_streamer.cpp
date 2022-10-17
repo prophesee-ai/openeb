@@ -28,6 +28,7 @@ std::shared_ptr<TzDevice> TzStreamer::build(std::shared_ptr<TzLibUSBBoardCommand
                                             std::shared_ptr<TzDevice> parent) {
     return std::make_shared<TzStreamer>(cmd, dev_id, parent);
 }
+static TzRegisterBuildMethod method("treuzell,streamer", TzStreamer::build);
 
 void TzStreamer::spawn_facilities(DeviceBuilder &device_builder) {}
 

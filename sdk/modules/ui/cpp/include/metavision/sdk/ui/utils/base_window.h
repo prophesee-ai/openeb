@@ -26,6 +26,7 @@ namespace Metavision {
 ///
 /// This class cannot directly be used as is, instead, one needs to instantiate one of its derived class (i.e. @ref
 /// Window or @ref MTWindow).
+///
 /// @note Each window has its own events queue that needs to be regularly processed, either explicitly by calling
 /// @ref BaseWindow::poll_events or implicitly by calling @ref Window::show or @ref MTWindow::show_async with
 /// @p auto_poll = true (default behavior). Events are polled from the system and push to the windows' internal queue by

@@ -81,29 +81,68 @@ void PeriodicFrameGenerationAlgorithm::process_async(const timestamp processing_
         return;
 
     // Generate Frame using the time surface
-    frame_.create(height_, width_, colored_ ? CV_8UC3 : CV_8U);
+    if (flags_ & Parameters::GRAY) {
+        frame_.create(height_, width_, CV_8U);
+    } else if (flags_ & Parameters::RGB || flags_ & Parameters::BGR) {
+        frame_.create(height_, width_, CV_8UC3);
+    } else {
+        frame_.create(height_, width_, CV_8UC4);
+    }
 
     // Compute the time threshold below which events are not to be displayed
     // N.B. min_event_ts_us_to_use_ might be wrong at the initialization.
     //      Let's subtract the accumulation time to the current processing timestamp
     const int32_t min_display_event_ts = static_cast<int32_t>((processing_ts - accumulation_time_us_) - ts_offset_);
 
+    cv::Vec3b _bg_color3;
+    cv::Vec4b _bg_color4;
+    std::array<cv::Vec3b, 2> _off_on_colors3;
+    std::array<cv::Vec4b, 2> _off_on_colors4;
+    if (flags_ & Parameters::BGR || flags_ & Parameters::BGRA) {
+        _bg_color3      = detail::bgr(bg_color_);
+        _off_on_colors3 = {detail::bgr(off_on_colors_[0]), detail::bgr(off_on_colors_[1])};
+        _bg_color4      = bg_color_;
+        _off_on_colors4 = off_on_colors_;
+    } else {
+        _bg_color3      = detail::rgb(bg_color_);
+        _off_on_colors3 = {detail::rgb(off_on_colors_[0]), detail::rgb(off_on_colors_[1])};
+        _bg_color4      = detail::rgba(bg_color_);
+        _off_on_colors4 = {detail::rgba(off_on_colors_[0]), detail::rgba(off_on_colors_[1])};
+    }
+
     // Fill the frame from the time surface
-    const size_t num_pixels = time_surface_.size();
-    if (colored_) {
-        // Matrices allocated with the create() method are always continuous in memory
-        auto img_ptr = frame_.ptr<cv::Vec3b>(0);
-        for (size_t i = 0; i < num_pixels; ++i) {
-            const auto &last_pix_data = time_surface_[i];
-            img_ptr[i] = last_pix_data.first < min_display_event_ts ? bg_color_ : off_on_colors_[last_pix_data.second];
+    const size_t height = static_cast<size_t>(frame_.rows);
+    const size_t width  = static_cast<size_t>(frame_.cols);
+    // Matrices allocated with the create() method are always continuous in memory
+    if (flags_ & Parameters::GRAY) {
+        for (size_t y = 0; y < height; ++y) {
+            const auto last_pix_data_ptr = &time_surface_[y * width];
+            auto img_ptr                 = frame_.ptr<uint8_t>(flags_ & Parameters::FLIP_Y ? height - 1 - y : y);
+            for (size_t x = 0; x < width; ++x) {
+                img_ptr[x] = last_pix_data_ptr[x].first < min_display_event_ts ?
+                                 bg_color_[0] :
+                                 off_on_colors_[last_pix_data_ptr[x].second][0];
+            }
+        }
+    } else if (flags_ & Parameters::RGB || flags_ & Parameters::BGR) {
+        for (size_t y = 0; y < height; ++y) {
+            const auto last_pix_data_ptr = &time_surface_[y * width];
+            auto img_ptr                 = frame_.ptr<cv::Vec3b>(flags_ & Parameters::FLIP_Y ? height - 1 - y : y);
+            for (size_t x = 0; x < width; ++x) {
+                img_ptr[x] = last_pix_data_ptr[x].first < min_display_event_ts ?
+                                 _bg_color3 :
+                                 _off_on_colors3[last_pix_data_ptr[x].second];
+            }
         }
     } else {
-        // Matrices allocated with the create() method are always continuous in memory
-        auto img_ptr = frame_.ptr<uint8_t>(0);
-        for (size_t i = 0; i < num_pixels; ++i) {
-            const auto &last_pix_data = time_surface_[i];
-            img_ptr[i] =
-                last_pix_data.first < min_display_event_ts ? bg_color_[0] : off_on_colors_[last_pix_data.second][0];
+        for (size_t y = 0; y < height; ++y) {
+            const auto last_pix_data_ptr = &time_surface_[y * width];
+            auto img_ptr                 = frame_.ptr<cv::Vec4b>(flags_ & Parameters::FLIP_Y ? height - 1 - y : y);
+            for (size_t x = 0; x < width; ++x) {
+                img_ptr[x] = last_pix_data_ptr[x].first < min_display_event_ts ?
+                                 _bg_color4 :
+                                 _off_on_colors4[last_pix_data_ptr[x].second];
+            }
         }
     }
 

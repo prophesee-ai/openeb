@@ -25,7 +25,7 @@
 #include "devices/gen41/gen41_noise_filter_module.h"
 #include "devices/gen41/gen41_roi_command.h"
 #include "devices/imx636/imx636_evk3_regmap_builder.h"
-#include "devices/gen41/gen41_tz_trigger_event.h"
+#include "devices/imx636/imx636_tz_trigger_event.h"
 #include "facilities/psee_hw_register.h"
 #include "geometries/hd_geometry.h"
 #include "metavision/hal/facilities/i_events_stream.h"
@@ -62,6 +62,8 @@ std::shared_ptr<TzDevice> TzImx636::build(std::shared_ptr<TzLibUSBBoardCommand> 
         return nullptr;
     }
 }
+static TzRegisterBuildMethod method0("psee,ccam5_gen42", TzImx636::build, TzImx636::can_build);
+static TzRegisterBuildMethod method1("psee,ccam5_imx636", TzImx636::build, TzImx636::can_build);
 
 bool TzImx636::can_build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id) {
     return (cmd->read_device_register(dev_id, 0x14)[0] == 0xA0401806);
@@ -85,7 +87,8 @@ void TzImx636::spawn_facilities(DeviceBuilder &device_builder) {
     device_builder.add_facility(
         std::make_unique<Gen41ROICommand>(geometry.get_width(), geometry.get_height(), register_map, SENSOR_PREFIX));
 
-    device_builder.add_facility(std::make_unique<Gen41TzTriggerEvent>(register_map, SENSOR_PREFIX, shared_from_this()));
+    device_builder.add_facility(
+        std::make_unique<Imx636TzTriggerEvent>(register_map, SENSOR_PREFIX, shared_from_this()));
 }
 
 TzImx636::~TzImx636() {}

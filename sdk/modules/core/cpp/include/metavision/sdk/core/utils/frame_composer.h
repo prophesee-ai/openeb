@@ -133,6 +133,7 @@ private:
     /// @brief Processes the source image @p src according to the setting from @p params and saves it inside @p params
     ///
     /// If needed, the grey image is rescaled between the two extreme intensity values defined in @p params
+    ///
     /// @param src CV_8U or CV_8UC3 original input image
     /// @param params Struct containing the subimage alongside with its preprocessing options and relative position
     /// inside the final composed image

@@ -17,7 +17,7 @@ OpenEB is composed of the Open modules of Metavision Intelligence:
 
 OpenEB also contains the source code of Prophesee camera plugins, enabling to stream data from our event-based cameras
 and to read recordings of event-based data. The supported cameras are:
-* EVK1 - Gen3.1 VGA
+* EVK1 - Gen3/Gen3.1 VGA
 * EVK2 - Gen4.1 HD
 * EVK3 - Gen 3.1 VGA / Gen4.1 HD
 * EVK4 - HD
@@ -131,7 +131,8 @@ with the following command: `sudo cmake --build . --target install`. In that cas
 permanently, you should add the previous command in your ~/.bashrc)
 
 *Note* that since OpenEB 3.0.0, Prophesee camera plugins are included in the OpenEB repository, so you don't need to perform
-any extra step to install them. 
+any extra step to install them. If you are using a third-party camera, you need to install the plugin provided
+by the camera vendor and specify the location of the plugin using the `MV_HAL_PLUGIN_PATH` environment variable.
 
 To get started with OpenEB, you can download some [sample recordings](https://docs.prophesee.ai/stable/datasets.html) 
 and visualize them with [metavision_viewer](https://docs.prophesee.ai/stable/metavision_sdk/modules/driver/guides/viewer.html#chapter-sdk-driver-samples-viewer)
@@ -187,6 +188,17 @@ To compile OpenEB, you will need to install some extra tools:
       you can run `setx VCPKG_DEFAULT_TRIPLET x64-windows` (you need to close the command line and re-open it to ensure that this variable is set)
   * Finally, download and install [ffmpeg](https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full.7z) and add the `bin` directory to your PATH.
 
+Note that if you are using vcpkg for various projects or multiple versions of OpenEB, you might want to optimize the
+number of vcpkg install you manage. To do so, you will need the versions of the libraries we require.
+Those can be found in the [vcpkg repository](https://github.com/microsoft/vcpkg/tree/2022.03.10/versions) but we list them here for convenience:
+  * libusb: 1.0.24
+  * eigen3: 3.4.0
+  * boost: 1.78.0
+  * opencv: 4.5.5
+  * glfw3: 3.3.6
+  * glew: 2.2.0
+  * gtest: 1.11.0
+  * dirent: 1.23.2
 
 #### Install pybind
 
@@ -299,7 +311,8 @@ and visualize them with [metavision_viewer](https://docs.prophesee.ai/stable/met
 or you can stream data from your Prophesee-compatible event-based camera.
 
 *Note* that since OpenEB 3.0.0, Prophesee camera plugins are included in the OpenEB repository, so you don't need to perform
-any extra step to install them.
+any extra step to install them. If you are using a third-party camera, you need to install the plugin provided
+by the camera vendor and specify the location of the plugin using the `MV_HAL_PLUGIN_PATH` environment variable.
 
 ### Running the test suite (Optional)
 

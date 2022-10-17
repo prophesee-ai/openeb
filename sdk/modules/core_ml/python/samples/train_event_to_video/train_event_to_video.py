@@ -6,11 +6,11 @@
 # Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
+
 """
 E2V Training Script
-
-Copyright: (c) 2020 Prophesee
 """
+
 import torch
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
@@ -126,7 +126,7 @@ def train(params: argparse.Namespace):
             default_root_dir=params.root_dir,
             callbacks=[checkpoint_callback, demo_callback],
             logger=logger,
-            gpus=1,
+            gpus=0 if params.cpu else 1,
             precision=params.precision,
             accumulate_grad_batches=params.accumulate_grad_batches,
             progress_bar_refresh_rate=1,

@@ -28,7 +28,10 @@ namespace Metavision {
 
 class TzBoardDataTransfer : public DataTransfer {
 public:
-    TzBoardDataTransfer(const std::shared_ptr<TzLibUSBBoardCommand> &cmd, uint32_t raw_event_size_bytes);
+    static DataTransfer::BufferPool make_buffer_pool(size_t max_pool_byte_size = 0);
+
+    TzBoardDataTransfer(const std::shared_ptr<TzLibUSBBoardCommand> &cmd, uint32_t raw_event_size_bytes,
+                        const DataTransfer::BufferPool &buffer_pool = make_buffer_pool());
     ~TzBoardDataTransfer() override;
 
 private:
@@ -62,6 +65,9 @@ private:
     static int submit_transfer(libusb_transfer *transfer);
     void prepare_async_bulk_transfer(libusb_transfer *transfer, unsigned char *buf, int packet_size,
                                      libusb_transfer_cb_fn async_bulk_cb, void *user_data, unsigned int timeout);
+
+    static const size_t packet_size_;
+    static const size_t async_transfer_num_;
 };
 
 } // namespace Metavision

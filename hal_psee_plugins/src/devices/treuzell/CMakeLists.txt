@@ -19,11 +19,9 @@ target_sources(metavision_hal_treuzell_protocol_obj PRIVATE
 target_sources(metavision_hal_psee_video_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/tz_psee_video.cpp
 )
-if(TARGET hal_plugin_prophesee)
-target_sources(hal_plugin_prophesee PRIVATE
+target_sources(metavision_hal_psee_video_build_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/tz_psee_video_build.cpp
 )
-endif()
 
 target_sources(metavision_hal_ti_tmp103_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/ti_tmp103.cpp

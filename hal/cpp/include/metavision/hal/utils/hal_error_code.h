@@ -39,6 +39,9 @@ enum Enum : HalErrorCodeType {
 
     /// Errors related to calling deprecated function that have no equivalent in current API
     DeprecatedFunctionCalled = CameraError | 0x03000,
+
+    /// Operation is not implemented
+    OperationNotImplemented = CameraError | 0x04000,
 };
 }
 

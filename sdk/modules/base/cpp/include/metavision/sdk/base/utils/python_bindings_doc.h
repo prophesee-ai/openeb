@@ -30,6 +30,7 @@ public:
     /// @brief Constructs the map from a sequence of strings
     ///
     /// The sequence must contain an even number of elements
+    ///
     /// @param sequence_of_strings should be in the order: key1, val1, key2, val2, ... keyn, valn
     PythonBindingsDoc(const std::vector<std::string> &sequence_of_strings) {
         if (sequence_of_strings.size() % 2 != 0) {

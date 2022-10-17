@@ -104,14 +104,24 @@ class RawReaderBase(object):
         if hasattr(self, "i_events_stream") and self.i_events_stream is not None:
             self.i_events_stream.stop()
             self.i_events_stream.stop_log_raw_data()
-        if hasattr(self, "device"):
-            del self.device
         if hasattr(self, "i_events_stream"):
             del self.i_events_stream
         if hasattr(self, "i_device_control"):
             del self.i_device_control
         if hasattr(self, "i_decoder"):
             del self.i_decoder
+        if hasattr(self, "i_event_cd_decoder"):
+            del self.i_event_cd_decoder
+        if hasattr(self, "i_eventdecoder_ext_trigger"):
+            del self.i_eventdecoder_ext_trigger
+        if hasattr(self, "device"):
+            del self.device
+        if hasattr(self, "buffer_producer"):
+            del self.buffer_producer
+        if hasattr(self, "_event_buffer"):
+            del self._event_buffer
+        if hasattr(self, "_event_ext_trigger_buffer"):
+            del self._event_ext_trigger_buffer
 
     def __enter__(self):
         return self
@@ -378,7 +388,6 @@ class RawReader(RawReaderBase):
         path (string): Path to the file being read. If `path` is an empty string or a camera serial number it will try to open
             that camera instead.
         current_time (int): Indicating the position of the cursor in the file in us.
-        duration_s (int): Indicating the total duration of the file in seconds.
         do_time_shifting (bool): If True the origin of time is a few us from the first events.
             Otherwise it is when the camera was started.
 

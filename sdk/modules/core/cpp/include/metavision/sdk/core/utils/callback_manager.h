@@ -12,9 +12,10 @@
 #ifndef METAVISION_SDK_CORE_CALLBACK_MANAGER_H
 #define METAVISION_SDK_CORE_CALLBACK_MANAGER_H
 
-#include <list>
+#include <atomic>
 #include <map>
 #include <mutex>
+#include <vector>
 
 #include "metavision/sdk/core/utils/index_manager.h"
 
@@ -33,7 +34,8 @@ public:
         std::unique_lock<std::mutex> lock(cbs_mutex_);
         auto idx = index_manager_.index_generator_.get_next_index();
         index_manager_.counter_map_.tag(tag_id_);
-        cbs_map_[idx] = cb;
+        cbs_map_[idx]  = cb;
+        cbs_vec_dirty_ = true;
         return idx;
     }
 
@@ -43,18 +45,22 @@ public:
         if (it != cbs_map_.end()) {
             cbs_map_.erase(it);
             index_manager_.counter_map_.untag(tag_id_);
+            cbs_vec_dirty_ = true;
             return true;
         }
         return false;
     }
 
-    std::list<EventsCallback> get_cbs() const {
-        std::list<EventsCallback> cbs;
-        std::unique_lock<std::mutex> lock(cbs_mutex_);
-        for (auto &&p : cbs_map_) {
-            cbs.push_back(p.second);
+    const std::vector<EventsCallback> &get_cbs() const {
+        if (cbs_vec_dirty_) {
+            std::unique_lock<std::mutex> lock(cbs_mutex_);
+            cbs_vec_.clear();
+            for (auto &&p : cbs_map_) {
+                cbs_vec_.push_back(p.second);
+            }
+            cbs_vec_dirty_ = false;
         }
-        return cbs;
+        return cbs_vec_;
     }
 
     template<typename... Args>
@@ -69,7 +75,9 @@ private:
     IndexManager &index_manager_;
     TagType tag_id_ = std::numeric_limits<TagType>::max();
     mutable std::mutex cbs_mutex_;
+    mutable std::atomic<bool> cbs_vec_dirty_{false};
     std::map<size_t, EventsCallback> cbs_map_;
+    mutable std::vector<EventsCallback> cbs_vec_;
 };
 
 } // namespace Metavision

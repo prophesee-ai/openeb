@@ -70,7 +70,7 @@ def split_into_frames(filename_raw, thr_var_per_event=5e-4, downsampling_factor=
 
     height, width = mv_adaptive_rate_iterator.get_size()
 
-    if filename_output_video == None:
+    if filename_output_video is None:
         video_process = None
     else:
         assert not os.path.exists(filename_output_video)

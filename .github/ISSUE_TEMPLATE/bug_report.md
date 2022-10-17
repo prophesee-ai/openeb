@@ -12,7 +12,7 @@ If you encounter an issue, please attempt the following steps :
 * make sure you are using the last version of OpenEB
 
 If the earlier steps didn't solve the problem, raise an issue providing:
-* information about your system with [Metavision Platform Info Application](https://docs.prophesee.ai/stable/metavision_sdk/modules/metavision_hal/samples/platform_info.html)
+* information about your system with [Metavision Platform Info Application](https://docs.prophesee.ai/stable/metavision_sdk/modules/hal/samples/platform_info.html)
 * your operating system and its version
 * your camera type and its serial number that can be found on your camera's base (bottom) plate
 * software that has an issue, expected and actual behavior, and reproduction steps as detailed as possible 

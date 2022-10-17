@@ -368,7 +368,7 @@ int get_inv_idac_values(CCam3BiasEncoding value,
 }
 
 long get_ccam3_gen31_bias_encoding(const Gen31LLBias &bias, int bias_value) {
-    // if idacsisley an,d current mode we read the encode from a specikic file
+    // if idacsisley an,d current mode we read the encode from a specific file
     init_map_idac();
     std::map<int, CodeGen31IDAC> *mvtocode = NULL;
     switch (bias.get_bias_type()) {

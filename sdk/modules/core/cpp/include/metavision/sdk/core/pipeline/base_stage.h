@@ -73,6 +73,7 @@ protected:
     /// This behavior is automatically handled by this constructor.
     /// If you need to customize the consuming callback of one (or all) of the previous stages,
     /// you should use @ref set_consuming_callback instead.
+    ///
     /// @param prev_stage the stage that is executed before the created one
     /// @param detachable If this stage can be detached (i.e. can run on its own thread)
     inline BaseStage(BaseStage &prev_stage, bool detachable = true);
@@ -87,6 +88,7 @@ public:
     /// call the default consuming callback of this stage when data is produced.
     /// If you need to customize the consuming callback that should be called for
     /// a previous stage, you should use @ref set_consuming_callback instead.
+    ///
     /// @param prev_stage the previous stage of this stage
     inline void set_previous_stage(BaseStage &prev_stage);
 
@@ -201,6 +203,7 @@ public:
     /// The setup callback is called just after a valid reference to the pipeline has been set to the stage. The setup
     /// callback allows the stage to setup everything needing a valid reference to the pipeline (e.g. setting pre and
     /// post step callbacks).
+    ///
     /// @param cb The callback that will be called when this stage has been set a valid reference to the pipeline
     inline void set_setup_callback(const std::function<void()> &cb);
 
@@ -285,6 +288,7 @@ protected:
     /// @brief Notifies next stages of a change
     ///
     /// This schedules the execution of all the receiving callbacks
+    ///
     /// @param type The notification type
     /// @param data The associated notification data
     inline void notify(const NotificationType &type, const boost::any &data);
@@ -292,6 +296,7 @@ protected:
     /// @brief Produces data
     ///
     /// This schedules the execution of all the producing callbacks
+    ///
     /// @param data The produced data
     inline void produce(const boost::any &data);
 
@@ -299,6 +304,7 @@ protected:
     ///
     /// This function should be called whenever the stage will never produce any more data
     /// A stage is done when it has the status @ref Status::Completed or
+    ///
     /// @ref Status::Cancelled and it has finished scheduling tasks to be
     /// processed by following stages.
     inline void complete();

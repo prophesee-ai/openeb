@@ -95,4 +95,12 @@ bool I_Decoder::remove_time_callback(size_t callback_id) {
     return false;
 }
 
+size_t I_Decoder::add_protocol_violation_callback(const ProtocolViolationCallback_t &cb) {
+    throw HalException(HalErrorCode::OperationNotImplemented, "Decoder protocol violation detection not implemented");
+}
+
+bool I_Decoder::remove_protocol_violation_callback(size_t callback_id) {
+    return false;
+}
+
 } // namespace Metavision

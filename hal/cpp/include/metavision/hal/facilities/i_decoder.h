@@ -20,6 +20,7 @@
 #include "metavision/sdk/base/utils/timestamp.h"
 #include "metavision/hal/facilities/i_event_decoder.h"
 #include "metavision/hal/facilities/i_registrable_facility.h"
+#include "metavision/hal/utils/decoder_protocol_violation.h"
 #include "metavision/sdk/base/events/event_cd.h"
 #include "metavision/sdk/base/events/event_ext_trigger.h"
 
@@ -68,6 +69,22 @@ public:
     /// @note This method is not thread safe. You should add/remove the various callback before starting the streaming
     bool remove_time_callback(size_t callback_id);
 
+    /// @brief Alias for callback on protocol violation
+    using ProtocolViolationCallback_t = std::function<void(DecoderProtocolViolation)>;
+
+    /// @brief Adds a function to be called when decoder protocol is breached
+    /// @param cb Callback to add
+    /// @return ID of the added callback
+    /// @note This method is not thread safe. You should add/remove the various callback before starting the streaming
+    /// @note It's not allowed to add/remove a callback from the callback itself
+    virtual size_t add_protocol_violation_callback(const ProtocolViolationCallback_t &cb);
+
+    /// @brief Removes a previously registered protocol violation callback
+    /// @param callback_id Callback ID
+    /// @return true if the callback has been unregistered correctly, false otherwise.
+    /// @note This method is not thread safe. You should add/remove the various callback before starting the streaming
+    virtual bool remove_protocol_violation_callback(size_t callback_id);
+
     /// @brief Gets the timestamp of the last event
     /// @return Timestamp of the last event
     virtual timestamp get_last_timestamp() const = 0;
@@ -77,6 +94,7 @@ public:
     /// If the timestamp shift (timestamp of the first event in the stream) is already known,
     /// the function returns true and the parameter @p timestamp_shift will be set to its value.
     /// Otherwise, the function returns false and does nothing.
+    ///
     /// @return true if the timestamp shift is already known, false otherwise
     virtual bool get_timestamp_shift(Metavision::timestamp &timestamp_shift) const = 0;
 

@@ -102,6 +102,7 @@ public:
     ///
     /// This information is to be used for the synchronization (@ref synchronize_data_from_triggers).
     /// This method is not blocking: this is not a synchronization point.
+    ///
     /// @tparam ExtTriggerIterator The type of the external trigger input events iterator
     /// @param trigger_it The first iterator to an external trigger to process
     /// @param trigger_it_end The last iterator to an external trigger to process
@@ -114,6 +115,7 @@ public:
     ///
     /// This information is to be used for the synchronization (@ref synchronize_data_from_triggers).
     /// This method is not blocking: this is not a synchronization point.
+    ///
     /// @tparam ExtTriggerIterator The type of the external trigger input events iterator
     /// @param trigger_it The first iterator to an external trigger to process
     /// @param trigger_it_end The last iterator to an external trigger to process

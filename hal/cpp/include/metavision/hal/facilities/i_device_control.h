@@ -38,6 +38,7 @@ public:
     /// @brief Sets the camera in standalone mode.
     ///
     /// The camera does not interact with other devices.
+    ///
     /// @warning This function must be called before starting the camera
     /// @return true on success
     virtual bool set_mode_standalone() = 0;
@@ -45,6 +46,7 @@ public:
     /// @brief Sets the camera as master
     ///
     /// The camera sends clock signal to another device
+    ///
     /// @warning This function must be called before starting the camera
     /// @return true on success
     virtual bool set_mode_master() = 0;
@@ -52,6 +54,7 @@ public:
     /// @brief Sets the camera as slave
     ///
     /// The camera receives the clock from another device
+    ///
     /// @warning This function must be called before starting the camera
     /// @return true on success
     virtual bool set_mode_slave() = 0;

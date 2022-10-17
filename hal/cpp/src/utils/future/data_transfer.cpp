@@ -17,8 +17,8 @@ namespace Future {
 
 DataTransfer::DataTransfer(uint32_t raw_event_size_bytes) : raw_event_size_bytes_(raw_event_size_bytes) {}
 
-DataTransfer::DataTransfer(uint32_t raw_event_size_bytes, const BufferPool &buffer_pool) :
-    raw_event_size_bytes_(raw_event_size_bytes), buffer_pool_(buffer_pool) {
+DataTransfer::DataTransfer(uint32_t raw_event_size_bytes, const BufferPool &buffer_pool, bool allow_buffer_drop) :
+    raw_event_size_bytes_(raw_event_size_bytes), buffer_pool_(buffer_pool), allow_buffer_drop_(allow_buffer_drop) {
     if (buffer_pool_.is_bounded() && buffer_pool_.size() < 3) {
         throw HalException(HalErrorCode::InvalidArgument,
                            "A DataTransfer can not be initialized with a bounded object pool of size < 3 (got size " +
@@ -105,6 +105,7 @@ void DataTransfer::stop() {
         return;
     }
 
+    stop_impl();
     {
         std::lock(suspend_mutex_, running_mutex_);
         std::unique_lock<std::mutex> lock1(suspend_mutex_, std::adopt_lock);
@@ -114,7 +115,6 @@ void DataTransfer::stop() {
     suspend_cond_.notify_all();
     running_cond_.notify_all();
 
-    stop_impl();
     run_transfers_thread_.join();
 }
 
@@ -159,18 +159,6 @@ uint32_t DataTransfer::get_raw_event_size_bytes() const {
     return raw_event_size_bytes_;
 }
 
-DataTransfer::BufferPtr DataTransfer::transfer_data(const BufferPtr &buffer) {
-    for (auto cb : new_buffer_cbs_) {
-        cb.second(buffer);
-    }
-
-    return get_buffer();
-}
-
-DataTransfer::BufferPtr DataTransfer::get_buffer() {
-    return buffer_pool_.acquire();
-}
-
 bool DataTransfer::should_stop() {
     return stop_ || suspend_;
 }
@@ -182,6 +170,12 @@ bool DataTransfer::stopped() const {
 void DataTransfer::start_impl(BufferPtr buffer) {}
 
 void DataTransfer::stop_impl() {}
+
+void DataTransfer::fire_callbacks(const BufferPtr buffer) const {
+    for (auto &cb : new_buffer_cbs_) {
+        cb.second(buffer);
+    }
+}
 
 } // namespace Future
 } // namespace Metavision

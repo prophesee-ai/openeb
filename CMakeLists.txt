@@ -9,7 +9,7 @@
 
 cmake_minimum_required(VERSION 3.5)
 
-project(metavision VERSION 3.0.2)
+project(metavision VERSION 3.1.0)
 set(PROJECT_VERSION_SUFFIX "")
 
 if(PROJECT_VERSION_SUFFIX STREQUAL "")
@@ -244,6 +244,7 @@ if (BUILD_TESTING)
     endif(CMAKE_CROSSCOMPILING)
 
     lfs_download(datasets/openeb/gen31_timer.raw)
+    lfs_download(datasets/openeb/gen31_timer_holes.raw)
     lfs_download(datasets/openeb/gen4_evt2_hand.raw)
     lfs_download(datasets/openeb/gen4_evt3_hand.raw)
     if(COMPILE_PYTHON3_BINDINGS)

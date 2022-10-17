@@ -11,8 +11,7 @@
 Sample code that demonstrates how to use Metavision SDK to visualize events from a live camera or a RAW file
 """
 
-
-from metavision_core.event_io import EventsIterator, LiveReplayEventsIterator
+from metavision_core.event_io import EventsIterator, LiveReplayEventsIterator, is_live_camera
 from metavision_sdk_core import PeriodicFrameGenerationAlgorithm, ColorPalette
 from metavision_sdk_ui import EventLoop, BaseWindow, MTWindow, UIAction, UIKeyEvent
 import argparse
@@ -29,15 +28,6 @@ def parse_args():
         "If it's a camera serial number, it will try to open that camera instead.")
     args = parser.parse_args()
     return args
-
-
-def is_live_camera(input_path):
-    """Checks if input_path is a live camera
-    Args:
-        input_path (str): path to the file to read. if `path` is an empty string or a camera serial number,
-        this function will return true.
-    """
-    return isinstance(input_path, str) and not os.path.exists(input_path)
 
 
 def main():

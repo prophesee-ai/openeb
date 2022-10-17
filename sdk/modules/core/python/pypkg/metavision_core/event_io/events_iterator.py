@@ -24,6 +24,8 @@ class EventsIterator(object):
     EventsIterator is a small convenience class to iterate through either a camera, a DAT file, a RAW file
     or a H5 file containing events.
 
+    Note that, as every Python iterator, you can consume an EventsIterator only once.
+
     Attributes:
         reader : class handling the file or camera.
         delta_t (int): Duration of served event slice in us.
@@ -37,7 +39,7 @@ class EventsIterator(object):
                           try to open that camera instead.
         start_ts (int): First timestamp to consider (in us). If mode is "delta_t" or "mixed", start_ts must be a
                         multiple of delta_t, otherwise a ValueError is thrown.
-        mode (string): Load by timeslice of number of events. Either "delta_t", "n_events" or "mixed",
+        mode (string): Load by timeslice or number of events. Either "delta_t", "n_events" or "mixed",
             where mixed uses both delta_t and n_events and chooses the first met criterion.
         delta_t (int): Duration of served event slice in us.
         n_events (int): Number of events in the timeslice.
@@ -101,7 +103,7 @@ class EventsIterator(object):
         Args:
             device (device): Hal device object initialized independently.
             start_ts (int): First timestamp to consider.
-            mode (string): Load by timeslice of number of events. Either "delta_t" or "n_events"
+            mode (string): Load by timeslice or number of events. Either "delta_t" or "n_events"
             delta_t (int): Duration of served event slice in us.
             n_events (int): Number of events in the timeslice.
             max_duration (int): If not None, maximal duration of the iteration in us.
@@ -137,8 +139,7 @@ class EventsIterator(object):
 
     def __iter__(self):
         if self._ran:
-            self.reader.reset()
-            self.current_time = 0
+            raise Exception('Can not iterate twice over the same EventIterator!')
         self._ran = True
 
         with self.reader as _:

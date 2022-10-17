@@ -77,6 +77,7 @@ public:
     /// @brief Sets the fps at which to generate frames and thus the frequency of the asynchronous calls
     ///
     /// The time reference used is the one from the input events
+    ///
     /// @param fps The fps to use. If the fps is 0, the current accumulation time is used to compute it
     /// @throw std::invalid_argument If the input fps is negative
     void set_fps(double fps);
@@ -88,6 +89,7 @@ public:
     ///
     /// Frame generated will only hold events in the interval [t - dt, t[ where t is the timestamp at
     /// which the frame is generated, and dt the accumulation time
+    ///
     /// @param accumulation_time_us Time range of events to update the frame with (in us)
     void set_accumulation_time_us(uint32_t accumulation_time_us);
 

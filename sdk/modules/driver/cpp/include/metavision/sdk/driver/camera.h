@@ -128,6 +128,7 @@ public:
     /// @brief Copy constructor
     ///
     /// A Camera object can not be copy-constructed, but it can be move-constructed.
+    ///
     /// @sa @ref Camera(Camera &&camera);
     Camera(Camera &camera) = delete;
 
@@ -139,6 +140,7 @@ public:
     /// @brief Copy assignment
     ///
     /// A Camera object can not be copy-assigned, but it can be move-assigned.
+    ///
     /// @sa @ref Camera & operator=(Camera &&camera);
     Camera &operator=(Camera &camera) = delete;
 
@@ -157,6 +159,7 @@ public:
     /// please specify the @ref OnlineSourceType and use the @ref Camera::from_source function,
     /// or else specify the serial number and use the @ref Camera::from_serial function.\n
     /// Serial numbers and types of available sources can be found with @ref Camera::list_online_sources function.
+    ///
     /// @throw CameraException in case of initialization failure.
     static Camera from_first_available();
 
@@ -167,6 +170,7 @@ public:
     /// Serial numbers and types of available sources can be found with @ref Camera::list_online_sources function.
     /// @throw CameraException if the camera corresponding to the input source type and the source index has not been
     /// found.
+    ///
     /// @param input_source_type @ref OnlineSourceType
     /// @param source_index Index of the source in the list of available online sources
     /// @return @ref Camera instance initialized from the source
@@ -176,6 +180,7 @@ public:
     ///
     /// Serial numbers of available sources can be found by with @ref Camera::list_online_sources function.\n
     /// If 'serial' is an empty string, the function works as the main constructor.
+    ///
     /// @throw CameraException if the camera with the input serial number has not been found.
     /// @param serial Serial number of the camera
     /// @return @ref Camera instance initialized from the serial number
@@ -255,6 +260,7 @@ public:
     ///
     /// When a camera runtime error occurs, the camera thread is left and events are no longer sent.
     /// You are notified by this callback whenever this happens.
+    ///
     /// @throw CameraException if the camera has not been initialized.
     /// @param error_callback The error callback to call
     /// @return ID of the added callback
@@ -307,6 +313,7 @@ public:
     ///
     /// It will start polling events from the source and calling specified events callbacks.\n
     /// It has no effect if the start function has been already called and not the @ref stop function.
+    ///
     /// @throw CameraException if the camera has not been initialized.
     /// @sa @ref CD::add_callback
     /// @sa @ref ExtTrigger::add_callback
@@ -318,12 +325,14 @@ public:
     ///
     /// If the source is online, it always returns true unless the @ref stop function has been called.\n
     /// If the input is offline (from a file), it returns false whenever no data are remaining in the input file.
+    ///
     /// @return true if the camera is running or there are data remaining from an offline source, false otherwise.
     bool is_running();
 
     /// @brief Stops polling events from the camera or from the file
     ///
     /// Stops ongoing streaming.
+    ///
     /// @throw CameraException if the camera has not been initialized.
     /// @return true if the camera instance has been stopped successfully, false otherwise. If the camera was not
     /// running, this function returns false.
@@ -347,6 +356,7 @@ public:
     /// biases, ...)
     ///
     /// Read-only structure.
+    ///
     /// @sa @ref CameraConfiguration
     const CameraConfiguration &get_camera_configuration();
 
@@ -356,6 +366,11 @@ public:
     timestamp get_last_timestamp() const;
 
     /// @brief Gets corresponding @ref Device in HAL library
+    ///
+    /// This Device retrieved can then be used to call the different facilities of the camera.
+    /// for example: camera.get_device()->get_facility<Metavision::I_TriggerIn>()->enable(channel_id)
+    /// or: camera.get_device()->get_facility<Metavision::I_Monitoring>()->get_temperature())
+    ///
     /// @return The @ref Device used internally by the class Camera
     Device &get_device();
 

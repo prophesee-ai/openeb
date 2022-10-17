@@ -39,6 +39,7 @@ public:
     /// @brief Subscribes to external trigger events
     ///
     /// Registers a callback that will be called each time a buffer of external trigger event has been decoded.
+    ///
     /// @param cb Callback to call each time a buffer of ext trigger event has been decoded
     /// @sa @ref EventsExtTriggerCallback
     /// @return ID of the added callback

@@ -22,6 +22,7 @@
 /// Convenience function to return a logging operation of DEBUG level using the current logging stream,
 /// an optional prefix format @p prefixFmt and automatically adding an end of line token at the end of the logging
 /// operation
+///
 /// @param prefixFmt (Optional) a format string that will be be output as the first message token
 /// @return A logging operation of DEBUG level
 #define MV_LOG_DEBUG(prefixFmt...)
@@ -31,6 +32,7 @@
 /// Convenience macro to return a logging operation of TRACE level using the current logging stream,
 /// an optional prefix format @p prefixFmt and automatically adding an end of line token at the end of the logging
 /// operation
+///
 /// @param prefixFmt (Optional) a format string that will be be output as the first message token
 /// @return A logging operation of TRACE level
 #define MV_LOG_TRACE(prefixFmt...)
@@ -40,6 +42,7 @@
 /// Convenience function to return a logging operation of INFO level using the current logging stream,
 /// an optional prefix format @p prefixFmt and automatically adding an end of line token at the end of the logging
 /// operation
+///
 /// @param prefixFmt (Optional) a format string that will be be output as the first message token
 /// @return A logging operation of INFO level
 #define MV_LOG_INFO(prefixFmt...)
@@ -49,6 +52,7 @@
 /// Convenience function to return a logging operation of WARNING level using the current logging stream,
 /// an optional prefix format @p prefixFmt and automatically adding an end of line token at the end of the logging
 /// operation
+///
 /// @param prefixFmt (Optional) a format string that will be be output as the first message token
 /// @return A logging operation of WARNING level
 #define MV_LOG_WARNING(prefixFmt...)
@@ -58,6 +62,7 @@
 /// Convenience function to return a logging operation of ERROR level using the current logging stream,
 /// an optional prefix format @p prefixFmt and automatically adding an end of line token at the end of the logging
 /// operation
+///
 /// @param prefixFmt (Optional) a format string that will be be output as the first message token
 /// @return A logging operation of ERROR level
 #define MV_LOG_ERROR(prefixFmt...)
@@ -91,6 +96,7 @@ LogLevel getLogLevel();
 ///
 /// Any message that has a higher or equal level will be enabled to pass through, and
 /// any message that has a lower level will be ignored
+///
 /// @param level The minimum level of messages allowed to pass through
 /// @note By default, the level is LogLevel::Info
 /// @note It is also possible to set the current level of logging by setting the environment variable
@@ -139,6 +145,7 @@ class concurrent_ostreambuf;
 /// It is much more convenient to use one of the @ref MV_LOG_DEBUG, @ref MV_LOG_TRACE, @ref
 /// MV_LOG_INFO, @ref MV_LOG_WARNING or @ref MV_LOG_ERROR functions to return an instance of
 /// this class
+///
 /// @tparam level The level of this logging operation
 /// @sa @ref MV_LOG_DEBUG, @ref MV_LOG_TRACE, @ref MV_LOG_INFO, @ref MV_LOG_WARNING, @ref MV_LOG_ERROR
 template<LogLevel level>

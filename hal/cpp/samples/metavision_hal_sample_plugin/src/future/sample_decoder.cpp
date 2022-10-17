@@ -66,11 +66,8 @@ bool SampleDecoder::reset_timestamp_impl(const Metavision::timestamp &t) {
     if (is_time_shifting_enabled() && !time_shift_set_) {
         return false;
     }
-    if (t >= 0) {
-        last_timestamp_ = t;
-        return true;
-    }
-    return false;
+    last_timestamp_ = t;
+    return true;
 }
 
 bool SampleDecoder::reset_timestamp_shift_impl(const Metavision::timestamp &shift) {

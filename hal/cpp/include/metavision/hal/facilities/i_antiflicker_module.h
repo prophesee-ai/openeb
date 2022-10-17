@@ -19,7 +19,7 @@
 namespace Metavision {
 
 /// @brief Anti-flicker module
-/// @note This feature is available only on Gen4.1 sensors
+/// @note This feature is available only on Gen4.1 sensors and newer
 class I_AntiFlickerModule : public I_RegistrableFacility<I_AntiFlickerModule> {
 public:
     /// @brief Enables the anti-flicker filter

@@ -13,6 +13,7 @@ you can use 2 compression backends:
     - zlib (fast read, slow write)
     - zstandard (fast read, fast write, but you have to install it)
 """
+
 import h5py
 import zlib
 try:

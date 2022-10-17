@@ -747,6 +747,12 @@ template<typename TimingProfilerType>
 int Camera::Private::run_from_camera(TimingProfilerType *profiler) {
     check_ccam_instance();
 
+    if (i_future_decoder_) {
+        // it could be the first time we start streaming and feeding events to the decoder, but
+        // if it's not the case, we need to reset the decoder state so that new events are not
+        // decoded using the current state (which is probably wrong : i.e wrong time base, etc.)
+        i_future_decoder_->reset_timestamp(-1);
+    }
     if (i_future_events_stream_) {
         // should never happen for the moment ...
     } else {

@@ -40,6 +40,7 @@ public:
     /// If the timestamp shift (timestamp of the first timer high event in the stream) is already known,
     /// the function returns true and the parameter @p timestamp_shift will be set to its value.
     /// Otherwise, the function returns false and does nothing.
+    ///
     /// @return true if the timestamp shift is already known, false otherwise
     bool get_timestamp_shift(Metavision::timestamp &timestamp_shift) const override final;
 
@@ -51,6 +52,7 @@ private:
     ///
     /// Identifies the events in the buffer and dispatches it to the instance of @ref Metavision::I_EventDecoder
     /// corresponding to each event type.
+    ///
     /// @warning It is mandatory to pass strictly consecutive buffers from the same source to this method
     ///
     /// @param ev Pointer on first event

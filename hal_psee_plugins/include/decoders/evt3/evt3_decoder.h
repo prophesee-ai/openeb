@@ -22,9 +22,12 @@
 #include "metavision/hal/facilities/i_geometry.h"
 #include "metavision/hal/facilities/i_decoder.h"
 #include "decoders/evt3/evt3_event_types.h"
+#include "decoders/evt3/evt3_validator.h"
 
 namespace Metavision {
+namespace detail {
 
+template<class Validator>
 class EVT3Decoder : public I_Decoder {
 public:
     using RawEvent       = Evt3Raw::RawEvent;
@@ -35,14 +38,17 @@ private:
     std::atomic<bool> timestamp_loop_enabled_{true};
 
     std::mutex is_decoding_mut_;
+    Validator validator;
 
 public:
     EVT3Decoder(
-        bool time_shifting_enabled, int height,
+        bool time_shifting_enabled, int height, int width,
         const std::shared_ptr<I_EventDecoder<EventCD>> &event_cd_decoder = std::shared_ptr<I_EventDecoder<EventCD>>(),
         const std::shared_ptr<I_EventDecoder<EventExtTrigger>> &event_ext_trigger_decoder =
             std::shared_ptr<I_EventDecoder<EventExtTrigger>>()) :
-        I_Decoder(time_shifting_enabled, event_cd_decoder, event_ext_trigger_decoder), height_(height) {}
+        I_Decoder(time_shifting_enabled, event_cd_decoder, event_ext_trigger_decoder),
+        height_(height),
+        validator(height, width) {}
 
     virtual bool get_timestamp_shift(timestamp &ts_shift) const override {
         return false;
@@ -57,6 +63,14 @@ public:
 
     uint8_t get_raw_event_size_bytes() const override {
         return sizeof(RawEvent);
+    }
+
+    virtual size_t add_protocol_violation_callback(const ProtocolViolationCallback_t &cb) override {
+        return validator.add_protocol_violation_callback(cb);
+    }
+
+    virtual bool remove_protocol_violation_callback(size_t callback_id) override {
+        return validator.remove_protocol_violation_callback(callback_id);
     }
 
 private:
@@ -127,9 +141,11 @@ private:
             if (type == static_cast<EventTypesUnderlying_t>(EventTypesEnum::EVT_ADDR_X)) {
                 if (is_valid) {
                     Evt3Raw::Event_PosX *ev_posx = reinterpret_cast<Evt3Raw::Event_PosX *>(cur_raw_ev);
-                    cd_forwarder.forward(static_cast<unsigned short>(ev_posx->x),
-                                         state[(int)EventTypesEnum::EVT_ADDR_Y], static_cast<short>(ev_posx->pol),
-                                         last_timestamp<DO_TIMESHIFT>());
+                    if (validator.validate_event_cd(cur_raw_ev)) {
+                        cd_forwarder.forward(static_cast<unsigned short>(ev_posx->x),
+                                             state[(int)EventTypesEnum::EVT_ADDR_Y], static_cast<short>(ev_posx->pol),
+                                             last_timestamp<DO_TIMESHIFT>());
+                    }
                 }
                 ++cur_raw_ev;
 
@@ -145,45 +161,54 @@ private:
                     continue;
                 }
 
-                cd_forwarder.reserve(32);
+                const uint16_t nb_bits = 32;
+                int next_offset;
+                if (validator.validate_vect_12_12_8_pattern(
+                        cur_raw_ev, state[(int)EventTypesEnum::VECT_BASE_X] & NOT_POLARITY_MASK, next_offset)) {
+                    cd_forwarder.reserve(32);
 
-                Evt3Raw::Event_Vect12_12_8 *ev_vect12_12_8 = reinterpret_cast<Evt3Raw::Event_Vect12_12_8 *>(cur_raw_ev);
+                    const Evt3Raw::Event_Vect12_12_8 *ev_vect12_12_8 =
+                        reinterpret_cast<const Evt3Raw::Event_Vect12_12_8 *>(cur_raw_ev);
 
-                Evt3Raw::Mask m;
-                m.m.valid1 = ev_vect12_12_8->valid1;
-                m.m.valid2 = ev_vect12_12_8->valid2;
-                m.m.valid3 = ev_vect12_12_8->valid3;
+                    Evt3Raw::Mask m;
+                    m.m.valid1 = ev_vect12_12_8->valid1;
+                    m.m.valid2 = ev_vect12_12_8->valid2;
+                    m.m.valid3 = ev_vect12_12_8->valid3;
 
-                uint32_t valid = m.valid;
+                    uint32_t valid = m.valid;
 
-                uint16_t last_x  = state[(int)EventTypesEnum::VECT_BASE_X] & NOT_POLARITY_MASK;
-                uint16_t nb_bits = 32;
+                    uint16_t last_x = state[(int)EventTypesEnum::VECT_BASE_X] & NOT_POLARITY_MASK;
 #if defined(__x86_64__) || defined(__aarch64__)
-                uint16_t off = 0;
-                while (valid) {
-                    off = __builtin_ctz(valid);
-                    valid &= ~(1 << off);
-                    cd_forwarder.forward_unsafe(last_x + off, state[(int)EventTypesEnum::EVT_ADDR_Y],
-                                                (bool)(state[(int)EventTypesEnum::VECT_BASE_X] & POLARITY_MASK),
-                                                last_timestamp<DO_TIMESHIFT>());
-                }
-#else
-                uint16_t end = last_x + nb_bits;
-                for (uint16_t i = last_x; i != end; ++i) {
-                    if (valid & 0x1) {
-                        cd_forwarder.forward_unsafe(i, state[(int)EventTypesEnum::EVT_ADDR_Y],
+                    uint16_t off = 0;
+                    while (valid) {
+                        off = __builtin_ctz(valid);
+                        valid &= ~(1 << off);
+                        cd_forwarder.forward_unsafe(last_x + off, state[(int)EventTypesEnum::EVT_ADDR_Y],
                                                     (bool)(state[(int)EventTypesEnum::VECT_BASE_X] & POLARITY_MASK),
                                                     last_timestamp<DO_TIMESHIFT>());
                     }
-                    valid >>= 1;
-                }
+#else
+                    uint16_t end = last_x + nb_bits;
+                    for (uint16_t i = last_x; i != end; ++i) {
+                        if (valid & 0x1) {
+                            cd_forwarder.forward_unsafe(i, state[(int)EventTypesEnum::EVT_ADDR_Y],
+                                                        (bool)(state[(int)EventTypesEnum::VECT_BASE_X] & POLARITY_MASK),
+                                                        last_timestamp<DO_TIMESHIFT>());
+                        }
+                        valid >>= 1;
+                    }
 #endif
-                state[(int)EventTypesEnum::VECT_BASE_X] += nb_bits;
-                cur_raw_ev += vect12_size;
-
+                }
+                if (validator.has_valid_vect_base()) {
+                    state[(int)EventTypesEnum::VECT_BASE_X] += nb_bits;
+                }
+                cur_raw_ev += next_offset;
             } else if (type == static_cast<EventTypesUnderlying_t>(EventTypesEnum::EVT_TIME_HIGH)) {
                 Evt3Raw::Event_Time *ev_timehigh          = reinterpret_cast<Evt3Raw::Event_Time *>(cur_raw_ev);
                 static constexpr timestamp max_timestamp_ = 1ULL << 11;
+
+                validator.validate_time_high(last_timestamp_.bitfield_time.high, ev_timehigh->time);
+
                 last_timestamp_.bitfield_time.loop +=
                     (bool)(last_timestamp_.bitfield_time.high >= max_timestamp_ + ev_timehigh->time);
                 last_timestamp_.bitfield_time.low =
@@ -193,11 +218,15 @@ private:
                              // right after to correct the value (note that the timestamp here is not good if we don't
                              // do that either)
                 last_timestamp_.bitfield_time.high = ev_timehigh->time;
+
                 ++cur_raw_ev;
             } else if (type == static_cast<EventTypesUnderlying_t>(EventTypesEnum::EXT_TRIGGER)) {
-                Evt3Raw::Event_ExtTrigger *ev_exttrigger = reinterpret_cast<Evt3Raw::Event_ExtTrigger *>(cur_raw_ev);
-                trigger_forwarder.forward(static_cast<short>(ev_exttrigger->pol), last_timestamp<DO_TIMESHIFT>(),
-                                          static_cast<short>(ev_exttrigger->id));
+                if (validator.validate_ext_trigger(cur_raw_ev)) {
+                    const Evt3Raw::Event_ExtTrigger *ev_exttrigger =
+                        reinterpret_cast<const Evt3Raw::Event_ExtTrigger *>(cur_raw_ev);
+                    trigger_forwarder.forward(static_cast<short>(ev_exttrigger->pol), last_timestamp<DO_TIMESHIFT>(),
+                                              static_cast<short>(ev_exttrigger->id));
+                }
                 ++cur_raw_ev;
             } else {
                 // The objective is to reduce the number of possible cases
@@ -216,6 +245,8 @@ private:
                         state[static_cast<EventTypesUnderlying_t>(EventTypesEnum::EVT_TIME_LOW)];
                 last_timestamp_set_ = true;
 
+                validator.state_update(cur_raw_ev);
+
                 ++cur_raw_ev;
             }
         }
@@ -232,9 +263,9 @@ private:
     constexpr static uint16_t NumBitsInHighTimestampLSB = 12;
     constexpr static uint16_t POLARITY_MASK             = 1 << (NumBitsInTimestampLSB - 1);
     constexpr static uint16_t NOT_POLARITY_MASK         = ~(1 << (NumBitsInTimestampLSB - 1));
-    uint32_t state[SIZE_EVTYPE];
-    bool is_valid = false;
-    bool is_cd    = false;
+    uint32_t state[SIZE_EVTYPE]                         = {0};
+    bool is_valid                                       = false;
+    bool is_cd                                          = false;
     struct bitfield_timestamp {
         uint64_t low : NumBitsInTimestampLSB;
         uint64_t high : NumBitsInHighTimestampLSB;
@@ -252,6 +283,51 @@ private:
     std::vector<RawEvent> incomplete_multiword_raw_event_;
     std::ptrdiff_t raw_events_missing_count_{0};
 };
+
+} // namespace detail
+
+using EVT3Decoder       = detail::EVT3Decoder<decoder::evt3::BasicCheckValidator>;
+using UnsafeEVT3Decoder = detail::EVT3Decoder<decoder::evt3::NullCheckValidator>;
+using RobustEVT3Decoder = detail::EVT3Decoder<decoder::evt3::GrammarValidator>;
+
+namespace {
+void throw_on_non_monotonic_time_high(const DecoderProtocolViolation &protocol_violation_type) {
+    std::ostringstream oss;
+    oss << "Evt3 protocol violation detected : " << protocol_violation_type;
+
+    switch (protocol_violation_type) {
+    case DecoderProtocolViolation::NonMonotonicTimeHigh:
+        throw(HalException(protocol_violation_type, oss.str()));
+    default:
+        break;
+    }
+};
+} // namespace
+
+inline std::unique_ptr<I_Decoder> make_evt3_decoder(
+    bool time_shifting_enabled, int height, int width,
+    const std::shared_ptr<I_EventDecoder<EventCD>> &event_cd_decoder = std::shared_ptr<I_EventDecoder<EventCD>>(),
+    const std::shared_ptr<I_EventDecoder<EventExtTrigger>> &event_ext_trigger_decoder =
+        std::shared_ptr<I_EventDecoder<EventExtTrigger>>()) {
+    std::unique_ptr<I_Decoder> decoder = std::make_unique<EVT3Decoder>(time_shifting_enabled, height, width,
+                                                                       event_cd_decoder, event_ext_trigger_decoder);
+
+    if (std::getenv("MV_FLAGS_EVT3_THROW_ON_NON_MONOTONIC_TIME_HIGH") || std::getenv("MV_FLAGS_EVT3_ROBUST_DECODER")) {
+        MV_HAL_LOG_INFO() << "Using EVT3 Robust decoder.";
+        decoder = std::make_unique<RobustEVT3Decoder>(time_shifting_enabled, height, width, event_cd_decoder,
+                                                      event_ext_trigger_decoder);
+    } else if (std::getenv("MV_FLAGS_EVT3_UNSAFE_DECODER")) {
+        MV_HAL_LOG_INFO() << "Using EVT3 Unsafe decoder.";
+        decoder = std::make_unique<UnsafeEVT3Decoder>(time_shifting_enabled, height, width, event_cd_decoder,
+                                                      event_ext_trigger_decoder);
+    }
+
+    if (std::getenv("MV_FLAGS_EVT3_THROW_ON_NON_MONOTONIC_TIME_HIGH")) {
+        MV_HAL_LOG_INFO() << "Decoder will raise exception upon EVT3 Non Monotonic Time High violation.";
+        decoder->add_protocol_violation_callback(throw_on_non_monotonic_time_high);
+    }
+    return decoder;
+}
 
 } // namespace Metavision
 

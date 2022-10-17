@@ -279,3 +279,37 @@ TEST(ObjectPool_GTest, deleted_object_pool_with_object_in_the_wild) {
     // THEN no crash occur: object is deleted instead of being brought back to the pool
     object.reset();
 }
+
+TEST(ObjectPool_GTest, should_arrange_object_pool_with_requested_size) {
+    Metavision::ObjectPool<int> obj_pool = Metavision::ObjectPool<int>::make_unbounded(1, 42);
+
+    EXPECT_EQ(obj_pool.size(), 1);
+
+    // We ask to arrange 2 elements, and because the pool contains 1 object already,
+    // Only 1 new element will be allocated.
+    EXPECT_EQ(obj_pool.arrange(2, 43), 1);
+    EXPECT_EQ(obj_pool.size(), 2);
+
+    auto first_obj  = obj_pool.acquire();
+    auto second_obj = obj_pool.acquire();
+
+    EXPECT_EQ(*first_obj, 43);
+    EXPECT_EQ(*second_obj, 42);
+}
+
+TEST(ObjectPool_GTest, should_do_nothing_when_arranging_object_pool_with_smaller_capacity) {
+    Metavision::ObjectPool<int> obj_pool = Metavision::ObjectPool<int>::make_unbounded(10);
+
+    EXPECT_EQ(obj_pool.size(), 10);
+    EXPECT_EQ(obj_pool.arrange(2), 0);
+    EXPECT_EQ(obj_pool.size(), 10);
+}
+
+TEST(ObjectPool_GTest, should_not_arrange_on_bounded_pool) {
+    Metavision::ObjectPool<int> obj_pool = Metavision::ObjectPool<int>::make_bounded(10);
+
+    EXPECT_EQ(obj_pool.size(), 10);
+    EXPECT_EQ(obj_pool.arrange(2), 0);
+    EXPECT_EQ(obj_pool.arrange(100), 0);
+    EXPECT_EQ(obj_pool.size(), 10);
+}

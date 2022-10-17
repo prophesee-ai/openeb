@@ -30,6 +30,11 @@ def stream_events(file_handle, buffer, dtype, ev_count=-1):
     count = len(dat)
     for name in dat.dtype.names:
         buffer[name][:count] = dat[name]
+    # make sure timestamp is monotonic
+    if 't' in buffer.dtype.names:
+        if all(buffer['t'][i] > buffer['t'][i+1] for i in range(count-1)):
+            print(f"{file_handle.name} Timestamps are not monotonic")
+            buffer.sort(order='t')
 
 
 def parse_header(fhandle):
@@ -46,14 +51,8 @@ def parse_header(fhandle):
         size (height, width) tuple of int or None
     """
     version = np.lib.format.read_magic(fhandle)
-    shape, fortran, dtype = np.lib.format._read_array_header(fhandle, version)
+    _, fortran, dtype = np.lib.format._read_array_header(fhandle, version)
     assert not fortran, "Fortran order arrays not supported"
-    # Get the number of elements in one 'row' by taking
-    # a product over all other dimensions.
-    if len(shape) == 0:
-        count = 1
-    else:
-        count = np.multiply.reduce(shape, dtype=np.int64)
     ev_size = dtype.itemsize
     assert ev_size != 0
     start = fhandle.tell()

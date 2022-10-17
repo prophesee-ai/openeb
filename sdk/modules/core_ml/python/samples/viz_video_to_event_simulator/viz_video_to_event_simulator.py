@@ -17,6 +17,7 @@ The application buffers 3 iterators:
 
 and finally applies some event tensorization.
 """
+
 from __future__ import absolute_import
 
 import os
@@ -28,9 +29,7 @@ import numpy as np
 from metavision_core_ml.video_to_event.simulator import EventSimulator
 from metavision_core.event_io.event_bufferizer import FixedCountBuffer
 from metavision_core.event_io import DatWriter
-
 from metavision_core_ml.preprocessing import viz_events
-
 from metavision_core_ml.data.video_stream import TimedVideoStream
 from metavision_core_ml.data.image_planar_motion_stream import PlanarMotionStream
 

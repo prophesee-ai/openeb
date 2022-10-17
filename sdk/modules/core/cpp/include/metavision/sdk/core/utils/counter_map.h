@@ -31,6 +31,7 @@ public:
     /// @brief Increment the reference counter associated to the input key
     ///
     /// If the key was not existing, then it is added and its associated reference count is initialized to 1
+    ///
     /// @return The current count for the key
     size_t tag(KeyT key) {
         std::unique_lock<std::mutex> lock(tag_mutex_);
@@ -40,6 +41,7 @@ public:
     /// @brief Decrement the reference counter associated to the input key
     ///
     /// If the counter goes to 0, the reference counter for the key is erased from the map until it is tagged again
+    ///
     /// @return The current count for the key
     size_t untag(KeyT key) {
         std::unique_lock<std::mutex> lock(tag_mutex_);
