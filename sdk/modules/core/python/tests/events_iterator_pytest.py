@@ -214,12 +214,10 @@ def pytestcase_iterator_run_twice(tmpdir, dataset_dir):
     # GIVEN
     filename = os.path.join(dataset_dir,
                             "openeb", "core", "event_io", "recording.raw")
-    mv_iterator = EventsIterator(filename, start_ts=1e5, delta_t=20000,
-                                 max_duration=1e6)
 
     # WHEN
-    evs = [ev for ev in mv_iterator]
-    evs2 = [ev for ev in mv_iterator]
+    evs = [ev for ev in EventsIterator(filename, start_ts=1e5, delta_t=20000, max_duration=1e6)]
+    evs2 = [ev for ev in EventsIterator(filename, start_ts=1e5, delta_t=20000, max_duration=1e6)]
 
     # THEN
     assert len(evs) == len(evs2)

@@ -22,6 +22,7 @@ namespace Metavision {
 /// @brief Window using its own rendering thread to render images
 ///
 /// Images are displayed at a fixed frequency (i.e. the screen's refresh one) by the internal rendering thread.
+///
 /// @warning The constructor and destructor of this class must only be called from the main thread
 class MTWindow : public BaseWindow {
 public:
@@ -44,6 +45,7 @@ public:
     /// Here asynchronously means that the image is not immediately displayed, but will be done later on by the internal
     /// rendering thread.
     /// This window uses a front/back buffers mechanism to avoid copying images.
+    ///
     /// @param image The image to display. The image is passed as a non constant reference in order to be swapped with
     /// the front buffer and thus avoid useless copies.
     /// @param auto_poll If True, events in this window's queue are dequeued and processed. If false,

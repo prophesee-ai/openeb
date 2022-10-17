@@ -11,6 +11,7 @@
 Simple Iterator built around the Metavision Reader classes.
 """
 
+import os
 import numpy as np
 from metavision_sdk_base import EventCD
 from metavision_core_ml.video_to_event.simulator import EventSimulator
@@ -81,6 +82,7 @@ class SimulatedEventsIterator(object):
         self.original_height, self.original_width = int(metadata["video"]["@height"]), int(metadata["video"]["@width"])
         self.freq = eval(metadata["video"]["@avg_frame_rate"]) * 1e-6
         self.length = float(metadata["video"]['@duration']) * 1e6
+        self.nb_frames = int(metadata["video"]["@nb_frames"])
 
         if max_duration is None:
             self.max_frames = 0
@@ -114,8 +116,18 @@ class SimulatedEventsIterator(object):
                 self._process_batch, event_count=self.n_events, time_slice_us=0)
         self._event_buffer = deque()
 
+        ts_path = os.path.splitext(self.path)[0] + '_ts.npy'
+        if os.path.exists(ts_path):
+            assert self.override_fps == 0, "Parameter override_fps should not be given if _ts.npy file is provided"
+            ts_npy = np.load(ts_path)
+            assert ts_npy.size == self.nb_frames, f"Error: Number of frames ({self.nb_frames}) and number of timestamps ({ts_npy.size}) are inconsistent"
+            start_frame = np.searchsorted(1e6*ts_npy, self.start_ts, side="left")
+        elif self.override_fps:
+            start_frame = int(self.start_ts * self.override_fps)
+        else:
+            start_frame = int(self.start_ts * self.freq)
+
         # Initializes Video iterator
-        start_frame = int(self.start_ts * self.freq)
         self.reader = TimedVideoStream(
             self.path, self.height, self.width, start_frame=start_frame, max_frames=self.max_frames, rgb=False,
             override_fps=self.override_fps)

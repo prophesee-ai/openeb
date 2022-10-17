@@ -51,6 +51,7 @@ public:
     /// A constant reference of the internal time surface is passed to the callback, allowing to process
     /// (i.e. read only) it inside the callback. If the time surface needs to be accessed from outside the callback,
     /// then a copy must be done.
+    ///
     /// @param cb The callback called when the time surface is ready
     void set_output_callback(const OutputCb &cb);
 

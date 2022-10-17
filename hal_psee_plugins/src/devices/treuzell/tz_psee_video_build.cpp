@@ -45,5 +45,6 @@ std::shared_ptr<TzDevice> TzPseeVideo::build(std::shared_ptr<TzLibUSBBoardComman
         return std::make_shared<TzPseeVideo>(cmd, dev_id, parent);
     }
 }
+static TzRegisterBuildMethod method("psee,video", TzPseeVideo::build);
 
 } // namespace Metavision

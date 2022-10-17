@@ -18,6 +18,7 @@
 #endif
 #include <stdlib.h>
 #include <sstream>
+#include <unordered_set>
 
 #include "metavision/hal/utils/hal_log.h"
 #include "boards/utils/config_registers_map.h"
@@ -136,6 +137,19 @@ TzLibUSBBoardCommand::TzLibUSBBoardCommand(std::shared_ptr<LibUSBContext> ctx, l
         transfer_tz_frame(req);
         build_date = req.get64(0);
     } catch (const std::system_error &e) { MV_HAL_LOG_TRACE() << "Got no build date:" << e.what(); }
+
+    // Add a warning if using an Evk3/4 with a too old firmware
+    static std::unordered_set<std::string> outdated_fw_warning_map;
+    if ((desc.idVendor == 0x04b4) && ((desc.idProduct == 0x00f4) || (desc.idProduct == 0x00f5))) {
+        if (version < 0x30800) {
+            const std::string &serial = get_serial();
+            if (outdated_fw_warning_map.count(serial) == 0) {
+                MV_HAL_LOG_WARNING() << "The EVK camera with serial" << serial
+                                     << "is using an old firmware version. Please upgrade to latest version.";
+                outdated_fw_warning_map.insert(serial);
+            }
+        }
+    }
 }
 
 TzLibUSBBoardCommand::~TzLibUSBBoardCommand() {

@@ -47,6 +47,7 @@ public:
     ///
     /// Overload constructor available when the type of event consumed is the same as the type
     /// of events produced.
+    ///
     /// @sa @ref enable, @ref disable, @ref set_enabled.
     template<typename TOutputEventType = OutputEventType, typename TInputEventType = InputEventType,
              typename = std::enable_if_t<std::is_same<TOutputEventType, TInputEventType>::value>>
@@ -57,6 +58,7 @@ public:
     /// @brief Constructor
     ///
     /// Overload constructor that simplifies setting the previous stage.
+    ///
     /// @param algo The wrapped algorithm for which process will be called
     /// @param prev_stage The previous stage of this stage
     AlgorithmStage(std::unique_ptr<Algorithm> &&algo, BaseStage &prev_stage) :
@@ -71,6 +73,7 @@ public:
     ///
     /// Overload constructor that simplifies setting the previous stage and is only available when the type of event
     /// consumed is the same as the type of events produced.
+    ///
     /// @param algo The wrapped algorithm for which process will be called
     /// @param prev_stage The previous stage of this stage
     /// @param enabled true if the algorithm is enabled by default, false otherwise

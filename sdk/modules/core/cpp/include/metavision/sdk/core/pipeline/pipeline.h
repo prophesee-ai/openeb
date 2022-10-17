@@ -204,6 +204,7 @@ public:
     /// This actually runs one of the scheduled callback on the main thread.
     /// The processing threads runs on their own, but can be blocked by the main
     /// thread if one stage needs to run on the main thread.
+    ///
     /// @return true if the step was successful, false if the pipeline has no remaining steps to run
     inline bool step();
 

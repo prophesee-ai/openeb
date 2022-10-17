@@ -53,7 +53,7 @@ class ExtendedEventsIterator(EventsIterator):
         input_path (str): Path to the file to read. If `path` is an empty string or a camera serial number it will try to open
             that camera instead.
         start_ts (int): First timestamp to consider.
-        mode (string): Load by timeslice of number of events. Either "delta_t", "n_events" or "mixed",
+        mode (string): Load by timeslice or number of events. Either "delta_t", "n_events" or "mixed",
             where mixed uses both delta_t and n_events and chooses the first met criterion.
         delta_t (int): Duration of served event slice in us.
         n_events (int): Number of events in the timeslice.

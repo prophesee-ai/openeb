@@ -31,7 +31,8 @@ public:
     /// @param stream The stream to read from
     /// @param raw_event_size_bytes The size of a RAW event in bytes
     /// @param config The configuration to use to read the stream
-    FileDataTransfer(std::unique_ptr<std::istream> stream, uint32_t raw_event_size_bytes, const RawFileConfig &config);
+    FileDataTransfer(std::unique_ptr<std::istream> stream, uint32_t raw_event_size_bytes,
+                     const Metavision::RawFileConfig &config);
 
     /// @brief Reads the input standard @a stream batch by batch according to the input configuration
     /// @param stream The stream to read from
@@ -39,7 +40,7 @@ public:
     /// @param config The configuration to use to read the stream
     /// @note This constructor is provided as a temporary workaround for shared stream, it will be removed in future
     ///       releases
-    FileDataTransfer(std::istream *stream, uint32_t raw_event_size_bytes, const RawFileConfig &config);
+    FileDataTransfer(std::istream *stream, uint32_t raw_event_size_bytes, const Metavision::RawFileConfig &config);
 
     /// @brief Stops ongoing transfers
     ~FileDataTransfer();

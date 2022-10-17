@@ -162,6 +162,10 @@ private:
             base_time_set_                   = true;
             last_timestamp_set_              = true;
             return true;
+        } else {
+            base_time_set_      = false;
+            last_timestamp_set_ = false;
+            return true;
         }
         return false;
     }
@@ -185,9 +189,6 @@ private:
     timestamp full_shift_{
         0}; // includes loop and shift_th in one single variable. Must be signed typed as shift can be negative.
     bool shift_set_{false};
-
-    std::vector<RawData> incomplete_raw_data_;
-    std::iterator_traits<RawData *>::difference_type incomplete_raw_data_missing_count_{0};
 };
 
 } // namespace Future

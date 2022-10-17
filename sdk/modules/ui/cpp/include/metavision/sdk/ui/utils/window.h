@@ -22,6 +22,7 @@ namespace Metavision {
 ///
 /// This window has no internal rendering thread, meaning that the images are displayed at the same frequency as the one
 /// of the @ref Window::show method.
+///
 /// @warning The constructor and destructor of this class must only be called from the main thread
 class Window : public BaseWindow {
 public:

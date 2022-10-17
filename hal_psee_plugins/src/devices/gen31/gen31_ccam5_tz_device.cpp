@@ -58,6 +58,7 @@ std::shared_ptr<TzDevice> TzCcam5Gen31::build(std::shared_ptr<TzLibUSBBoardComma
         throw HalException(HalErrorCode::FailedInitialization, "Wrong FPGA system ID");
     return std::make_shared<TzCcam5Gen31>(cmd, dev_id, parent);
 }
+static TzRegisterBuildMethod method("psee,ccam5_fpga", TzCcam5Gen31::build);
 
 void TzCcam5Gen31::spawn_facilities(DeviceBuilder &device_builder) {
     device_builder.add_facility(std::make_unique<Gen31Ccam5TriggerEvent>(register_map, shared_from_this()));

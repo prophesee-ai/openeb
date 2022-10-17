@@ -21,6 +21,7 @@ std::shared_ptr<TzDevice> TiTmp103::build(std::shared_ptr<TzLibUSBBoardCommand> 
                                           std::shared_ptr<TzDevice> parent) {
     return std::make_shared<TiTmp103>(cmd, dev_id, parent);
 }
+static TzRegisterBuildMethod method("ti,tmp103", TiTmp103::build);
 
 void TiTmp103::spawn_facilities(DeviceBuilder &device_builder) {}
 

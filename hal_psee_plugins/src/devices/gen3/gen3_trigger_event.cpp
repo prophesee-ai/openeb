@@ -53,10 +53,10 @@ bool Gen3TriggerEvent::disable(uint32_t channel) {
     return true;
 }
 
-bool Gen3TriggerEvent::is_enabled(uint32_t index) {
-    if (index != 0 && index != 6 && index != 7) {
+bool Gen3TriggerEvent::is_enabled(uint32_t channel) {
+    if (channel != 0 && channel != 6 && channel != 7) {
         return false;
     }
-    return icmd_->read_register_bit(base_address_ + CCAM3_SYSTEM_MONITOR_EXT_TRIGGERS_ENABLE_ADDR, index);
+    return icmd_->read_register_bit(base_address_ + CCAM3_SYSTEM_MONITOR_EXT_TRIGGERS_ENABLE_ADDR, channel);
 }
 } // namespace Metavision

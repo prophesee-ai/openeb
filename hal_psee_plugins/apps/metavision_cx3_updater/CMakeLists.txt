@@ -17,3 +17,9 @@ target_include_directories(metavision_cx3_updater
     PRIVATE
         $<TARGET_PROPERTY:metavision_hal_psee_plugin_obj,INTERFACE_INCLUDE_DIRECTORIES>
 )
+
+install(TARGETS metavision_cx3_updater
+        RUNTIME DESTINATION bin
+        COMPONENT metavision-hal-prophesee-plugins
+)
+

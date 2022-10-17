@@ -394,7 +394,7 @@ foreach(_comp ${_MetavisionSDK_components_to_look_for_ordered})
 
     else()
         set(_MetavisionSDK_${_comp}_REASON_NOT_FOUND "${MetavisionSDK_${_comp}_NOT_FOUND_MESSAGE}")
-        # TODO : get better log on why the component was not found (for examples of imported target refers to an unknwon target it's because a file *Depends is missing)
+        # TODO : get better log on why the component was not found (for examples of imported target refers to an unknown target it's because a file *Depends is missing)
         set(MetavisionSDK_${_comp}_FOUND False)
     endif (MetavisionSDK_${_comp}_FOUND)
 

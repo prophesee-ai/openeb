@@ -61,6 +61,7 @@ public:
     ///
     /// The events shown at each refresh are such that their timestamps are in the last 'display_accumulation_time_us'
     /// microseconds from the last received event timestamp.
+    ///
     /// @param display_accumulation_time_us The time interval to display events from up to now (in us).
     void set_display_accumulation_time_us(timestamp display_accumulation_time_us);
 

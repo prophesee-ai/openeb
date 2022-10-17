@@ -16,6 +16,7 @@ and yields them according to a common criterion like
 - maximum flow
 etc.
 """
+
 import numpy as np
 from metavision_sdk_base import EventCD
 

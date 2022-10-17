@@ -17,12 +17,6 @@
 #endif
 #include "devices/golden_fallbacks/golden_fallback_treuzell_facilities_builder.h"
 #include "devices/golden_fallbacks/golden_fallback_fx3_facilities_builder.h"
-#include "devices/treuzell/tz_streamer.h"
-#include "devices/gen31/gen31_ccam5_tz_device.h"
-#include "devices/gen41/gen41_tz_device.h"
-#include "devices/imx636/imx636_tz_device.h"
-#include "devices/treuzell/tz_psee_video.h"
-#include "devices/treuzell/ti_tmp103.h"
 #include "boards/fx3/fx3_camera_discovery.h"
 #include "boards/treuzell/tz_camera_discovery.h"
 #include "boards/treuzell/tz_libusb_board_command.h"
@@ -55,12 +49,6 @@ void initialize_plugin(void *plugin_ptr) {
 #endif
     fx3_disc.register_device_builder(SYSTEM_CCAM3_GOLDEN_FALLBACK, build_golden_fallback_fx3_device);
     auto &tz_disc = plugin.add_camera_discovery(std::make_unique<TzCameraDiscovery>());
-    tz_disc.factory().insert("treuzell,streamer", TzStreamer::build);
-    tz_disc.factory().insert("psee,video", TzPseeVideo::build);
-    tz_disc.factory().insert("psee,ccam5_fpga", TzCcam5Gen31::build);
-    tz_disc.factory().insert("psee,ccam5_gen41", TzGen41::build);
-    tz_disc.factory().insert("psee,ccam5_gen42", TzImx636::build);
-    tz_disc.factory().insert("ti,tmp103", TiTmp103::build);
 #endif
 
     auto &file_disc = plugin.add_file_discovery(std::make_unique<PseeFileDiscovery>());

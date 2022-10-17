@@ -45,12 +45,12 @@ bool Gen31TriggerEvent::disable(uint32_t channel) {
     return true;
 }
 
-bool Gen31TriggerEvent::is_enabled(uint32_t index) {
-    if (index != 0 && index != 6 && index != 7) {
+bool Gen31TriggerEvent::is_enabled(uint32_t channel) {
+    if (channel != 0 && channel != 6 && channel != 7) {
         return false;
     }
 
-    return (*register_map_)["SYSTEM_MONITOR/EXT_TRIGGERS/ENABLE"]["TRIGGER_" + std::to_string(index)].read_value();
+    return (*register_map_)["SYSTEM_MONITOR/EXT_TRIGGERS/ENABLE"]["TRIGGER_" + std::to_string(channel)].read_value();
 }
 
 } // namespace Metavision

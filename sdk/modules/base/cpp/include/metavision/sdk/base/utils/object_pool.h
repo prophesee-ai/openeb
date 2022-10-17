@@ -63,6 +63,7 @@ public:
     ///
     /// There won't be memory allocation upon call to @ref acquire if all objects in the memory pool are already
     /// used.
+    ///
     /// @param num_initial_objects Number of objects initially allocated in the pool
     /// @return An object pool with bounded memory
     static ObjectPool<T, acquire_shared_ptr> make_bounded(size_t num_initial_objects = 64) {
@@ -73,6 +74,7 @@ public:
     ///
     /// There won't be memory allocation upon call to @ref acquire if all objects in the memory pool are already
     /// used.
+    ///
     /// @param num_initial_objects Number of objects initially allocated in the pool
     /// @param args The arguments forwarded to the object constructor during allocation
     /// @return An object pool with bounded memory
@@ -85,6 +87,7 @@ public:
     ///
     /// A pool with unbounded memory will allocate a new object when all objects in the pool are already used
     /// and @ref acquire is called.
+    ///
     /// @param num_initial_objects Number of objects initially allocated in the pool
     /// @return An object pool with unbounded memory
     template<typename... Args>
@@ -96,6 +99,7 @@ public:
     ///
     /// A pool with unbounded memory will allocate a new object when all objects in the pool are already used
     /// and @ref acquire is called.
+    ///
     /// @param num_initial_objects Number of objects initially allocated in the pool
     /// @param args The arguments forwarded to the object constructor during allocation
     /// @return An object pool with unbounded memory
@@ -145,6 +149,16 @@ public:
         return impl_->is_bounded();
     }
 
+    /// @brief Ensure that the pool contains 'size' available objects, ready to be acquired.
+    /// @note Only works for unbounded pool
+    /// @param size The maximum number of objects to be available
+    /// @param args Optional arguments to be used when allocating the object
+    /// @return the number of newly allocated object in the pool
+    template<typename... Args>
+    size_t arrange(size_t size, Args &&...args) {
+        return impl_->arrange(size, std::forward<Args>(args)...);
+    }
+
 private:
     /// @brief Constructor
     template<typename... Args>
@@ -175,6 +189,25 @@ private:
             if (bounded_memory_) {
                 cond_.notify_all();
             }
+        }
+
+        /// @brief Increase pool capacity to the new size if larger than the actual pool size.
+        /// @param size The new pool capacity size
+        /// @param args Optional arguments to be used when allocating the object
+        /// @return the number of newly allocated object in the pool
+        template<typename... Args>
+        size_t arrange(size_t size, Args &&...args) {
+            if (bounded_memory_ || size <= pool_.size()) {
+                return 0;
+            }
+
+            std::unique_lock<std::mutex> lock(mutex_);
+            size_t nb_allocated_obj = size - pool_.size();
+            while (pool_.size() < size) {
+                pool_.push(std::unique_ptr<T>(new T(std::forward<Args>(args)...)));
+            }
+
+            return nb_allocated_obj;
         }
 
         /// @brief Allocates or re-use a previously allocated object

@@ -6,15 +6,16 @@
 # Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
-"""
-E2V DEMO Script
 
-Copyright: (c) 2021 Prophesee
 """
+E2V Demo Script
+"""
+
 import numpy as np
 import argparse
 import torch
 import torch.nn.functional as F
+
 from metavision_sdk_base import EventCD
 from metavision_core_ml.event_to_video.lightning_model import EventToVideoLightningModel
 from metavision_core_ml.preprocessing.event_to_tensor_torch import event_cd_to_torch, event_volume

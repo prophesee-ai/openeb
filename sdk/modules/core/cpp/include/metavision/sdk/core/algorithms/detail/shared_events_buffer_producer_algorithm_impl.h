@@ -45,6 +45,11 @@ SharedEventsBufferProducerAlgorithm<EventT>::SharedEventsBufferProducerAlgorithm
 }
 
 template<typename EventT>
+SharedEventsBufferProducerParameters SharedEventsBufferProducerAlgorithm<EventT>::params() const {
+    return params_;
+}
+
+template<typename EventT>
 void SharedEventsBufferProducerAlgorithm<EventT>::clear() {
     current_shared_buffer_->clear();
 }

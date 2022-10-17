@@ -59,6 +59,7 @@ std::shared_ptr<TzDevice> TzGen41::build(std::shared_ptr<TzLibUSBBoardCommand> c
         return nullptr;
     }
 }
+static TzRegisterBuildMethod method("psee,ccam5_gen41", TzGen41::build, TzGen41::can_build);
 
 bool TzGen41::can_build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id) {
     auto ret = cmd->read_device_register(dev_id, 0x14)[0];

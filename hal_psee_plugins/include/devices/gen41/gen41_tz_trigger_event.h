@@ -44,12 +44,13 @@ public:
     /// @return true if trigger in index is enabled, False otherwise
     bool is_enabled(uint32_t channel);
 
-private:
+protected:
     bool is_valid_id(uint32_t channel);
-
     std::shared_ptr<RegisterMap> register_map_;
-    std::shared_ptr<TzDevice> tzDev_;
     std::string prefix_;
+
+private:
+    std::shared_ptr<TzDevice> tzDev_;
     const std::vector<Channels> chan_ids_{Channels::TRIG_IN};
 };
 

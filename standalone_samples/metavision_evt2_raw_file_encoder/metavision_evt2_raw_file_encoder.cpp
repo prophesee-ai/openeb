@@ -37,14 +37,14 @@ struct RawEvent {
 
 struct RawEventTime {
     unsigned int timestamp : 28; // Most significant bits of the event timestamp (bits 33..6)
-    unsigned int type : 4;       // Event type : EventTypes::EVT_TIME_HIGH
+    unsigned int type : 4;       // Event type: EventTypes::EVT_TIME_HIGH
 };
 
 struct RawEventCD {
     unsigned int y : 11;        // Pixel Y coordinate
     unsigned int x : 11;        // Pixel X coordinate
     unsigned int timestamp : 6; // Least significant bits of the event timestamp (bits 5..0)
-    unsigned int type : 4;      // Event type : EventTypes::CD_LOW or EventTypes::CD_HIGH
+    unsigned int type : 4;      // Event type: EventTypes::CD_LOW or EventTypes::CD_HIGH
 };
 
 struct RawEventExtTrigger {
@@ -55,7 +55,7 @@ struct RawEventExtTrigger {
     unsigned int id : 5; // Trigger channel ID.
     unsigned int unused1 : 9;
     unsigned int timestamp : 6; // Least significant bits of the event timestamp (bits 5..0)
-    unsigned int type : 4;      // Event type : EventTypes::EXT_TRIGGER
+    unsigned int type : 4;      // Event type: EventTypes::EXT_TRIGGER
 };
 
 using Timestamp = uint64_t; // Type for timestamp, in microseconds
@@ -189,29 +189,29 @@ private:
 int main(int argc, char *argv[]) {
     // Check input arguments validity
     if (argc < 3) {
-        std::cerr << "Error : need output filename and input filename for CD events" << std::endl;
+        std::cerr << "Error: need output filename and input filename for CD events" << std::endl;
         std::cerr << std::endl
-                  << "Usage : " << std::string(argv[0]) << " OUTPUT_FILENAME CD_INPUTFILE (TRIGGER_INPUTFILE)"
+                  << "Usage: " << std::string(argv[0]) << " OUTPUT_FILENAME CD_INPUTFILE (TRIGGER_INPUTFILE)"
                   << std::endl;
         std::cerr << "Triggers will be encoded only if given trigger file has been given as input" << std::endl;
-        std::cerr << std::endl << "Example : " << std::string(argv[0]) << " output_file.raw cd_input.csv" << std::endl;
+        std::cerr << std::endl << "Example: " << std::string(argv[0]) << " output_file.raw cd_input.csv" << std::endl;
         std::cerr << std::endl;
-        std::cerr << "The CD CSV file needs to have the format : x,y,polarity,timestamp" << std::endl;
-        std::cerr << "The Trigger input CSV file needs to have the format : value,id,timestamp" << std::endl;
+        std::cerr << "The CD CSV file needs to have the format: x,y,polarity,timestamp" << std::endl;
+        std::cerr << "The Trigger input CSV file needs to have the format: value,id,timestamp" << std::endl;
         return 1;
     }
 
     // Open input files
     std::ifstream input_cd_file(argv[2]);
     if (!input_cd_file.is_open()) {
-        std::cerr << "Error : could not open file '" << argv[2] << "' for reading" << std::endl;
+        std::cerr << "Error: could not open file '" << argv[2] << "' for reading" << std::endl;
         return 1;
     }
     std::ifstream input_trigger_file;
     if (argc > 3) {
         input_trigger_file.open(argv[3]);
         if (!input_trigger_file.is_open()) {
-            std::cerr << "Error : could not open file '" << argv[3] << "' for reading" << std::endl;
+            std::cerr << "Error: could not open file '" << argv[3] << "' for reading" << std::endl;
             return 1;
         }
     }
@@ -219,17 +219,17 @@ int main(int argc, char *argv[]) {
     // Open raw output file
     std::ofstream output_raw_file(argv[1], std::ios::binary);
     if (!output_raw_file.is_open()) {
-        std::cerr << "Error : could not open file '" << argv[1] << "' for writing" << std::endl;
+        std::cerr << "Error: could not open file '" << argv[1] << "' for writing" << std::endl;
         return 1;
     }
 
-    // Write header : we write the header corresponding to Prophesee Gen4 device (largest geometry)
+    // Write header: we write the header corresponding to Prophesee EVK3 Gen41 device (largest geometry)
     output_raw_file << "% Date 2020-09-04 13:14:05" << std::endl;
     output_raw_file << "% evt 2.0" << std::endl;
     output_raw_file << "% firmware_version 3.3.0" << std::endl;
     output_raw_file << "% integrator_name Prophesee" << std::endl;
-    output_raw_file << "% plugin_name hal_plugin_gen4_fx3" << std::endl;
-    output_raw_file << "% system_ID 26" << std::endl;
+    output_raw_file << "% plugin_name hal_plugin_gen41_evk3" << std::endl;
+    output_raw_file << "% system_ID 48" << std::endl;
 
     // Initialize encoders
     Metavision::Evt2::EventCDEncoder CD_events_encoder;
@@ -237,7 +237,7 @@ int main(int argc, char *argv[]) {
     bool cd_done      = !CD_events_encoder.read_next_line(input_cd_file);
     bool trigger_done = input_trigger_file ? !trigger_events_encoder.read_next_line(input_trigger_file) : true;
     if (cd_done && trigger_done) {
-        std::cerr << "Error : no events in input file(s)" << std::endl;
+        std::cerr << "Error: no events in input file(s)" << std::endl;
         return 1;
     }
 

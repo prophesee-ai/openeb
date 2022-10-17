@@ -142,9 +142,6 @@ private:
     timestamp last_timestamp_{-1}; // ts of the last event
     timestamp full_shift_{
         0}; // includes loop and shift_th in one single variable. Must be signed typed as shift can be negative.
-
-    std::vector<RawData> incomplete_raw_data_;
-    std::iterator_traits<RawData *>::difference_type incomplete_raw_data_missing_count_{0};
 };
 
 } // namespace Metavision

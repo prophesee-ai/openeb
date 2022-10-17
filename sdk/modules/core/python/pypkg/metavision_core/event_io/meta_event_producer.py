@@ -8,13 +8,7 @@
 # See the License for the specific language governing permissions and limitations under the License.
 
 """
-This class receives events, buffers them,
-and yields them according to a common criterion like
-- event_count
-- fixed_time
-- array coverage
-- maximum flow
-etc.
+This class Resamples an event producer to stream by N events or DT duration
 """
 
 import numpy as np

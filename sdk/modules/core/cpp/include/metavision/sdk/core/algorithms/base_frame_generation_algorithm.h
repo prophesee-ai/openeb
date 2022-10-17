@@ -97,6 +97,27 @@ public:
     /// @param palette The Prophesee's color palette to use
     void set_color_palette(const Metavision::ColorPalette &palette);
 
+    enum Parameters {
+        GRAY   = (1 << 0),
+        RGB    = (1 << 1),
+        BGR    = (1 << 2),
+        RGBA   = (1 << 3),
+        BGRA   = (1 << 4),
+        FLIP_Y = (1 << 10)
+    };
+
+    /// @brief Sets the parameters used to generate the frame
+    /// @param bg_color  Color used as background, when no events were received for a pixel
+    /// @param on_color  Color used for on events
+    /// @param off_color Color used for off events
+    /// @param flags     A combination of Parameters
+    void set_parameters(const cv::Vec4b &bg_color, const cv::Vec4b &on_color, const cv::Vec4b &off_color, int flags);
+
+    /// @brief Sets the parameters used to generate the frame
+    /// @param palette The Prophesee's color palette to use
+    /// @param flags     A combination of Parameters
+    void set_parameters(const Metavision::ColorPalette &palette, int flags);
+
     /// @brief Gets the frame's dimension
     /// @param height Frame's height
     /// @param width Frame's width
@@ -120,6 +141,23 @@ protected:
     /// event source, and the color corresponding to @p colored (3 channels by default)
     /// @param bg_color Background color
     /// @param off_on_colors Colors of negative and positive events
+    /// @param flags A combination of Parameters
+    /// @throw invalid_argument if @p frame does not have the expected type (CV_8U or CV_8UC3)
+    template<typename EventIt>
+    static void generate_frame_from_events(EventIt it_begin, EventIt it_end, cv::Mat &frame, const cv::Vec4b &bg_color,
+                                           const std::array<cv::Vec4b, 2> &off_on_colors, int flags);
+
+    /// @overload
+    /// @brief Stand-alone (static) helper method to generate a frame from an input event buffer
+    /// @warning The input @p frame must be allocated beforehand
+    /// @note This method is used internally both by its public counterpart and the child classes
+    /// @tparam EventIt Input iterator event type. Works for @ref EventCD or equivalent
+    /// @param it_begin Iterator to first input event
+    /// @param it_end Iterator to the past-the-end event
+    /// @param frame Pre-allocated frame that will be filled with CD events. It must have the same geometry as the input
+    /// event source, and the color corresponding to @p colored (3 channels by default)
+    /// @param bg_color Background color
+    /// @param off_on_colors Colors of negative and positive events
     /// @param colored True if the frame is colored, false if it's in grayscale
     /// @throw invalid_argument if @p frame does not have the expected type (CV_8U or CV_8UC3)
     template<typename EventIt>
@@ -128,51 +166,13 @@ protected:
 
     // Frame properties
     const int width_, height_;               ///< Sensor's geometry
-    bool colored_;                           ///< Whether the frame is colored
-    cv::Vec3b bg_color_;                     ///< The background color
-    std::array<cv::Vec3b, 2> off_on_colors_; ///< The off and on color
+    int flags_;                              ///< Frame's generation parameters
+    cv::Vec4b bg_color_;                     ///< The background color
+    std::array<cv::Vec4b, 2> off_on_colors_; ///< The off and on color
 };
 
-template<typename EventIt>
-void BaseFrameGenerationAlgorithm::generate_frame_from_events(EventIt it_begin, EventIt it_end, cv::Mat &frame,
-                                                              const uint32_t accumulation_time_us,
-                                                              const Metavision::ColorPalette &palette) {
-    const cv::Vec3b bg_color = get_cv_color(palette, Metavision::ColorType::Background);
-    const std::array<cv::Vec3b, 2> off_on_colors{get_cv_color(palette, Metavision::ColorType::Negative),
-                                                 get_cv_color(palette, Metavision::ColorType::Positive)};
-    const bool colored = palette != Metavision::ColorPalette::Gray;
-
-    // Process the entire range of events if the accumulation time is set to zero, or if there's no events.
-    // Otherwise, find the first event to process in the desired time interval [t-dt, t[
-    if (std::distance(it_begin, it_end) != 0 && accumulation_time_us != 0)
-        it_begin = std::lower_bound(it_begin, it_end, std::prev(it_end)->t - accumulation_time_us,
-                                    [](const auto &lhs, auto rhs) { return lhs.t < rhs; });
-
-    generate_frame_from_events(it_begin, it_end, frame, bg_color, off_on_colors, colored);
-}
-
-template<typename EventIt>
-void BaseFrameGenerationAlgorithm::generate_frame_from_events(EventIt it_begin, EventIt it_end, cv::Mat &frame,
-                                                              const cv::Vec3b &bg_color,
-                                                              const std::array<cv::Vec3b, 2> &off_on_colors,
-                                                              bool colored) {
-    if (frame.type() != (colored ? CV_8UC3 : CV_8UC1)) {
-        std::ostringstream ss;
-        ss << "Incompatible matrix type. Must be " << (colored ? "CV_8UC3" : "CV_8UC1") << ".";
-        throw std::invalid_argument(ss.str());
-    }
-
-    if (colored) {
-        frame.setTo(bg_color);
-        for (auto it = it_begin; it != it_end; ++it)
-            frame.at<cv::Vec3b>(it->y, it->x) = off_on_colors[it->p];
-    } else {
-        frame.setTo(bg_color[0]);
-        for (auto it = it_begin; it != it_end; ++it)
-            frame.at<uint8_t>(it->y, it->x) = off_on_colors[it->p][0];
-    }
-}
-
 } // namespace Metavision
+
+#include "metavision/sdk/core/algorithms/detail/base_frame_generation_algorithm_impl.h"
 
 #endif // METAVISION_SDK_CORE_BASE_FRAME_GENERATION_ALGORITHM_H

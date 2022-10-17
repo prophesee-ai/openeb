@@ -76,6 +76,9 @@ public:
     SharedEventsBufferProducerAlgorithm(SharedEventsBufferProducerParameters params,
                                         SharedEventsBufferProducedCb buffer_produced_cb);
 
+    /// @brief Get the parameters used to construct this object
+    inline SharedEventsBufferProducerParameters params() const;
+
     /// @brief Resets the internal states of the policy
     inline void clear();
 

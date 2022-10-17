@@ -38,6 +38,7 @@ public:
     /// @brief Subscribes to RAW data callback
     ///
     /// Registers a callback that will be called each time a buffer of RAW data has been received.
+    ///
     /// @param cb Callback to call each time a buffer of RAW data has been received
     /// @sa @ref RawDataCallback
     /// @return ID of the added callback

@@ -17,11 +17,11 @@ namespace Metavision {
 PseeHWRegister::PseeHWRegister(const std::shared_ptr<RegisterMap> &map) : regmap_(map) {}
 
 void PseeHWRegister::write_register(uint32_t address, uint32_t v) {
-    (*regmap_)[address].write_value(v);
+    regmap_->write(address, v);
 }
 
 uint32_t PseeHWRegister::read_register(uint32_t address) {
-    return (*regmap_)[address].read_value();
+    return regmap_->read(address);
 }
 
 void PseeHWRegister::write_register(const std::string &address, uint32_t v) {

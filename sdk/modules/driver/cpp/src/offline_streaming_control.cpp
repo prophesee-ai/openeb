@@ -104,6 +104,16 @@ timestamp OfflineStreamingControl::Private::get_duration() const {
         return duration_;
     }
     Camera cam = Camera::from_file(i_events_stream_->get_underlying_filename(), false, Future::RawFileConfig());
+    try {
+        auto *i_future_decoder = cam.get_device().get_facility<Future::I_Decoder>();
+        auto *i_decoder        = cam.get_device().get_facility<I_Decoder>();
+        if (i_future_decoder) {
+            i_future_decoder->add_protocol_violation_callback([](auto) {});
+        }
+        if (i_decoder) {
+            i_decoder->add_protocol_violation_callback([](auto) {});
+        }
+    } catch (HalException &e) {}
     cam.cd().add_callback(
         [this](const EventCD *begin, const EventCD *end) { duration_ = std::max(duration_, std::prev(end)->t); });
     cam.offline_streaming_control().seek(get_seek_end_time());

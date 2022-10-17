@@ -46,10 +46,10 @@ target_link_libraries(gtest_metavision_sdk_core
 
 register_gtest(TEST sdk-core-unit-tests TARGET gtest_metavision_sdk_core)
 
-
 add_executable(deprecation_warning_sample EXCLUDE_FROM_ALL
     ${CMAKE_CURRENT_SOURCE_DIR}/deprecation_warning_sample.cpp
 )
+
 if(NOT WIN32)
     target_compile_options(deprecation_warning_sample PUBLIC "-Werror")
 else()

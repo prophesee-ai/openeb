@@ -16,6 +16,7 @@ import skvideo.io
 import numpy as np
 from metavision_core_ml.video_to_event.simu_events_iterator import SimulatedEventsIterator
 from metavision_core_ml.data.video_stream import TimedVideoStream
+from metavision_core_ml.video_to_event.simulator import EventSimulator
 
 
 def pytestcase_all_events_in_frame(tmpdir):
@@ -196,3 +197,65 @@ def pytestcase_can_be_run_twice(tmpdir):
         last_event2 = events
     assert (last_event == last_event2).all()
     simulation.__del__()
+
+
+def pytestcase_check_consistency_simulated_events_iterator(tmpdir, dataset_dir):
+    """
+    Checks that calling SimulatedEventsIterator produces the same events as calling the simulator manually
+    """
+    filename = os.path.join(dataset_dir, "openeb", "core_ml", "GOPR9633", "GOPR9633.mp4")
+    assert os.path.isfile(filename)
+
+    start_ts = 100000
+    width, height = (320, 240)
+    delta_t = 10000
+    assert os.path.isfile(filename)
+    simu = EventSimulator(height=height, width=width, Cp=0.11, Cn=0.1,
+                          refractory_period=0.001, sigma_threshold=0,
+                          cutoff_hz=0, leak_rate_hz=0,
+                          shot_noise_rate_hz=0)
+    simu.last_event_timestamp[...] = start_ts
+
+    start_idx = int(start_ts / (1e6 / 240))  # video is 240fps
+
+    video_stream = TimedVideoStream(video_filename=filename, height=height, width=width,
+                                    start_frame=start_idx, max_frames=0, rgb=False, override_fps=0)
+    nb_total_frames = 0
+    nb_total_events = 0
+    list_all_events = []
+    idx_frame = -1
+    for img, ts in video_stream:
+        idx_frame += 1
+        if ts > 200000:
+            break
+        nb_total_frames += 1
+        total = simu.image_callback(img, ts)
+        events = simu.get_events()
+        simu.flush_events()
+        nb_total_events += events.size
+        print(f"img.shape: {img.shape}   idx_frame: {idx_frame}   timestamp frame: {ts}   nb_events: {events.size}   nb_total_events: {nb_total_events}")
+        if events.size:
+            print(f"\tevents ts: {events['t'][0]} --> {events['t'][-1]}")
+        print("")
+        list_all_events.append(events)
+    all_events = np.concatenate(list_all_events)
+
+    simu_iterator = SimulatedEventsIterator(filename, delta_t=delta_t, mode="delta_t",
+                                            n_events=0, start_ts=start_ts, height=height, width=width)
+    nb_total_events = 0
+    for idx, events in enumerate(simu_iterator):
+        current_chunk_start_ts = start_ts + idx * delta_t
+        current_chunk_end_ts = start_ts + (idx + 1) * delta_t
+        if current_chunk_start_ts >= 200000:
+            break
+        nb_total_events += events.size
+        print(f"current chunk idx: {idx}   nb events: {events.size}   nb_total_events: {nb_total_events}")
+        if events.size:
+            print(f"\tevents ts: {events['t'][0]} --> {events['t'][-1]}")
+        print("")
+        assert (events["t"] >= current_chunk_start_ts).all()
+        assert (events["t"] < current_chunk_end_ts).all()
+        events_current_chunk = all_events[(all_events["t"] >= current_chunk_start_ts)
+                                          * (all_events["t"] < current_chunk_end_ts)]
+        assert events_current_chunk.size == events.size
+        assert (events_current_chunk["t"] == events["t"]).all()

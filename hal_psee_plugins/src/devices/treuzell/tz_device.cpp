@@ -166,8 +166,8 @@ bool TzDeviceBuilder::build_devices(std::shared_ptr<TzLibUSBBoardCommand> cmd, D
     std::shared_ptr<I_Decoder> decoder;
     if (format.name == "EVT3" && geometry) {
         MV_HAL_LOG_TRACE() << "Adding EVT3 decoder";
-        decoder = device_builder.add_facility(
-            std::make_unique<EVT3Decoder>(false, geometry->get_height(), cd_event_decoder, ext_trigger_event_decoder));
+        decoder = device_builder.add_facility(make_evt3_decoder(false, geometry->get_height(), geometry->get_width(),
+                                                                cd_event_decoder, ext_trigger_event_decoder));
     } else if (format.name == "EVT2") {
         MV_HAL_LOG_TRACE() << "Adding EVT2 decoder";
         decoder = device_builder.add_facility(
@@ -196,6 +196,11 @@ bool TzDeviceBuilder::build_devices(std::shared_ptr<TzLibUSBBoardCommand> cmd, D
 
     device_builder.add_facility(std::make_unique<TzDeviceControl>(devices));
     return true;
+}
+
+TzDeviceBuilder::Build_Map &TzDeviceBuilder::generic_map() {
+    static Build_Map static_map;
+    return static_map;
 }
 
 } // namespace Metavision

@@ -44,8 +44,8 @@ I_EventsStream::I_EventsStream(std::unique_ptr<DataTransfer> data_transfer,
     data_transfer_->add_new_buffer_callback([this](const DataTransfer::BufferPtr &buffer) {
         std::lock_guard<std::mutex> lock(new_buffer_safety_);
         if (!stop_) {
-            if (!contains(data_transfer_buffer_ptrs_, buffer.get())) {
-                data_transfer_buffer_ptrs_.push_back(buffer.get());
+            if (data_transfer_buffer_ptrs_.count(buffer.get()) == 0) {
+                data_transfer_buffer_ptrs_.insert(buffer.get());
             }
             available_buffers_.push(buffer);
             new_buffer_cond_.notify_all();

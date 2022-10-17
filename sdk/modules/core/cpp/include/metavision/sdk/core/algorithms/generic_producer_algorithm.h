@@ -39,6 +39,7 @@ namespace Metavision {
 /// Conversely, a timeout can be set, to avoid the producer waiting indefinitely for
 /// events to be inserted. According to the timeout value, the producer will either not wait,
 /// wait indefinitely or wait for a predefined amount of time before returning the events,
+///
 /// @sa @ref set_timeout.
 template<class EventType>
 class GenericProducerAlgorithm {
@@ -145,6 +146,7 @@ public:
     /// If the timeout is zero, it will wait until at least one event with a timestamp
     /// greater than ts is registered, before returning the events with a timestamp
     /// less or equal to ts.
+    ///
     /// @param ts Timestamp before which to include events.
     /// @param inserter Output iterator or back inserter
     /// @param timing_profiler Profiler to debug

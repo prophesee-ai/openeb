@@ -33,18 +33,21 @@ public:
     /// @brief Sets the camera in standalone mode.
     ///
     /// The camera does not interact with other devices.
+    ///
     /// @return true on success
     bool set_mode_standalone() override final;
 
     /// @brief Sets the camera as master
     ///
     /// The camera sends clock signal to another device
+    ///
     /// @return true on success
     bool set_mode_master() override final;
 
     /// @brief Sets the camera as slave
     ///
     /// The camera receives the clock from another device
+    ///
     /// @return true on success
     bool set_mode_slave() override final;
 

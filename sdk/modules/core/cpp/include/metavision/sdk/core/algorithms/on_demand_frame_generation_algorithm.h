@@ -71,6 +71,7 @@ public:
     /// Frame generated will only hold events in the interval [t - dt, t[ where t is the timestamp at
     /// which the frame is generated, and dt the accumulation time.
     /// However, if @p accumulation_time_us is set to 0, all events since the last generated frame are used
+    ///
     /// @param accumulation_time_us Time range of events to update the frame with (in us)
     void set_accumulation_time_us(uint32_t accumulation_time_us);
 

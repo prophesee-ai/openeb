@@ -20,9 +20,9 @@
 // sensor_version=None
 // args=-s evk3_imx636_cd
 // sensor=PseeEvk3IMX636
-// date=2022-03-15T12:30:57
-// psee_issd_version=1.2.0.126+gc69d7e811
-// psee_sensor_lib_version=3.4.0.122+g035d29760
+// date=2022-10-10T09:54:14
+// psee_issd_version=1.2.0.1685+g1b82812af
+// psee_sensor_lib_version=3.4.0.1480+g29c35578c
 // issd_data_format_version=1.0
 
 // clang-format off
@@ -103,12 +103,16 @@ const std::vector<RegisterOperation> issd_evk3_imx636_init = {
     RegisterOperation::Delay(200),
     RegisterOperation::Write(0x0000B044, 0x00000001),
     RegisterOperation::Write(0x0000B000, 0x000002F9),
+    RegisterOperation::Write(0x00007008, 0x00000001),
+    RegisterOperation::Write(0x00007000, 0x00070001),
+    RegisterOperation::Write(0x00008000, 0x0001E085),
     RegisterOperation::Write(0x00009008, 0x00000644),
     RegisterOperation::Write(0x00000004, 0xF0005042),
     RegisterOperation::Write(0x00000018, 0x00000200),
     RegisterOperation::Write(0x00001014, 0x11A1504D),
     RegisterOperation::Write(0x00009004, 0x00000000),
-    RegisterOperation::Delay(1000)
+    RegisterOperation::Delay(1000),
+    RegisterOperation::Write(0x00009000, 0x00000200)
 };
 
 const std::vector<RegisterOperation> issd_evk3_imx636_start = {

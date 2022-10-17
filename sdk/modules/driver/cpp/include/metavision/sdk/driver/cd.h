@@ -39,6 +39,7 @@ public:
     /// @brief Subscribes to CD events
     ///
     /// Registers a callback that will be called each time a buffer of eventCD has been decoded.
+    ///
     /// @param cb Callback to call each time a buffer of eventCD has been decoded
     /// @sa @ref EventsCDCallback
     /// @return ID of the added callback

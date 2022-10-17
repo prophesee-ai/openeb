@@ -55,8 +55,9 @@ bool PseeFileDiscovery::discover(DeviceBuilder &device_builder, std::unique_ptr<
         {
             std::shared_ptr<Future::I_Decoder> decoder;
             if (format == "EVT3" && i_geometry) {
-                decoder = device_builder.add_facility(std::make_unique<Future::EVT3Decoder>(
-                    file_config.do_time_shifting_, i_geometry->get_height(), cd_decoder, ext_trig_decoder));
+                decoder = device_builder.add_facility(
+                    Future::make_evt3_decoder(file_config.do_time_shifting_, i_geometry->get_height(),
+                                              i_geometry->get_width(), cd_decoder, ext_trig_decoder));
             } else if (format == "EVT2") {
                 decoder = device_builder.add_facility(
                     std::make_unique<Future::EVT2Decoder>(file_config.do_time_shifting_, cd_decoder, ext_trig_decoder));
@@ -71,8 +72,9 @@ bool PseeFileDiscovery::discover(DeviceBuilder &device_builder, std::unique_ptr<
         {
             std::shared_ptr<I_Decoder> decoder;
             if (format == "EVT3" && i_geometry) {
-                decoder = device_builder.add_facility(std::make_unique<EVT3Decoder>(
-                    file_config.do_time_shifting_, i_geometry->get_height(), cd_decoder, ext_trig_decoder));
+                decoder = device_builder.add_facility(
+                    make_evt3_decoder(file_config.do_time_shifting_, i_geometry->get_height(), i_geometry->get_width(),
+                                      cd_decoder, ext_trig_decoder));
             } else if (format == "EVT2") {
                 decoder = device_builder.add_facility(
                     std::make_unique<EVT2Decoder>(file_config.do_time_shifting_, cd_decoder, ext_trig_decoder));

@@ -12,10 +12,10 @@
 // Example of using Metavision SDK Driver API for visualizing events stream.
 
 #include <boost/program_options.hpp>
-#include <metavision/sdk/driver/camera.h>
 #include <thread>
 #include <atomic>
 #include <chrono>
+#include <iomanip>
 #include <opencv2/highgui/highgui.hpp>
 #if CV_MAJOR_VERSION >= 4
 #include <opencv2/highgui/highgui_c.h>
@@ -23,24 +23,53 @@
 #include <opencv2/imgproc.hpp>
 #include <metavision/sdk/base/utils/log.h>
 #include <metavision/sdk/core/utils/cd_frame_generator.h>
+#include <metavision/sdk/core/utils/rate_estimator.h>
+#include <metavision/sdk/driver/camera.h>
 
 static const int ESCAPE = 27;
 static const int SPACE  = 32;
 
 namespace po = boost::program_options;
 
+std::string human_readable_rate(double rate) {
+    std::ostringstream oss;
+    if (rate < 1000) {
+        oss << std::setprecision(0) << std::fixed << rate << " ev/s";
+    } else if (rate < 1000 * 1000) {
+        oss << std::setprecision(1) << std::fixed << (rate / 1000) << " Kev/s";
+    } else if (rate < 1000 * 1000 * 1000) {
+        oss << std::setprecision(1) << std::fixed << (rate / (1000 * 1000)) << " Mev/s";
+    } else {
+        oss << std::setprecision(1) << std::fixed << (rate / (1000 * 1000 * 1000)) << " Gev/s";
+    }
+    return oss.str();
+}
+
 std::string human_readable_time(Metavision::timestamp t) {
     std::ostringstream oss;
-    std::array<std::string, 3> ls{":", ".", ""};
-    std::array<std::string, 3> vs;
-    vs[2] = cv::format("%03d", int(t % 1000));
-    t /= 1000; // ms
-    vs[1] = cv::format("%03d", int(t % 1000));
-    t /= 1000; // s
-    vs[0] = cv::format("%02d", int(t % 60));
+    std::array<std::string, 4> ls{":", ":", ".", ""};
+    std::array<std::string, 4> vs;
+    std::array<int, 4> ts;
+    ts[3] = t % 1000000;
+    vs[3] = cv::format("%06d", int(ts[3]));
+    t /= 1000000; // s
+    ts[2] = t % 60;
+    vs[2] = cv::format("%02d", int(ts[2]));
+    t /= 60; // m
+    ts[1] = t % 60;
+    vs[1] = cv::format("%02d", int(ts[1]));
+    t /= 60; // h
+    ts[0] = t;
+    vs[0] = cv::format("%02d", int(ts[0]));
 
     size_t i = 0;
-    for (; i < 3; ++i) {
+    // skip hour and minutes if t is not high enough, but keep s and us
+    for (; i < 2; ++i) {
+        if (ts[i] != 0) {
+            break;
+        }
+    }
+    for (; i < 4; ++i) {
         oss << vs[i] << ls[i];
     }
     return oss.str();
@@ -70,12 +99,14 @@ bool window_was_closed(const std::string &window_name) {
 }
 
 int setup_cd_callback_and_window(Metavision::Camera &camera, cv::Mat &cd_frame, Metavision::timestamp &cd_frame_ts,
-                                 Metavision::CDFrameGenerator &cd_frame_generator, const std::string &window_name) {
+                                 Metavision::CDFrameGenerator &cd_frame_generator,
+                                 Metavision::RateEstimator &cd_rate_estimator, const std::string &window_name) {
     auto &geometry = camera.geometry();
-    auto id        = camera.cd().add_callback(
-        [&cd_frame_generator](const Metavision::EventCD *ev_begin, const Metavision::EventCD *ev_end) {
-            cd_frame_generator.add_events(ev_begin, ev_end);
-        });
+    auto id = camera.cd().add_callback([&cd_frame_generator, &cd_rate_estimator](const Metavision::EventCD *ev_begin,
+                                                                                 const Metavision::EventCD *ev_end) {
+        cd_frame_generator.add_events(ev_begin, ev_end);
+        cd_rate_estimator.add_data(std::prev(ev_end)->t, std::distance(ev_begin, ev_end));
+    });
     cd_frame_generator.start(30, [&cd_frame, &cd_frame_ts](const Metavision::timestamp &ts, const cv::Mat &frame) {
         cd_frame_ts = ts;
         frame.copyTo(cd_frame);
@@ -114,6 +145,9 @@ int main(int argc, char *argv[]) {
                                   "Press SPACE key while running to record or stop recording raw data\n"
                                   "Press 'q' or Escape key to leave the program.\n"
                                   "Press 'r' to toggle the hardware ROI given as input.\n"
+                                  "Press 'e' to toggle the ERC module (if available).\n"
+                                  "Press '+' to increase the ERC threshold (if available).\n"
+                                  "Press '-' to decrease the ERC threshold (if available).\n"
                                   "Press 'h' to print this help.\n");
 
     po::options_description options_desc("Options");
@@ -227,8 +261,16 @@ int main(int argc, char *argv[]) {
         Metavision::timestamp cd_frame_ts{0};
         Metavision::CDFrameGenerator cd_frame_generator(geometry.width(), geometry.height());
         cd_frame_generator.set_display_accumulation_time_us(10000);
-        int cd_events_cb_id =
-            setup_cd_callback_and_window(camera, cd_frame, cd_frame_ts, cd_frame_generator, cd_window_name);
+
+        double avg_rate, peak_rate;
+        Metavision::RateEstimator cd_rate_estimator(
+            [&avg_rate, &peak_rate](Metavision::timestamp ts, double arate, double prate) {
+                avg_rate  = arate;
+                peak_rate = prate;
+            },
+            100000, 1000000, true);
+        int cd_events_cb_id = setup_cd_callback_and_window(camera, cd_frame, cd_frame_ts, cd_frame_generator,
+                                                           cd_rate_estimator, cd_window_name);
 
         // Start the camera streaming
         camera.start();
@@ -258,12 +300,17 @@ int main(int argc, char *argv[]) {
             }
 
             if (!cd_frame.empty()) {
+                std::string text;
                 if (osd) {
-                    const std::string text = human_readable_time(cd_frame_ts) + " / " +
-                                             human_readable_time(camera.offline_streaming_control().get_duration());
-                    cv::putText(cd_frame, text, cv::Point(10, 20), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(108, 143, 255),
-                                1, cv::LINE_AA);
+                    text = human_readable_time(cd_frame_ts) + " / " +
+                           human_readable_time(camera.offline_streaming_control().get_duration());
+                } else {
+                    text = human_readable_time(cd_frame_ts);
                 }
+                text += "     ";
+                text += human_readable_rate(avg_rate);
+                cv::putText(cd_frame, text, cv::Point(10, 20), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(108, 143, 255), 1,
+                            cv::LINE_AA);
                 cv::imshow(cd_window_name, cd_frame);
             }
 
@@ -277,8 +324,10 @@ int main(int argc, char *argv[]) {
                 break;
             case SPACE:
                 if (!recording) {
+                    MV_LOG_INFO() << "Started recording RAW in" << out_raw_file_path;
                     camera.start_recording(out_raw_file_path);
                 } else {
+                    MV_LOG_INFO() << "Stopped recording RAW in" << out_raw_file_path;
                     camera.stop_recording();
                 }
                 recording = !recording;
@@ -288,6 +337,7 @@ int main(int argc, char *argv[]) {
                     Metavision::timestamp pos = cd_frame_ts - 1000 * 1000;
                     if (camera.offline_streaming_control().seek(pos)) {
                         cd_frame_generator.reset();
+                        MV_LOG_INFO() << "Seeking backward to" << (pos / 1.e6) << "s";
                     }
                 }
                 break;
@@ -296,6 +346,7 @@ int main(int argc, char *argv[]) {
                     Metavision::timestamp pos = cd_frame_ts + 1000 * 1000;
                     if (camera.offline_streaming_control().seek(pos)) {
                         cd_frame_generator.reset();
+                        MV_LOG_INFO() << "Seeking forward to" << (pos / 1.e6) << "s";
                     }
                 }
                 break;
@@ -311,10 +362,33 @@ int main(int argc, char *argv[]) {
                 }
                 if (!is_roi_set) {
                     camera.roi().set({roi[0], roi[1], roi[2], roi[3]});
+                    MV_LOG_INFO() << "ROI: enabled";
                 } else {
                     camera.roi().unset();
+                    MV_LOG_INFO() << "ROI: disabled";
                 }
                 is_roi_set = !is_roi_set;
+                break;
+            }
+            case 'e': {
+                try {
+                    camera.erc_module().enable(!camera.erc_module().is_enabled());
+                    MV_LOG_INFO() << "ERC:" << (camera.erc_module().is_enabled() ? "enabled" : "disabled");
+                } catch (Metavision::CameraException &e) {}
+                break;
+            }
+            case '+': {
+                try {
+                    camera.erc_module().set_cd_event_rate(camera.erc_module().get_cd_event_rate() + 10000000);
+                    MV_LOG_INFO() << "ERC:" << (camera.erc_module().get_cd_event_rate() / 1000000) << "Mev/s";
+                } catch (Metavision::CameraException &e) {}
+                break;
+            }
+            case '-': {
+                try {
+                    camera.erc_module().set_cd_event_rate(camera.erc_module().get_cd_event_rate() - 10000000);
+                    MV_LOG_INFO() << "ERC:" << (camera.erc_module().get_cd_event_rate() / 1000000) << "Mev/s";
+                } catch (Metavision::CameraException &e) {}
                 break;
             }
             case 'h':

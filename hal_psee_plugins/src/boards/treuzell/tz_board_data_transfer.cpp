@@ -10,6 +10,7 @@
  **********************************************************************************************************************/
 
 #include <assert.h>
+#include <sstream>
 
 #ifdef _WIN32
 #ifndef _MSC_VER
@@ -28,18 +29,39 @@
 #include "metavision/hal/utils/hal_log.h"
 
 const static int USB_TIME_OUT                = 100;
-static const int N_ASYNC_TRANFERS_PER_DEVICE = 20;
+const static int N_ASYNC_TRANFERS_PER_DEVICE = 20;
 const static int PACKET_SIZE                 = 128 * 1024;
 
 namespace Metavision {
 
-uint32_t TzBoardDataTransfer::timeout_cnt_;
-TzBoardDataTransfer::TzBoardDataTransfer(const std::shared_ptr<TzLibUSBBoardCommand> &cmd,
-                                         uint32_t raw_event_size_bytes) :
-    DataTransfer(raw_event_size_bytes), cmd_(cmd) {
-    flush();
+namespace {
+size_t get_envar_or_default(const std::string &envvar, size_t default_val) {
+    size_t val = default_val;
+    try {
+        auto *envar_value = getenv(envvar.c_str());
+        if (envar_value) {
+            std::stringstream ss(envar_value);
+            ss >> val;
+        }
+    } catch (...) {}
+    return val;
 }
 
+size_t get_async_transfer_number() {
+    return get_envar_or_default("MV_PSEE_DEBUG_PLUGIN_USB_ASYNC_TRANSFER", N_ASYNC_TRANFERS_PER_DEVICE);
+}
+
+size_t get_packet_size() {
+    return get_envar_or_default("MV_PSEE_DEBUG_PLUGIN_USB_PACKET_SIZE", PACKET_SIZE);
+}
+
+size_t get_time_out() {
+    return get_envar_or_default("MV_PSEE_DEBUG_PLUGIN_USB_TIME_OUT", USB_TIME_OUT);
+}
+
+} // namespace
+
+uint32_t TzBoardDataTransfer::timeout_cnt_;
 void TzBoardDataTransfer::preprocess_transfer(libusb_transfer *transfer) {
     if (transfer->status == LIBUSB_TRANSFER_TIMED_OUT) {
         if (transfer->actual_length != 0) {
@@ -70,7 +92,8 @@ public:
 private:
     bool proceed_async_bulk(struct libusb_transfer *transfer);
 
-    const static int timeout_ = USB_TIME_OUT;
+    const static size_t timeout_;
+
     DataTransfer::BufferPtr buf_;
     std::mutex transfer_mutex_;
     libusb_transfer *transfer_{nullptr};
@@ -80,17 +103,44 @@ private:
     TzBoardDataTransfer &libusb_data_transfer_;
 };
 
+const size_t TzBoardDataTransfer::packet_size_                            = get_packet_size();
+const size_t TzBoardDataTransfer::async_transfer_num_                     = get_async_transfer_number();
+const size_t TzBoardDataTransfer::UserParamForAsyncBulkCallback::timeout_ = get_time_out();
+
+DataTransfer::BufferPool TzBoardDataTransfer::make_buffer_pool(size_t default_pool_byte_size) {
+    DataTransfer::BufferPool pool = DataTransfer::BufferPool::make_unbounded(async_transfer_num_, get_packet_size());
+    auto buffer_pool_byte_size =
+        get_envar_or_default("MV_PSEE_PLUGIN_DATA_TRANSFER_BUFFER_POOL_BYTE_SIZE", default_pool_byte_size);
+    if (buffer_pool_byte_size) {
+        auto num_obj_pool = buffer_pool_byte_size / packet_size_;
+        MV_HAL_LOG_INFO() << "Creating Fixed size data pool of : " << num_obj_pool << "x" << packet_size_ << "B";
+        pool = DataTransfer::BufferPool::make_bounded(num_obj_pool, packet_size_);
+    }
+
+    return pool;
+}
+
+TzBoardDataTransfer::TzBoardDataTransfer(const std::shared_ptr<TzLibUSBBoardCommand> &cmd,
+                                         uint32_t raw_event_size_bytes, const DataTransfer::BufferPool &buffer_pool) :
+    DataTransfer(raw_event_size_bytes, buffer_pool, true), cmd_(cmd) {
+    flush();
+}
+
 TzBoardDataTransfer::~TzBoardDataTransfer() {
     stop_impl();
 }
 
 void TzBoardDataTransfer::start_impl(BufferPtr buffer) {
+    buffer.reset(); // we don't use the buffer here... let's put it back in the pool
     initiate_async_transfers();
 }
 
 void TzBoardDataTransfer::run_impl() {
     MV_HAL_LOG_TRACE() << "poll thread running";
     while (!should_stop() && active_bulks_transfers_ > 0) {
+        // Ensure we'll have sufficient space to handle all transfers on the next iteration
+        get_buffer_pool().arrange(async_transfer_num_, packet_size_);
+
         struct timeval tv = {0, 1};
         libusb_handle_events_timeout(cmd_->libusb_ctx->ctx(), &tv);
     }
@@ -106,7 +156,7 @@ void TzBoardDataTransfer::stop_impl() {
 }
 
 void TzBoardDataTransfer::initiate_async_transfers() {
-    for (int i = 0; i < N_ASYNC_TRANFERS_PER_DEVICE; ++i) {
+    for (size_t i = 0; i < async_transfer_num_; ++i) {
         vtransfer_.push_back(std::make_unique<UserParamForAsyncBulkCallback>(i, cmd_, *this));
         vtransfer_.back()->start();
     }
@@ -119,10 +169,9 @@ void TzBoardDataTransfer::release_async_transfers() {
 TzBoardDataTransfer::UserParamForAsyncBulkCallback::UserParamForAsyncBulkCallback(
     int id, const std::shared_ptr<TzLibUSBBoardCommand> &cmd, TzBoardDataTransfer &libusb_data_transfer) :
     cmd_(cmd), libusb_data_transfer_(libusb_data_transfer) {
-    buf_ = libusb_data_transfer.get_buffer();
-    buf_->resize(PACKET_SIZE);
-    transfer_ =
-        libusb_data_transfer.contruct_async_bulk_transfer(buf_->data(), PACKET_SIZE, async_bulk_cb, this, timeout_);
+    buf_      = libusb_data_transfer.get_buffer();
+    transfer_ = libusb_data_transfer.contruct_async_bulk_transfer(buf_->data(), libusb_data_transfer.packet_size_,
+                                                                  async_bulk_cb, this, timeout_);
 }
 
 TzBoardDataTransfer::UserParamForAsyncBulkCallback::~UserParamForAsyncBulkCallback() {
@@ -190,11 +239,13 @@ bool TzBoardDataTransfer::UserParamForAsyncBulkCallback::proceed_async_bulk(stru
     }
 
     buf_->resize(transfer->actual_length - remainder);
+
     auto next_buf = libusb_data_transfer_.transfer_data(buf_);
 
-    next_buf->resize(PACKET_SIZE);
-    transfer->buffer = next_buf->data();
-    buf_             = next_buf;
+    buf_ = next_buf;
+    buf_->resize(libusb_data_transfer_.packet_size_);
+
+    transfer->buffer = buf_->data();
     int r            = submit_transfer(transfer);
     if (r != 0) {
         MV_HAL_LOG_ERROR() << "Resubmit error after transfer OK";

@@ -24,6 +24,7 @@ namespace Metavision {
 /// @brief Class representing a buffer of the most recent timestamps observed at each pixel of the camera
 ///
 /// A most recent timestamp buffer is also called time surface.
+///
 /// @note The interface follows the one of cv::Mat
 template<typename timestamp_type>
 class MostRecentTimestampBufferT {

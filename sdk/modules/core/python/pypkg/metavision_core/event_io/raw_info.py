@@ -10,6 +10,7 @@
 """
 Get Raw Duration: Either search for a json filename called "path_name_info.json" or compute duration itself.
 """
+
 import json
 from os.path import exists, splitext
 from metavision_core.event_io.raw_reader import RawReader
