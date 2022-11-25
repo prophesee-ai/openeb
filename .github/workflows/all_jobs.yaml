@@ -28,7 +28,7 @@ jobs:
           python3-pip python3-distutils xvfb libglfw3 libglfw3-dev libglew-dev libopencv-dev ffmpeg \
           libboost-dev libboost-program-options-dev libboost-filesystem-dev libboost-timer-dev \
           libboost-chrono-dev libboost-thread-dev zip unzip git-lfs
-          pip install opencv-python $numpy_version pytest torch scipy sk-video numba h5py
+          pip install opencv-python $numpy_version pytest torch scipy sk-video numba h5py command_runner
 
       - name: Build pybind
         run: |
@@ -76,7 +76,7 @@ jobs:
           libboost-dev libboost-program-options-dev libboost-filesystem-dev libboost-timer-dev \
           libboost-chrono-dev libboost-thread-dev zip unzip
           python3 -m pip install --upgrade pip
-          python3 -m pip install opencv-python $numpy_version pytest torch scipy sk-video numba h5py
+          python3 -m pip install opencv-python $numpy_version pytest torch scipy sk-video numba h5py command_runner
 
       - name: Build pybind and gtest
         run: |
@@ -149,7 +149,7 @@ jobs:
           cd ..
           unzip -q "vcpkg-export.zip"
           7z x ffmpeg-archive.7z
-          $python_executable -m pip install pytest $numpy_version opencv-python torch scipy sk-video numba h5py
+          $python_executable -m pip install pytest $numpy_version opencv-python torch scipy sk-video numba h5py command_runner
           cd openeb
 
       - name: Build openEB
