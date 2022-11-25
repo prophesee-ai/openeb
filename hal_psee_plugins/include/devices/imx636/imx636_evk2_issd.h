@@ -31,7 +31,7 @@
 
 namespace Metavision {
 
-const std::vector<RegisterOperation> issd_evk2_imx636_init = {
+static const std::vector<RegisterOperation> issd_evk2_imx636_init = {
     RegisterOperation::Write(0x00000004, 0x00000111),
     RegisterOperation::Write(0x00000000, 0x00000089),
     RegisterOperation::Write(0x00000000, 0x0000008D),
@@ -138,7 +138,7 @@ const std::vector<RegisterOperation> issd_evk2_imx636_init = {
     RegisterOperation::Write(0x00109000, 0x00000200)
 };
 
-const std::vector<RegisterOperation> issd_evk2_imx636_start = {
+static const std::vector<RegisterOperation> issd_evk2_imx636_start = {
     RegisterOperation::Write(0x00000044, 0x00000001),
     RegisterOperation::Write(0x00000014, 0x00000001),
     RegisterOperation::Write(0x0070F000, 0x00400001),
@@ -152,7 +152,7 @@ const std::vector<RegisterOperation> issd_evk2_imx636_start = {
     RegisterOperation::WriteField(0x00000008, 0x0000004F, 0x1)
 };
 
-const std::vector<RegisterOperation> issd_evk2_imx636_stop = {
+static const std::vector<RegisterOperation> issd_evk2_imx636_stop = {
     RegisterOperation::Write(0x00000018, 0x00000000),
     RegisterOperation::WriteField(0x00000008, 0x0000004E, 0x00000001),
     // Analog STOP
@@ -166,7 +166,7 @@ const std::vector<RegisterOperation> issd_evk2_imx636_stop = {
     RegisterOperation::Delay(300)
 };
 
-const std::vector<RegisterOperation> issd_evk2_imx636_destroy = {
+static const std::vector<RegisterOperation> issd_evk2_imx636_destroy = {
     // Analog DESTROY
     RegisterOperation::Write(0x00100070, 0x00400008),
     RegisterOperation::Write(0x0010006C, 0x0EE47114),
@@ -207,7 +207,7 @@ const std::vector<RegisterOperation> issd_evk2_imx636_destroy = {
     RegisterOperation::Write(0x00000004, 0x00000000)
 };
 
-Issd issd_evk2_imx636_sequence = Issd{
+static Issd issd_evk2_imx636_sequence = Issd{
     issd_evk2_imx636_init,
     issd_evk2_imx636_start,
     issd_evk2_imx636_stop,

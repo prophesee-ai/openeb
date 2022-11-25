@@ -11,6 +11,10 @@ if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/src/devices/gen4")
     set(HAL_GEN4_SUPPORT TRUE)
 endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/src/devices/gen4")
 
+if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/src/devices/raven")
+    set(HAL_RAVEN_SUPPORT TRUE)
+endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/src/devices/raven")
+
 # Add libraries (plugins)
 set(biasgen_calib_files_dir "${GENERATE_FILES_DIRECTORY}/biasgen_calib")
 set(metavision_hal_psee_plugins_include_dir "${CMAKE_CURRENT_SOURCE_DIR}/include")

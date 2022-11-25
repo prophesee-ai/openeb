@@ -71,16 +71,16 @@ bool PseeROI::set_ROIs(const std::vector<bool> &cols_to_enable, const std::vecto
 }
 
 std::vector<uint32_t> PseeROI::create_ROIs(const std::vector<DeviceRoi> &vroi, int device_width, int device_height,
-                                           bool x_flipped, int word_size) {
+                                           bool x_flipped, int word_size, int x_offset, int y_offset) {
     const auto nelem     = device_width + device_height;
     auto is_pixel_in_roi = std::vector<bool>(nelem, false);
 
     for (auto const &roi : vroi) {
         // clamp into [0, width - 1] and [0, height - 1]
-        const auto max_x = std::min(roi.x_ + roi.width_, device_width);
-        const auto max_y = std::min(roi.y_ + roi.height_, device_height);
-        const auto min_x = std::max(roi.x_, 0);
-        const auto min_y = std::max(roi.y_, 0);
+        const auto max_x = std::min(roi.x_ + x_offset + roi.width_, device_width - x_offset);
+        const auto max_y = std::min(roi.y_ + y_offset + roi.height_, device_height - y_offset);
+        const auto min_x = std::max(roi.x_ + x_offset, 0);
+        const auto min_y = std::max(roi.y_ + y_offset, 0);
 
         for (auto col_ind = min_x; col_ind < max_x; ++col_ind) {
             const auto ind       = x_flipped ? device_width - 1 - col_ind : col_ind;

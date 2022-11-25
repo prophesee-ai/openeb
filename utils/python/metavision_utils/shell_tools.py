@@ -18,9 +18,8 @@ import shlex
 import sys
 import os
 import platform
-import pprint
-if platform.system() != 'Windows':
-    import fcntl
+import shutil
+from command_runner import command_runner
 
 
 def print_to_stderr(msg):
@@ -57,6 +56,7 @@ def execute_cmd(cmd, **kwargs):
     working_directory = kwargs.pop('working_directory', None)
     shell = kwargs.pop('shell', False)
     env = kwargs.pop('env', None)
+    detached = kwargs.pop('detached', False)
 
     output, error, error_code = "", "", 0
 
@@ -65,7 +65,6 @@ def execute_cmd(cmd, **kwargs):
             print("In directory '{}', execute '{}'".format(working_directory, cmd))
         else:
             print(cmd)
-        sys.stdout.flush()
 
     if not dry_run:
         if working_directory:
@@ -74,94 +73,48 @@ def execute_cmd(cmd, **kwargs):
                 error_code = 1
                 return output, error, error_code
 
-        use_cmd_as_string = shell
-        if platform.system() == 'Windows':
-            use_cmd_as_string = True
+        if detached:
+            use_cmd_as_string = shell
+            if platform.system() == 'Windows':
+                use_cmd_as_string = True
 
-        process = Popen(cmd if use_cmd_as_string else shlex.split(cmd),
-                        cwd=working_directory,
-                        stderr=PIPE,
-                        stdout=PIPE,
-                        shell=shell,
-                        env=env)
-
-        if verbose:
-            if platform.system() != 'Windows':
-                fcntl.fcntl(process.stdout, fcntl.F_SETFL, fcntl.fcntl(process.stdout, fcntl.F_GETFL) | os.O_NONBLOCK)
-                fcntl.fcntl(process.stderr, fcntl.F_SETFL, fcntl.fcntl(process.stderr, fcntl.F_GETFL) | os.O_NONBLOCK)
-                while True:
-                    exit_status = process.poll()
-                    try:
-                        output_contents = process.stdout.read()
-                        if output_contents:
-                            print(output_contents.decode(), end=' ')  # , to remove trailing new line
-                            output += output_contents.decode()
-                        sys.stdout.flush()
-                    except BaseException:
-                        pass
-                    try:
-                        error_contents = process.stderr.read()
-                        error += error_contents.decode()
-                    except BaseException:
-                        pass
-                    if exit_status is not None:
-                        error_code = exit_status
-                        break
-
-                if error:
-                    print_to_stderr(error)
-                    sys.stderr.flush()
-
+            process = Popen(cmd if use_cmd_as_string else shlex.split(cmd),
+                            cwd=working_directory,
+                            stderr=None,
+                            stdout=None,
+                            shell=shell,
+                            env=env,
+                            close_fds=True)
+            res = process.poll()
+            if res is not None:
+                return "", "", res
             else:
-                from queue import Queue, Empty
-                from threading import Thread
-
-                def enqueue_output(out, queue):
-                    for line in iter(out.readline, b''):
-                        queue.put(line)
-
-                # For a non blocking read take a look at :
-                # https://stackoverflow.com/questions/375427/a-non-blocking-read-on-a-subprocess-pipe-in-python
-                # The above solution has been adapted in this code to have live output
-                # As well as to print the contents of stderr in case the command actually succeeds
-                outputQ = Queue()
-                outputT = Thread(target=enqueue_output, args=(process.stdout, outputQ))
-                outputT.daemon = True
-                outputT.start()
-
-                while outputT.is_alive():
-                    nextline = ''
-                    try:
-                        if not process.stdout.closed and process.stdout.readable():
-                            bnextline = outputQ.get(timeout=2)
-                    except Empty:
-                        break
-                    else:
-                        nextline = bnextline.decode(errors='ignore')
-                    if nextline == '' and process.poll() is not None:
-                        break
-                    output += nextline
-                    sys.stdout.write(nextline)
+                return "", "", 0
+        else:
+            def _print_to_stdout(s):
+                if verbose:
+                    sys.stdout.write(s)
                     sys.stdout.flush()
 
-                _, berror = process.communicate()
-                error = berror.decode()
-                error_code = process.returncode
-                if error != '' and error_code == 0:
-                    sys.stdout.write(error)
+            def _print_to_stderr(s):
+                if verbose:
+                    sys.stderr.write(s)
                     sys.stderr.flush()
-                if error_code != 0:
-                    print("The command fails with code {} ".format(error_code))
-                    print_to_stderr(error)
-                    sys.stderr.flush()
-                else:
-                    print("The command succeeds ")
 
-        else:
-            boutput, berror = process.communicate()
-            output = boutput.decode()
-            error = berror.decode()
-            error_code = process.returncode
+            sys.stdout.flush()
+            sys.stderr.flush()
+            error_code, output, error = command_runner(cmd,
+                                                       cwd=working_directory,
+                                                       shell=shell,
+                                                       env=env,
+                                                       encoding="utf-8",
+                                                       method="poller",
+                                                       split_streams=True,
+                                                       stdout=_print_to_stdout,
+                                                       stderr=_print_to_stderr)
+            # When there is nothing on stderr, command_runner returns None
+            if error is None:
+                error = ""
 
     return output, error, error_code
 

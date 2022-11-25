@@ -7,9 +7,9 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-set(GIT_BRANCH "main")
-set(GIT_COMMIT_ID "4c19f90e13c20548513c88b89c4e58bc8de8a1bf")
-set(GIT_COMMIT_DATE "2022-10-13 16:56:39 +0200")
+set(GIT_BRANCH "HEAD")
+set(GIT_COMMIT_ID "37aa7510f3d6bdbd2b2b66e816d4fb0e3a420e9d")
+set(GIT_COMMIT_DATE "2022-11-23 15:21:14 +0100")
 
 # If git information are not provided in command line when running cmake, try to automatically determine them
 if(NOT GIT_BRANCH OR NOT GIT_COMMIT_ID OR NOT GIT_COMMIT_DATE)

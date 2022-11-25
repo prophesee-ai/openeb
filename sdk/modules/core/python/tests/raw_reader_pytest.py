@@ -18,23 +18,7 @@ import numpy as np
 from metavision_core.event_io import RawReader
 from metavision_core.event_io.raw_reader import initiate_device
 from metavision_core.event_io import load_events, EventDatReader
-
-
-def pytestcase_rawreader_init(tmpdir, dataset_dir):
-    """Tests initialization of all member variables after creation of RawReader object from a file"""
-    # GIVEN
-    filename = os.path.join(dataset_dir,
-                            "openeb", "core", "event_io", "recording.raw")
-    # WHEN
-    video = RawReader(filename, max_events=int(1e7), do_time_shifting=False)
-    # THEN
-    assert video.width == 640
-    assert video.height == 480
-    assert video.is_done() == False
-    assert sum(
-        [key in video._event_buffer.dtype.names for key in ('x', 'y', 'p', 't')]) == 4
-    assert video._event_buffer.size == 1e7
-    assert video.current_time == 0
+from metavision_core.event_io import EventsIterator
 
 
 def pytestcase_rawreader_init(tmpdir, dataset_dir):
@@ -477,3 +461,39 @@ def pytestcase_rawreader_time_shifting(tmpdir, dataset_dir):
     assert len(raw_evs) == 667855
     assert all([np.allclose(dat_evs[name], raw_evs[name]) for name in ("x", "y", "p")])
     assert np.allclose(dat_evs['t'], raw_evs['t'])
+
+
+def pytestcase_rawreader_seek_compare(tmpdir, dataset_dir):
+    filename = os.path.join(dataset_dir,
+                            "openeb", "core", "event_io", "recording.raw")
+    assert os.path.isfile(filename)
+
+    for delta_t in [35000, 50000, 65000]:
+        iterator = EventsIterator(filename, mode="delta_t", delta_t=delta_t)
+        reader = RawReader(filename)
+        offset_nb_events = 0
+        offset_time = 0
+
+        for i, events_gt in enumerate(iterator):
+            n_events = len(events_gt)
+
+            # seek event, load_n_events
+            reader.reset()
+            reader.seek_event(offset_nb_events)
+            events = reader.load_n_events(n_events)
+            assert events.size == n_events
+            assert (events == events_gt).all()
+
+            # seek time, load_n_events
+            reader.reset()
+            reader.seek_time(offset_time)
+            events = reader.load_n_events(n_events)
+            assert events.size == n_events
+            assert (events == events_gt).all()
+
+            # update offsets
+            offset_nb_events += n_events
+            offset_time += delta_t
+
+            if i >= 50:
+                break

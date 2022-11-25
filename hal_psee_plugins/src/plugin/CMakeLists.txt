@@ -13,17 +13,25 @@ target_sources(hal_plugin_gen3_fx3 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/psee_gen3
 target_sources(hal_plugin_gen31_fx3 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/psee_gen31_evk1.cpp)
 target_sources(hal_plugin_gen31_evk2 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/psee_gen31_evk2.cpp)
 target_sources(hal_plugin_gen31_evk3 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/psee_gen31_evk3.cpp)
+
 if(HAL_GEN4_SUPPORT)
     target_sources(hal_plugin_gen4_fx3 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/psee_gen4_evk1.cpp)
     target_sources(hal_plugin_gen4_evk2 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/psee_gen4_evk2.cpp)
 endif(HAL_GEN4_SUPPORT)
+
 target_sources(hal_plugin_gen41_evk2 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/psee_gen41_evk2.cpp)
 target_sources(hal_plugin_gen41_evk3 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/psee_gen41_evk3.cpp)
 target_sources(hal_plugin_imx636_evk2 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/psee_imx636_evk2.cpp)
 target_sources(hal_plugin_imx636_evk3 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/psee_imx636_evk3.cpp)
 target_sources(hal_plugin_imx636_evk4 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/psee_imx636_evk4.cpp)
+
+if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/raven")
+    add_subdirectory(raven)
+endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/raven")
+
 target_sources(hal_plugin_golden_fallbacks PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/psee_golden_fallbacks.cpp)
 target_sources(hal_plugin_prophesee PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/psee_universal.cpp)
+
 if(HAL_GEN4_SUPPORT)
     target_compile_definitions(hal_plugin_prophesee PRIVATE "HAL_GEN4_SUPPORT")
 endif(HAL_GEN4_SUPPORT)

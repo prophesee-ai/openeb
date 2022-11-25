@@ -19,7 +19,8 @@ namespace Metavision {
 static const char doc_process_events_array_sync_str[] =
     "This method is used to apply the current algorithm on a chunk of events. It takes a numpy array as input and "
     "writes the results into the specified output event buffer\n"
-    "   :input_np: input chunk of events (numpy structured array)\n"
+    "   :input_np: input chunk of events (numpy structured array whose fields are ('x', 'y', 'p', 't'). Note that this "
+    "order is mandatory)\n"
     "   :output_buf: output buffer of events. It can be converted to a numpy structured array using .numpy()";
 static const char doc_process_events_buffer_sync_str[] =
     "This method is used to apply the current algorithm on a chunk of events. It takes an event buffer as input and "
@@ -30,7 +31,8 @@ static const char doc_process_events_buffer_sync_str[] =
 static const char doc_process_events_array_sync_inplace_str[] =
     "This method is used to apply the current algorithm on a chunk of events. It takes a numpy array as input/output.\n"
     "This method should only be used when the number of output events is the same as the number of input events\n"
-    "   :events_np: numpy structured array of events used as input/output. Its content will be overwritten";
+    "   :events_np: numpy structured array of events whose fields are ('x', 'y', 'p', 't') used as input/output. "
+    "Its content will be overwritten";
 
 static const char doc_process_events_buffer_sync_inplace_str[] =
     "This method is used to apply the current algorithm on a chunk of events. It takes an event buffer as "

@@ -12,8 +12,12 @@
 #ifndef METAVISION_HAL_TZ_LIBUSB_H
 #define METAVISION_HAL_TZ_LIBUSB_H
 
+#ifdef _MSC_VER
+#define NOMINMAX // libusb.h includes windows.h which defines min max macros that we don't want
+#endif
+
 #include <system_error>
-#include <libusb.h>
+#include <libusb-1.0/libusb.h>
 
 namespace Metavision {
 

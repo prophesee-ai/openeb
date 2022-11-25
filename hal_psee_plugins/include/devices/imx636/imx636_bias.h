@@ -9,31 +9,45 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-#if !defined(__ANDROID__) || defined(ANDROID_USES_LIBUSB)
-#include "boards/treuzell/tz_camera_discovery.h"
-#include "boards/treuzell/tz_libusb_board_command.h"
-#include "devices/gen4/gen4_evk2_tz_device.h"
-#endif
-#include "boards/rawfile/psee_file_discovery.h"
-#include "metavision/hal/plugin/plugin.h"
-#include "metavision/hal/plugin/plugin_entrypoint.h"
-#include "metavision/hal/utils/hal_software_info.h"
-#include "plugin/psee_plugin.h"
+#ifndef METAVISION_HAL_IMX636_BIASES_H
+#define METAVISION_HAL_IMX636_BIASES_H
 
-void initialize_plugin(void *plugin_ptr) {
-    using namespace Metavision;
+#include <string>
+#include <map>
 
-    Plugin &plugin = plugin_cast(plugin_ptr);
-    initialize_psee_plugin(plugin);
+#include "metavision/hal/facilities/i_ll_biases.h"
 
-#if !defined(__ANDROID__) || defined(ANDROID_USES_LIBUSB)
-    // Register the known USB vendor ID, with the subclass used for Treuzell
-    TzLibUSBBoardCommand::add_usb_id(0x03fd, 0x5832, 0x19);
-    TzLibUSBBoardCommand::add_usb_id(0x03fd, 0x5832, 0x0);
-    // Register live camera discoveries
-    auto &evk2_disc = plugin.add_camera_discovery(std::make_unique<TzCameraDiscovery>());
-    evk2_disc.factory().insert("psee,video", TzEvk2Gen4::build, TzEvk2Gen4::can_build);
-#endif
+namespace Metavision {
 
-    auto &file_disc = plugin.add_file_discovery(std::make_unique<PseeFileDiscovery>());
-}
+static constexpr uint32_t BIAS_CONF = 0x11A10000;
+
+class Imx636LLBias {
+public:
+    Imx636LLBias(bool modifiable, std::string register_name, int sensor_offset, int current_value, int factory_default,
+                 int min_offset, int max_offset);
+    ~Imx636LLBias();
+    const std::string &get_register_name() const;
+    bool is_modifiable() const;
+    int get_min_offset();
+    int get_max_offset();
+    int get_current_offset();
+    void set_current_offset(const int val);
+    int get_current_value();
+    void set_current_value(const int val);
+    int get_factory_default_value();
+    void set_factory_default_value(const int val);
+    void display_bias();
+
+private:
+    std::string register_name_;
+    bool modifiable_;
+    int current_value_;
+    int current_offset_;
+    int factory_default_;
+    int min_offset_;
+    int max_offset_;
+};
+
+} // namespace Metavision
+
+#endif // METAVISION_HAL_IMX636_BIASES_H

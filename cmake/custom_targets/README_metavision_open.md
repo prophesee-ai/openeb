@@ -59,7 +59,7 @@ python3 -m pip install pip --upgrade
 
 To use Machine Learning features, you need to install some additional dependencies.
 
-First, if you have some Nvidia hardware with GPUs, install `CUDA (10.2, 11.1 or 11.3) <https://developer.nvidia.com/cuda-downloads>`_
+First, if you have some Nvidia hardware with GPUs, install `CUDA (10.2 or 11.1) <https://developer.nvidia.com/cuda-downloads>`_
 and `cuDNN <https://docs.nvidia.com/deeplearning/cudnn/install-guide/index.html>`_ to leverage them with pytorch and libtorch.
 
 Make sure that you install a version of CUDA that is compatible with your GPUs by checking
@@ -67,12 +67,14 @@ Make sure that you install a version of CUDA that is compatible with your GPUs b
 
 Note that, at the moment, we don't support `OpenCL <https://www.khronos.org/opencl/>`_ and AMD GPUs.
 
-Then, install pytorch. Go to `pytorch.org <https://pytorch.org>`_ to retrieve the pip command that you
-will launch in a console to install PyTorch 1.8.2 LTS. Here is an example of a command that can be retrieved for
+Then, install PyTorch 1.8.2 LTS. This version was deprecated by PyTorch team but can still be downloaded
+in `the Previous Versions page of pytorch.org <https://pytorch.org/get-started/previous-versions/#v182-with-lts-support>`_
+(in future releases of Metavision ML, more recent version of PyTorch will be leveraged).
+Retrieve and execute the pip command for the installation. Here is an example of a command that can be retrieved for
 pytorch using CUDA 11.1:
 
 ```bash
-python3 -m pip install torch==1.8.2+cu111 torchvision==0.9.2+cu111 torchaudio==0.8.2 -f https://download.pytorch.org/whl/lts/1.8/torch_lts.html
+python3 -m pip install torch==1.8.2 torchvision==0.9.2 torchaudio==0.8.2 --extra-index-url https://download.pytorch.org/whl/lts/1.8/cu111
 ```
 
 Then install some extra Python libraries:
@@ -130,16 +132,29 @@ with the following command: `sudo cmake --build . --target install`. In that cas
 `LD_LIBRARY_PATH` with `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib` (If you want to update this path
 permanently, you should add the previous command in your ~/.bashrc)
 
-*Note* that since OpenEB 3.0.0, Prophesee camera plugins are included in the OpenEB repository, so you don't need to perform
-any extra step to install them. If you are using a third-party camera, you need to install the plugin provided
-by the camera vendor and specify the location of the plugin using the `MV_HAL_PLUGIN_PATH` environment variable.
+You can also deploy the OpenEB files (applications, samples, libraries etc.) in a directory of your choice by using 
+the `CMAKE_INSTALL_PREFIX` variable (`-DCMAKE_INSTALL_PREFIX=<OPENEB_INSTALL_DIR>`) when generating the makefiles
+in step 3. Similarly, you can configure the directory where the Python packages will be deployed using the
+`PYTHON3_SITE_PACKAGES` variable (`-DPYTHON3_SITE_PACKAGES=<PYTHON3_PACKAGES_INSTALL_DIR>`).
+
+Since OpenEB 3.0.0, Prophesee camera plugins are included in OpenEB. If you did not perform the optional deployment step
+(`sudo cmake --build . --target install`) and instead used “setup_env.sh”, then you need to copy the udev rules files 
+used by Prophesee cameras in the system path and reload them so that your camera is detected with this command:
+
+```bash
+sudo cp $METAVISION_SRC_DIR/hal_psee_plugins/resources/rules/*.rules /etc/udev/rules.d
+udevadm control --reload-rules
+udevadm trigger
+```
+
+If you are using a third-party camera, you need to install the plugin provided by the camera vendor and specify
+the location of the plugin using the `MV_HAL_PLUGIN_PATH` environment variable.
 
 To get started with OpenEB, you can download some [sample recordings](https://docs.prophesee.ai/stable/datasets.html) 
 and visualize them with [metavision_viewer](https://docs.prophesee.ai/stable/metavision_sdk/modules/driver/guides/viewer.html#chapter-sdk-driver-samples-viewer)
 or you can stream data from your Prophesee-compatible event-based camera.
 
 ### Running the test suite (Optional)
-
 
 Running the test suite is a sure-fire way to ensure you did everything well with your compilation and installation process.
 
@@ -232,7 +247,7 @@ python -m pip install pip --upgrade
 
 To use Machine Learning features, you need to install some additional dependencies.
 
-First, if you have some Nvidia hardware with GPUs, install `CUDA (10.2, 11.1 or 11.3) <https://developer.nvidia.com/cuda-downloads>`_
+First, if you have some Nvidia hardware with GPUs, install `CUDA (10.2 or 11.1) <https://developer.nvidia.com/cuda-downloads>`_
 and `cuDNN <https://docs.nvidia.com/deeplearning/cudnn/install-guide/index.html>`_ to leverage them with pytorch and libtorch.
 
 Then, install pytorch. Go to `pytorch.org <https://pytorch.org>`_ to retrieve the pip command that you
