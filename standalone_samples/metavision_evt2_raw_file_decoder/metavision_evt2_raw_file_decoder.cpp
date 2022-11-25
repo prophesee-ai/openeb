@@ -158,7 +158,7 @@ int main(int argc, char *argv[]) {
                 break;
             }
             case Metavision::Evt2::EventTypes::CD_HIGH: {
-                // CD events, decrease in illumination (polarity '1')
+                // CD events, increase in illumination (polarity '1')
                 Metavision::Evt2::RawEventCD *ev_cd = reinterpret_cast<Metavision::Evt2::RawEventCD *>(current_word);
                 Metavision::Evt2::timestamp_t t     = current_time_base + ev_cd->timestamp;
 
@@ -177,7 +177,7 @@ int main(int argc, char *argv[]) {
                 //
                 // -> MaxTimestampBase is the maximum value that the variable current_time_base can have. It
                 // corresponds to the case where an event of type Metavision::Evt2::RawEventTime has all the bits of the
-                //  field "timestamp" (28 bits total) set to 1 (value is (1 << 28) - 1). We then need to shift it by 6
+                // field "timestamp" (28 bits total) set to 1 (value is (1 << 28) - 1). We then need to shift it by 6
                 // bits because this field represents the most significant bits of the event time base (range 33 to 6).
                 // See the event description at the beginning of the file.
                 //

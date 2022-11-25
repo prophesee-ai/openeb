@@ -67,8 +67,8 @@ public:
 
     TzDeviceBuilder() : map(generic_map()) {}
 
-    void insert(std::string key, Build_Fun method, Check_Fun buildable = nullptr) {
-        map.insert({key, {method, buildable}});
+    void set(std::string key, Build_Fun method, Check_Fun buildable = nullptr) {
+        map[key] = {method, buildable};
     }
     bool can_build(std::shared_ptr<TzLibUSBBoardCommand>);
     bool can_build_device(std::shared_ptr<TzLibUSBBoardCommand>, uint32_t dev_id);

@@ -54,7 +54,7 @@ public:
 
 protected:
     static std::vector<uint32_t> create_ROIs(const std::vector<DeviceRoi> &vroi, int device_width, int device_height,
-                                             bool x_flipped, int word_size);
+                                             bool x_flipped, int word_size, int x_offset=0, int y_offset=0);
 
     /// @brief Creates several rectangular ROI in bitword register format
     /// @param cols_to_enable Vector of boolean representing the binary map of the columns to disable (0) or to enable

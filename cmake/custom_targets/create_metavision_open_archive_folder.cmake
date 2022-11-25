@@ -48,6 +48,10 @@ file(COPY "${PROJECT_SOURCE_DIR}/utils/github_actions/openeb/"
 file(REMOVE_RECURSE "${OUTPUT_DIR}/cmake/custom_targets_metavision_sdk")
 file(REMOVE "${OUTPUT_DIR}/cmake/custom_functions/create_addon_module_archive_folder.cmake")
 file(REMOVE "${OUTPUT_DIR}/cmake/custom_functions/documentation.cmake")
+# Remove unwanted plugins
+file(REMOVE "${OUTPUT_DIR}/hal_psee_plugins/src/plugin/psee_gen4_evk1.cpp")
+file(REMOVE "${OUTPUT_DIR}/hal_psee_plugins/src/plugin/psee_gen4_evk2.cpp")
+file(REMOVE_RECURSE "${OUTPUT_DIR}/hal_psee_plugins/src/plugin/raven")
 # Remove unwanted files
 file(REMOVE "${OUTPUT_DIR}/sdk/cmake/MetavisionSDKCPackConfig.cmake")
 file(REMOVE "${OUTPUT_DIR}/sdk/cmake/MetavisionStudioCPackConfig.cmake")

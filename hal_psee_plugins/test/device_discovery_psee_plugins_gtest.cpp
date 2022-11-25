@@ -488,7 +488,7 @@ TEST_WITH_CAMERA(DeviceDiscoveryRepositoryNoF_GTest, open_camera_build_gen3,
 
     ASSERT_NE(nullptr, device.get());
 
-    // Assert the the needed facilities for this test exist
+    // Assert that the needed facilities for this test exist
     I_Decoder *decoder = device->get_facility<I_Decoder>();
     ASSERT_NE(nullptr, decoder);
     I_Geometry *geometry = device->get_facility<I_Geometry>();
@@ -512,7 +512,7 @@ TEST_WITH_CAMERA(DeviceDiscoveryRepositoryNoF_GTest, open_camera_build_gen31,
 
     ASSERT_NE(nullptr, device.get());
 
-    // Assert the the needed facilities for this test exist
+    // Assert that the needed facilities for this test exist
     I_Decoder *decoder = device->get_facility<I_Decoder>();
     ASSERT_NE(nullptr, decoder);
     I_Geometry *geometry = device->get_facility<I_Geometry>();
@@ -545,7 +545,7 @@ TEST_WITH_CAMERA(DeviceDiscoveryRepositoryNoF_GTest, open_camera_build_gen4,
 
     ASSERT_NE(nullptr, device.get());
 
-    // Assert the the needed facilities for this test exist
+    // Assert that the needed facilities for this test exist
     I_Decoder *decoder = device->get_facility<I_Decoder>();
     ASSERT_NE(nullptr, decoder);
     I_Geometry *geometry = device->get_facility<I_Geometry>();

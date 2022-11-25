@@ -41,13 +41,14 @@ def pytestcase_num_tbins(dataset_dir):
     simu = GPUEventSimulator(batch_size, height, width, threshold_mu, 0, refractory_period, leak_hz, cutoff_hz)
     lstate = simu.log_states.clone()
     counts_list = []
+    early_stop = False
     for i, batch_dict in enumerate(batches):
+        if i >= 1 and batch_dict['first_times'].sum() > 0:
+            early_stop = True
+            break
         log_batch = simu.log_images(batch_dict['images'].squeeze())
         timestamps = batch_dict['timestamps']
         first_times = batch_dict['first_times']
-        if i > 1 and first_times.sum() > 0:
-            print('stop!')
-            break
 
         counts = simu.count_events(log_batch, batch_dict['video_len'], timestamps, first_times, reset=True)
         counts_list.append(counts.clone())
@@ -57,7 +58,8 @@ def pytestcase_num_tbins(dataset_dir):
 
     simu2 = GPUEventSimulator(batch_size, height, width, threshold_mu, 0, refractory_period, leak_hz, cutoff_hz)
     lstate2 = simu2.log_states.clone()
-    batches = batches[:i]
+    if early_stop:
+        batches = batches[:i]
     batch_list = [[] for _ in range(batch_size)]
     for batch in batches:
         ind = 0
@@ -66,12 +68,18 @@ def pytestcase_num_tbins(dataset_dir):
             ind = end
 
     big_batch = torch.cat([torch.cat([b for b in batch], dim=-1) for batch in batch_list], dim=-1)
-    timestamps = torch.cat([batch['timestamps'] for batch in batches], dim=-1)
-
     video_len = torch.stack([batch['video_len'] for batch in batches]).sum(0)
+    max_len = video_len.max()
+
+    timestamps = torch.zeros((batch_size, max_len), dtype=torch.float32)
+    for b in range(batch_size):
+        timestamps_list = [batch["timestamps"][b, :batch["video_len"][b]] for batch in batches]
+        timestamps[b, :video_len[b]] = torch.cat(timestamps_list, dim=-1)
+        timestamps[b, video_len[b]:] = timestamps[b, video_len[b] - 1]
+
     first_times = batches[0]['first_times']
-    log_batch = simu2.log_images(big_batch)
-    counts2 = simu2.count_events(log_batch, video_len, timestamps, first_times)
+    log_batch_big = simu2.log_images(big_batch.contiguous())
+    counts2 = simu2.count_events(log_batch_big, video_len.contiguous(), timestamps, first_times)
 
     # THEN
     diff_state = simu.log_states - simu2.log_states

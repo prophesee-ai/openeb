@@ -166,7 +166,9 @@ class RawReaderBase(object):
 
         def _are_enough_ev_loaded(final_time, n_events):
             enough = final_time == self.current_time or final_time < self._last_loaded_ts()
-            return enough and (not n_events or n_events < self._count_ev_loaded())
+            return enough and ((not n_events) or
+                               (n_events < self._count_ev_loaded()) or
+                               (self._seek_event > 0 and self._seek_event < self._count_ev_loaded()))
 
         if drop_events:
             if delta_t:
@@ -434,7 +436,7 @@ class RawReader(RawReaderBase):
             self._begin_buffer = self._end_buffer
             return
 
-        if self._seek_event > length:
+        if self._seek_event >= length:
             self._current_event_index += (self._end_buffer - self._begin_buffer) + length
             self._begin_buffer = self._end_buffer
             self._seek_event -= length
@@ -590,7 +592,7 @@ class RawReader(RawReaderBase):
                 index = np.searchsorted(self._event_buffer[self._begin_buffer:]['t'],
                                         self.current_time + delta_t)
                 if index == len(self._event_buffer[self._begin_buffer:]):
-                    # we need the whole end of the actual buffer and some extra event from the the beginning.
+                    # we need the whole end of the actual buffer and some extra event from the beginning.
                     second_buffer_part = self._event_buffer[:n_events - self._event_buffer.size + self._begin_buffer]
                     index = np.searchsorted(second_buffer_part['t'], self.current_time + delta_t)
                     events = np.concatenate(
@@ -603,7 +605,7 @@ class RawReader(RawReaderBase):
                     self._begin_buffer += index
 
             else:
-                # we need the whole end of the actual buffer and some extra event from the the beginning.
+                # we need the whole end of the actual buffer and some extra event from the beginning.
                 events = np.concatenate(
                     (self._event_buffer[self._begin_buffer:],
                      self._event_buffer[:n_events - self._event_buffer.size + self._begin_buffer]))
@@ -657,6 +659,10 @@ class RawReader(RawReaderBase):
         Args:
             n_events (int): number of events to skip.
         """
+        assert n_events >= 0, "Error: cannot seek in the past"
+        if n_events == 0:
+            return
+
         # advance loads buffer until the last one which contains the last buffer we want to move to
         self._advance(n_events=int(n_events), drop_events=True)
 

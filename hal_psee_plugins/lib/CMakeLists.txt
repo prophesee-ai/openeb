@@ -112,6 +112,20 @@ if(HAL_GEN4_SUPPORT)
   )
 endif(HAL_GEN4_SUPPORT)
 
+if(HAL_RAVEN_SUPPORT)
+    list(APPEND plugin_list
+        hal_plugin_raven0_evk2
+        hal_plugin_raven1_evk2
+        hal_plugin_raven2_evk2
+        hal_plugin_raven0_evk3
+        hal_plugin_raven1_evk3
+        hal_plugin_raven2_evk3
+        hal_plugin_raven0_evk4
+        hal_plugin_raven1_evk4
+        hal_plugin_raven2_evk4
+    )
+endif(HAL_RAVEN_SUPPORT)
+
 foreach(plugin ${plugin_list})
     # Declare the plugin as a shared library
     add_library(${plugin} SHARED)
@@ -142,7 +156,9 @@ foreach(plugin ${plugin_list})
 
     list(APPEND hal_psee_plugins_target_file_list $<TARGET_FILE:${plugin}>)
 
-    if(plugin STREQUAL "hal_plugin_prophesee")
+    if (plugin MATCHES ".*raven.*")
+        set(HAL_COPY_PLUGIN_PATH "${HAL_BUILD_PLUGIN_PATH}/raven")
+    elseif (plugin MATCHES ".*prophesee$")
         set(HAL_COPY_PLUGIN_PATH "${HAL_BUILD_PLUGIN_PATH}/universal")
     else()
         set(HAL_COPY_PLUGIN_PATH "${HAL_BUILD_PLUGIN_PATH}")
@@ -386,6 +402,188 @@ target_link_libraries(hal_plugin_imx636_evk4
         metavision_hal_imx636_evk3_system_obj
         metavision_hal_libusb_utils_obj
 )
+
+if (HAL_RAVEN_SUPPORT)
+target_sources(hal_plugin_raven0_evk2
+    PRIVATE
+        $<TARGET_OBJECTS:metavision_hal_gen41_camera_obj>
+        $<TARGET_OBJECTS:metavision_hal_imx636_camera_obj>
+        $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
+        $<TARGET_OBJECTS:metavision_hal_psee_video_obj>
+        $<TARGET_OBJECTS:metavision_hal_imx636_evk2_system_obj>
+        $<TARGET_OBJECTS:metavision_hal_libusb_utils_obj>
+)
+
+target_link_libraries(hal_plugin_raven0_evk2
+    PRIVATE
+        metavision_hal_gen41_camera_obj
+        metavision_hal_imx636_camera_obj
+        metavision_hal_treuzell_protocol_obj
+        metavision_hal_psee_video_obj
+        metavision_hal_imx636_evk2_system_obj
+        metavision_hal_libusb_utils_obj
+)
+
+target_sources(hal_plugin_raven1_evk2
+    PRIVATE
+        $<TARGET_OBJECTS:metavision_hal_gen41_camera_obj>
+        $<TARGET_OBJECTS:metavision_hal_imx636_camera_obj>
+        $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
+        $<TARGET_OBJECTS:metavision_hal_psee_video_obj>
+        $<TARGET_OBJECTS:metavision_hal_imx636_evk2_system_obj>
+        $<TARGET_OBJECTS:metavision_hal_libusb_utils_obj>
+)
+
+target_link_libraries(hal_plugin_raven1_evk2
+    PRIVATE
+        metavision_hal_gen41_camera_obj
+        metavision_hal_imx636_camera_obj
+        metavision_hal_treuzell_protocol_obj
+        metavision_hal_psee_video_obj
+        metavision_hal_imx636_evk2_system_obj
+        metavision_hal_libusb_utils_obj
+)
+
+target_sources(hal_plugin_raven2_evk2
+    PRIVATE
+        $<TARGET_OBJECTS:metavision_hal_gen41_camera_obj>
+        $<TARGET_OBJECTS:metavision_hal_imx636_camera_obj>
+        $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
+        $<TARGET_OBJECTS:metavision_hal_psee_video_obj>
+        $<TARGET_OBJECTS:metavision_hal_imx636_evk2_system_obj>
+        $<TARGET_OBJECTS:metavision_hal_libusb_utils_obj>
+)
+
+target_link_libraries(hal_plugin_raven2_evk2
+    PRIVATE
+        metavision_hal_gen41_camera_obj
+        metavision_hal_imx636_camera_obj
+        metavision_hal_treuzell_protocol_obj
+        metavision_hal_psee_video_obj
+        metavision_hal_imx636_evk2_system_obj
+        metavision_hal_libusb_utils_obj
+)
+
+target_sources(hal_plugin_raven0_evk3
+    PRIVATE
+        $<TARGET_OBJECTS:metavision_hal_gen41_camera_obj>
+        $<TARGET_OBJECTS:metavision_hal_imx636_camera_obj>
+        $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
+        $<TARGET_OBJECTS:metavision_hal_ti_tmp103_obj>
+        $<TARGET_OBJECTS:metavision_hal_imx636_evk3_system_obj>
+        $<TARGET_OBJECTS:metavision_hal_libusb_utils_obj>
+)
+
+target_link_libraries(hal_plugin_raven0_evk3
+    PRIVATE
+        metavision_hal_gen41_camera_obj
+        metavision_hal_imx636_camera_obj
+        metavision_hal_treuzell_protocol_obj
+        metavision_hal_ti_tmp103_obj
+        metavision_hal_imx636_evk3_system_obj
+        metavision_hal_libusb_utils_obj
+)
+
+target_sources(hal_plugin_raven1_evk3
+    PRIVATE
+        $<TARGET_OBJECTS:metavision_hal_gen41_camera_obj>
+        $<TARGET_OBJECTS:metavision_hal_imx636_camera_obj>
+        $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
+        $<TARGET_OBJECTS:metavision_hal_ti_tmp103_obj>
+        $<TARGET_OBJECTS:metavision_hal_imx636_evk3_system_obj>
+        $<TARGET_OBJECTS:metavision_hal_libusb_utils_obj>
+)
+
+target_link_libraries(hal_plugin_raven1_evk3
+    PRIVATE
+        metavision_hal_gen41_camera_obj
+        metavision_hal_imx636_camera_obj
+        metavision_hal_treuzell_protocol_obj
+        metavision_hal_ti_tmp103_obj
+        metavision_hal_imx636_evk3_system_obj
+        metavision_hal_libusb_utils_obj
+)
+
+target_sources(hal_plugin_raven2_evk3
+    PRIVATE
+        $<TARGET_OBJECTS:metavision_hal_gen41_camera_obj>
+        $<TARGET_OBJECTS:metavision_hal_imx636_camera_obj>
+        $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
+        $<TARGET_OBJECTS:metavision_hal_ti_tmp103_obj>
+        $<TARGET_OBJECTS:metavision_hal_imx636_evk3_system_obj>
+        $<TARGET_OBJECTS:metavision_hal_libusb_utils_obj>
+)
+
+target_link_libraries(hal_plugin_raven2_evk3
+    PRIVATE
+        metavision_hal_gen41_camera_obj
+        metavision_hal_imx636_camera_obj
+        metavision_hal_treuzell_protocol_obj
+        metavision_hal_ti_tmp103_obj
+        metavision_hal_imx636_evk3_system_obj
+        metavision_hal_libusb_utils_obj
+)
+
+target_sources(hal_plugin_raven0_evk4
+    PRIVATE
+        $<TARGET_OBJECTS:metavision_hal_gen41_camera_obj>
+        $<TARGET_OBJECTS:metavision_hal_imx636_camera_obj>
+        $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
+        $<TARGET_OBJECTS:metavision_hal_ti_tmp103_obj>
+        $<TARGET_OBJECTS:metavision_hal_imx636_evk3_system_obj>
+        $<TARGET_OBJECTS:metavision_hal_libusb_utils_obj>
+)
+
+target_link_libraries(hal_plugin_raven0_evk4
+    PRIVATE
+        metavision_hal_gen41_camera_obj
+        metavision_hal_imx636_camera_obj
+        metavision_hal_treuzell_protocol_obj
+        metavision_hal_ti_tmp103_obj
+        metavision_hal_imx636_evk3_system_obj
+        metavision_hal_libusb_utils_obj
+)
+
+target_sources(hal_plugin_raven1_evk4
+    PRIVATE
+        $<TARGET_OBJECTS:metavision_hal_gen41_camera_obj>
+        $<TARGET_OBJECTS:metavision_hal_imx636_camera_obj>
+        $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
+        $<TARGET_OBJECTS:metavision_hal_ti_tmp103_obj>
+        $<TARGET_OBJECTS:metavision_hal_imx636_evk3_system_obj>
+        $<TARGET_OBJECTS:metavision_hal_libusb_utils_obj>
+)
+
+target_link_libraries(hal_plugin_raven1_evk4
+    PRIVATE
+        metavision_hal_gen41_camera_obj
+        metavision_hal_imx636_camera_obj
+        metavision_hal_treuzell_protocol_obj
+        metavision_hal_ti_tmp103_obj
+        metavision_hal_imx636_evk3_system_obj
+        metavision_hal_libusb_utils_obj
+)
+
+target_sources(hal_plugin_raven2_evk4
+    PRIVATE
+        $<TARGET_OBJECTS:metavision_hal_gen41_camera_obj>
+        $<TARGET_OBJECTS:metavision_hal_imx636_camera_obj>
+        $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
+        $<TARGET_OBJECTS:metavision_hal_ti_tmp103_obj>
+        $<TARGET_OBJECTS:metavision_hal_imx636_evk3_system_obj>
+        $<TARGET_OBJECTS:metavision_hal_libusb_utils_obj>
+)
+
+target_link_libraries(hal_plugin_raven2_evk4
+    PRIVATE
+        metavision_hal_gen41_camera_obj
+        metavision_hal_imx636_camera_obj
+        metavision_hal_treuzell_protocol_obj
+        metavision_hal_ti_tmp103_obj
+        metavision_hal_imx636_evk3_system_obj
+        metavision_hal_libusb_utils_obj
+)
+endif(HAL_RAVEN_SUPPORT)
 
 target_sources(hal_plugin_golden_fallbacks
     PRIVATE

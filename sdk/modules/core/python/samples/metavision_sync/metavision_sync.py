@@ -54,7 +54,8 @@ def main():
     height, width = mv_iterator.get_size()  # Camera Geometry
 
     # Window - Graphical User Interface
-    with MTWindow(title="Metavision Sync", width=width, height=height,
+    title = "Metavision Sync - Master" if args.cam_mode == 'master' else "Metavision Sync - Slave"
+    with MTWindow(title=title, width=width, height=height,
                   mode=BaseWindow.RenderMode.BGR) as window:
         def keyboard_cb(key, scancode, action, mods):
             if key == UIKeyEvent.KEY_ESCAPE or key == UIKeyEvent.KEY_Q:

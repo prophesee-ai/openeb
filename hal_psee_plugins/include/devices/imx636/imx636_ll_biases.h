@@ -16,6 +16,7 @@
 #include <map>
 
 #include "metavision/hal/facilities/i_ll_biases.h"
+#include "devices/imx636/imx636_bias.h"
 
 namespace Metavision {
 
@@ -32,9 +33,32 @@ public:
 protected:
     const std::shared_ptr<I_HW_Register> &get_hw_register() const;
 
-private:
     std::shared_ptr<I_HW_Register> i_hw_register_;
     std::string base_name_;
+
+    std::map<std::string, Imx636LLBias> biases_map_;
+
+    std::string BIAS_PATH          = "bias/";
+    std::string bias_fo_name       = "bias_fo";
+    std::string bias_hpf_name      = "bias_hpf";
+    std::string bias_diff_on_name  = "bias_diff_on";
+    std::string bias_diff_name     = "bias_diff";
+    std::string bias_diff_off_name = "bias_diff_off";
+    std::string bias_refr_name     = "bias_refr";
+
+    int bias_fo_sensor_current_offset       = 0;
+    int bias_hpf_sensor_current_offset      = 0;
+    int bias_diff_on_sensor_current_offset  = 0;
+    int bias_diff_sensor_current_offset     = 0;
+    int bias_diff_off_sensor_current_offset = 0;
+    int bias_refr_sensor_current_offset     = 0;
+
+    bool bias_fo_modifiable       = true;
+    bool bias_hpf_modifiable      = true;
+    bool bias_diff_on_modifiable  = true;
+    bool bias_diff_modifiable     = false;
+    bool bias_diff_off_modifiable = true;
+    bool bias_refr_modifiable     = true;
 };
 
 } // namespace Metavision

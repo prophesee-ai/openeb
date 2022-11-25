@@ -18,7 +18,8 @@ namespace Metavision {
 
 static const char doc_process_events_array_async_str[] = "Processes a buffer of events for later frame generation\n"
                                                          "\n"
-                                                         "   :events_np: numpy structured array of events";
+                                                         "   :events_np: numpy structured array of events whose fields "
+                                                         "are ('x', 'y', 'p', 't'). Note that this order is mandatory";
 
 template<typename Algo, typename InputEvent>
 void process_events_array_async(Algo &algo, const py::array_t<InputEvent> &in) {

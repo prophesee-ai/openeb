@@ -32,7 +32,7 @@ void initialize_plugin(void *plugin_ptr) {
     TzLibUSBBoardCommand::add_usb_id(0x03fd, 0x5832, 0x0);
     // Register live camera discoveries
     auto &evk2_disc = plugin.add_camera_discovery(std::make_unique<TzCameraDiscovery>());
-    evk2_disc.factory().insert("psee,video", TzEvk2Imx636::build, TzEvk2Imx636::can_build);
+    evk2_disc.factory().set("psee,video", TzEvk2Imx636::build, TzEvk2Imx636::can_build);
 #endif
 
     auto &file_disc = plugin.add_file_discovery(std::make_unique<PseeFileDiscovery>());

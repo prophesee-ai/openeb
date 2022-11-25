@@ -230,7 +230,7 @@ int main(int argc, char *argv[]) {
     const int fps       = 25; // event-based cameras do not have a frame rate, but we need one for visualization
     const int wait_time = static_cast<int>(std::round(1.f / fps * 1000)); // how much we should wait between two frames
     cv::Mat display;                                                      // frame where events will be accumulated
-    const std::string window_name = "Metavision HAL Sync";
+    const std::string window_name = (mode_master) ? "Metavision HAL Sync - Master " : "Metavision HAL Sync - Slave ";
     cv::namedWindow(window_name, cv::WINDOW_GUI_EXPANDED);
     cv::resizeWindow(window_name, i_geometry->get_width(), i_geometry->get_height());
 

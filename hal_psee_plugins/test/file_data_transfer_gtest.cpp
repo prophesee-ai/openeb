@@ -184,7 +184,7 @@ TEST_F(FileDataTransfer_Gtest, memory_usage) {
             for (auto &buffer : buffers) {
                 data_read.insert(data_read.end(), buffer->cbegin(), buffer->cend());
             }
-            // release the buffers so the the object pool can reuse them
+            // release the buffers so that the object pool can reuse them
             buffers.clear();
         }
     }

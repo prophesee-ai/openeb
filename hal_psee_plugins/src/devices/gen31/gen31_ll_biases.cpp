@@ -503,9 +503,9 @@ bool Gen31_LL_Biases::set(const std::string &bias_name, int bias_value) {
     if (bias_name == "bias_refr") {
         auto bias_fo = get("bias_fo");
         if (bias_fo < 1400) {
-            if (bias_value > 1350) {
+            if (bias_value < 1350) {
                 bias_value = 1350;
-                MV_HAL_LOG_WARNING() << "Current bias_refr maximal value is" << bias_value;
+                MV_HAL_LOG_WARNING() << "Current bias_refr minimal value is" << bias_value;
                 return false;
             }
         }
