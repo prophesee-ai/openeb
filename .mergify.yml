@@ -1,0 +1,12 @@
+pull_request_rules:
+  - name: Automatic merge on approval & CI
+    conditions:
+      - "#approved-reviews-by>=1"
+      - check-success=Ubuntu 18
+      - check-success=Ubuntu 20
+      - check-success=Windows
+      - base=main
+      - label!=not-ready
+    actions:
+      merge:
+        method: merge
