@@ -401,14 +401,14 @@ class RawReader(RawReaderBase):
             to be activated (only relevant for a live camera).
     """
 
-    def __init__(self, record_base, max_events=int(1e8), do_time_shifting=True,
+    def __init__(self, record_base, max_events=int(1e7), do_time_shifting=True,
                  device=None, initiate_device=True, use_external_triggers=[]):
         super().__init__(record_base, device=device, do_time_shifting=do_time_shifting,
                          initiate_device=initiate_device, use_external_triggers=use_external_triggers)
         self._event_buffer = np.empty(max_events, dtype=EventCD)
 
     @classmethod
-    def from_device(cls, device, max_events=int(1e8)):
+    def from_device(cls, device, max_events=int(1e7)):
         """
         Alternate way of constructing an RawReader from an already initialized HAL device.
 
