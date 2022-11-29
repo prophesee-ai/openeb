@@ -1,3 +1,9 @@
+queue_rules:
+  - name: default
+    conditions:
+      - "#approved-reviews-by>=1"
+      - label!=not-ready
+
 pull_request_rules:
   - name: Automatic merge on approval & CI
     conditions:
@@ -8,5 +14,7 @@ pull_request_rules:
       - base=main
       - label!=not-ready
     actions:
-      merge:
-        method: merge
+      queue:
+        name: default
+        method: fast-forward
+        update_method: rebase
