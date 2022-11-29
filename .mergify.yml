@@ -1,18 +1,19 @@
 queue_rules:
   - name: default
-    conditions:
+    conditions: &ChecksQueue
       - "#approved-reviews-by>=1"
-      - label!=not-ready
+      - "#review-requested=0"
+      - "#changes-requested-reviews-by=0"
+      - label=ready-to-merge
 
 pull_request_rules:
   - name: Automatic merge on approval & CI
     conditions:
-      - "#approved-reviews-by>=1"
       - check-success=Ubuntu 18
       - check-success=Ubuntu 20
       - check-success=Windows
       - base=main
-      - label!=not-ready
+      - and: *ChecksQueue
     actions:
       queue:
         name: default
