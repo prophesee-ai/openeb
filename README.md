@@ -364,3 +364,4 @@ Running the test suite is a sure-fire way to ensure you did everything well with
     2. Open the solution file `metavision.sln`, select the `Release` configuration and build the `ALL_BUILD` project.
 
  * Running the test suite is then simply `ctest -C Release`
+
