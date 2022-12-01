@@ -174,6 +174,7 @@ Running the test suite is a sure-fire way to ensure you did everything well with
 
  * Finally, run the test suite:   `ctest --verbose`
 
+
 ## Compiling on Windows
 
 ### Prerequisites
