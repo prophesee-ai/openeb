@@ -12,7 +12,6 @@ pull_request_rules:
       - check-success=Ubuntu 18
       - check-success=Ubuntu 20
       - check-success=Windows
-      - base=main
       - and: *ChecksQueue
     actions:
       queue:
