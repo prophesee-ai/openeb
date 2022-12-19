@@ -413,7 +413,7 @@ class RawReader(RawReaderBase):
         Alternate way of constructing an RawReader from an already initialized HAL device.
 
                 Note that it is not recommended to leave a device in the global scope, so either create the HAL device
-                in a function or, delete explicitely afterwards. In some cameras this could result in an undefined
+                in a function or, delete explicitly afterwards. In some cameras this could result in an undefined
                 behaviour.
 
         Args:

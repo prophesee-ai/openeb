@@ -46,7 +46,7 @@ def pytestcase_rawreader_init_from_device(tmpdir, dataset_dir):
     filename = os.path.join(dataset_dir, "openeb", "core", "event_io", "recording.raw")
     device = initiate_device(filename, do_time_shifting=True)
     # WHEN
-    video = RawReader.from_device(device, max_events=int(1e7))
+    video = RawReader.from_device(device)
 
     # THEN
     assert video.width == 640
@@ -71,7 +71,7 @@ def pytestcase_rawreader_load_n_events(tmpdir, dataset_dir):
     # GIVEN
     filename = os.path.join(dataset_dir,
                             "openeb", "core", "event_io", "recording.raw")
-    video = RawReader(filename, do_time_shifting=False, max_events=int(1e7))
+    video = RawReader(filename, do_time_shifting=False)
     # WHEN
     events = video.load_n_events(12)
     # THEN
@@ -90,7 +90,7 @@ def pytestcase_rawreader_seek_n_events(tmpdir, dataset_dir):
     # GIVEN
     filename = os.path.join(dataset_dir,
                             "openeb", "core", "event_io", "recording.raw")
-    video = RawReader(filename, do_time_shifting=False, max_events=int(1e7))
+    video = RawReader(filename, do_time_shifting=False)
     # WHEN
     video.seek_event(11)
     events = video.load_n_events(1)
@@ -113,7 +113,7 @@ def pytestcase_rawreader_load_n_events_all(tmpdir, dataset_dir):
     # GIVEN
     filename = os.path.join(dataset_dir,
                             "openeb", "core", "event_io", "recording.raw")
-    video = RawReader(filename, do_time_shifting=False, max_events=int(1e7))
+    video = RawReader(filename, do_time_shifting=False)
     # WHEN
     events = video.load_n_events(667850)
     # THEN

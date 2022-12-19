@@ -36,6 +36,22 @@ Currently, we support Ubuntu 18.04 and 20.04.
 Compilation on other versions of Ubuntu or other Linux distributions was not tested.
 For those platforms some adjustments to this guide or to the code itself may be required (specially for non-Debian Linux).
 
+### Upgrading OpenEB
+
+If you are upgrading OpenEB from a previous version, you should first read carefully the `Release Notes <https://docs.prophesee.ai/stable/release_notes.html>`_
+as some changes may impact your usage of our SDK (e.g. API updates) and cameras (e.g. `firmware update <https://support.prophesee.ai/portal/en/kb/articles/evk-firmware-versions>`_ might be necessary).
+
+Then, you need to clean your system from previously installed Prophesee software. If after a previous compilation, you chose to
+deploy the Metavision files in your system path, then go to the `build` folder in the source code directory and
+launch the following command to remove those files:
+
+```bash
+sudo make uninstall
+```
+
+In addition, make a global check in your system paths (`/usr/lib`, `/usr/local/lib`, `/usr/include`, `/usr/local/include`)
+and in your environment variables (`PATH`, `PYTHONPATH` and `LD_LIBRARY_PATH`) to remove occurrences of Prophesee or Metavision files.
+
 ### Prerequisites
 
 Install the following dependencies:
@@ -43,23 +59,53 @@ Install the following dependencies:
 ```bash
 sudo apt update
 sudo apt -y install apt-utils build-essential software-properties-common wget unzip curl git cmake
-sudo apt -y install libopencv-dev libgtest-dev libboost-all-dev libusb-1.0-0-dev libeigen3-dev
+sudo apt -y install libopencv-dev googletest libgtest-dev libboost-all-dev libusb-1.0-0-dev
 sudo apt -y install libglew-dev libglfw3-dev libcanberra-gtk-module ffmpeg
+```
+
+Optionally, if you want to run the tests, you need to compile the `GoogleTest <https://google.github.io/googletest/>`_ package:
+
+```bash
+cd /usr/src/googletest
+sudo cmake .
+sudo make
+sudo make install
 ```
 
 For the Python API, you will need Python and some additional libraries.
 If Python is not available on your system, install it
 (we support Python 3.6 and 3.7 on Ubuntu 18.04 and Python 3.7 and 3.8 on Ubuntu 20.04).
 
-Then install `pip`:
+Then install `pip` and some Python libraries:
 ```bash
 sudo apt -y install python3-pip python3-distutils
+sudo apt -y install python3.X-dev  # where X is 6, 7 or 8 depending on your Python version (3.6, 3.7 or 3.8)
 python3 -m pip install pip --upgrade
+python3 -m pip install "opencv-python>=4.5.5.64" "sk-video==1.1.10" "fire==0.4.0" "numpy<=1.21" pandas scipy h5py 
+python3 -m pip install jupyter jupyterlab matplotlib "ipywidgets==7.6.5" pytest command_runner
+```
+
+The Python bindings of the C++ API rely on the [pybind11](https://github.com/pybind) library, specifically version 2.6.0.
+
+*Note* that pybind11 is required only if you want to use the Python bindings of the C++ API .
+You can opt out of creating these bindings by passing the argument `-DCOMPILE_PYTHON3_BINDINGS=OFF` at step 3 during compilation (see below).
+In that case, you will not need to install pybind11, but you won't be able to use our Python interface to the C++ API.
+
+Unfortunately, there is no pre-compiled version of pybind11 available, so you need to install it manually:
+
+```bash
+wget https://github.com/pybind/pybind11/archive/v2.6.0.zip
+unzip v2.6.0.zip
+cd pybind11-2.6.0/
+mkdir build && cd build
+cmake .. -DPYBIND11_TEST=OFF
+cmake --build .
+sudo cmake --build . --target install
 ```
 
 To use Machine Learning features, you need to install some additional dependencies.
 
-First, if you have some Nvidia hardware with GPUs, install `CUDA (10.2 or 11.1) <https://developer.nvidia.com/cuda-downloads>`_
+First, if you have some Nvidia hardware with GPUs, you can optionally install `CUDA (10.2 or 11.1) <https://developer.nvidia.com/cuda-downloads>`_
 and `cuDNN <https://docs.nvidia.com/deeplearning/cudnn/install-guide/index.html>`_ to leverage them with pytorch and libtorch.
 
 Make sure that you install a version of CUDA that is compatible with your GPUs by checking
@@ -80,37 +126,7 @@ python3 -m pip install torch==1.8.2 torchvision==0.9.2 torchaudio==0.8.2 --extra
 Then install some extra Python libraries:
 
 ```bash
-python3 -m pip install "opencv-python>=4.5.5.64" "sk-video==1.1.10" "fire==0.4.0" "numpy<=1.21" pandas scipy numba profilehooks h5py pytest
-python3 -m pip install jupyter jupyterlab matplotlib "ipywidgets==7.6.5"
-python3 -m pip install "pytorch_lightning==1.5.10" "tqdm==4.63.0" "kornia==0.6.1"
-
-```
-
-If you want to run tests, then you need to compile **gtest** package (this is optional):
-
-```bash
-cd /usr/src/gtest
-sudo cmake .
-sudo make
-sudo make install
-```
-
-The Python bindings rely on the [pybind11](https://github.com/pybind) library, specifically version 2.6.0.
-
-*Note* that pybind11 is required only if you want to use the Python bindings of our C++ API.
-You can opt out of creating these bindings by passing the argument `-DCOMPILE_PYTHON3_BINDINGS=OFF` at step 3 during compilation (see below).
-In that case, you will not need to install pybind11, but you won't be able to use our Python interface.
-
-Unfortunately, there is no pre-compiled version of pybind11 available, so you need to install it manually:
-
-```bash
-wget https://github.com/pybind/pybind11/archive/v2.6.0.zip
-unzip v2.6.0.zip
-cd pybind11-2.6.0/
-mkdir build && cd build
-cmake .. -DPYBIND11_TEST=OFF
-cmake --build .
-sudo cmake --build . --target install
+python3 -m pip install numba profilehooks "pytorch_lightning==1.5.10" "tqdm==4.63.0" "kornia==0.6.1"
 ```
 
 ### Compilation
@@ -128,9 +144,13 @@ source <OPENEB_SRC_DIR>/build/utils/scripts/setup_env.sh
 ```
 
 Optionally, you can deploy the OpenEB files in the system paths to use them as 3rd party dependency in some other code
-with the following command: `sudo cmake --build . --target install`. In that case, you will also need to update 
-`LD_LIBRARY_PATH` with `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib` (If you want to update this path
-permanently, you should add the previous command in your ~/.bashrc)
+with the following command: `sudo cmake --build . --target install`.
+
+In that case, you will also need to update:
+
+  * `LD_LIBRARY_PATH` with `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib`
+
+If you want those settings to be permanent, you should add the previous commands in your ~/.bashrc.
 
 You can also deploy the OpenEB files (applications, samples, libraries etc.) in a directory of your choice by using 
 the `CMAKE_INSTALL_PREFIX` variable (`-DCMAKE_INSTALL_PREFIX=<OPENEB_INSTALL_DIR>`) when generating the makefiles
@@ -142,9 +162,9 @@ Since OpenEB 3.0.0, Prophesee camera plugins are included in OpenEB. If you did 
 used by Prophesee cameras in the system path and reload them so that your camera is detected with this command:
 
 ```bash
-sudo cp $METAVISION_SRC_DIR/hal_psee_plugins/resources/rules/*.rules /etc/udev/rules.d
-udevadm control --reload-rules
-udevadm trigger
+sudo cp <OPENEB_SRC_DIR>/hal_psee_plugins/resources/rules/*.rules /etc/udev/rules.d
+sudo udevadm control --reload-rules
+sudo udevadm trigger
 ```
 
 If you are using a third-party camera, you need to install the plugin provided by the camera vendor and specify
@@ -176,6 +196,19 @@ Running the test suite is a sure-fire way to ensure you did everything well with
 
 ## Compiling on Windows
 
+Currently, we support only Windows 10. 
+Compilation on other versions of Windows was not tested.
+For those platforms some adjustments to this guide or to the code itself may be required.
+
+### Upgrading OpenEB
+
+If you are upgrading OpenEB from a previous version, you should first read carefully the `Release Notes <https://docs.prophesee.ai/stable/release_notes.html>`_
+as some changes may impact your usage of our SDK (e.g. :API updates) and cameras (e.g. `firmware update <https://support.prophesee.ai/portal/en/kb/articles/evk-firmware-versions>`_ might be necessary).
+
+Then, if you have previously installed any Prophesee's software, you will need to uninstall it first.
+Remove the folders where you installed Metavision artifacts (check both the `build` folder of the source code and
+`C:\Program Files\Prophesee` which is the default install path of the deployment step).
+
 ### Prerequisites
 
 Some steps of this procedure don't work on FAT32 and exFAT file system.
@@ -188,7 +221,8 @@ You must enable the support for long paths:
 
 To compile OpenEB, you will need to install some extra tools:
 
- * install [cmake](https://cmake.org/)
+ * install [git](https://git-scm.com/download/win)
+ * install [CMake 3.20](https://cmake.org/files/v3.20/cmake-3.20.6-windows-x86_64.msi)
  * install Microsoft C++ compiler (64-bit). You can choose one of the following solutions:
     * For building only, you can install MS Build Tools (free, part of Windows 10 SDK package)
       * Download and run ["Build tools for Visual Studio 2019" installer](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
@@ -215,39 +249,43 @@ Those can be found in the [vcpkg repository](https://github.com/microsoft/vcpkg/
   * gtest: 1.11.0
   * dirent: 1.23.2
 
-#### Install pybind
-
-The Python bindings rely on the [pybind11](https://github.com/pybind) library.
-You should install pybind using vcpkg in order to get the appropriate version: `vcpkg.exe install --triplet x64-windows pybind11`
-
-*Note* that pybind11 is required only if you plan to use the Python API.
-You can opt out of creating these bindings by passing the argument `-DCOMPILE_PYTHON3_BINDINGS=OFF` at step 2 during compilation (see section "Compilation using CMake").
-In that case, you will not need to install pybind11, but you won't be able to use our Python interface.
-
-
-#### Install Python 3.7 or 3.8
+#### Installing Python and libraries
 
 * Download "Windows x86-64 executable installer" for one of these Python versions:
   * [Python 3.7](https://www.python.org/downloads/release/python-379/)
-  * [Python 3.8](https://www.python.org/downloads/release/python-389/)
-* We advise you to check the box to update the `PATH` or update the `PATH` manually with the following paths
-  after replacing the *Username* to your own and using the Python version you installed
-  (here, we assume that the install is limited to the local user and the default install path was used):
-
+  * [Python 3.8](https://www.python.org/downloads/release/python-3810/)
+* Add Python install and script directories in your `PATH` and make sure they are listed before
+  the `WindowsApps` folder which contains a Python alias launching the Microsoft Store. So, if you installed
+  Python 3.8 in the default path, your user `PATH` should contain those three lines in that order:
+  
 ```bash
-C:\Users\Username\AppData\Local\Programs\Python\Python37
-C:\Users\Username\AppData\Local\Programs\Python\Python37\Scripts
+%USERPROFILE%\AppData\Local\Programs\Python\Python38
+%USERPROFILE%\AppData\Local\Programs\Python\Python38\Scripts
+%USERPROFILE%\AppData\Local\Microsoft\WindowsApps
 ````
 
-* Then make sure `pip` is up to date:
+Then install `pip` and some Python libraries:
 
 ```bash
 python -m pip install pip --upgrade
+python -m pip install "opencv-python>=4.5.5.64" "sk-video==1.1.10" "fire==0.4.0" "numpy<=1.21" pandas scipy h5py
+python -m pip install jupyter jupyterlab matplotlib "ipywidgets==7.6.5" pytest command_runner
 ```
+
+#### Install pybind
+
+The Python bindings of the C++ API rely on the [pybind11](https://github.com/pybind) library.
+You should install pybind using vcpkg in order to get the appropriate version: `vcpkg.exe install --triplet x64-windows pybind11`
+
+*Note* that pybind11 is required only if you plan to use the Python bindings of the C++ API.
+You can opt out of creating these bindings by passing the argument `-DCOMPILE_PYTHON3_BINDINGS=OFF` at step 2 during compilation (see section "Compilation using CMake").
+In that case, you will not need to install pybind11, but you won't be able to use our Python interface to the C++ API.
+
+#### Prerequisites for the ML module
 
 To use Machine Learning features, you need to install some additional dependencies.
 
-First, if you have some Nvidia hardware with GPUs, install `CUDA (10.2 or 11.1) <https://developer.nvidia.com/cuda-downloads>`_
+First, if you have some Nvidia hardware with GPUs, you can optionally install `CUDA (10.2 or 11.1) <https://developer.nvidia.com/cuda-downloads>`_
 and `cuDNN <https://docs.nvidia.com/deeplearning/cudnn/install-guide/index.html>`_ to leverage them with pytorch and libtorch.
 
 Then, install pytorch. Go to `pytorch.org <https://pytorch.org>`_ to retrieve the pip command that you
@@ -261,9 +299,7 @@ python -m pip install torch==1.8.2+cu111 torchvision==0.9.2+cu111 torchaudio==0.
 Then install some extra Python libraries:
 
 ```bash
-python -m pip install "opencv-python>=4.5.5.64" "sk-video==1.1.10" "fire==0.4.0" "numpy<=1.21" pandas scipy numba profilehooks h5py pytest
-python -m pip install jupyter jupyterlab matplotlib "ipywidgets==7.6.5"
-python -m pip install "pytorch_lightning==1.5.10" "tqdm==4.63.0" "kornia==0.6.1"
+python -m pip install numba profilehooks "pytorch_lightning==1.5.10" "tqdm==4.63.0" "kornia==0.6.1"
 ```
 
 ### Compilation
@@ -312,12 +348,32 @@ cmake --build . --config Release --target install
 
 #### Compilation using MS Visual Studio
 
-Open a command prompt inside the `openeb` folder and do as follows:
+Open a command prompt inside the `openeb` folder (absolute path to this directory is called `OPENEB_SRC_DIR` in next sections) and do as follows:
 
  1. Create and open the build directory, where temporary files will be created: `mkdir build && cd build`
  2. Generate the Visual Studio files using CMake: `cmake -G "Visual Studio 16 2019" -A x64 -DCMAKE_TOOLCHAIN_FILE=<OPENEB_SRC_DIR>\cmake\toolchains\vcpkg.cmake -DVCPKG_DIRECTORY=<VCPKG_SRC_DIR> ..` (adapt to your Visual Studio version).
     Note that the value passed to the parameter `-DCMAKE_TOOLCHAIN_FILE` must be an absolute path, not a relative one.
  3. Open the solution file `metavision.sln`, select the `Release` configuration and build the `ALL_BUILD` project.
+
+#### Camera Plugins
+
+Since OpenEB 3.0.0, **Prophesee camera plugins** are included in OpenEB, but you need to install the drivers
+for the cameras to be available on Windows. To do so, follow this procedure:
+
+1. download [wdi-simple.exe from our file server](https://files.prophesee.ai/share/dists/public/drivers/FeD45ki5/wdi-simple.exe)
+2. execute the following commands in a Command Prompt launched as an administrator:
+
+```bash
+wdi-simple.exe -n "EVK" -m "Prophesee" -v 0x04b4 -p 0x00f4
+wdi-simple.exe -n "EVK" -m "Prophesee" -v 0x03fd -p 0x5832 -i 00
+wdi-simple.exe -n "EVK" -m "Prophesee" -v 0x04b4 -p 0x00f5
+wdi-simple.exe -n "EVK" -m "Prophesee" -v 0x04b4 -p 0x00f3
+```
+
+If you are using a third-party camera, you need to follow the instructions provided by the camera vendor
+to install the driver and the camera plugin. Make sure that you reference the location of the plugin in
+the `MV_HAL_PLUGIN_PATH` environment variable.
+
 
 #### Getting Started
 

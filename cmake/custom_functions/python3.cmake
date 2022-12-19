@@ -232,7 +232,14 @@ if (COMPILE_PYTHON3_BINDINGS)
 
         add_library(${target_name} ${lib_type} ${ARG_UNPARSED_ARGUMENTS})
 
-        target_link_libraries(${target_name} PRIVATE pybind11::module Python3::Python_${python_version})
+        if (NOT APPLE)
+            target_link_libraries(${target_name} PRIVATE pybind11::module Python3::Python_${python_version})
+        else()
+            get_target_property(_python_include_dirs Python3::Python_${python_version} INTERFACE_INCLUDE_DIRECTORIES)
+            target_include_directories(${target_name} PRIVATE ${_python_include_dirs})
+            target_link_libraries(${target_name} PRIVATE pybind11::module)
+            target_link_options(${target_name} PRIVATE -undefined dynamic_lookup)
+        endif()
 
         if(lib_type STREQUAL "MODULE")
             target_link_libraries(${target_name} PRIVATE pybind11::module)
