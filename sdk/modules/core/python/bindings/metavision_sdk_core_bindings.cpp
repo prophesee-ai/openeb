@@ -16,9 +16,11 @@
 #endif
 
 #include <iostream>
-
 #include <pybind11/pybind11.h>
-
+#if defined(__APPLE__)
+#include <pybind11/numpy.h>
+#include "metavision/sdk/base/events/event_cd.h"
+#endif
 #include "metavision/sdk/base/utils/python_bindings_doc.h"
 #include "pb_doc_core.h"
 
@@ -63,6 +65,11 @@ PYBIND11_MODULE(MODULE_NAME, m) {
         std::cerr << "Exception Raised while loading metavision_sdk_base: " << e.what() << std::endl;
         throw(e);
     }
+
+#if defined(__APPLE__)
+    PYBIND11_NUMPY_DTYPE(Metavision::Event2d, x, y, p, t);
+    PYBIND11_NUMPY_DTYPE(Metavision::EventCD, x, y, p, t);
+#endif
 
     // 2. Export event types
     Metavision::export_event_bbox(m);

@@ -51,7 +51,8 @@ def main():
         window.set_keyboard_callback(keyboard_cb)
 
         # Event Frame Generator
-        event_frame_gen = PeriodicFrameGenerationAlgorithm(width, height, accumulation_time_us)
+        event_frame_gen = PeriodicFrameGenerationAlgorithm(sensor_width=width, sensor_height=height,
+                                                           accumulation_time_us=accumulation_time_us)
 
         def on_cd_frame_cb(ts, cd_frame):
             window.show(cd_frame)

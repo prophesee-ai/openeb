@@ -43,6 +43,9 @@ file(COPY "${PROJECT_SOURCE_DIR}/utils/github_actions/openeb/"
      DESTINATION "${OUTPUT_DIR}/.github"
      PATTERN "*"
 )
+file(COPY "${PROJECT_SOURCE_DIR}/utils/github_actions/openeb/mergify.yml"
+     DESTINATION "${OUTPUT_DIR}/.github"
+)
 
 # Remove SDK targets
 file(REMOVE_RECURSE "${OUTPUT_DIR}/cmake/custom_targets_metavision_sdk")

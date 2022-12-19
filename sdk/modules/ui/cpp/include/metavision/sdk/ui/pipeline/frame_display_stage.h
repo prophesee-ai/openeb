@@ -38,11 +38,9 @@ public:
     /// @param height Window's initial height
     /// @param mode Window's rendering mode (i.e. either BGR or GRAY). Cannot be changed afterwards
     /// @param auto_exit Flag indicating if the application automatically closes if the user presses 'Q' or 'ESCAPE'
+    /// @warning Must only be called from the main thread
     FrameDisplayStage(const std::string &title, int width, int height,
-                      Window::RenderMode mode = Window::RenderMode::BGR, bool auto_exit = true) :
-        window_(title, width, height, mode) {
-        init(auto_exit);
-    }
+                      Window::RenderMode mode = Window::RenderMode::BGR, bool auto_exit = true);
 
     /// @brief Constructs a new frame display stage given an explicit previous stage
     /// @param prev_stage Stage producing the input image for this display stage
@@ -51,56 +49,27 @@ public:
     /// @param height Window's initial height
     /// @param mode Window's rendering mode (i.e. either BGR or GRAY). Cannot be changed afterwards
     /// @param auto_exit Flag indicating if the application automatically closes if the user presses 'Q' or 'ESCAPE'
+    /// @warning Must only be called from the main thread
     FrameDisplayStage(BaseStage &prev_stage, const std::string &title, int width, int height,
-                      Window::RenderMode mode = Window::RenderMode::BGR, bool auto_exit = true) :
-        FrameDisplayStage(title, width, height, mode, auto_exit) {
-        set_previous_stage(prev_stage);
-    }
+                      Window::RenderMode mode = Window::RenderMode::BGR, bool auto_exit = true);
+
+    /// @brief Destructor
+    /// @warning Must only be called from the main thread
+    ~FrameDisplayStage();
 
     /// @brief Sets a callback that is called when the user presses a key
     ///
     /// @note The callback is only called when the window has the focus
     /// @param cb The callback to call
-    void set_key_callback(const Window::KeyCallback &cb) {
-        on_key_cb_ = cb;
-    }
+    void set_key_callback(const Window::KeyCallback &cb);
 
 private:
-    void init(bool auto_exit) {
-        static bool is_pre_step_cb_set = false;
-        if (!is_pre_step_cb_set) {
-            set_setup_callback(
-                [this]() { pipeline().add_pre_step_callback([]() { EventLoop::poll_and_dispatch(); }); });
-            is_pre_step_cb_set = true;
-        }
-
-        set_consuming_callback([this](const boost::any &data) {
-            try {
-                auto res    = boost::any_cast<FrameData>(data);
-                timestamp t = res.first;
-                FramePtr &f = res.second;
-                if (f && !f->empty())
-                    window_.show(*f);
-            } catch (boost::bad_any_cast &c) { MV_SDK_LOG_ERROR() << c.what(); }
-        });
-
-        window_.set_keyboard_callback([this, auto_exit](UIKeyEvent key, int scancode, UIAction action, int mods) {
-            on_key_cb_(key, scancode, action, mods);
-
-            if (auto_exit) {
-                if (action == UIAction::RELEASE) {
-                    if (key == UIKeyEvent::KEY_ESCAPE || key == UIKeyEvent::KEY_Q)
-                        this->pipeline().cancel();
-                }
-            }
-        });
-
-        on_key_cb_ = [](UIKeyEvent key, int scancode, UIAction action, int mods) {};
-    }
+    void init(bool auto_exit);
 
     // Key pressed callback
     Window window_;
     Window::KeyCallback on_key_cb_;
+    static std::uint32_t instance_counter_;
 };
 
 } // namespace Metavision

@@ -15,7 +15,15 @@
 #endif
 
 #include <pybind11/pybind11.h>
+#if defined(__APPLE__)
+#include <pybind11/numpy.h>
+#endif
 #include <iostream>
+
+#if defined(__APPLE__)
+#include "metavision/sdk/base/events/event_cd.h"
+#endif
+#include "metavision/sdk/base/events/event_ext_trigger.h"
 #include "metavision/utils/pybind/deprecation_warning_exception.h"
 #include "hal_python_binder.h"
 #include "metavision/hal/device/device.h"
@@ -42,6 +50,12 @@ PYBIND11_MODULE(MODULE_NAME, m) {
         std::cerr << "Exception Raised while loading metavision_sdk_base: " << e.what() << std::endl;
         throw(e);
     }
+
+#if defined(__APPLE__)
+    PYBIND11_NUMPY_DTYPE(Metavision::Event2d, x, y, p, t);
+    PYBIND11_NUMPY_DTYPE(Metavision::EventCD, x, y, p, t);
+    PYBIND11_NUMPY_DTYPE(Metavision::EventExtTrigger, p, t, id);
+#endif
 
     // Register the translation for DeprecationWarningException
     py::register_exception<Metavision::DeprecationWarningException>(m, "Deprecated");

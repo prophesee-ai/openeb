@@ -36,7 +36,7 @@ def main():
     mv_iterator = EventsIterator(input_path=args.input_path, delta_t=1000)
 
     for evs in mv_iterator:
-        print("Camera is running!")
+        print("Events are available!")
 
 
 if __name__ == "__main__":

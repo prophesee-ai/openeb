@@ -208,11 +208,11 @@ public:
     /// @brief Disables automatically adding spaces between message tokens
     void disableSpaceBetweenTokens();
 
-    /// @brief Enables automatically adding and end of line token when this operation is destroyed
+    /// @brief Enables automatically adding an end of line token when this operation is destroyed
     /// @note This feature is enabled by default
     void enableEndOfLineAtDestruction();
 
-    /// @brief Disables automatically adding and end of line token when this operation is destroyed
+    /// @brief Disables automatically adding an end of line token when this operation is destroyed
     void disableEndOfLineAtDestruction();
 
     /// @brief Returns the name of the file associated to this logging operation
@@ -263,7 +263,7 @@ private:
 /// @tparam T Type of the message to be logged
 /// @param op Logging operation to be logged to
 /// @param t Value to be logged
-/// @return The modifed logging operation
+/// @return The modified logging operation
 template<LogLevel Level, typename T>
 LoggingOperation<Level> &operator<<(LoggingOperation<Level> &op, const T &t);
 /// @copydoc operator<<
@@ -274,7 +274,7 @@ LoggingOperation<Level> &&operator<<(LoggingOperation<Level> &&op, const T &t);
 /// @tparam Level The level of the logging operation
 /// @param op Logging operation to be modified
 /// @param f Function modifying a logging operation
-/// @return The modifed logging operation
+/// @return The modified logging operation
 template<LogLevel Level>
 LoggingOperation<Level> &operator<<(LoggingOperation<Level> &op,
                                     LoggingOperation<Level> &(*f)(LoggingOperation<Level> &));
@@ -287,7 +287,7 @@ LoggingOperation<Level> &&operator<<(LoggingOperation<Level> &&op,
 /// @tparam Level The level of the logging operation
 /// @param op Logging operation to be modified
 /// @param manip Stream manipulator
-/// @return The modifed logging operation
+/// @return The modified logging operation
 template<LogLevel Level>
 LoggingOperation<Level> &operator<<(LoggingOperation<Level> &op, std::ostream &(*manip)(std::ostream &));
 /// @copydoc operator<<
@@ -315,7 +315,7 @@ LoggingOperation<Level> &no_space(LoggingOperation<Level> &op);
 template<LogLevel Level>
 LoggingOperation<Level> &&no_space(LoggingOperation<Level> &&op);
 
-/// @brief Stream manipulator enabling the automatic addition of and end of line token at the end of the operation
+/// @brief Stream manipulator enabling the automatic addition of an end of line token at the end of the operation
 /// @tparam Level The level of the logging operation
 /// @param op The logging operation modified by this modifier
 /// @return The modified logging operation
@@ -325,7 +325,7 @@ LoggingOperation<Level> &endline(LoggingOperation<Level> &op);
 template<LogLevel Level>
 LoggingOperation<Level> &&endline(LoggingOperation<Level> &&op);
 
-/// @brief Stream manipulator disabling the automatic addition of and end of line token at the end of the operation
+/// @brief Stream manipulator disabling the automatic addition of an end of line token at the end of the operation
 /// @tparam Level The level of the logging operation
 /// @param op The logging operation modified by this modifier
 /// @return The modified logging operation
