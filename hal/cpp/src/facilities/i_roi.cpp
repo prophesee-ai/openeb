@@ -16,34 +16,49 @@
 #include <iterator>
 
 #include "metavision/hal/facilities/i_roi.h"
-#include "metavision/hal/utils/device_roi.h"
+#include "metavision/hal/utils/hal_exception.h"
 #include "metavision/hal/utils/hal_log.h"
 
 namespace Metavision {
 
-std::vector<uint32_t> I_ROI::create_ROI(const DeviceRoi &roi) {
-    return create_ROIs({roi});
+I_ROI::Window::Window() = default;
+
+I_ROI::Window::Window(int x, int y, int width, int height) : x(x), y(y), width(width), height(height) {}
+
+bool I_ROI::Window::operator==(const I_ROI::Window &roi) const {
+    return x == roi.x && y == roi.y && width == roi.width && height == roi.height;
 }
 
-void I_ROI::set_ROI(const DeviceRoi &roi, bool enable) {
-    set_ROIs_from_bitword(create_ROIs({roi}), enable);
+std::string I_ROI::Window::to_string() const {
+    std::string out = "[" + std::to_string(x) + "," + std::to_string(y) + "," + std::to_string(width) + "x" +
+                      std::to_string(height) + "]";
+    return out;
 }
 
-void I_ROI::set_ROIs(const std::vector<DeviceRoi> &vroi, bool enable) {
-    set_ROIs_from_bitword(create_ROIs(vroi), enable);
+std::istream &operator>>(std::istream &is, I_ROI::Window &rhs) {
+    is >> rhs.x;
+    is >> rhs.y;
+    is >> rhs.width;
+    is >> rhs.height;
+    return is;
 }
 
-void I_ROI::set_ROIs_from_file(std::string const &file_path, bool enable) {
-    std::ifstream roi_file(file_path.c_str(), std::ios::in);
-    if (!roi_file.is_open()) {
-        MV_HAL_LOG_WARNING() << "Could not open file at" << file_path << "ROI not set.";
-        return;
+std::ostream &operator<<(std::ostream &lhs, I_ROI::Window &rhs) {
+    lhs << rhs.to_string();
+    return lhs;
+}
+
+bool I_ROI::set_window(const Window &window) {
+    return set_windows({window});
+}
+
+bool I_ROI::set_windows(const std::vector<Window> &windows) {
+    if (windows.size() > get_max_supported_windows_count()) {
+        throw HalException(HalErrorCode::ValueOutOfRange,
+                           "Too many windows provided to I_ROI::set_windows, maximum number of windows supported is " +
+                               std::to_string(get_max_supported_windows_count()));
     }
-
-    std::vector<DeviceRoi> vroi;
-    std::copy(std::istream_iterator<DeviceRoi>(roi_file), std::istream_iterator<DeviceRoi>(), std::back_inserter(vroi));
-
-    set_ROIs_from_bitword(create_ROIs(vroi), enable);
+    return set_windows_impl(windows);
 }
 
 } // namespace Metavision

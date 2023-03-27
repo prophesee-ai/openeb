@@ -48,7 +48,7 @@ public:
     }
 
     /// Reads EventExtTrigger from buffer
-    static EventExtTrigger read_event(void *buf, const timestamp &delta_ts) {
+    static EventExtTrigger read_event(void *buf, const timestamp &delta_ts = 0) {
         RawEvent *buffer = static_cast<RawEvent *>(buf);
         return EventExtTrigger(buffer->p, buffer->ts + delta_ts, buffer->id);
     }
@@ -61,6 +61,11 @@ public:
     /// Function shifted returning class EventExtTrigger
     inline EventExtTrigger shifted(timestamp dt) {
         return EventExtTrigger(p, t + dt, id);
+    }
+
+    /// Event comparison operator.
+    inline bool operator==(const EventExtTrigger &e) const {
+        return t == e.t && p == e.p && id == e.id;
     }
 
     /// Event timestamp comparison operator.

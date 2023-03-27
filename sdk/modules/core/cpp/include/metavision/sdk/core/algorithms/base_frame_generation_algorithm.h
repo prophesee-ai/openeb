@@ -60,9 +60,6 @@ public:
     /// @brief Returns default Prophesee dark palette negative event color
     static const cv::Vec3b &off_color_default();
 
-    /// @brief Converts a color palette type into a cv::Vec3b
-    static cv::Vec3b get_cv_color(const Metavision::ColorPalette &palette, const Metavision::ColorType &type);
-
     /// @brief Destructor
     virtual ~BaseFrameGenerationAlgorithm() = default;
 
@@ -146,23 +143,6 @@ protected:
     template<typename EventIt>
     static void generate_frame_from_events(EventIt it_begin, EventIt it_end, cv::Mat &frame, const cv::Vec4b &bg_color,
                                            const std::array<cv::Vec4b, 2> &off_on_colors, int flags);
-
-    /// @overload
-    /// @brief Stand-alone (static) helper method to generate a frame from an input event buffer
-    /// @warning The input @p frame must be allocated beforehand
-    /// @note This method is used internally both by its public counterpart and the child classes
-    /// @tparam EventIt Input iterator event type. Works for @ref EventCD or equivalent
-    /// @param it_begin Iterator to first input event
-    /// @param it_end Iterator to the past-the-end event
-    /// @param frame Pre-allocated frame that will be filled with CD events. It must have the same geometry as the input
-    /// event source, and the color corresponding to @p colored (3 channels by default)
-    /// @param bg_color Background color
-    /// @param off_on_colors Colors of negative and positive events
-    /// @param colored True if the frame is colored, false if it's in grayscale
-    /// @throw invalid_argument if @p frame does not have the expected type (CV_8U or CV_8UC3)
-    template<typename EventIt>
-    static void generate_frame_from_events(EventIt it_begin, EventIt it_end, cv::Mat &frame, const cv::Vec3b &bg_color,
-                                           const std::array<cv::Vec3b, 2> &off_on_colors, bool colored);
 
     // Frame properties
     const int width_, height_;               ///< Sensor's geometry

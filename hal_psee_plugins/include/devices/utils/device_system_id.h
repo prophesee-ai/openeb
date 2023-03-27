@@ -56,6 +56,8 @@ enum SystemId : long {
     SYSTEM_EVK3_GEN41                  = 0x30,
     SYSTEM_EVK3_IMX636                 = 0x31,
     SYSTEM_EVK2_IMX636                 = 0x32,
+    SYSTEM_EVK2_SAPHIR                 = 0x37,
+    SYSTEM_FX3_UNKNOWN                 = static_cast<long>(0xFFFFFFF0),
     SYSTEM_INVALID_NO_FPGA             = static_cast<long>(0xFFFFFFFF)
 };
 
@@ -110,7 +112,8 @@ static const std::map<SystemId, const std::string> SYSTEMS_NAME = {
       { SYSTEM_EVK3_GEN31_EVT3, "GEN 3.1 VGA EVK2 EVT3"},
       { SYSTEM_EVK3_GEN41, "GEN 4.1 HD EVK3"},
       { SYSTEM_EVK2_IMX636, "IMX636 HD EVK2"},
-      { SYSTEM_EVK3_IMX636, "IMX636 HD EVK3"}
+      { SYSTEM_EVK3_IMX636, "IMX636 HD EVK3"},
+      { SYSTEM_FX3_UNKNOWN, "FX3 EMPTY DEVICE"}
 };
 // clang-format on
 
@@ -147,7 +150,8 @@ static const std::map<SystemId, const DataTransferProtocol> SYSTEMS_DATA_TRANSFE
       { SYSTEM_EVK3_GEN31_EVT3, DataTransferProtocol::USB},
       { SYSTEM_EVK3_GEN41, DataTransferProtocol::USB},
       { SYSTEM_EVK2_IMX636, DataTransferProtocol::USB},
-      { SYSTEM_EVK3_IMX636, DataTransferProtocol::USB}
+      { SYSTEM_EVK3_IMX636, DataTransferProtocol::USB},
+      { SYSTEM_FX3_UNKNOWN, DataTransferProtocol::USB}
 };
 // clang-format on
 

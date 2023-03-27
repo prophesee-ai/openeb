@@ -16,20 +16,20 @@
 
 SampleDecoder::SampleDecoder(bool do_time_shift,
                              const std::shared_ptr<Metavision::I_EventDecoder<Metavision::EventCD>> &cd_event_decoder) :
-    I_Decoder(do_time_shift, cd_event_decoder) {}
+    Metavision::I_EventsStreamDecoder(do_time_shift, cd_event_decoder) {}
 
-void SampleDecoder::decode_impl(RawData *ev, RawData *evend) {
+void SampleDecoder::decode_impl(const RawData *const ev, const RawData *const evend) {
     if (ev == evend) {
         return;
     }
 
     // Note: Input guarantees std::distance(ev, evend) % sizeof(SampleEventsFormat) = 0
-    SampleEventsFormat *current_ev = reinterpret_cast<SampleEventsFormat *>(ev);
-    SampleEventsFormat *ev_end     = reinterpret_cast<SampleEventsFormat *>(evend);
+    const SampleEventsFormat *current_ev = reinterpret_cast<const SampleEventsFormat *>(ev);
+    const SampleEventsFormat *ev_end     = reinterpret_cast<const SampleEventsFormat *>(evend);
     Metavision::EventCD event_decoded(0, 0, 0, last_timestamp_);
     auto &cd_forwarder = cd_event_forwarder();
 
-    // If the time shift is enabled, check if we set it. If not, set it
+    // If the time shift is enabled, check if we already set it. If not, set it now
     if (is_time_shifting_enabled()) {
         if (!time_shift_set_) {
             time_shift_     = (*current_ev) & TS_MASK;
@@ -58,4 +58,21 @@ bool SampleDecoder::get_timestamp_shift(Metavision::timestamp &ts_shift) const {
 
 uint8_t SampleDecoder::get_raw_event_size_bytes() const {
     return sizeof(SampleEventsFormat);
+}
+
+bool SampleDecoder::reset_timestamp_impl(const Metavision::timestamp &t) {
+    if (is_time_shifting_enabled() && !time_shift_set_) {
+        return false;
+    }
+    last_timestamp_ = t;
+    return true;
+}
+
+bool SampleDecoder::reset_timestamp_shift_impl(const Metavision::timestamp &shift) {
+    if (shift >= 0 && is_time_shifting_enabled()) {
+        time_shift_     = shift;
+        time_shift_set_ = true;
+        return true;
+    }
+    return false;
 }

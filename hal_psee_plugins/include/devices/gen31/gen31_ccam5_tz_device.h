@@ -12,11 +12,11 @@
 #ifndef METAVISION_HAL_GEN31_CCAM5_TZ_DEVICE_H
 #define METAVISION_HAL_GEN31_CCAM5_TZ_DEVICE_H
 
-#include "devices/treuzell/tz_regmap_device.h"
-#include "devices/treuzell/tz_psee_fpga_device.h"
+#include "metavision/psee_hw_layer/devices/treuzell/tz_regmap_device.h"
+#include "metavision/psee_hw_layer/devices/treuzell/tz_psee_fpga_device.h"
 #include "devices/treuzell/tz_issd_device.h"
-#include "devices/treuzell/tz_main_device.h"
-#include "facilities/tz_monitoring.h"
+#include "metavision/psee_hw_layer/devices/treuzell/tz_main_device.h"
+#include "metavision/psee_hw_layer/facilities/tz_monitoring.h"
 
 namespace Metavision {
 
@@ -31,15 +31,15 @@ public:
     static std::shared_ptr<TzDevice> build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id,
                                            std::shared_ptr<TzDevice> parent);
 
-    virtual StreamFormat get_output_format();
+    virtual std::list<StreamFormat> get_supported_formats() const override;
+    StreamFormat get_output_format() const override;
     virtual long get_system_id() const;
-    virtual long get_system_version() const;
     virtual bool set_mode_standalone();
     virtual bool set_mode_master();
     virtual bool set_mode_slave();
-    virtual I_DeviceControl::SyncMode get_mode();
+    virtual I_CameraSynchronization::SyncMode get_mode();
     virtual I_HW_Identification::SensorInfo get_sensor_info() {
-        return {3, 1};
+        return {3, 1, "Gen3.1"};
     }
     virtual int get_illumination();
 
@@ -49,10 +49,10 @@ public:
     long long get_sensor_id();
 
 protected:
-    virtual void spawn_facilities(DeviceBuilder &device_builder);
+    virtual void spawn_facilities(DeviceBuilder &device_builder, const DeviceConfig &device_config);
 
 private:
-    I_DeviceControl::SyncMode sync_mode_;
+    I_CameraSynchronization::SyncMode sync_mode_;
 };
 
 } // namespace Metavision

@@ -184,7 +184,9 @@ public:
                         }
                     }
 
-                    complete_stage_if_done(*task.stage_ptr, true);
+                    if (task.stage_ptr) {
+                        complete_stage_if_done(*task.stage_ptr, true);
+                    }
                 }
                 cancel();
             });
@@ -225,7 +227,10 @@ public:
                         task();
                     }
                 }
-                complete_stage_if_done(*task.stage_ptr, true);
+
+                if (task.stage_ptr) {
+                    complete_stage_if_done(*task.stage_ptr, true);
+                }
             }
         } else if (processing_tasks_.empty()) {
             // We have no tasks to process at all

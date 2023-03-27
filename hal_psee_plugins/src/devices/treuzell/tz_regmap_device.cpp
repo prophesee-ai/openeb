@@ -9,21 +9,28 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-#include "devices/treuzell/tz_regmap_device.h"
-#include "boards/treuzell/tz_libusb_board_command.h"
+#include "metavision/psee_hw_layer/devices/treuzell/tz_regmap_device.h"
+#include "metavision/psee_hw_layer/boards/treuzell/tz_libusb_board_command.h"
 #include "metavision/hal/utils/hal_log.h"
-#include "utils/register_map.h"
+#include "metavision/psee_hw_layer/utils/register_map.h"
 
 namespace Metavision {
 
-TzDeviceWithRegmap::TzDeviceWithRegmap(RegmapBuilder builder) : register_map(std::make_shared<RegisterMap>()) {
-    builder(*register_map);
+TzDeviceWithRegmap::TzDeviceWithRegmap(RegmapData regmap_data, std::string root) :
+    register_map(std::make_shared<RegisterMap>(regmap_data)), root_(root) {
     register_map->set_read_cb([this](uint32_t address) {
         load_register(address);
         return read_register(address);
     });
     register_map->set_write_cb([this](uint32_t address, uint32_t v) { write_register(address, v); });
 }
+
+TzDeviceWithRegmap::TzDeviceWithRegmap(RegmapElement *regarray, uint32_t size, std::string root) :
+    TzDeviceWithRegmap(
+        {
+            std::make_tuple(regarray, size, "", 0),
+        },
+        root) {}
 
 void TzDeviceWithRegmap::write_register(Register_Addr register_addr, uint32_t value) {
     init_register(register_addr, value);

@@ -19,6 +19,8 @@ namespace CallbackTagIds {
 
 static constexpr std::uint8_t DECODE_CALLBACK_TAG_ID = 0;
 static constexpr std::uint8_t RAW_CALLBACK_TAG_ID    = DECODE_CALLBACK_TAG_ID + 1;
+static constexpr std::uint8_t READ_CALLBACK_TAG_ID   = DECODE_CALLBACK_TAG_ID + 2;
+static constexpr std::uint8_t SEEK_CALLBACK_TAG_ID   = DECODE_CALLBACK_TAG_ID + 3;
 
 } // namespace CallbackTagIds
 } // namespace Metavision

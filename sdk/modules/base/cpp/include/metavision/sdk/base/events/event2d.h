@@ -84,6 +84,11 @@ public:
         return t >= e.t;
     }
 
+    /// @brief function operator== that returns bool
+    inline bool operator==(const Event2d &e) const {
+        return t == e.t && p == e.p && x == e.x && y == e.y;
+    }
+
     /// @brief function operator<< that returns std::ostream &
     friend std::ostream &operator<<(std::ostream &output, const Event2d &e) {
         output << "Event2d: (";

@@ -16,17 +16,17 @@
 namespace Metavision {
 
 const cv::Vec3b &BaseFrameGenerationAlgorithm::bg_color_default() {
-    static const cv::Vec3b bg_color_default = get_cv_color(default_palette(), Metavision::ColorType::Background);
+    static const cv::Vec3b bg_color_default = get_bgr_color(default_palette(), Metavision::ColorType::Background);
     return bg_color_default;
 }
 
 const cv::Vec3b &BaseFrameGenerationAlgorithm::on_color_default() {
-    static const cv::Vec3b on_color_default = get_cv_color(default_palette(), Metavision::ColorType::Positive);
+    static const cv::Vec3b on_color_default = get_bgr_color(default_palette(), Metavision::ColorType::Positive);
     return on_color_default;
 };
 
 const cv::Vec3b &BaseFrameGenerationAlgorithm::off_color_default() {
-    static const cv::Vec3b off_color_default = get_cv_color(default_palette(), Metavision::ColorType::Negative);
+    static const cv::Vec3b off_color_default = get_bgr_color(default_palette(), Metavision::ColorType::Negative);
     return off_color_default;
 };
 
@@ -50,9 +50,9 @@ void BaseFrameGenerationAlgorithm::set_colors(const cv::Scalar &bg_color, const 
 }
 
 void BaseFrameGenerationAlgorithm::set_color_palette(const Metavision::ColorPalette &palette) {
-    bg_color_         = detail::bgra(get_cv_color(palette, Metavision::ColorType::Background));
-    off_on_colors_[0] = detail::bgra(get_cv_color(palette, Metavision::ColorType::Negative));
-    off_on_colors_[1] = detail::bgra(get_cv_color(palette, Metavision::ColorType::Positive));
+    bg_color_         = get_bgra_color(palette, Metavision::ColorType::Background);
+    off_on_colors_[0] = get_bgra_color(get_color(palette, Metavision::ColorType::Negative));
+    off_on_colors_[1] = get_bgra_color(palette, Metavision::ColorType::Positive);
     flags_            = (palette != Metavision::ColorPalette::Gray ? Parameters::BGR : Parameters::GRAY);
 }
 
@@ -67,17 +67,10 @@ void BaseFrameGenerationAlgorithm::set_parameters(const cv::Vec4b &bg_color, con
 }
 
 void BaseFrameGenerationAlgorithm::set_parameters(const Metavision::ColorPalette &palette, int flags) {
-    bg_color_         = detail::bgra(get_cv_color(palette, Metavision::ColorType::Background));
-    off_on_colors_[0] = detail::bgra(get_cv_color(palette, Metavision::ColorType::Negative));
-    off_on_colors_[1] = detail::bgra(get_cv_color(palette, Metavision::ColorType::Positive));
+    bg_color_         = get_bgra_color(palette, Metavision::ColorType::Background);
+    off_on_colors_[0] = get_bgra_color(palette, Metavision::ColorType::Negative);
+    off_on_colors_[1] = get_bgra_color(palette, Metavision::ColorType::Positive);
     flags_            = flags;
-}
-
-cv::Vec3b BaseFrameGenerationAlgorithm::get_cv_color(const Metavision::ColorPalette &palette,
-                                                     const Metavision::ColorType &type) {
-    const Metavision::RGBColor c = Metavision::getColor(palette, type);
-    return cv::Vec3b(static_cast<uchar>(c.b * 255 + 0.5), static_cast<uchar>(c.g * 255 + 0.5),
-                     static_cast<uchar>(c.r * 255 + 0.5));
 }
 
 void BaseFrameGenerationAlgorithm::get_dimension(uint32_t &height, uint32_t &width, uint32_t &channels) const {

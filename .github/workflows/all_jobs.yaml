@@ -2,12 +2,11 @@ name: All Build
 
 on:
   workflow_dispatch:
-  push:
   pull_request:
 
 env:
   #General variables
-  numpy_version: "numpy==1.19.5" # replace with only 'numpy' if no version needed
+  numpy_version: "numpy==1.23.4" # replace with only 'numpy' if no version needed
   python_versions: 3.8
   pybind_version: "2.6.0"
   #Windows variables
@@ -24,13 +23,13 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get -y update && sudo apt-get install -y sudo apt-utils wget cmake build-essential \
-          libglew-dev git g++ libusb-1.0-0-dev libgtest-dev libssl-dev \
+          libglew-dev git g++ libusb-1.0-0-dev libgtest-dev libgmock-dev libssl-dev python3.8 \
           python3-pip python3-distutils xvfb libglfw3 libglfw3-dev libglew-dev libopencv-dev ffmpeg \
           libboost-dev libboost-program-options-dev libboost-filesystem-dev libboost-timer-dev \
-          libboost-chrono-dev libboost-thread-dev zip unzip git-lfs
-          pip install opencv-python $numpy_version pytest torch scipy sk-video numba h5py command_runner
+          libboost-chrono-dev libboost-thread-dev zip unzip git-lfs libhdf5-dev hdf5-tools
+          pip install $numpy_version pytest opencv-python==4.5.5.64 torch==1.13.1 scipy sk-video==1.1.10 numba==0.56.3 h5py command_runner kornia==0.6.8 pytorch_lightning==1.8.6 pytorch_msssim==0.2.1
 
-      - name: Build pybind
+      - name: Build pybind and gtest
         run: |
           openebfolder=${PWD}
           cd ..
@@ -62,8 +61,8 @@ jobs:
           ctest --output-on-failure
 
   job2:
-    name: Ubuntu 18
-    runs-on: ubuntu-18.04
+    name: Ubuntu 22
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
@@ -71,12 +70,11 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get -y update && sudo apt-get install -y sudo apt-utils wget cmake build-essential \
-          libglew-dev git g++ libusb-1.0-0-dev libgtest-dev libssl-dev \
+          libglew-dev git g++ libusb-1.0-0-dev libgtest-dev libgmock-dev libssl-dev \
           python3-pip python3-distutils xvfb libglfw3 libglfw3-dev libglew-dev libopencv-dev ffmpeg \
           libboost-dev libboost-program-options-dev libboost-filesystem-dev libboost-timer-dev \
-          libboost-chrono-dev libboost-thread-dev zip unzip
-          python3 -m pip install --upgrade pip
-          python3 -m pip install opencv-python $numpy_version pytest torch scipy sk-video numba h5py command_runner
+          libboost-chrono-dev libboost-thread-dev zip unzip git-lfs libhdf5-dev hdf5-tools
+          pip install $numpy_version pytest opencv-python==4.5.5.64 torch==1.13.1 scipy sk-video==1.1.10 numba==0.56.3 h5py command_runner kornia==0.6.8 pytorch_lightning==1.8.6 pytorch_msssim==0.2.1
 
       - name: Build pybind and gtest
         run: |
@@ -87,12 +85,6 @@ jobs:
           cd pybind11-$pybind_version/
           mkdir build && cd build
           cmake .. -DPYBIND11_TEST=OFF
-          cmake --build . --config Release --parallel 4
-          sudo make install
-          cp -r /usr/src/googletest/googletest ${openebfolder}/../
-          cd ${openebfolder}/../googletest
-          mkdir build && cd build
-          cmake ..
           cmake --build . --config Release --parallel 4
           sudo make install
 
@@ -149,7 +141,7 @@ jobs:
           cd ..
           unzip -q "vcpkg-export.zip"
           7z x ffmpeg-archive.7z
-          $python_executable -m pip install pytest $numpy_version opencv-python torch scipy sk-video numba h5py command_runner
+          $python_executable -m pip install pytest $numpy_version opencv-python==4.5.5.64 torch==1.13.1 scipy sk-video==1.1.10 numba==0.56.3 h5py command_runner kornia==0.6.8 pytorch_lightning==1.8.6 pytorch_msssim==0.2.1
           cd openeb
 
       - name: Build openEB

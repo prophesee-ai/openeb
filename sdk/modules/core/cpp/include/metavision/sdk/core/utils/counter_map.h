@@ -22,13 +22,13 @@ namespace Metavision {
 template<typename KeyT>
 class CounterMap {
 public:
-    /// @brief Constructor
+    /// @brief Constructs a CounterMap
     CounterMap() {}
 
-    /// @brief Destructor
+    /// @brief Destructs a CounterMap
     ~CounterMap() {}
 
-    /// @brief Increment the reference counter associated to the input key
+    /// @brief Increments the reference counter associated to the input key
     ///
     /// If the key was not existing, then it is added and its associated reference count is initialized to 1
     ///
@@ -38,7 +38,7 @@ public:
         return ++tag_[key];
     }
 
-    /// @brief Decrement the reference counter associated to the input key
+    /// @brief Decrements the reference counter associated to the input key
     ///
     /// If the counter goes to 0, the reference counter for the key is erased from the map until it is tagged again
     ///
@@ -58,7 +58,7 @@ public:
         return 0;
     }
 
-    /// @brief returns the input key reference counter value
+    /// @brief Returns the input key reference counter value
     /// @return The current count for the key
     size_t tag_count(KeyT key) const {
         std::unique_lock<std::mutex> lock(tag_mutex_);
@@ -67,6 +67,12 @@ public:
             return it->second;
         }
         return 0;
+    }
+
+    /// @brief Checks if the map is empty
+    /// @return true if empty, false otherwise
+    bool empty() const {
+        return tag_.empty();
     }
 
 private:

@@ -18,11 +18,13 @@
 #include <sstream>
 #include <stdexcept>
 
+#include <iostream>
+
 namespace py = pybind11;
 
 namespace Metavision {
 
-/// @brief Creates a cv::Mat view using the memory stored inside a py::array
+/// @brief Creates a cv::Mat view using the memory stored inside a py::array (only for images)
 /// @param py_image Input image in the py::array_t<std::uint8_t> format
 /// @param output_cv_mat Output image in cv::Mat format (Either CV_8UC3 or CV_8UC1)
 /// @param colored True if the image is of type CV_8UC3. False if it's of type CV_8UC1
@@ -41,6 +43,47 @@ inline void py_array_to_cv_mat(const py::array &py_image, cv::Mat &output_cv_mat
     const auto &strides = py_image.strides();
 
     output_cv_mat = cv::Mat(shape[0], shape[1], (colored ? CV_8UC3 : CV_8UC1), py_image.request().ptr, strides[0]);
+}
+
+/// @brief Creates a cv::Mat view using the memory stored inside a py::array (general type)
+/// @param in Input array. Should be 2 or 3 dimensions: (H, W) or (H, W, C)
+inline cv::Mat to_cv_mat(const py::array &in) {
+    const auto num_dims = static_cast<size_t>(in.ndim());
+    const auto &shape   = in.shape();
+    const auto &strides = in.strides();
+    const auto &dtype   = in.dtype();
+
+    std::size_t num_channels = 0;
+    if (num_dims == 2) {
+        num_channels = 1;
+    } else if (num_dims == 3) {
+        num_channels = shape[2];
+    } else {
+        std::ostringstream oss;
+        oss << "Invalid number of dimensions (should be either 2 or 3): " << num_dims;
+        throw std::invalid_argument(oss.str());
+    }
+
+    int cv_depth;
+    if (dtype.is(py::dtype::of<std::uint8_t>())) {
+        cv_depth = CV_8U;
+    } else if (dtype.is(py::dtype::of<std::int8_t>())) {
+        cv_depth = CV_8S;
+    } else if (dtype.is(py::dtype::of<std::uint16_t>())) {
+        cv_depth = CV_16U;
+    } else if (dtype.is(py::dtype::of<std::int16_t>())) {
+        cv_depth = CV_16S;
+    } else if (dtype.is(py::dtype::of<std::int32_t>())) {
+        cv_depth = CV_32S;
+    } else if (dtype.is(py::dtype::of<float>())) {
+        cv_depth = CV_32F;
+    } else if (dtype.is(py::dtype::of<double>())) {
+        cv_depth = CV_64F;
+    } else {
+        throw std::runtime_error("This depth not implemented in the python bindings");
+    }
+
+    return cv::Mat(shape[0], shape[1], CV_MAKETYPE(cv_depth, num_channels), in.request().ptr, strides[0]);
 }
 
 } // namespace Metavision

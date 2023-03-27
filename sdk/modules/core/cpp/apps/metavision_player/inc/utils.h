@@ -40,7 +40,7 @@ inline void addText(cv::Mat &frame, const std::string &text, const cv::Point &po
 }
 
 inline cv::Vec3b getCVColor(const Metavision::ColorPalette &palette, const Metavision::ColorType &type) {
-    const Metavision::RGBColor c = Metavision::getColor(palette, type);
+    const Metavision::RGBColor c = Metavision::get_color(palette, type);
     return cv::Vec3b(c.b * 255 + 0.5, c.g * 255 + 0.5, c.r * 255 + 0.5);
 }
 

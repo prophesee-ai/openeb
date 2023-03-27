@@ -13,19 +13,28 @@
 #include <fstream>
 #include <memory>
 #include <mutex>
+#ifdef __ANDROID__
+#include <android/log.h>
+#endif
 
 #include "metavision/sdk/base/utils/log.h"
+#ifdef __ANDROID__
+#include "metavision/sdk/base/utils/detail/android_log.h"
+#endif
 
 namespace Metavision {
 
 namespace {
-bool gLogLevelEnvRead    = false;
-const char *gLogLevelEnv = nullptr;
-LogLevel gLevel(LogLevel::Info);
+bool gLogLevelEnvRead = false;
+std::string gLogLevelEnv;
 const char *gLogStreamEnv = nullptr;
 bool gLogStreamEnvRead    = false;
-std::ostream *gStream(&std::cerr);
 std::unique_ptr<std::ofstream> gFileStream;
+LogOptions gLogOptions;
+#ifdef __ANDROID__
+detail::android_streambuf streambuf("MV_LOG");
+std::ostream android_stream(reinterpret_cast<std::streambuf *>(&streambuf));
+#endif
 
 std::mutex concurrent_ostreambuf_mutex;
 } // namespace
@@ -63,40 +72,113 @@ void concurrent_ostreambuf::reset_output_sentinel() {
 bool concurrent_ostreambuf::get_output_sentinel() const {
     return has_output_;
 }
+
+LogLevelNameMap::const_iterator getLongestLogLevelName(const LogLevelNameMap &levelnames) {
+    return std::max_element(levelnames.cbegin(), levelnames.cend(),
+                            [](const auto &lhs, const auto &rhs) { return lhs.second.size() < rhs.second.size(); });
+}
+
+std::string getPaddedLevelLabel(const LogLevel &level, const LogLevelNameMap &labels, char padding_char) {
+    std::string level_label  = labels.at(level);
+    auto longest_level_label = getLongestLogLevelName(labels)->second;
+    size_t padding_size      = longest_level_label.size() - level_label.size();
+    level_label.insert(0, padding_size, ' ');
+    return level_label;
+}
+
+std::string getLevelName(const LogLevel &level, const LogLevelNameMap &labels, bool level_prefix_padding) {
+    if (level_prefix_padding) {
+        return getPaddedLevelLabel(level, labels);
+    }
+    return labels.at(level);
+}
+
+#ifdef __ANDROID__
+android_streambuf::android_streambuf(const std::string tag) : tag_(tag) {}
+
+std::streamsize android_streambuf::xsputn(const char *s, std::streamsize n) {
+    ostr_.write(s, n);
+    if ((!ostr_.str().empty()) && (ostr_.str().back() == '\n')) {
+        auto size = ostr_.str().size();
+        __android_log_print(ANDROID_LOG_DEBUG, tag_.c_str(), "%s", ostr_.str().c_str());
+        ostr_.str("");
+        return size;
+    }
+    return 0;
+};
+
+int android_streambuf::overflow(int ch) {
+    if (ch != EOF) {
+        xsputn(reinterpret_cast<const char *>(&ch), 1);
+    }
+    return ch;
+}
+
+int android_streambuf::sync() {
+    return 0;
+}
+#endif // __ANDROID__
 } // namespace detail
 
 LogLevel getLogLevel() {
-    if (!gLogLevelEnvRead) {
-        gLogLevelEnv     = getenv("MV_LOG_LEVEL");
-        gLogLevelEnvRead = true;
-    }
-    if (gLogLevelEnv) {
-        const std::string s(gLogLevelEnv);
-        if (s == "ERROR") {
-            return LogLevel::Error;
-        } else if (s == "WARNING") {
-            return LogLevel::Warning;
-        } else if (s == "INFO") {
-            return LogLevel::Info;
-        } else if (s == "TRACE") {
-            return LogLevel::Trace;
-        } else if (s == "DEBUG") {
-            return LogLevel::Debug;
-        }
-    }
-    return gLevel;
+    return gLogOptions.getLevel();
 }
 
 void setLogLevel(const LogLevel &level) {
-    gLevel = level;
+    gLogOptions.setLevel(level);
+}
+
+void setLogOptions(LogOptions opts) {
+    gLogOptions = opts;
+}
+
+void resetLogOptions() {
+    setLogOptions(LogOptions());
+}
+
+LogOptions getLogOptions() {
+    return gLogOptions;
 }
 
 void resetLogLevelFromEnv() {
     gLogLevelEnvRead = false;
-    gLogLevelEnv     = nullptr;
+    gLogLevelEnv     = "";
 }
 
 std::ostream &getLogStream() {
+    return gLogOptions.getStream();
+}
+
+void setLogStream(std::ostream &stream) {
+    gLogOptions.setStream(stream);
+}
+
+void resetLogStreamFromEnv() {
+    gLogStreamEnvRead = false;
+    gFileStream.reset(nullptr);
+}
+
+LogOptions::LogOptions(LogLevel level, std::ostream &stream, bool level_prefix_padding) :
+    level_(level), stream_(&stream), level_prefix_padding_(level_prefix_padding) {
+#ifdef __ANDROID__
+    if (stream_ == &std::cerr) {
+        stream_ = &android_stream;
+    }
+#endif
+}
+
+LogOptions &LogOptions::setLevelPrefixPadding(bool is_padded) {
+    level_prefix_padding_ = is_padded;
+    return *this;
+}
+bool LogOptions::isLevelPrefixPadding() const {
+    return level_prefix_padding_;
+}
+LogOptions &LogOptions::setStream(std::ostream &stream) {
+    stream_ = &stream;
+    return *this;
+}
+std::ostream &LogOptions::getStream() const {
     if (!gLogStreamEnvRead) {
         gLogStreamEnv     = getenv("MV_LOG_FILE");
         gLogStreamEnvRead = true;
@@ -109,16 +191,56 @@ std::ostream &getLogStream() {
             return *gFileStream;
         }
     }
-    return *gStream;
+    return *stream_;
 }
 
-void setLogStream(std::ostream &stream) {
-    gStream = &stream;
+LogOptions &LogOptions::setLevel(const LogLevel &level) {
+    level_ = level;
+    return *this;
 }
 
-void resetLogStreamFromEnv() {
-    gLogStreamEnvRead = false;
-    gFileStream.reset(nullptr);
+LogLevel LogOptions::getLevel() const {
+    if (!gLogLevelEnvRead) {
+#ifdef __ANDROID__
+        auto get_str_prop = [](const std::string &prop, std::string &value) {
+            char prop_str[1024];
+            if (__system_property_get(prop.c_str(), prop_str)) {
+                value = std::string(prop_str);
+                return true;
+            }
+            return false;
+        };
+        if (!get_str_prop("debug.metavision.log.level", gLogLevelEnv)) {
+            if (!get_str_prop("persist.metavision.log.level", gLogLevelEnv)) {
+                gLogLevelEnv = "";
+            }
+        }
+        if (gLogLevelEnv == "") {
+#endif // __ANDROID__
+            const char *log_level_env = getenv("MV_LOG_LEVEL");
+            gLogLevelEnv              = std::string((log_level_env != nullptr) ? log_level_env : "");
+#ifdef __ANDROID__
+        }
+#endif // __ANDROID__
+        gLogLevelEnvRead = true;
+    }
+    if (!gLogLevelEnv.empty()) {
+        if (gLogLevelEnv == "ERROR") {
+            return LogLevel::Error;
+        } else if (gLogLevelEnv == "WARNING") {
+            return LogLevel::Warning;
+        } else if (gLogLevelEnv == "INFO") {
+            return LogLevel::Info;
+        } else if (gLogLevelEnv == "TRACE") {
+            return LogLevel::Trace;
+        } else if (gLogLevelEnv == "DEBUG") {
+            return LogLevel::Debug;
+        }
+        // In case of non of the above returns have been called, it means that gLogLevelEnv is incorrect
+        // Resetting it will prevent to entering this IF condition in next calls of getLogLevel()
+        gLogLevelEnv = "";
+    }
+    return level_;
 }
 
 #if !defined DEBUG && defined NDEBUG
@@ -129,7 +251,7 @@ template<>
 LoggingOperation<LogLevel::Debug> log<LogLevel::Debug>(const std::string &file, int line, const std::string &function,
                                                        const std::string &prefixFmt) {
     // when in release, this should return an "object" on which all operations are in fact no-op
-    return LoggingOperation<LogLevel::Debug>(std::cerr, std::string(), std::string(), 0, std::string());
+    return LoggingOperation<LogLevel::Debug>(LogOptions(), std::string(), std::string(), 0, std::string());
 }
 } // namespace detail
 

@@ -14,7 +14,6 @@
 
 #include <boost/filesystem.hpp>
 #include <string>
-#include <limits>
 #include <vector>
 #include <fstream>
 #include <iomanip>
@@ -29,7 +28,7 @@ namespace Metavision {
 
 /// @brief Logs the stream to a file
 class StreamLoggerAlgorithm {
-    static constexpr auto InvalidTimestamp = std::numeric_limits<std::int32_t>::max();
+    static constexpr auto InvalidTimestamp = -1;
 
 public:
     /// @brief Builds a new StreamLogger object with given geometry

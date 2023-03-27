@@ -23,19 +23,34 @@ namespace Metavision {
 class DeviceBuilder;
 class DeviceBuilderParameters;
 class DeviceConfig;
+class RegisterDeviceBuilder;
 using DeviceBuilderCallback =
     std::function<bool(DeviceBuilder &, const DeviceBuilderParameters &, const DeviceConfig &)>;
 
 class DeviceBuilderFactory {
+    using BuilderMap = std::unordered_map<long, DeviceBuilderCallback>;
+
 public:
+    DeviceBuilderFactory() : builder_map_(generic_map()) {}
+
     bool build(long key, DeviceBuilder &device_builder, const DeviceBuilderParameters &device_builder_parameters,
                const DeviceConfig &device_config);
     bool insert(long key, const DeviceBuilderCallback &callback);
     bool remove(long key);
-    bool contains(long key);
+    bool contains(long key) const;
 
 private:
-    std::unordered_map<long, DeviceBuilderCallback> builder_map_;
+    BuilderMap builder_map_;
+    static BuilderMap &generic_map();
+    friend RegisterDeviceBuilder;
+};
+
+class RegisterDeviceBuilder {
+public:
+    RegisterDeviceBuilder(long key, const DeviceBuilderCallback &callback) {
+        if (!DeviceBuilderFactory::generic_map().insert({key, callback}).second)
+            throw std::logic_error("Several default build methods are declared for " + std::to_string(key));
+    }
 };
 
 } // namespace Metavision

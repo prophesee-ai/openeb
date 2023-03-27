@@ -16,12 +16,12 @@
 #include "metavision/utils/gtest/gtest_custom.h"
 #include "metavision/hal/device/device.h"
 #include "metavision/hal/device/device_discovery.h"
+#include "metavision/hal/facilities/i_camera_synchronization.h"
 #include "metavision/hal/facilities/i_hw_identification.h"
 #include "metavision/hal/facilities/i_geometry.h"
-#include "metavision/hal/facilities/i_decoder.h"
+#include "metavision/hal/facilities/i_events_stream_decoder.h"
 #include "metavision/hal/facilities/i_event_decoder.h"
 #include "metavision/hal/facilities/i_events_stream.h"
-#include "metavision/hal/facilities/i_device_control.h"
 #include "metavision/hal/facilities/i_ll_biases.h"
 #include "metavision/hal/facilities/i_roi.h"
 #include "metavision/sdk/base/events/event_cd.h"
@@ -39,11 +39,11 @@ public:
         ASSERT_NE(nullptr, i_hw_identification);
         ASSERT_EQ(SampleHWIdentification::SAMPLE_SERIAL, i_hw_identification->get_serial());
         ASSERT_EQ(SampleHWIdentification::SAMPLE_SYSTEM_ID, i_hw_identification->get_system_id());
-        ASSERT_EQ("1.0", i_hw_identification->get_sensor_info().as_string());
-        ASSERT_EQ(SampleHWIdentification::SAMPLE_SYSTEM_VERSION, i_hw_identification->get_system_version());
-        std::vector<std::string> available_raw_format = i_hw_identification->get_available_raw_format();
-        ASSERT_EQ(1, available_raw_format.size());
-        ASSERT_EQ("SAMPLE-FORMAT-1.0", available_raw_format[0]);
+        ASSERT_EQ("Gen1.0", i_hw_identification->get_sensor_info().name_);
+        std::vector<std::string> available_formats = i_hw_identification->get_available_data_encoding_formats();
+        ASSERT_EQ(1, available_formats.size());
+        ASSERT_EQ("SAMPLE-FORMAT-1.0", available_formats[0]);
+        ASSERT_EQ("SAMPLE-FORMAT-1.0", i_hw_identification->get_current_data_encoding_format());
         ASSERT_EQ(SampleHWIdentification::SAMPLE_INTEGRATOR, i_hw_identification->get_integrator());
         if (offline) {
             ASSERT_EQ("File", i_hw_identification->get_connection_type());
@@ -57,13 +57,14 @@ public:
         ASSERT_EQ(SampleGeometry::WIDTH_, i_geometry->get_width());
         ASSERT_EQ(SampleGeometry::HEIGHT_, i_geometry->get_height());
 
-        // I_Decoder
-        Metavision::I_Decoder *i_decoder = device->get_facility<Metavision::I_Decoder>();
-        ASSERT_NE(nullptr, i_decoder);
+        // I_EventsStreamDecoder
+        Metavision::I_EventsStreamDecoder *i_eventsstreamdecoder =
+            device->get_facility<Metavision::I_EventsStreamDecoder>();
+        ASSERT_NE(nullptr, i_eventsstreamdecoder);
         if (offline) {
-            ASSERT_TRUE(i_decoder->is_time_shifting_enabled());
+            ASSERT_TRUE(i_eventsstreamdecoder->is_time_shifting_enabled());
         } else {
-            ASSERT_FALSE(i_decoder->is_time_shifting_enabled());
+            ASSERT_FALSE(i_eventsstreamdecoder->is_time_shifting_enabled());
         }
 
         // I_EventDecoder<Metavision::EventCD>
@@ -109,8 +110,9 @@ TEST_F(HalSamplePlugin_GTest, open_first_available_live_source_and_check_facilit
     check_common_facilities(device.get(), false);
 
     // I_DeviceControl
-    Metavision::I_DeviceControl *i_device_control = device->get_facility<Metavision::I_DeviceControl>();
-    ASSERT_NE(nullptr, i_device_control);
+    Metavision::I_CameraSynchronization *i_camera_synchronization =
+        device->get_facility<Metavision::I_CameraSynchronization>();
+    ASSERT_NE(nullptr, i_camera_synchronization);
 }
 
 TEST_F(HalSamplePlugin_GTest, record_and_read_back) {
@@ -120,7 +122,8 @@ TEST_F(HalSamplePlugin_GTest, record_and_read_back) {
     std::unique_ptr<Metavision::Device> device(DeviceDiscovery::open(""));
 
     Metavision::I_EventsStream *i_events_stream = device->get_facility<Metavision::I_EventsStream>();
-    Metavision::I_Decoder *i_decoder            = device->get_facility<Metavision::I_Decoder>();
+    Metavision::I_EventsStreamDecoder *i_eventsstreamdecoder =
+        device->get_facility<Metavision::I_EventsStreamDecoder>();
     Metavision::I_EventDecoder<Metavision::EventCD> *i_cd_decoder =
         device->get_facility<Metavision::I_EventDecoder<Metavision::EventCD>>();
 
@@ -139,9 +142,9 @@ TEST_F(HalSamplePlugin_GTest, record_and_read_back) {
 
         long n_bytes;
         uint8_t *raw_data = i_events_stream->get_latest_raw_data(n_bytes);
-        i_decoder->decode(raw_data, raw_data + n_bytes);
+        i_eventsstreamdecoder->decode(raw_data, raw_data + n_bytes);
     }
-    Metavision::timestamp last_time = i_decoder->get_last_timestamp();
+    Metavision::timestamp last_time = i_eventsstreamdecoder->get_last_timestamp();
 
     // THEN when reading back the recording, we get the same events as the first run
     device.reset(nullptr);
@@ -155,9 +158,9 @@ TEST_F(HalSamplePlugin_GTest, record_and_read_back) {
     int number_cd_expected = n_cd_events_decoded;
     n_cd_events_decoded    = 0;
 
-    i_events_stream = device->get_facility<Metavision::I_EventsStream>();
-    i_decoder       = device->get_facility<Metavision::I_Decoder>();
-    i_cd_decoder    = device->get_facility<Metavision::I_EventDecoder<Metavision::EventCD>>();
+    i_events_stream       = device->get_facility<Metavision::I_EventsStream>();
+    i_eventsstreamdecoder = device->get_facility<Metavision::I_EventsStreamDecoder>();
+    i_cd_decoder          = device->get_facility<Metavision::I_EventDecoder<Metavision::EventCD>>();
     i_cd_decoder->add_event_buffer_callback(
         [&n_cd_events_decoded](const Metavision::EventCD *begin, const Metavision::EventCD *end) {
             n_cd_events_decoded += std::distance(begin, end);
@@ -167,9 +170,9 @@ TEST_F(HalSamplePlugin_GTest, record_and_read_back) {
     long n_bytes(0);
     while (ret > 0) { // To be sure to record something
         uint8_t *raw_data = i_events_stream->get_latest_raw_data(n_bytes);
-        i_decoder->decode(raw_data, raw_data + n_bytes);
+        i_eventsstreamdecoder->decode(raw_data, raw_data + n_bytes);
         ret = i_events_stream->wait_next_buffer();
     }
     ASSERT_EQ(number_cd_expected, n_cd_events_decoded);
-    ASSERT_EQ(last_time, i_decoder->get_last_timestamp());
+    ASSERT_EQ(last_time, i_eventsstreamdecoder->get_last_timestamp());
 }

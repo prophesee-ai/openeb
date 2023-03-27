@@ -16,7 +16,7 @@
 
 namespace Metavision {
 
-static HALClassPythonBinder<RawFileConfig, PythonBases<DeviceConfig>> bind(
+static HALClassPythonBinder<RawFileConfig> bind(
     [](auto &module, auto &class_binding) {
         class_binding.def(py::init<>())
             .def(py::init<const RawFileConfig &>())

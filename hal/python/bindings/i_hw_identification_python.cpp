@@ -38,10 +38,10 @@ static HALFacilityPythonBinder<I_HW_Identification> bind(
                  pybind_doc_hal["Metavision::I_HW_Identification::get_system_id"])
             .def("get_sensor_info", &I_HW_Identification::get_sensor_info,
                  pybind_doc_hal["Metavision::I_HW_Identification::get_sensor_info"])
-            .def("get_system_version", &I_HW_Identification::get_system_version,
-                 pybind_doc_hal["Metavision::I_HW_Identification::get_system_version"])
-            .def("get_available_raw_format", &I_HW_Identification::get_available_raw_format,
-                 pybind_doc_hal["Metavision::I_HW_Identification::get_available_raw_format"])
+            .def("get_available_data_encoding_formats", &I_HW_Identification::get_available_data_encoding_formats,
+                 pybind_doc_hal["Metavision::I_HW_Identification::get_available_data_encoding_formats"])
+            .def("get_current_data_encoding_format", &I_HW_Identification::get_current_data_encoding_format,
+                 pybind_doc_hal["Metavision::I_HW_Identification::get_current_data_encoding_format"])
             .def("get_integrator", &I_HW_Identification::get_integrator,
                  pybind_doc_hal["Metavision::I_HW_Identification::get_integrator"])
             .def("get_system_info", &get_system_info_wrapper,
@@ -55,8 +55,8 @@ static HALFacilityPythonBinder<I_HW_Identification> bind(
                           pybind_doc_hal["Metavision::I_HW_Identification::SensorInfo::major_version_"])
             .def_readonly("minor_version", &I_HW_Identification::SensorInfo::minor_version_,
                           pybind_doc_hal["Metavision::I_HW_Identification::SensorInfo::minor_version_"])
-            .def("as_string", &I_HW_Identification::SensorInfo::as_string,
-                 pybind_doc_hal["Metavision::I_HW_Identification::SensorInfo::as_string"]);
+            .def_readonly("name", &I_HW_Identification::SensorInfo::name_,
+                          pybind_doc_hal["Metavision::I_HW_Identification::SensorInfo::name_"]);
     },
     "I_HW_Identification", pybind_doc_hal["Metavision::I_HW_Identification"]);
 

@@ -23,9 +23,7 @@
 
 namespace Metavision {
 
-/// @brief Callback type alias for @ref EventExtTrigger
-/// @param begin @ref EventExtTrigger pointer to the beginning of the buffer.
-/// @param end @ref EventExtTrigger pointer to the end of the buffer.
+/// @brief Type alias for a callback on a buffer of @ref EventExtTrigger
 using EventsExtTriggerCallback = std::function<void(const EventExtTrigger *begin, const EventExtTrigger *end)>;
 
 /// @brief Facility class to handle External Triggers events

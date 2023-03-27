@@ -26,29 +26,38 @@ class PlanarMotionStream(object):
     Generates a planar motion in front of the image
 
     Args:
-        image_filename: path to image
-        height: desired height
-        width: desired width
-        max_frames: number of frames to stream
-        rgb: color images or gray
-        infinite: border is mirrored
+        image_filename (str): path to image
+        height (int): desired height
+        width (int): desired width
+        max_frames (int): number of frames to stream
+        rgb (bool): color images or gray
+        infinite (bool): border is mirrored
+        pause_probability (float): probability to add a pause during the stream
+        max_optical_flow_threshold (float): maximum optical flow between two consecutive frames
+        max_interp_consecutive_frames (int): maximum number of interpolated frames between two consecutive frames
+        crop_image (bool): crop images or resize them
     """
 
-    def __init__(self, image_filename, height, width, max_frames=1000, rgb=False, infinite=True, pause_probability=0.5):
+    def __init__(self, image_filename, height, width, max_frames=1000, rgb=False, infinite=True,
+                 pause_probability=0.5,
+                 max_optical_flow_threshold=2., max_interp_consecutive_frames=20, crop_image=False):
         self.height = height
         self.width = width
+        self.crop_image = crop_image
         self.max_frames = max_frames
         self.rgb = rgb
         self.filename = image_filename
         if not self.rgb:
             frame = cv2.imread(image_filename, cv2.IMREAD_GRAYSCALE)
         else:
-            frame = cv2.imread(image_filename)
+            frame = cv2.imread(image_filename)[..., ::-1]
         self.frame = frame
         self.frame_height, self.frame_width = self.frame.shape[:2]
         if self.height == -1 or self.width == -1:
             self.height, self.width = self.frame_height, self.frame_width
-        self.camera = CameraPoseGenerator(self.frame_height, self.frame_width, self.max_frames, pause_probability)
+        self.camera = CameraPoseGenerator(self.frame_height, self.frame_width, self.max_frames, pause_probability,
+                                          max_optical_flow_threshold=max_optical_flow_threshold,
+                                          max_interp_consecutive_frames=max_interp_consecutive_frames)
         self.iter = 0
         self.border_mode = cv2.BORDER_REFLECT101 if infinite else cv2.BORDER_CONSTANT
         self.dt = np.random.randint(10000, 20000)
@@ -77,7 +86,20 @@ class PlanarMotionStream(object):
         )
         self.iter += 1
         ts *= self.dt
-        out = cv2.resize(out, (self.width, self.height), 0, 0, cv2.INTER_AREA)
+
+        if self.crop_image and out.shape[0] >= self.height and out.shape[1] >= self.width:
+            margin_height_top = int((out.shape[0] - self.height) // 2.0)
+            margin_height_bottom = (out.shape[0] - self.height) - margin_height_top
+            margin_width_left = int((out.shape[1] - self.width) // 2.0)
+            margin_width_right = (out.shape[1] - self.width) - margin_width_left
+            out = out[margin_height_top:-margin_height_bottom or None,
+                      margin_width_left:-margin_width_right or None]
+        else:
+            out = cv2.resize(out, (self.width, self.height), 0, 0, cv2.INTER_AREA)
+        if self.rgb:
+            assert out.shape == (self.height, self.width, 3)
+        else:
+            assert out.shape == (self.height, self.width)
         return out, ts
 
     def __iter__(self):

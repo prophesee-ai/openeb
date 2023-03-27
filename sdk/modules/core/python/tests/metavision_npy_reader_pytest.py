@@ -11,6 +11,7 @@
 Unit tests for EventNpyReader class loading npy
 """
 import os
+import math
 import numpy as np
 
 from metavision_core.event_io.py_reader import EventNpyReader
@@ -65,7 +66,7 @@ def pytestcase_load_n_events_npy(tmpdir):
     # we loaded n_events events, so cursor should have been shifted by 10*8
     assert record.current_event_index() == 0 + n_events
     assert record.done is False
-    # current time should be the timestamp of the event that will be loaded next
+    # current time should be the timestamp of the last loaded event
     assert record.current_time == 199999
 
 
@@ -88,8 +89,8 @@ def pytestcase_load_n_events_all_npy(tmpdir):
     # we loaded n_events events, so cursor should have been shifted by 10*8
     assert record.current_event_index() == 0 + n_events
     assert record.done
-    # current time should be the timestamp of the last event + 1
-    assert record.current_time == 199999 + 1
+    # current time should be the timestamp of the last event
+    assert record.current_time == 199999
 
 
 def pytestcase_load_n_events_too_much_npy(tmpdir):
@@ -112,8 +113,8 @@ def pytestcase_load_n_events_too_much_npy(tmpdir):
     # we loaded n_events events, so cursor should have been shifted by 10*8
     assert record.current_event_index() == 0 + record.event_count()
     assert record.done
-    # current time should be the timestamp of the last event + 1
-    assert record.current_time == 199999 + 1
+    # current time should be the timestamp of the last event
+    assert record.current_time == 199999
 
 
 def pytestcase_reset_npy(tmpdir):
@@ -175,8 +176,8 @@ def pytestcase_load_delta_t_too_much_npy(tmpdir):
     events = record.load_delta_t(10 * 100000)
     assert record.done
     assert all([np.allclose(events[name], bboxes[name][3:]) for name in events.dtype.names])
-    # current_time should be last event timestamp + 1
-    assert record.current_time == 199999 + 1
+    # current_time should be last event timestamp
+    assert record.current_time == 199999
 
 
 def pytestcase_load_event_plus_delta_t_npy(tmpdir):
@@ -196,37 +197,16 @@ def pytestcase_load_event_plus_delta_t_npy(tmpdir):
     events = record.load_n_events(3)
     assert record.done is False
     # current time should be the timestamp of the event that will be loaded next
-    assert record.current_time == 99999 + 1
+    assert record.current_time == 99999
     events = record.load_delta_t(15000)
     assert record.current_event_index() == 0 + 3 + 2
     assert all([np.allclose(events[name], bboxes[name][3:5]) for name in events.dtype.names])
     assert record.done is False
-    assert record.current_time == 99999 + 1 + 15000
+    assert record.current_time == 99999 + 15000
     assert record.done is False
 
 
-def pytestcase_seek_event_future_npy(tmpdir):
-    """Tests seeking at a define position (after n events)"""
-    filename, bboxes = create_temporary_npy_file(tmpdir, "seek_event_future",
-                                                 "99999 0 BB_CREATE 7 96 102 22 21 0.3\n"
-                                                 "99999 2 BB_CREATE 7 127 87 53 53 0.3\n"
-                                                 "99999 3 BB_CREATE 7 141 81 119 78 0.7\n"
-                                                 "100000 4 BB_CREATE 7 97 102 22 21 0.3\n"
-                                                 "100001 5 BB_CREATE 6 8 69 51 53 0.6\n"
-                                                 "199998 6 BB_CREATE 7 127 87 53 53 0.4\n"
-                                                 "199999 7 BB_CREATE 7 141 81 119 78 0.7\n")
-    record = EventNpyReader(filename)
-    assert record.current_event_index() == 0
-    assert record.event_count() == 7
-    assert record.current_time == 0
-    record.seek_event(3)
-    assert record.current_event_index() == 0 + 3
-    assert record.done is False
-    # current_time should be the timestamp of the fourth event
-    assert record.current_time == 100000
-
-
-def pytestcase_seek_event_past_npy(tmpdir):
+def pytestcase_seek_event_npy(tmpdir):
     """Tests seeking at a define position (after n events)"""
     filename, bboxes = create_temporary_npy_file(tmpdir, "seek_event_past",
                                                  "100 0 BB_CREATE 7 96 102 22 21 0.3\n"
@@ -244,62 +224,12 @@ def pytestcase_seek_event_past_npy(tmpdir):
     assert record.current_event_index() == 0 + 3
     assert record.done is False
     # current_time should be the timestamp of the fourth event
-    assert record.current_time == 100000
+    assert record.current_time == 99999
     record.seek_event(1)
     assert record.current_event_index() == 0 + 1
     assert record.done is False
     # current_time should be the timestamp of the second event
-    assert record.current_time == 200
-
-
-def pytestcase_seek_event_zero_npy(tmpdir):
-    """Tests seeking in the file after 0 event"""
-    filename, bboxes = create_temporary_npy_file(tmpdir, "seek_event_zero",
-                                                 "100 0 BB_CREATE 7 96 102 22 21 0.3\n"
-                                                 "200 2 BB_CREATE 7 127 87 53 53 0.3\n"
-                                                 "99999 3 BB_CREATE 7 141 81 119 78 0.7\n"
-                                                 "100000 4 BB_CREATE 7 97 102 22 21 0.3\n"
-                                                 "100001 5 BB_CREATE 6 8 69 51 53 0.6\n"
-                                                 "199998 6 BB_CREATE 7 127 87 53 53 0.4\n"
-                                                 "199999 7 BB_CREATE 7 141 81 119 78 0.7\n")
-    record = EventNpyReader(filename)
-    assert record.current_event_index() == 0
-    assert record.event_count() == 7
-    assert record.current_time == 0
-    record.load_n_events(6)
-    assert record.current_event_index() == 0 + 6
-    assert record.done is False
-    # current_time should be the timestamp of the seventh event
-    assert record.current_time == 199999
-    events = record.seek_event(0)
-    assert record.current_event_index() == 0 + 0
-    assert record.done is False
-    assert record.current_time == 0
-
-
-def pytestcase_seek_event_negative_npy(tmpdir):
-    """Tests seeking in the file after a negative number of events"""
-    filename, bboxes = create_temporary_npy_file(tmpdir, "seek_event_negative",
-                                                 "100 0 BB_CREATE 7 96 102 22 21 0.3\n"
-                                                 "200 2 BB_CREATE 7 127 87 53 53 0.3\n"
-                                                 "99999 3 BB_CREATE 7 141 81 119 78 0.7\n"
-                                                 "100000 4 BB_CREATE 7 97 102 22 21 0.3\n"
-                                                 "100001 5 BB_CREATE 6 8 69 51 53 0.6\n"
-                                                 "199998 6 BB_CREATE 7 127 87 53 53 0.4\n"
-                                                 "199999 7 BB_CREATE 7 141 81 119 78 0.7\n")
-    record = EventNpyReader(filename)
-    assert record.current_event_index() == 0
-    assert record.event_count() == 7
-    assert record.current_time == 0
-    record.load_n_events(6)
-    assert record.current_event_index() == 0 + 6
-    assert record.done is False
-    # current_time should be the timestamp of the seventh event
-    assert record.current_time == 199999
-    events = record.seek_event(-4)
-    assert record.current_event_index() == 0 + 0
-    assert record.done is False
-    assert record.current_time == 0
+    assert record.current_time == 100
 
 
 def pytestcase_seek_event_too_large_npy(tmpdir):
@@ -320,8 +250,8 @@ def pytestcase_seek_event_too_large_npy(tmpdir):
     record.seek_event(900)
     assert record.current_event_index() == 0 + 7
     assert record.done
-    # current_time should be last event timestamp + 1
-    assert record.current_time == 199999 + 1
+    # current_time should be last event timestamp
+    assert record.current_time == 199999
 
 
 def pytestcase_seek_time_with_few_events_npy(tmpdir):
@@ -403,29 +333,8 @@ def pytestcase_seek_time_after_last_event_npy(tmpdir):
     record.seek_time(20000000)
     assert record.current_event_index() == 0 + record.event_count()
     assert record.done
-    # current_time should be last event timestamp + 1
-    assert record.current_time == 199999 + 1
-
-
-def pytestcase_seek_time_with_negative_time_npy(tmpdir):
-    """Tests seeking in a file at a position with negative time"""
-    filename, bboxes = create_temporary_npy_file(tmpdir, "seek_time_with_negative_time",
-                                                 "99999 0 BB_CREATE 7 96 102 22 21 0.3\n"
-                                                 "99999 2 BB_CREATE 7 127 87 53 53 0.3\n"
-                                                 "99999 3 BB_CREATE 7 141 81 119 78 0.7\n"
-                                                 "100000 4 BB_CREATE 7 97 102 22 21 0.3\n"
-                                                 "100000 5 BB_CREATE 6 8 69 51 53 0.6\n"
-                                                 "100000 6 BB_CREATE 7 127 87 53 53 0.4\n"
-                                                 "199999 7 BB_CREATE 7 141 81 119 78 0.7\n")
-    record = EventNpyReader(filename)
-    assert record.current_event_index() == 0
-    assert record.event_count() == 7
-    assert record.current_time == 0
-    record.seek_time(-15)
-    assert record.current_event_index() == 0 + 0
-    assert record.done is False
-    # current_time should be last event timestamp + 1
-    assert record.current_time == 0
+    # current_time should be last event timestamp
+    assert record.current_time == 199999
 
 
 def pytestcase_seek_time_exactly_on_an_event_npy(tmpdir):
@@ -464,8 +373,8 @@ def pytestcase_total_time_npy(tmpdir):
     assert record.current_event_index() == 0
     assert record.event_count() == 7
     assert record.current_time == 0
-    time = record.total_time()
-    assert time == 199999
+    time = record.duration_s
+    assert math.isclose(time, (199999 - 99997) * 1e-6)
 
 
 def pytestcase_equivalency(dataset_dir):

@@ -9,93 +9,104 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-#include <cmath>
-#include <thread>
-#include <chrono>
-
-#include "metavision/utils/gtest/gtest_custom.h"
-#include "metavision/hal/device/device_discovery.h"
-#include "metavision/hal/device/device.h"
-#include "metavision/hal/utils/hal_exception.h"
-#include "metavision/hal/facilities/i_hw_identification.h"
+#include "metavision/hal/facilities/i_ll_biases.h"
 #include "metavision/hal/facilities/i_monitoring.h"
-#include "metavision/hal/facilities/i_device_control.h"
+#include "metavision/utils/gtest/gtest_custom.h"
+
+#include "utils/device_test.h"
+#include <gtest/gtest.h>
 
 using namespace Metavision;
+using namespace ::testing;
+using Metavision::testing::DeviceTest;
 
-class I_Monitoring_GTest : public ::testing::Test {
-public:
-    void TearDown() override {
-        device_.reset(nullptr);
-        hw_id_      = nullptr;
-        monitoring_ = nullptr;
-    }
-
-    void open(const std::string &sensor_info_version) {
-        try {
-            device_ = DeviceDiscovery::open("");
-        } catch (const HalException &e) {
-            std::cerr << "Plug a camera to run this test." << std::endl;
-            EXPECT_EQ(0, 1);
-            return;
-        }
-
-        EXPECT_NE(nullptr, device_.get());
-
-        // Check hw identification
-        hw_id_ = device_->get_facility<I_HW_Identification>();
-        EXPECT_NE(nullptr, hw_id_);
-
-        // This test is made for gen31 Prophesee cameras :
-        if (hw_id_->get_integrator() != "Prophesee") {
-            std::cerr << "The plugged camera must be a Prophesee Gen" << sensor_info_version << " for this test."
-                      << std::endl;
-            FAIL();
-            return;
-        }
-        auto sensor_info = hw_id_->get_sensor_info();
-        if (sensor_info.as_string() != sensor_info_version) {
-            std::cerr << "The plugged camera must be a Prophesee Gen" << sensor_info_version << " for this test."
-                      << std::endl;
-            FAIL();
-            return;
-        }
-        monitoring_ = device_->get_facility<I_Monitoring>();
-        EXPECT_NE(nullptr, monitoring_);
-    }
-
+class I_Monitoring_GTest : public DeviceTest {
 protected:
-    std::unique_ptr<Device> device_;
-    I_HW_Identification *hw_id_{nullptr};
-    I_Monitoring *monitoring_{nullptr};
+    I_Monitoring *monitoring = nullptr;
+    I_LL_Biases *ll_biases   = nullptr;
+
+    void on_opened_device(Device &device) override {
+        monitoring = device.get_facility<I_Monitoring>();
+        ASSERT_NE(nullptr, monitoring);
+
+        ll_biases = device.get_facility<I_LL_Biases>();
+        ASSERT_NE(nullptr, ll_biases);
+    }
 };
 
-TEST_F_WITH_CAMERA(I_Monitoring_GTest, i_monitoring_gen31_temperature,
-                   camera_params(camera_param().integrator("Prophesee").generation("3.1"))) {
-    open("3.1");
-    auto device_control = device_->get_facility<I_DeviceControl>();
-    ASSERT_NE(nullptr, device_control);
-    device_control->start();
-
-    ASSERT_GT(monitoring_->get_temperature(), 15);
-    ASSERT_LT(monitoring_->get_temperature(), 120);
+TEST_F_WITH_CAMERA(I_Monitoring_GTest, should_NOT_have_monitoring_implemented,
+                   camera_params(camera_param().generation("3.0"))) {
+    EXPECT_FALSE(monitoring);
 }
 
-TEST_F_WITH_CAMERA(I_Monitoring_GTest, i_monitoring_gen31_illumination,
-                   camera_params(camera_param().integrator("Prophesee").generation("3.1"))) {
-    open("3.1");
-    auto device_control = device_->get_facility<I_DeviceControl>();
-    ASSERT_NE(nullptr, device_control);
-    device_control->start();
+TEST_F_WITH_CAMERA(I_Monitoring_GTest, should_have_monitoring_implemented,
+                   camera_params(camera_param().generation("3.1"), camera_param().generation("4.0"),
+                                 camera_param().generation("4.1"), camera_param().generation("4.2"))) {
+    EXPECT_TRUE(monitoring);
+}
+
+TEST_F_WITH_CAMERA(I_Monitoring_GTest, should_gen31_get_temperature_from_monitoring,
+                   camera_params(camera_param().generation("3.1"))) {
+    ASSERT_TRUE(monitoring);
+
+    EXPECT_GE(monitoring->get_temperature(), 15);
+    EXPECT_LT(monitoring->get_temperature(), 120);
+}
+
+TEST_F_WITH_CAMERA(I_Monitoring_GTest, should_gen41_get_temperature_from_monitoring,
+                   camera_params(camera_param().generation("4.1"), camera_param().generation("4.2"))) {
+    ASSERT_TRUE(monitoring);
+
+    EXPECT_GE(monitoring->get_temperature(), -20);
+    EXPECT_LT(monitoring->get_temperature(), 60);
+}
+
+TEST_F_WITH_CAMERA(I_Monitoring_GTest, should_gen31_get_illumination_from_monitoring,
+                   camera_params(camera_param().generation("3.1"))) {
+    ASSERT_TRUE(monitoring);
 
     // First measure gives invalid values. Looks like an unitiliazed value within the fpga or
     // something.
-    monitoring_->get_illumination();
+    monitoring->get_illumination();
 
-    uint32_t test = 0;
-    for (; test < 5; ++test) {
+    for (uint32_t test = 0; test < 5; ++test) {
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        EXPECT_GE(monitoring_->get_illumination(), 0); // Can be 0 in dark scene
-        EXPECT_LT(monitoring_->get_illumination(), 100);
+        EXPECT_GE(monitoring->get_illumination(), 0); // Can be 0 in dark scene
+        EXPECT_LT(monitoring->get_illumination(), 100);
     }
+}
+
+TEST_F_WITH_CAMERA(I_Monitoring_GTest, should_gen41_get_illumination_from_monitoring,
+                   camera_params(camera_param().generation("4.1"), camera_param().generation("4.2"))) {
+    ASSERT_TRUE(monitoring);
+
+    EXPECT_GE(monitoring->get_illumination(), 0);
+    EXPECT_LT(monitoring->get_illumination(), 10'000);
+}
+
+TEST_F_WITH_CAMERA(I_Monitoring_GTest, should_get_pixel_dead_time_from_monitoring,
+                   camera_params(camera_param().generation("4.2"))) {
+    ASSERT_TRUE(monitoring);
+
+    EXPECT_GE(monitoring->get_pixel_dead_time(), 0);
+    EXPECT_LT(monitoring->get_pixel_dead_time(), 100'000);
+}
+
+TEST_F_WITH_CAMERA(I_Monitoring_GTest, should_get_pixel_dead_time_inline_with_bias_refr,
+                   camera_params(camera_param().generation("4.2"))) {
+    ASSERT_TRUE(monitoring);
+    ASSERT_TRUE(ll_biases);
+
+    ll_biases->set("bias_refr", -20);
+    int minus_20_refr_dead_time = monitoring->get_pixel_dead_time();
+
+    ll_biases->set("bias_refr", 0);
+    int _0_refr_dead_time = monitoring->get_pixel_dead_time();
+
+    ll_biases->set("bias_refr", 100);
+    int _100_refr_dead_time = monitoring->get_pixel_dead_time();
+
+    // The smaller the refr, the smaller the pixel dead time
+    EXPECT_GT(minus_20_refr_dead_time, _0_refr_dead_time);
+    EXPECT_GT(_0_refr_dead_time, _100_refr_dead_time);
 }

@@ -9,6 +9,7 @@
 
 add_subdirectory(metavision_adaptive_rate)
 add_subdirectory(metavision_csv_viewer)
+add_subdirectory(metavision_event_frame_viewer)
 add_subdirectory(metavision_filtering)
 add_subdirectory(metavision_interop)
 add_subdirectory(metavision_raw_to_csv)

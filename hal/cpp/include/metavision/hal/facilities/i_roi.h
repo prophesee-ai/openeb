@@ -16,7 +16,6 @@
 #include <string>
 #include <vector>
 
-#include "metavision/hal/utils/device_roi.h"
 #include "metavision/hal/facilities/i_registrable_facility.h"
 
 namespace Metavision {
@@ -24,65 +23,90 @@ namespace Metavision {
 /// @brief Interface facility for ROI (Region Of Interest)
 class I_ROI : public I_RegistrableFacility<I_ROI> {
 public:
+    /// @brief Defines a simple rectangular window
+    class Window {
+    public:
+        Window();
+
+        /// @brief Creates a window defined by the corners {(x, y), (x + width, y + height)}
+        Window(int x, int y, int width, int height);
+
+        // defined for python bindings
+        bool operator==(const Window &window) const;
+
+        /// @brief Returns the window as a string
+        /// @return Human readable string representation of a window
+        std::string to_string() const;
+
+        // defined to read from a string buffer
+        friend std::istream &operator>>(std::istream &is, Window &rhs);
+
+        // defined to output a string
+        friend std::ostream &operator<<(std::ostream &lhs, Window &rhs);
+
+        int x      = -1;
+        int y      = -1;
+        int width  = -1;
+        int height = -1;
+    };
+
     /// @brief Applies ROI
     /// @param state If true, enables ROI. If false, disables it
     /// @warning At least one ROI should have been set before calling this function
-    virtual void enable(bool state) = 0;
+    /// @return true on success
+    virtual bool enable(bool state) = 0;
 
-    /// @brief Sets an ROI from DeviceRoi geometry
-    /// The ROI input is translated into a bitword (register format) and then programmed in the sensor
-    /// @param roi ROI to set
-    /// @param enable If true, applies ROI
-    void set_ROI(const DeviceRoi &roi, bool enable = true);
-
-    /// @brief Sets an ROI from bitword (register format)
-    /// @param vroiparams ROI to set
-    /// @param enable If true, applies ROI. If false, disables it
-    virtual void set_ROIs_from_bitword(const std::vector<uint32_t> &vroiparams, bool enable = true) = 0;
-
-    /// @brief Sets multiple ROIs.
+    /// @brief Window mode
     ///
-    /// The input ROIs are translated into a single bitword (register format) and then programmed in the sensor.
-    /// Due to the sensor format, the final ROI is one or a set of regions (i.e. a grid).
-    ///
-    /// If the input vector is composed of 2 ROIs: (0, 0, 50, 50), (100, 100, 50, 50), then in the sensor,
-    /// it will give 4 regions: (0, 0, 50, 50), (0, 100, 50, 50), (100, 0, 50, 50) and (100, 100, 50, 50).
-    ///
-    /// If the input vector is composed of 2 ROIs: (0, 0, 50, 50), (25, 25, 50, 50), then in the sensor
-    /// it will give 1 region: (0, 0, 75, 75)
-    ///
-    /// @param vroi A vector of ROIs
-    /// @param enable If true, applies ROI. If false, disables it
-    void set_ROIs(const std::vector<DeviceRoi> &vroi, bool enable = true);
+    /// ROI : Region of interest, any event outside the window will be discarded
+    /// RONI : Region of non interest, any event inside the window will be discarded
+    enum class Mode { ROI, RONI };
 
-    /// @brief Sets union of several ROIs from a file with CSV format "x y width height"
-    /// @param file_path Path to the CSV file with ROIs
-    /// @param enable If true, applies ROI. If false, disables it
-    void set_ROIs_from_file(std::string const &file_path, bool enable = true);
+    /// @brief Sets the window mode
+    /// @param mode window mode to set (ROI or RONI)
+    /// @return true on success
+    virtual bool set_mode(const Mode &mode) = 0;
 
-    /// @brief Sets multiple rectangular ROIs in bitword register format from two binary maps (for rows and a columns)
+    /// @brief Sets a window
+    ///
+    /// The window will be applied according to the current mode (ROI or RONI)
+    /// @param window window to set
+    /// @return true on success
+    bool set_window(const Window &window);
+
+    /// @brief Gets the maximum number of windows
+    /// @return the maximum number of windows that can be set via @ref set_windows
+    virtual size_t get_max_supported_windows_count() const = 0;
+
+    /// @brief Sets multiple windows
+    ///
+    /// The windows will be applied according to the current mode (ROI or RONI)
+    /// @param windows A vector of windows to set
+    /// @return true on success
+    /// @throw an exception if the size of @p windows is higher than the maximum supported number
+    ///        of windows (see @ref get_max_supported_windows_count)
+    bool set_windows(const std::vector<Window> &windows);
+
+    /// @brief Sets multiple lines and columns from row and column binary maps
     ///
     /// The binary maps (std::vector<bool>) arguments must have the sensor's dimension
+    /// The lines and columns will be applied according to the current mode (ROI or RONI)
     ///
-    /// @param cols_to_enable Vector of boolean of size sensor's width representing the binary map of the columns to
-    /// disable (0) or to enable (1)
-    /// @param rows_to_enable Vector of boolean of size sensor's height representing the binary map of the rows to
-    /// disable (0) or to enable (1)
-    /// @param enable If true, applies ROI
-    /// @return true if input have the correct dimension and thus the ROI is set correctly, false otherwise
+    /// @param cols Vector of boolean of size sensor's width representing the binary map of the columns to
+    /// enable
+    /// @param rows Vector of boolean of size sensor's height representing the binary map of the rows to
+    /// enable
+    /// @return true if input have the correct dimension and the ROI is set correctly, false otherwise
     /// @warning For a pixel to be enabled, it must be enabled on both its row and column
-    virtual bool set_ROIs(const std::vector<bool> &cols_to_enable, const std::vector<bool> &rows_to_enable,
-                          bool enable = true) = 0;
+    virtual bool set_lines(const std::vector<bool> &cols, const std::vector<bool> &rows) = 0;
 
-    /// @brief Creates a rectangular ROI in bitword register format
-    /// @param roi ROI's geometry to transform to bitword register format
-    /// @return The ROI in bitword register format
-    std::vector<uint32_t> create_ROI(const DeviceRoi &roi);
-
-    /// @brief Creates several rectangular ROIs in bitword register format
-    /// @param vroi Vector of ROI to transform to bitword register format
-    /// @return The ROIs in bitword register format
-    virtual std::vector<uint32_t> create_ROIs(const std::vector<DeviceRoi> &vroi) = 0;
+private:
+    /// @brief Implementation of `set_windows`
+    /// @param windows A vector of windows to set
+    /// @return true on success
+    /// @throw an exception if the size of the vector is higher than the maximum supported number
+    ///        of windows (see @ref get_max_supported_windows_count)
+    virtual bool set_windows_impl(const std::vector<Window> &windows) = 0;
 };
 
 } // namespace Metavision

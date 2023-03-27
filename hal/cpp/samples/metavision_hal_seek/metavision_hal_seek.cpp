@@ -16,9 +16,9 @@
 
 #include <metavision/hal/device/device_discovery.h>
 #include <metavision/hal/device/device.h>
-#include <metavision/hal/facilities/future/i_events_stream.h>
-#include <metavision/hal/facilities/future/i_decoder.h>
+#include <metavision/hal/facilities/i_events_stream_decoder.h>
 #include <metavision/hal/facilities/i_event_decoder.h>
+#include <metavision/hal/facilities/i_events_stream.h>
 #include <metavision/hal/facilities/i_geometry.h>
 #include <metavision/sdk/base/events/event_cd.h>
 #include <metavision/sdk/base/utils/log.h>
@@ -65,7 +65,7 @@ int main(int argc, char **argv) {
     MV_LOG_INFO() << long_program_desc;
 
     // Opens the RAW file with overloaded open_raw_file function
-    Metavision::Future::RawFileConfig config;
+    Metavision::RawFileConfig config;
     auto device = Metavision::DeviceDiscovery::open_raw_file(in_raw_file_path, config);
     if (!device) {
         MV_LOG_ERROR() << "Failed to open device from file" << in_raw_file_path;
@@ -73,25 +73,25 @@ int main(int argc, char **argv) {
     }
 
     // Loads the index
-    auto i_eventsstream = device->get_facility<Metavision::Future::I_EventsStream>();
+    auto i_eventsstream = device->get_facility<Metavision::I_EventsStream>();
     if (!i_eventsstream) {
         MV_LOG_ERROR() << "A required facility for this sample is not available";
         return 1;
     }
 
     Metavision::timestamp start_ts, end_ts;
-    Metavision::Future::I_EventsStream::IndexStatus seek_status;
+    Metavision::I_EventsStream::IndexStatus seek_status;
     bool index_built = false;
     while (!index_built) {
         seek_status = i_eventsstream->get_seek_range(start_ts, end_ts);
         switch (seek_status) {
-        case Metavision::Future::I_EventsStream::IndexStatus::Good:
+        case Metavision::I_EventsStream::IndexStatus::Good:
             index_built = true;
             break;
-        case Metavision::Future::I_EventsStream::IndexStatus::Bad:
+        case Metavision::I_EventsStream::IndexStatus::Bad:
             MV_LOG_ERROR() << "Index for file" << in_raw_file_path << "could not be built";
             return -1;
-        case Metavision::Future::I_EventsStream::IndexStatus::Building: {
+        case Metavision::I_EventsStream::IndexStatus::Building: {
             static bool built_message_display = false;
             if (!built_message_display) {
                 MV_LOG_INFO() << "Index for file" << in_raw_file_path << "is being built";
@@ -107,8 +107,8 @@ int main(int argc, char **argv) {
     MV_LOG_INFO() << "Index for file" << in_raw_file_path << "has been successfully loaded.";
 
     // Gets the facilities
-    auto i_decoder = device->get_facility<Metavision::Future::I_Decoder>();
-    if (!i_decoder) {
+    auto i_eventsstreamdecoder = device->get_facility<Metavision::I_EventsStreamDecoder>();
+    if (!i_eventsstreamdecoder) {
         MV_LOG_ERROR() << "A required facility for this sample is not available";
         return 1;
     }
@@ -164,12 +164,12 @@ int main(int argc, char **argv) {
             long buffer_size_bytes;
             Metavision::timestamp ts_reached;
             const auto status = i_eventsstream->seek(seek_ts, ts_reached);
-            if (status == Metavision::Future::I_EventsStream::SeekStatus::Success) {
-                i_decoder->reset_timestamp(ts_reached);
+            if (status == Metavision::I_EventsStream::SeekStatus::Success) {
+                i_eventsstreamdecoder->reset_timestamp(ts_reached);
                 while (i_eventsstream->wait_next_buffer() > 0) {
                     auto buffer = i_eventsstream->get_latest_raw_data(buffer_size_bytes);
-                    i_decoder->decode(buffer, buffer + buffer_size_bytes);
-                    if (i_decoder->get_last_timestamp() > seek_ts + accumulation_time) {
+                    i_eventsstreamdecoder->decode(buffer, buffer + buffer_size_bytes);
+                    if (i_eventsstreamdecoder->get_last_timestamp() > seek_ts + accumulation_time) {
                         break;
                     }
                 }

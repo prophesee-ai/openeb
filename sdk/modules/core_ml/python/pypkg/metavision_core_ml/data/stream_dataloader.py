@@ -188,7 +188,6 @@ class StreamDataset(IterableDataset):
                             return  # PEP479
                     elif self.padding_mode == 'zeros':
                         value = self.fill_value
-
                 values.append(value)
             if actives.any():
                 yield tuple(values), worker_id
@@ -270,13 +269,14 @@ class StreamDataLoader(object):
                 # process active queues
                 values = []
                 for i, deq in enumerate(cache):
-                    if active_workers[i] == False:
+                    if not active_workers[i]:
                         value = [self.dataset.fill_value] * self.split_sizes[i]
                     else:
                         value = deq.popleft()
                     values.append(value)
 
                 batch = chain.from_iterable(values)
+
                 yield batch_to(self.collate_fn(batch), self.device)
                 # check all deques are empty
                 assert np.array([len(v) == 0 for v in cache]).all()

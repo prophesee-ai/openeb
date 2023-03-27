@@ -25,6 +25,7 @@
 #include <metavision/sdk/core/utils/cd_frame_generator.h>
 #include <metavision/sdk/core/utils/rate_estimator.h>
 #include <metavision/sdk/driver/camera.h>
+#include <metavision/hal/facilities/i_plugin_software_info.h>
 
 static const int ESCAPE = 27;
 static const int SPACE  = 32;
@@ -86,41 +87,6 @@ int process_ui_for(int delay_ms) {
     return key;
 }
 
-bool window_was_closed(const std::string &window_name) {
-// Small hack: if the window has been closed, it is not visible anymore or property changes from the one we set
-#if CV_MAJOR_VERSION >= 3 && CV_MINOR_VERSION >= 2
-    if (cv::getWindowProperty(window_name, cv::WND_PROP_VISIBLE) == 0) {
-#else
-    if (cv::getWindowProperty(window_name, cv::WND_PROP_AUTOSIZE) != 0) {
-#endif
-        return true;
-    }
-    return false;
-}
-
-int setup_cd_callback_and_window(Metavision::Camera &camera, cv::Mat &cd_frame, Metavision::timestamp &cd_frame_ts,
-                                 Metavision::CDFrameGenerator &cd_frame_generator,
-                                 Metavision::RateEstimator &cd_rate_estimator, const std::string &window_name) {
-    auto &geometry = camera.geometry();
-    auto id = camera.cd().add_callback([&cd_frame_generator, &cd_rate_estimator](const Metavision::EventCD *ev_begin,
-                                                                                 const Metavision::EventCD *ev_end) {
-        cd_frame_generator.add_events(ev_begin, ev_end);
-        cd_rate_estimator.add_data(std::prev(ev_end)->t, std::distance(ev_begin, ev_end));
-    });
-    cd_frame_generator.start(30, [&cd_frame, &cd_frame_ts](const Metavision::timestamp &ts, const cv::Mat &frame) {
-        cd_frame_ts = ts;
-        frame.copyTo(cd_frame);
-    });
-    cv::namedWindow(window_name, CV_GUI_EXPANDED);
-    cv::resizeWindow(window_name, geometry.width(), geometry.height());
-    cv::moveWindow(window_name, 0, 0);
-#if (CV_MAJOR_VERSION == 3 && (CV_MINOR_VERSION * 100 + CV_SUBMINOR_VERSION) >= 408) || \
-    (CV_MAJOR_VERSION == 4 && (CV_MINOR_VERSION * 100 + CV_SUBMINOR_VERSION) >= 102)
-    cv::setWindowProperty(window_name, cv::WND_PROP_TOPMOST, 1);
-#endif
-    return id;
-}
-
 namespace {
 std::atomic<bool> signal_caught{false};
 
@@ -133,17 +99,18 @@ std::atomic<bool> signal_caught{false};
 int main(int argc, char *argv[]) {
     std::string serial;
     std::string biases_file;
-    std::string in_raw_file_path;
-    std::string out_raw_file_path;
+    std::string in_file_path;
+    std::string out_file_path;
     std::vector<uint16_t> roi;
 
     bool do_retry = false;
 
     const std::string short_program_desc(
-        "Simple viewer to stream events from a RAW file or device, using the SDK driver API.\n");
+        "Simple viewer to stream events from a file or device, using the SDK driver API.\n");
     std::string long_program_desc(short_program_desc +
                                   "Press SPACE key while running to record or stop recording raw data\n"
                                   "Press 'q' or Escape key to leave the program.\n"
+                                  "Press 'o' to toggle the on screen display\n"
                                   "Press 'r' to toggle the hardware ROI given as input.\n"
                                   "Press 'e' to toggle the ERC module (if available).\n"
                                   "Press '+' to increase the ERC threshold (if available).\n"
@@ -154,10 +121,10 @@ int main(int argc, char *argv[]) {
     // clang-format off
     options_desc.add_options()
         ("help,h", "Produce help message.")
-        ("serial,s",          po::value<std::string>(&serial),"Serial ID of the camera. This flag is incompatible with flag '--input-raw-file'.")
-        ("input-raw-file,i",  po::value<std::string>(&in_raw_file_path), "Path to input RAW file. If not specified, the camera live stream is used.")
+        ("serial,s",          po::value<std::string>(&serial),"Serial ID of the camera. This flag is incompatible with flag '--input-file'.")
+        ("input-file,i",      po::value<std::string>(&in_file_path), "Path to input file. If not specified, the camera live stream is used.")
         ("biases,b",          po::value<std::string>(&biases_file), "Path to a biases file. If not specified, the camera will be configured with the default biases.")
-        ("output-raw-file,o", po::value<std::string>(&out_raw_file_path)->default_value("data.raw"), "Path to an output RAW file used for data recording. Default value is 'data.raw'. It also works when reading data from a RAW file.")
+        ("output-file,o",     po::value<std::string>(&out_file_path)->default_value("data.raw"), "Path to an output file used for data recording. Default value is 'data.raw'. It also works when reading data from a file.")
         ("roi,r",             po::value<std::vector<uint16_t>>(&roi)->multitoken(), "Hardware ROI to set on the sensor in the format [x y width height].")
     ;
     // clang-format on
@@ -179,18 +146,17 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    if (!in_raw_file_path.empty()) {
+    if (!in_file_path.empty()) {
         long_program_desc += "\nIf available, you can also:\n"
                              "Press 'b' key to seek backward 1s\n"
-                             "Press 'f' key to seek forward 1s\n"
-                             "Press 'o' to toggle the on screen display\n";
+                             "Press 'f' key to seek forward 1s\n";
     }
 
     MV_LOG_INFO() << long_program_desc;
 
     if (vm.count("roi")) {
-        if (!in_raw_file_path.empty()) {
-            MV_LOG_ERROR() << "Options --roi and --input-raw-file are not compatible.";
+        if (!in_file_path.empty()) {
+            MV_LOG_ERROR() << "Options --roi and --input-file are not compatible.";
             return 1;
         }
         if (roi.size() != 4) {
@@ -204,17 +170,18 @@ int main(int argc, char *argv[]) {
         bool camera_is_opened = false;
 
         // If the filename is set, then read from the file
-        if (!in_raw_file_path.empty()) {
+        if (!in_file_path.empty()) {
             if (!serial.empty()) {
-                MV_LOG_ERROR() << "Options --serial and --input-raw-file are not compatible.";
+                MV_LOG_ERROR() << "Options --serial and --input-file are not compatible.";
                 return 1;
             }
 
             try {
-                camera = Metavision::Camera::from_file(in_raw_file_path, true, Metavision::Future::RawFileConfig());
+                Metavision::FileConfigHints hints;
+                camera           = Metavision::Camera::from_file(in_file_path, hints);
                 camera_is_opened = true;
             } catch (Metavision::CameraException &e) { MV_LOG_ERROR() << e.what(); }
-            // Otherwise, set the input source to the first available camera
+        // Otherwise, set the input source to a camera
         } else {
             try {
                 if (!serial.empty()) {
@@ -232,6 +199,18 @@ int main(int argc, char *argv[]) {
                 }
                 camera_is_opened = true;
             } catch (Metavision::CameraException &e) { MV_LOG_ERROR() << e.what(); }
+        }
+
+        // With the HAL device corresponding to the camera object (file or live camera), we can try to get a facility
+        // This gives us access to extra HAL features not covered by the SDK Driver camera API
+        try {
+            auto *plugin_sw_info = camera.get_device().get_facility<Metavision::I_PluginSoftwareInfo>();
+            if (plugin_sw_info) {
+                const std::string &plugin_name = plugin_sw_info->get_plugin_name();
+                MV_LOG_INFO() << "Plugin used to open the device:" << plugin_name;
+            }
+        } catch (Metavision::CameraException &e) {
+            // we ignore the exception as some devices will not provide this facility (e.g. HDF5 files)
         }
 
         if (!camera_is_opened) {
@@ -255,13 +234,7 @@ int main(int argc, char *argv[]) {
         // Get the geometry of the camera
         auto &geometry = camera.geometry(); // Get the geometry of the camera
 
-        // All cameras have CDs events
-        std::string cd_window_name("CD Events");
-        cv::Mat cd_frame;
-        Metavision::timestamp cd_frame_ts{0};
-        Metavision::CDFrameGenerator cd_frame_generator(geometry.width(), geometry.height());
-        cd_frame_generator.set_display_accumulation_time_us(10000);
-
+        // Setup CD event rate estimator
         double avg_rate, peak_rate;
         Metavision::RateEstimator cd_rate_estimator(
             [&avg_rate, &peak_rate](Metavision::timestamp ts, double arate, double prate) {
@@ -269,8 +242,40 @@ int main(int argc, char *argv[]) {
                 peak_rate = prate;
             },
             100000, 1000000, true);
-        int cd_events_cb_id = setup_cd_callback_and_window(camera, cd_frame, cd_frame_ts, cd_frame_generator,
-                                                           cd_rate_estimator, cd_window_name);
+
+        // Setup CD frame generator
+        std::mutex cd_frame_generator_mutex;
+        Metavision::CDFrameGenerator cd_frame_generator(geometry.width(), geometry.height());
+        cd_frame_generator.set_display_accumulation_time_us(10000);
+
+        std::mutex cd_frame_mutex;
+        cv::Mat cd_frame;
+        Metavision::timestamp cd_frame_ts{0};
+        cd_frame_generator.start(
+            30, [&cd_frame_mutex, &cd_frame, &cd_frame_ts](const Metavision::timestamp &ts, const cv::Mat &frame) {
+                std::unique_lock<std::mutex> lock(cd_frame_mutex);
+                cd_frame_ts = ts;
+                frame.copyTo(cd_frame);
+            });
+
+        // Setup CD frame display
+        std::string cd_window_name("CD Events");
+        cv::namedWindow(cd_window_name, CV_GUI_EXPANDED);
+        cv::resizeWindow(cd_window_name, geometry.width(), geometry.height());
+        cv::moveWindow(cd_window_name, 0, 0);
+#if (CV_MAJOR_VERSION == 3 && (CV_MINOR_VERSION * 100 + CV_SUBMINOR_VERSION) >= 408) || \
+    (CV_MAJOR_VERSION == 4 && (CV_MINOR_VERSION * 100 + CV_SUBMINOR_VERSION) >= 102)
+        cv::setWindowProperty(cd_window_name, cv::WND_PROP_TOPMOST, 1);
+#endif
+
+        // Setup camera CD callback to update the frame generator and event rate estimator
+        int cd_events_cb_id =
+            camera.cd().add_callback([&cd_frame_generator_mutex, &cd_frame_generator, &cd_rate_estimator](
+                                         const Metavision::EventCD *ev_begin, const Metavision::EventCD *ev_end) {
+                std::unique_lock<std::mutex> lock(cd_frame_generator_mutex);
+                cd_frame_generator.add_events(ev_begin, ev_end);
+                cd_rate_estimator.add_data(std::prev(ev_end)->t, std::distance(ev_begin, ev_end));
+            });
 
         // Start the camera streaming
         camera.start();
@@ -279,9 +284,9 @@ int main(int argc, char *argv[]) {
         bool is_roi_set    = true;
         bool osc_available = false;
         bool osc_ready     = false;
-        bool osd           = false;
+        bool osd           = true;
 
-        if (!in_raw_file_path.empty()) {
+        if (!in_file_path.empty()) {
             try {
                 camera.offline_streaming_control().is_ready();
                 osc_available = true;
@@ -289,29 +294,30 @@ int main(int argc, char *argv[]) {
         }
 
         while (!signal_caught && camera.is_running()) {
-            if (!in_raw_file_path.empty() && osc_available) {
+            if (!in_file_path.empty() && osc_available) {
                 try {
-                    bool was_osc_ready = osc_ready;
-                    osc_ready          = camera.offline_streaming_control().is_ready();
-                    if (!was_osc_ready && osc_ready) {
-                        osd = true;
-                    }
+                    osc_ready = camera.offline_streaming_control().is_ready();
                 } catch (Metavision::CameraException &e) { MV_LOG_ERROR() << e.what(); }
             }
 
-            if (!cd_frame.empty()) {
-                std::string text;
-                if (osd) {
-                    text = human_readable_time(cd_frame_ts) + " / " +
-                           human_readable_time(camera.offline_streaming_control().get_duration());
-                } else {
-                    text = human_readable_time(cd_frame_ts);
+            {
+                std::unique_lock<std::mutex> lock(cd_frame_mutex);
+                if (!cd_frame.empty()) {
+                    if (osd) {
+                        std::string text;
+                        if (osc_ready) {
+                            text = human_readable_time(cd_frame_ts) + " / " +
+                                   human_readable_time(camera.offline_streaming_control().get_duration());
+                        } else {
+                            text = human_readable_time(cd_frame_ts);
+                        }
+                        text += "     ";
+                        text += human_readable_rate(avg_rate);
+                        cv::putText(cd_frame, text, cv::Point(10, 20), cv::FONT_HERSHEY_PLAIN, 1,
+                                    cv::Scalar(108, 143, 255), 1, cv::LINE_AA);
+                    }
+                    cv::imshow(cd_window_name, cd_frame);
                 }
-                text += "     ";
-                text += human_readable_rate(avg_rate);
-                cv::putText(cd_frame, text, cv::Point(10, 20), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(108, 143, 255), 1,
-                            cv::LINE_AA);
-                cv::imshow(cd_window_name, cd_frame);
             }
 
             // Wait for a pressed key for 33ms, that means that the display is refreshed at 30 FPS
@@ -324,18 +330,20 @@ int main(int argc, char *argv[]) {
                 break;
             case SPACE:
                 if (!recording) {
-                    MV_LOG_INFO() << "Started recording RAW in" << out_raw_file_path;
-                    camera.start_recording(out_raw_file_path);
+                    MV_LOG_INFO() << "Started recording in" << out_file_path;
+                    camera.start_recording(out_file_path);
                 } else {
-                    MV_LOG_INFO() << "Stopped recording RAW in" << out_raw_file_path;
-                    camera.stop_recording();
+                    MV_LOG_INFO() << "Stopped recording in" << out_file_path;
+                    camera.stop_recording(out_file_path);
                 }
                 recording = !recording;
                 break;
             case 'b':
                 if (osc_ready) {
+                    std::unique_lock<std::mutex> lock(cd_frame_mutex);
                     Metavision::timestamp pos = cd_frame_ts - 1000 * 1000;
                     if (camera.offline_streaming_control().seek(pos)) {
+                        std::unique_lock<std::mutex> lock2(cd_frame_generator_mutex);
                         cd_frame_generator.reset();
                         MV_LOG_INFO() << "Seeking backward to" << (pos / 1.e6) << "s";
                     }
@@ -343,17 +351,17 @@ int main(int argc, char *argv[]) {
                 break;
             case 'f':
                 if (osc_ready) {
+                    std::unique_lock<std::mutex> lock(cd_frame_mutex);
                     Metavision::timestamp pos = cd_frame_ts + 1000 * 1000;
                     if (camera.offline_streaming_control().seek(pos)) {
+                        std::unique_lock<std::mutex> lock2(cd_frame_generator_mutex);
                         cd_frame_generator.reset();
                         MV_LOG_INFO() << "Seeking forward to" << (pos / 1.e6) << "s";
                     }
                 }
                 break;
             case 'o': {
-                if (osc_ready) {
-                    osd = !osd;
-                }
+                osd = !osd;
                 break;
             }
             case 'r': {
@@ -406,6 +414,7 @@ int main(int argc, char *argv[]) {
 
         // Stop the camera streaming, optional, the destructor will automatically do it
         camera.stop();
+        cd_frame_generator.stop();
     } while (!signal_caught && do_retry);
 
     return signal_caught;

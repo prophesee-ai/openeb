@@ -9,46 +9,47 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-#ifdef _MSC_VER
-#define NOMINMAX
-#endif
+#include <math.h>
 
 #include "devices/gen31/gen31_evk2_tz_device.h"
 #include "devices/utils/device_system_id.h"
-#include "boards/treuzell/tz_libusb_board_command.h"
+#include "metavision/psee_hw_layer/boards/treuzell/tz_libusb_board_command.h"
 #include "devices/common/issd.h"
 #include "devices/gen31/gen31_evk2_issd.h"
-#include "devices/gen31/gen31_event_rate_noise_filter_module.h"
-#include "devices/gen31/gen31_ll_biases.h"
+#include "devices/gen31/register_maps/gen31_evk2_registermap.h"
+#include "devices/treuzell/tz_device_builder.h"
+#include "metavision/psee_hw_layer/devices/gen31/gen31_event_rate_noise_filter_module.h"
+#include "metavision/psee_hw_layer/devices/gen31/gen31_ll_biases.h"
 //#include "devices/gen31/gen31_pattern_generator.h"
-#include "devices/gen31/gen31_roi_command.h"
-#include "devices/gen31/gen31_evk2_regmap_builder.h"
-#include "devices/common/evk2_tz_trigger_event.h"
-#include "devices/common/evk2_tz_trigger_out.h"
-#include "facilities/psee_hw_register.h"
+#include "metavision/psee_hw_layer/devices/gen31/gen31_roi_command.h"
+#include "metavision/psee_hw_layer/utils/regmap_data.h"
+#include "metavision/psee_hw_layer/devices/common/evk2_tz_trigger_event.h"
+#include "metavision/psee_hw_layer/devices/common/evk2_tz_trigger_out.h"
+#include "metavision/psee_hw_layer/facilities/psee_hw_register.h"
 #include "geometries/vga_geometry.h"
+#include "metavision/psee_hw_layer/utils/psee_format.h"
 #include "metavision/hal/facilities/i_events_stream.h"
 #include "metavision/hal/utils/device_builder.h"
 #include "plugin/psee_plugin.h"
-#include <math.h>
+#include "utils/psee_hal_utils.h"
 
 namespace Metavision {
 namespace {
 std::string ROOT_PREFIX   = "PSEE/";
-std::string CCAM5_PREFIX  = ROOT_PREFIX + "CCAM5_IF/CCAM5/";
+std::string CCAM5_PREFIX  = "CCAM5_IF/CCAM5/";
 std::string SENSOR_PREFIX = CCAM5_PREFIX + "GEN31/";
 } // namespace
 
 TzEvk2Gen31::TzEvk2Gen31(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent) :
     TzDevice(cmd, dev_id, parent),
     TzPseeVideo(cmd, dev_id, parent),
-    TzDeviceWithRegmap(build_gen31_evk2_register_map),
+    TzDeviceWithRegmap(Gen31Evk2RegisterMap, Gen31Evk2RegisterMapSize, ROOT_PREFIX),
     TzIssdDevice(gen31_evk2_sequence),
-    sys_ctrl_(register_map, ROOT_PREFIX) {
+    sys_ctrl_(register_map) {
     (*register_map)[CCAM5_PREFIX + "SYSTEM_MONITOR/TEMP_VCC_MONITOR/EXT_TEMP_CONTROL"]["EXT_TEMP_MONITOR_SPI_EN"]
         .write_value(1);
     (*register_map)[SENSOR_PREFIX + "lifo_ctrl"]["lifo_en"] = 0x1;
-    sync_mode_                                              = I_DeviceControl::SyncMode::STANDALONE;
+    sync_mode_                                              = I_CameraSynchronization::SyncMode::STANDALONE;
 }
 
 std::shared_ptr<TzDevice> TzEvk2Gen31::build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id,
@@ -62,10 +63,11 @@ std::shared_ptr<TzDevice> TzEvk2Gen31::build(std::shared_ptr<TzLibUSBBoardComman
 bool TzEvk2Gen31::can_build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id) {
     return (cmd->read_device_register(dev_id, 0x800)[0] == SYSTEM_EVK2_GEN31);
 }
+static TzRegisterBuildMethod method("psee,video_gen3.1", TzEvk2Gen31::build, TzEvk2Gen31::can_build);
 
-void TzEvk2Gen31::spawn_facilities(DeviceBuilder &device_builder) {
-    auto hw_register = device_builder.add_facility(std::make_unique<PseeHWRegister>(register_map));
-    device_builder.add_facility(std::make_unique<Gen31_LL_Biases>(hw_register, SENSOR_PREFIX));
+void TzEvk2Gen31::spawn_facilities(DeviceBuilder &device_builder, const DeviceConfig &device_config) {
+    auto hw_register = std::make_shared<PseeHWRegister>(register_map);
+    device_builder.add_facility(std::make_unique<Gen31_LL_Biases>(device_config, hw_register, SENSOR_PREFIX));
     device_builder.add_facility(std::make_unique<Gen31_EventRateNoiseFilterModule>(hw_register, SENSOR_PREFIX));
 
     auto geometry = VGAGeometry();
@@ -74,9 +76,9 @@ void TzEvk2Gen31::spawn_facilities(DeviceBuilder &device_builder) {
     // those facilities are not exposed in the public API yet
     // device_builder.add_facility(std::make_unique<Gen31PatternGenerator>(register_map));
 
-    device_builder.add_facility(std::make_unique<Evk2TzTriggerEvent>(register_map, "PSEE/", shared_from_this()));
+    device_builder.add_facility(std::make_unique<Evk2TzTriggerEvent>(register_map, "", shared_from_this()));
     device_builder.add_facility(std::make_unique<Evk2TzTriggerOut>(
-        register_map, "PSEE/", std::dynamic_pointer_cast<TzPseeVideo>(shared_from_this())));
+        register_map, "", std::dynamic_pointer_cast<TzPseeVideo>(shared_from_this())));
 }
 
 TzEvk2Gen31::~TzEvk2Gen31() {}
@@ -93,8 +95,14 @@ long long TzEvk2Gen31::get_sensor_id() {
     return (*register_map)[SENSOR_PREFIX + "chip_id"].read_value();
 }
 
-TzDevice::StreamFormat TzEvk2Gen31::get_output_format() {
-    return {std::string("EVT2"), std::make_unique<VGAGeometry>()};
+std::list<StreamFormat> TzEvk2Gen31::get_supported_formats() const {
+    std::list<StreamFormat> formats;
+    formats.push_back(StreamFormat("EVT2;height=480;width=640"));
+    return formats;
+}
+
+StreamFormat TzEvk2Gen31::get_output_format() const {
+    return StreamFormat("EVT2;height=480;width=640");
 }
 
 long TzEvk2Gen31::get_system_id() {
@@ -116,7 +124,7 @@ bool TzEvk2Gen31::set_mode_standalone() {
         sys_ctrl_.sync_out_pin_control(false);
         sys_ctrl_.sync_out_pin_config(false);
     }
-    sync_mode_ = I_DeviceControl::SyncMode::STANDALONE;
+    sync_mode_ = I_CameraSynchronization::SyncMode::STANDALONE;
     return true;
 }
 
@@ -135,7 +143,7 @@ bool TzEvk2Gen31::set_mode_master() {
     sys_ctrl_.time_base_config(true, true, false, true, true);
     sys_ctrl_.sync_out_pin_config(false);
     sys_ctrl_.sync_out_pin_control(true);
-    sync_mode_ = I_DeviceControl::SyncMode::MASTER;
+    sync_mode_ = I_CameraSynchronization::SyncMode::MASTER;
     return true;
 }
 
@@ -154,11 +162,11 @@ bool TzEvk2Gen31::set_mode_slave() {
         sys_ctrl_.sync_out_pin_control(false);
         sys_ctrl_.sync_out_pin_config(false);
     }
-    sync_mode_ = I_DeviceControl::SyncMode::SLAVE;
+    sync_mode_ = I_CameraSynchronization::SyncMode::SLAVE;
     return true;
 }
 
-I_DeviceControl::SyncMode TzEvk2Gen31::get_mode() {
+I_CameraSynchronization::SyncMode TzEvk2Gen31::get_mode() {
     return sync_mode_;
 }
 

@@ -19,8 +19,10 @@ set(sdk_core_python_srcs
     ${CMAKE_CURRENT_SOURCE_DIR}/periodic_frame_generation_algorithm_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/polarity_filter_algorithm_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/polarity_inverter_algorithm_python.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/raw_event_frame_converter_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/roi_filter_algorithm_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/shared_cd_events_buffer_producer_wrapper_python.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/stream_logger_algorithm_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/timesurface_producer_algorithm_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/metavision_sdk_core_bindings.cpp
 )

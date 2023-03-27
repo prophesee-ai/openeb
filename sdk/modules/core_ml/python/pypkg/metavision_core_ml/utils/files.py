@@ -29,7 +29,7 @@ def is_image(path):
 
 
 def is_video(path):
-    """Checks if a path is a video 
+    """Checks if a path is a video
 
     Args:
         path: file path
@@ -66,6 +66,32 @@ def grab_images(adir, recursive=True):
     return grab_files(adir, IMAGE_EXTENSIONS, recursive=recursive)
 
 
+def grab_h5s(adir, recursive=True):
+    """Grabs h5 files
+
+    Args:
+        adir: directory with h5 files
+        recursive (boolean): search recursively
+
+    Returns:
+        files: h5 files
+    """
+    return grab_files(adir, [".h5"], recursive=recursive)
+
+
+def grab_jsons(adir, recursive=True):
+    """Grabs json files
+
+    Args:
+        adir: directory with json files
+        recursive (boolean): search recursively
+
+    Returns:
+        files: json files
+    """
+    return grab_files(adir, [".json"], recursive=recursive)
+
+
 def grab_videos(adir, recursive=True):
     """Grabs videos in a directory
 
@@ -100,4 +126,5 @@ def grab_files(adir, extensions, recursive=True):
     for ext in extensions:
         all_files += glob.glob(search_string + ext, recursive=recursive)
         all_files += glob.glob(search_string + ext.upper(), recursive=recursive)
+    all_files = list(set(all_files))  # handle operating systems which are not case sensitive...
     return all_files

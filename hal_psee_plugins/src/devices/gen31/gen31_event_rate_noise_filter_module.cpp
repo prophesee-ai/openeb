@@ -12,7 +12,7 @@
 #include <iostream>
 #include <cmath>
 
-#include "devices/gen31/gen31_event_rate_noise_filter_module.h"
+#include "metavision/psee_hw_layer/devices/gen31/gen31_event_rate_noise_filter_module.h"
 #include "metavision/hal/facilities/i_hw_register.h"
 #include "metavision/hal/utils/hal_exception.h"
 #include "utils/psee_hal_plugin_error_code.h"
@@ -46,9 +46,11 @@ Gen31_EventRateNoiseFilterModule::Gen31_EventRateNoiseFilterModule(const std::sh
     }
 }
 
-void Gen31_EventRateNoiseFilterModule::enable(bool enable_filter) {
+bool Gen31_EventRateNoiseFilterModule::enable(bool enable_filter) {
     get_hw_register()->write_register(base_name_ + "nfl_ctrl", "nfl_en", enable_filter);
     get_event_rate_threshold();
+
+    return true;
 }
 
 bool Gen31_EventRateNoiseFilterModule::set_time_window(uint32_t window_length_us) {

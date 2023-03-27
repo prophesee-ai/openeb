@@ -13,4 +13,4 @@ configure_file(
     "${pytest_file}"
     @ONLY
 )
-add_test_app(metavision_software_info "${pytest_file}")
+add_test_app(metavision_software_info SCRIPT_PATH "${pytest_file}")

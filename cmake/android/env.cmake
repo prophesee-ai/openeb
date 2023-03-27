@@ -57,11 +57,16 @@ if (NOT DEFINED METAVISION_ANDROID_ENV_INCLUDED)
     endif (ANDROID_ADB)
 
     message(STATUS "Android ABI : ${ANDROID_ABI}")
-    if (ANDROID_ABI STREQUAL arm64-v8a)
-        # arm64-v8a linker seems to not be gold, which causes undefined references
-        # due to missing transitive dependencies
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=gold" CACHE STRING "" FORCE)
-    endif (ANDROID_ABI STREQUAL arm64-v8a)
+    message(STATUS "Android NDK : ${ANDROID_NDK_VERSION}")
+    
+    if(ANDROID_NDK_VERSION VERSION_LESS "22") 
+        # @TODO Remove once we update to NDK >22
+        if (ANDROID_ABI STREQUAL arm64-v8a)
+            # arm64-v8a linker seems to not be gold, which causes undefined references
+            # due to missing transitive dependencies
+            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=gold" CACHE STRING "" FORCE)
+        endif (ANDROID_ABI STREQUAL arm64-v8a)
+    endif()
 
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/libs/${ANDROID_ABI} CACHE PATH "Output directory of libraries." FORCE)
     set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/libs/${ANDROID_ABI} CACHE PATH "Output directory of archives." FORCE)
@@ -106,6 +111,35 @@ foreach(b_comp ${_boost_components})
     set(Boost_${b_comp_uc}_FOUND TRUE)
 endforeach(b_comp)
 
+# FFMpeg has no config module, we need to create imported targets by hand
+set(_ffmpeg_root ${ANDROID_PREBUILT_3RDPARTY_DIR}/mobile-ffmpeg-min-gpl-4.3)
+set(_ffmpeg_components avcodec avdevice avfilter avformat avutil swresample swscale)
+set(FFMPEG_INCLUDE_DIR "${_ffmpeg_root}/include")
+set(FFMPEG_FOUND TRUE)
+foreach(b_comp ${_ffmpeg_components})
+    string(TOUPPER ${b_comp} b_comp_uc)
+    if (NOT TARGET FFMPEG::${b_comp})
+        add_library(FFMPEG::${b_comp} SHARED IMPORTED)
+        set_target_properties(FFMPEG::${b_comp} PROPERTIES IMPORTED_LOCATION "${_ffmpeg_root}/android-${ANDROID_ABI}/ffmpeg/lib/lib${b_comp}.so")
+        set_target_properties(FFMPEG::${b_comp} PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${_ffmpeg_root}/android-${ANDROID_ABI}/ffmpeg/include")
+        # Implicit dependencies
+        if ("${b_comp}" STREQUAL "avdevice")
+            set_target_properties(FFMPEG::avdevice PROPERTIES INTERFACE_LINK_LIBRARIES FFMPEG::avfilter)
+        elseif ("${b_comp}" STREQUAL "avfilter")
+            set_target_properties(FFMPEG::avfilter PROPERTIES INTERFACE_LINK_LIBRARIES FFMPEG::avformat)
+        elseif ("${b_comp}" STREQUAL "avformat")
+            set_target_properties(FFMPEG::avformat PROPERTIES INTERFACE_LINK_LIBRARIES FFMPEG::avcodec)
+        elseif ("${b_comp}" STREQUAL "avcodec")
+            set_target_properties(FFMPEG::avcodec PROPERTIES INTERFACE_LINK_LIBRARIES FFMPEG::swresample)
+        elseif ("${b_comp}" STREQUAL "swresample")
+            set_target_properties(FFMPEG::swresample PROPERTIES INTERFACE_LINK_LIBRARIES FFMPEG::avutil)
+        elseif ("${b_comp}" STREQUAL "swscale")
+            set_target_properties(FFMPEG::swscale PROPERTIES INTERFACE_LINK_LIBRARIES FFMPEG::avutil)
+        endif ()
+    endif (NOT TARGET FFMPEG::${b_comp})
+    set(FFMPEG_${b_comp_uc}_FOUND TRUE)
+endforeach(b_comp)
+
 
 # OpenCV comes with its own module, let's use it
 set(_opencv_root ${ANDROID_PREBUILT_3RDPARTY_DIR}/opencv-4.0.1/sdk/native)
@@ -121,21 +155,9 @@ if (NOT TARGET OpenCV::java)
 endif (NOT TARGET OpenCV::java)
 set(OpenCV_LIBS OpenCV::java)
 
-# GTest has no config module, we need to create imported targets by hand
-set(_gtest_root ${ANDROID_PREBUILT_3RDPARTY_DIR}/googletest-1.8.1)
-set(GTEST_INCLUDE_DIR ${_gtest_root}/include)
-set(GTEST_LIBRARY ${_gtest_root}/libs/${ANDROID_ABI}/libgtest.so)
-set(GTEST_MAIN_LIBRARY ${_gtest_root}/libs/${ANDROID_ABI}/libgtest_main.so)
-if (NOT TARGET GTest::GTest)
-    add_library(GTest::GTest SHARED IMPORTED)
-    set_target_properties(GTest::GTest PROPERTIES IMPORTED_LOCATION ${_gtest_root}/libs/${ANDROID_ABI}/libgtest.so)
-    set_target_properties(GTest::GTest PROPERTIES INTERFACE_COMPILE_OPTIONS "-Wno-gnu-zero-variadic-macro-arguments")
-    set_target_properties(GTest::GTest PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${_gtest_root}/include)
-endif (NOT TARGET GTest::GTest)
-if (NOT TARGET GTest::Main)
-    add_library(GTest::Main SHARED IMPORTED)
-    set_target_properties(GTest::Main PROPERTIES IMPORTED_LOCATION ${_gtest_root}/libs/${ANDROID_ABI}/libgtest_main.so)
-endif (NOT TARGET GTest::Main)
+# GTest and GMock
+set(GTest_DIR "${ANDROID_PREBUILT_3RDPARTY_DIR}/googletest-1.10.0/lib/cmake/GTest")
+find_package(GTest CONFIG)
 
 # Eigen3 comes with its own module, let's use it
 set(Eigen3_DIR ${ANDROID_PREBUILT_3RDPARTY_DIR}/eigen3-3.3.90/share/eigen3/cmake)

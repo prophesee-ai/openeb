@@ -41,9 +41,16 @@ enum : CameraErrorCodeType {
     TriggerOutUnavailable              = CameraErrorCode::UnsupportedFeature | 0x4,
     ExtTriggerUnavailable              = CameraErrorCode::UnsupportedFeature | 0x5,
     AntiFlickerModuleUnavailable       = CameraErrorCode::UnsupportedFeature | 0xD,
-    NoiseFilterModuleUnavailable       = CameraErrorCode::UnsupportedFeature | 0xF,
+    EventTrailFilterModuleUnavailable  = CameraErrorCode::UnsupportedFeature | 0xF,
     ErcModuleUnavailable               = CameraErrorCode::UnsupportedFeature | 0x10,
     OfflineStreamingControlUnavailable = CameraErrorCode::UnsupportedFeature | 0x11,
+    RawRecordingUnavailable            = CameraErrorCode::UnsupportedFeature | 0x12,
+    DeviceUnavailable                  = CameraErrorCode::UnsupportedFeature | 0x13,
+    RawDataUnavailable                 = CameraErrorCode::UnsupportedFeature | 0x14,
+    CDUnavailable                      = CameraErrorCode::UnsupportedFeature | 0x15,
+    ERCCounterUnavailable              = CameraErrorCode::UnsupportedFeature | 0x16,
+    FrameHistoUnavailable              = CameraErrorCode::UnsupportedFeature | 0x17,
+    FrameDiffUnavailable               = CameraErrorCode::UnsupportedFeature | 0x18,
 };
 }
 

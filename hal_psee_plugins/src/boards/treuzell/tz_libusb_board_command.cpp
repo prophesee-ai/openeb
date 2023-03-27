@@ -21,10 +21,11 @@
 #include <unordered_set>
 
 #include "metavision/hal/utils/hal_log.h"
-#include "boards/utils/config_registers_map.h"
-#include "boards/treuzell/tz_libusb_board_command.h"
+#include "metavision/psee_hw_layer/boards/utils/psee_libusb.h"
+#include "metavision/psee_hw_layer/boards/utils/psee_libusb_data_transfer.h"
+#include "metavision/psee_hw_layer/boards/treuzell/tz_libusb_board_command.h"
 #include "boards/treuzell/treuzell_command_definition.h"
-#include "boards/treuzell/tz_control_frame.h"
+#include "metavision/psee_hw_layer/boards/treuzell/tz_control_frame.h"
 #include "devices/utils/device_system_id.h"
 #include "metavision/hal/utils/hal_exception.h"
 #include "utils/psee_hal_plugin_error_code.h"
@@ -39,19 +40,19 @@
 
 namespace Metavision {
 
-// By default, nothing is supported, because we want boards to be ignored by the plugins that can manage it, so that
-// only one open a given board
-std::vector<UsbInterfaceId> TzLibUSBBoardCommand::known_usb_ids;
-
 TzLibUSBBoardCommand::TzLibUSBBoardCommand(std::shared_ptr<LibUSBContext> ctx, libusb_device *dev,
-                                           libusb_device_descriptor &desc) :
-    libusb_ctx(ctx) {
+                                           libusb_device_descriptor &desc, const std::vector<UsbInterfaceId> &usb_ids) :
+    libusb_ctx(ctx), quirks({0}) {
     // Check only the first device configuration
     struct libusb_config_descriptor *config;
     int r = libusb_get_config_descriptor(dev, 0, &config);
     if (r != LIBUSB_SUCCESS) {
-        throw(HalException(PseeHalPluginErrorCode::BoardCommandNotFound, "config descriptor not readable."));
+        throw(
+            Metavision::HalException(PseeHalPluginErrorCode::BoardCommandNotFound, "config descriptor not readable."));
     }
+
+    // Select quirks using only device descriptor
+    select_early_quirks(desc);
 
     // Look for a treuzell interface
     bInterfaceNumber = -1;
@@ -62,7 +63,7 @@ TzLibUSBBoardCommand::TzLibUSBBoardCommand(std::shared_ptr<LibUSBContext> ctx, l
             const struct libusb_interface_descriptor *ifc_desc = &interface->altsetting[altsetting];
             // Check if USB class is the expected one
             bool supported = false;
-            for (const auto &id : TzLibUSBBoardCommand::known_usb_ids) {
+            for (const auto &id : usb_ids) {
                 if ((id.vid && (desc.idVendor == id.vid)) && (id.pid && (desc.idProduct == id.pid)) &&
                     (ifc_desc->bInterfaceClass == id.usb_class) && (ifc_desc->bInterfaceSubClass == (id.subclass))) {
                     supported = true;
@@ -93,37 +94,45 @@ TzLibUSBBoardCommand::TzLibUSBBoardCommand(std::shared_ptr<LibUSBContext> ctx, l
     }
     libusb_free_config_descriptor(config);
     if (bInterfaceNumber < 0) {
-        throw(HalException(PseeHalPluginErrorCode::BoardCommandNotFound, "no treuzell interface found."));
+        throw(Metavision::HalException(PseeHalPluginErrorCode::BoardCommandNotFound, "no treuzell interface found."));
     }
 
     // Open device.
-    r = libusb_open(dev, &dev_handle_);
-    if (r != 0)
-        throw(HalException(PseeHalPluginErrorCode::BoardCommandNotFound, "Unable to open device"));
-
-    if (libusb_kernel_driver_active(dev_handle_, bInterfaceNumber) == 1) { // find out if kernel driver is attached
-        MV_HAL_LOG_TRACE() << "Kernel Driver Active";
-        if (libusb_detach_kernel_driver(dev_handle_, bInterfaceNumber) == 0) // detach it
-            MV_HAL_LOG_TRACE() << "Kernel Driver Detached!";
+    try {
+        dev_ = std::make_shared<LibUSBDevice>(ctx, dev);
+    } catch (std::system_error &e) {
+        MV_HAL_LOG_WARNING() << "Unable to open device:" << e.what();
+        throw(Metavision::HalException(PseeHalPluginErrorCode::BoardCommandNotFound, "Unable to open device"));
     }
-    r = libusb_claim_interface(dev_handle_, bInterfaceNumber);
-    if (r < 0) {
-        libusb_close(dev_handle_);
-        throw(HalException(PseeHalPluginErrorCode::BoardCommandNotFound, "Camera is busy"));
-    }
-    MV_HAL_LOG_TRACE() << "Claimed interface";
-    dev_speed_ = (libusb_speed)libusb_get_device_speed(dev);
 
     if (desc.iManufacturer) {
         char buf[128]; // 256 bytes UTF-16LE, shrinked down to pure ASCII
-        if (libusb_get_string_descriptor_ascii(dev_handle_, desc.iManufacturer, (unsigned char *)buf, 128) > 0)
+        if (dev_->get_string_descriptor_ascii(desc.iManufacturer, (unsigned char *)buf, 128) > 0)
             manufacturer = buf;
     }
 
     if (desc.iProduct) {
         char buf[128]; // 256 bytes UTF-16LE, shrinked down to pure ASCII
-        if (libusb_get_string_descriptor_ascii(dev_handle_, desc.iProduct, (unsigned char *)buf, 128) > 0)
+        if (dev_->get_string_descriptor_ascii(desc.iProduct, (unsigned char *)buf, 128) > 0)
             product = buf;
+    }
+
+    if (dev_->kernel_driver_active(bInterfaceNumber) == 1) { // find out if kernel driver is attached
+        MV_HAL_LOG_TRACE() << "Kernel Driver Active on interface" << bInterfaceNumber << "of" << product;
+        if (dev_->detach_kernel_driver(bInterfaceNumber) == 0) // detach it
+            MV_HAL_LOG_TRACE() << "Kernel Driver Detached from interface" << bInterfaceNumber << "of" << product;
+    }
+    r = dev_->claim_interface(bInterfaceNumber);
+    if (r < 0) {
+        throw(Metavision::HalException(PseeHalPluginErrorCode::BoardCommandNotFound, "Camera is busy"));
+    }
+    MV_HAL_LOG_TRACE() << "Claimed interface" << bInterfaceNumber << "of" << product;
+    dev_speed_ = (libusb_speed)libusb_get_device_speed(dev);
+
+    if (!quirks.do_not_set_config)
+        r = dev_->set_interface_alt_setting(bInterfaceNumber, 0);
+    if (r < 0) {
+        throw(Metavision::HalException(PseeHalPluginErrorCode::BoardCommandNotFound, "Could not set AltSetting"));
     }
 
     try {
@@ -138,31 +147,34 @@ TzLibUSBBoardCommand::TzLibUSBBoardCommand(std::shared_ptr<LibUSBContext> ctx, l
         build_date = req.get64(0);
     } catch (const std::system_error &e) { MV_HAL_LOG_TRACE() << "Got no build date:" << e.what(); }
 
+    select_board_quirks(desc);
+
     // Add a warning if using an Evk3/4 with a too old firmware
     static std::unordered_set<std::string> outdated_fw_warning_map;
     if ((desc.idVendor == 0x04b4) && ((desc.idProduct == 0x00f4) || (desc.idProduct == 0x00f5))) {
         if (version < 0x30800) {
             const std::string &serial = get_serial();
             if (outdated_fw_warning_map.count(serial) == 0) {
-                MV_HAL_LOG_WARNING() << "The EVK camera with serial" << serial
-                                     << "is using an old firmware version. Please upgrade to latest version.";
+                MV_HAL_LOG_ERROR() << "The EVK camera with serial" << serial
+                                   << "is using an old firmware version. Please upgrade to latest version."
+                                   << "Check https://support.prophesee.ai for more information.";
                 outdated_fw_warning_map.insert(serial);
             }
+            throw Metavision::HalException(PseeHalPluginErrorCode::UnsupportedFirmware,
+                                           "Firmware of camera " + serial + " is no longer supported");
         }
     }
 }
 
 TzLibUSBBoardCommand::~TzLibUSBBoardCommand() {
-    int r = libusb_release_interface(dev_handle_, bInterfaceNumber); // release the claimed interface
+    int r = dev_->release_interface(bInterfaceNumber); // release the claimed interface
     if (r != 0) {
         MV_HAL_LOG_WARNING() << "Cannot release interface";
     } else {
-        MV_HAL_LOG_TRACE() << "Released interface";
+        MV_HAL_LOG_TRACE() << "Released interface" << bInterfaceNumber << "on" << product;
     }
-    // Old Evk2s used the global device reset to reset their Tz interface
-    if ((product == "EVKv2") && (version < 0x010600))
-        libusb_reset_device(dev_handle_);
-    libusb_close(dev_handle_);
+    if (quirks.reset_on_destroy)
+        dev_->reset_device();
 }
 
 std::string TzLibUSBBoardCommand::get_name() {
@@ -182,10 +194,6 @@ uint32_t TzLibUSBBoardCommand::get_version() {
 }
 
 long TzLibUSBBoardCommand::get_board_speed() {
-    if (!dev_handle_) {
-        return -1;
-    }
-
     switch (dev_speed_) {
     case LIBUSB_SPEED_LOW:
         return 1; // Actual speed would be 1.5Mbit/s but we use integral type.
@@ -227,80 +235,14 @@ std::string TzLibUSBBoardCommand::get_serial() {
     return ostr.str();
 }
 
-void TzLibUSBBoardCommand::write_register(Register_Addr register_addr, uint32_t value) {
-    init_register(register_addr, value);
-    send_register(register_addr);
-}
-
-uint32_t TzLibUSBBoardCommand::read_register(Register_Addr regist) {
-    auto it = mregister_state.find(regist);
-    if (it == mregister_state.end()) {
-        return 0;
-    }
-
-    return it->second;
-}
-
-void TzLibUSBBoardCommand::load_register(Register_Addr regist) {
-    init_register(regist, read_device_register(0, regist)[0]);
-}
-
-void TzLibUSBBoardCommand::set_register_bit(Register_Addr register_addr, int idx, bool state) {
-    auto it = mregister_state.find(register_addr);
-    if (it == mregister_state.end()) {
-        it = mregister_state.insert(std::make_pair(register_addr, static_cast<uint32_t>(0))).first;
-    }
-    if (state) {
-        it->second |= (1 << idx);
-    } else {
-        it->second &= ~(1 << idx);
-    }
-}
-
-void TzLibUSBBoardCommand::send_register(Register_Addr register_addr) {
-    uint32_t val = 0;
-    if (has_register(register_addr)) {
-        val = read_register(register_addr);
-    }
-    write_device_register(0, register_addr, std::vector<uint32_t>(1, val));
-}
-
-void TzLibUSBBoardCommand::send_register_bit(Register_Addr register_addr, int idx, bool state) {
-    set_register_bit(register_addr, idx, state);
-    send_register(register_addr);
-}
-
-uint32_t TzLibUSBBoardCommand::read_register_bit(Register_Addr register_addr, int idx) {
-    MV_HAL_LOG_DEBUG() << __PRETTY_FUNCTION__ << register_addr;
-    auto it = mregister_state.find(register_addr);
-    if (it == mregister_state.end()) {
-        return 0;
-    }
-
-    return (it->second >> idx) & 1;
-}
-
-void TzLibUSBBoardCommand::init_register(Register_Addr regist, uint32_t value) {
-    mregister_state[regist] = value;
-}
-
-bool TzLibUSBBoardCommand::has_register(Register_Addr regist) {
-    auto it = mregister_state.find(regist);
-    return it != mregister_state.end();
-}
-
 bool TzLibUSBBoardCommand::reset_device() {
 #ifndef _WINDOWS
-    if (dev_handle_) {
-        int r = libusb_reset_device(dev_handle_);
-        if (r == 0) {
-            MV_HAL_LOG_TRACE() << "libusb BC: USB Reset";
-            return true;
-        } else {
-            MV_HAL_LOG_ERROR() << libusb_error_name(r);
-            return false;
-        }
+    int r = dev_->reset_device();
+    if (r == 0) {
+        MV_HAL_LOG_TRACE() << "libusb BC: USB Reset";
+        return true;
     } else {
+        MV_HAL_LOG_ERROR() << libusb_error_name(r);
         return false;
     }
 #else
@@ -309,28 +251,31 @@ bool TzLibUSBBoardCommand::reset_device() {
 }
 
 void TzLibUSBBoardCommand::transfer_tz_frame(TzCtrlFrame &req) {
-    int res, sent;
+    int sent;
     std::vector<uint8_t> answer(TZ_MAX_ANSWER_SIZE);
+    {
+        std::lock_guard<std::mutex> guard(tz_control_mutex_);
 
-    if (!dev_handle_)
-        throw std::runtime_error("no libusb dev_handle");
+        /* send the command */
+        dev_->bulk_transfer(bEpControlOut, req.frame(), req.frame_size(), &sent, 1000);
 
-    /* send the command */
-    res = libusb_bulk_transfer(dev_handle_, bEpControlOut, req.frame(), req.frame_size(), &sent, 1000);
-    if (res < 0)
-        throw std::system_error(res, LibUsbError());
-
-    /* get the result */
-    res = libusb_bulk_transfer(dev_handle_, bEpControlIn, answer.data(), answer.size(), &sent, 1000);
-    if (res < 0)
-        throw std::system_error(res, LibUsbError());
+        /* get the result */
+        dev_->bulk_transfer(bEpControlIn, answer.data(), answer.size(), &sent, 10000);
+    }
     answer.resize(sent);
     req.swap_and_check_answer(answer);
 }
 
 unsigned int TzLibUSBBoardCommand::get_device_count() {
     TzGenericCtrlFrame req(TZ_PROP_DEVICES);
-    transfer_tz_frame(req);
+    try {
+        transfer_tz_frame(req);
+    } catch (std::system_error &e) {
+        if (!quirks.ignore_size_on_device_prop_answer || (e.code().value() != TZ_SIZE_MISMATCH)) {
+            // if quirk is enabled and error is SIZE_MISMATCH, ignore it
+            throw e;
+        }
+    }
     return req.get32(0);
 }
 
@@ -362,9 +307,9 @@ std::vector<uint32_t> TzLibUSBBoardCommand::read_device_register(uint32_t device
     std::vector<uint32_t> res(nval);
     memcpy(res.data(), req.payload() + (2 * sizeof(uint32_t)), nval * sizeof(uint32_t));
 
-    MV_HAL_LOG_DEBUG() << "read_device_register dev " << device << " addr " << address << " val:";
-    for (auto const &val : res)
-        MV_HAL_LOG_DEBUG() << val;
+    if (std::getenv("TZ_LOG_REGISTERS")) {
+        MV_HAL_LOG_TRACE() << "read_device_register dev" << device << "addr" << address << "val" << res;
+    }
 
     return res;
 }
@@ -376,9 +321,9 @@ void TzLibUSBBoardCommand::write_device_register(uint32_t device, uint32_t addre
     req.push_back32(address);
     req.push_back32(val);
 
-    MV_HAL_LOG_DEBUG() << "write_device_register dev " << device << " addr " << address << " val:";
-    for (auto const &value : val)
-        MV_HAL_LOG_DEBUG() << val;
+    if (std::getenv("TZ_LOG_REGISTERS")) {
+        MV_HAL_LOG_TRACE() << "write_device_register dev" << device << "addr" << address << "val" << val;
+    }
 
     try {
         transfer_tz_frame(req);
@@ -395,6 +340,34 @@ void TzLibUSBBoardCommand::write_device_register(uint32_t device, uint32_t addre
         throw std::system_error(TZ_PROPERTY_MISMATCH, TzError(), "device id mismatch");
     if (req.get32(1) != address)
         throw std::system_error(TZ_PROPERTY_MISMATCH, TzError(), "address mismatch");
+}
+
+std::unique_ptr<PseeLibUSBDataTransfer> TzLibUSBBoardCommand::build_data_transfer(uint32_t raw_event_size_bytes) {
+    return std::make_unique<PseeLibUSBDataTransfer>(dev_, bEpCommAddress, raw_event_size_bytes);
+}
+
+void TzLibUSBBoardCommand::select_board_quirks(libusb_device_descriptor &desc) {
+    // Old Evk2s used the global device reset to reset their Tz interface
+    if ((desc.idVendor == 0x03fd) && (desc.idProduct == 0x5832) && (product == "EVKv2")) {
+        if (version < 0x010600)
+            quirks.reset_on_destroy = true;
+        if (version < 0x010800)
+            quirks.ignore_size_on_device_prop_answer = true;
+    }
+    if ((desc.idVendor == 0x03fd) && (desc.idProduct == 0x5832) && (product == "Testboard")) {
+        if (version < 0x010600)
+            quirks.reset_on_destroy = true;
+        if (version < 0x010700)
+            quirks.ignore_size_on_device_prop_answer = true;
+    }
+}
+
+void TzLibUSBBoardCommand::select_early_quirks(libusb_device_descriptor &desc) {
+    // Evk3/4
+    if ((desc.idVendor == 0x04b4) && ((desc.idProduct == 0x00f4) || (desc.idProduct == 0x00f5))) {
+        if (desc.bcdDevice < 0x0307)
+            quirks.do_not_set_config = true;
+    }
 }
 
 } // namespace Metavision

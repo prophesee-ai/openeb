@@ -25,6 +25,7 @@ set(sdk_base_python_srcs
     ${CMAKE_CURRENT_SOURCE_DIR}/debug_buffer_info_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/event_cd_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/event_ext_trigger_python.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/event_frame_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generic_header_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/metavision_sdk_base_bindings.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/software_info_python.cpp

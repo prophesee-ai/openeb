@@ -11,6 +11,7 @@
 
 #include <pybind11/pybind11.h>
 
+#include "metavision/sdk/ui/utils/base_glfw_window.h"
 #include "metavision/sdk/ui/utils/base_window.h"
 
 #include "pb_doc_ui.h"
@@ -39,10 +40,10 @@ void export_base_window(py::module &m) {
         .def(
             "should_close",
             [](const BaseWindowWrapper &base_window) { return base_window.get<BaseWindow>()->should_close(); },
-            pybind_doc_ui["Metavision::BaseWindow::should_close"])
+            pybind_doc_ui["Metavision::BaseGLFWWindow::should_close"])
         .def(
             "set_close_flag", [](BaseWindowWrapper &base_window) { base_window.get<BaseWindow>()->set_close_flag(); },
-            pybind_doc_ui["Metavision::BaseWindow::set_close_flag"])
+            pybind_doc_ui["Metavision::BaseGLFWWindow::set_close_flag"])
         .def(
             "set_keyboard_callback",
             [](BaseWindowWrapper &base_window, const py::object &object) {

@@ -12,6 +12,7 @@ from .py_reader import EventDatReader, EventNpyReader
 from .h5_io import H5EventsWriter, H5EventsReader
 from .raw_reader import RawReader
 from .events_iterator import EventsIterator
+from .event_frame_iterator import EventFrameIterator
 from .live_replay import LiveReplayEventsIterator, is_live_camera
 from .raw_info import get_raw_info
 from .adaptive_rate_events_iterator import AdaptiveRateEventsIterator

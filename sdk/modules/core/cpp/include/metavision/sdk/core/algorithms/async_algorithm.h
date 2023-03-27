@@ -42,6 +42,9 @@ namespace Metavision {
 /// @warning This class uses a Curiously Recursive Template Pattern design. The input template parameter is expected to
 /// inherit from this class and this class should be declared as friend of the derived class.
 ///
+/// @note Also see EventBufferReslicerAlgorithm, an implementation that offers a similar functionality but is designed
+/// to be used via aggregation rather than via inheritance.
+///
 /// @tparam Impl The Asynchronous process implementation.
 template<typename Impl>
 class AsyncAlgorithm {
@@ -109,7 +112,7 @@ public:
     /// @note This call can trigger a flush if some events have already been processed
     void set_processing_sync();
 
-    /// @brief Function to only call @ref process_events without calling process_async
+    /// @brief Function to only call process_events without calling process_async
     ///
     /// This is especially useful if the condition to trigger the creation of a buffer is independent from the content
     /// of the processed events (for instance, an external trigger events, an other algorithm condition, etc.). The

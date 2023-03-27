@@ -9,6 +9,7 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
+#include <pybind11/functional.h>
 #include <pybind11/numpy.h>
 
 #include "metavision/utils/pybind/deprecation_warning_exception.h"
@@ -41,7 +42,16 @@ static HALFacilityPythonBinder<I_EventDecoder<EventExtTrigger>> bind_decoder(
                 },
                 pybind_doc_hal["Metavision::I_EventDecoder::add_event_buffer_callback"])
             .def("remove_callback", &I_EventDecoder<EventExtTrigger>::remove_callback,
-                 pybind_doc_hal["Metavision::I_EventDecoder::remove_callback"]);
+                 pybind_doc_hal["Metavision::I_EventDecoder::remove_callback"])
+            .def(
+                "add_event_buffer_native_callback",
+                +[](I_EventDecoder<EventExtTrigger> &self,
+                    std::function<void(const EventExtTrigger *, const EventExtTrigger *)> fun) {
+                    return self.add_event_buffer_callback(fun);
+                },
+                "Pass a native function as event callback (faster than a python one).\n",
+                "\nIts signature has to be `void function(const Metavision::EventExtTigger * begin,",
+                "const Metavision::EventExtTrigger * end)`.");
     },
     "I_EventDecoder_EventExtTrigger");
 

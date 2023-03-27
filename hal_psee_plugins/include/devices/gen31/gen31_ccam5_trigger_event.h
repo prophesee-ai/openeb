@@ -28,25 +28,27 @@ public:
     Gen31Ccam5TriggerEvent(const std::shared_ptr<RegisterMap> &register_map, const std::shared_ptr<TzDevice> &device);
 
     /// @brief Enables external trigger monitoring
-    ///
-    /// Available channels:
-    /// 0: main trigger in
-    /// 6: loopback trigger out (Test purpose)
-    /// @param channel External trigger's channel
-    virtual bool enable(uint32_t channel) override;
+    /// @param channel external trigger channel to enable
+    bool enable(const Channel &channel) override;
 
     /// @brief Disables external trigger monitoring
-    /// @param channel External trigger's channel
-    virtual bool disable(uint32_t channel) override;
+    /// @param channel external trigger channel to disable
+    bool disable(const Channel &channel) override;
 
     /// @brief Checks if trigger in index is enabled
-    /// @param channel External trigger's channel
+    /// @param channel external trigger channel to check
     /// @return true if trigger in index is enabled, False otherwise
-    virtual bool is_enabled(uint32_t channel) override;
+    bool is_enabled(const Channel &channel) const override;
+
+    /// @brief Returns the set of available channels
+    /// @return a map of available channels
+    std::map<Channel, short> get_available_channels() const override;
 
 private:
     std::shared_ptr<RegisterMap> register_map_;
     std::shared_ptr<TzDevice> tzDev_;
+
+    const std::map<Channel, short> chan_map_;
 };
 
 } // namespace Metavision

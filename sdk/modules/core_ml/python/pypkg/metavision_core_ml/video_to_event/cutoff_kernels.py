@@ -21,7 +21,7 @@ from numba import cuda
 @cuda.jit()
 def _cuda_kernel_dynamic_moving_average(
     images, num_frames_cumsum, prev_log_images_0, prev_log_images_1,
-        prev_image_times, image_times, first_times, cutoff_rates, log_eps=1e-7):
+        prev_image_times, image_times, first_times, cutoff_rates, min_pixel_range=20, max_pixel_incr=20, log_eps=1e-7):
     """
     Dynamic Blurring of sequence + Log-space conversion
     (GPU code)
@@ -52,7 +52,7 @@ def _cuda_kernel_dynamic_moving_average(
             ind = t - start_f
 
             dt_s = 1e-6 * (image_times[b, ind] - last_image_ts)
-            eps = (pixel[t] + 20) / 275 * dt_s * tau
+            eps = (pixel[t] + min_pixel_range) / (255 + max_pixel_incr) * dt_s * tau
             eps = max(0, min(eps, 1))
 
             log_state0 = (1 - eps) * log_state0 + eps * math.log(pixel[t] / 255.0 + log_eps)
@@ -71,7 +71,7 @@ def _cuda_kernel_dynamic_moving_average(
 @njit()
 def _cpu_kernel_dynamic_moving_average(
     images, num_frames_cumsum, prev_log_images_0, prev_log_images_1,
-        prev_image_times, image_times, first_times, cutoff_rates, log_eps=1e-7):
+        prev_image_times, image_times, first_times, cutoff_rates, min_pixel_range=20, max_pixel_incr=20, log_eps=1e-7):
     """
     Dynamic Blurring of sequence + Log-space conversion
     (CPU code)
@@ -102,7 +102,8 @@ def _cpu_kernel_dynamic_moving_average(
                     ind = t - start_f
 
                     dt_s = 1e-6 * (image_times[b, ind] - last_image_ts)
-                    eps = (pixel[t] + 20) / 275 * dt_s * tau
+                    eps = (pixel[t] + min_pixel_range) / (255. + max_pixel_incr) * dt_s * tau
+
                     eps = max(0, min(eps, 1))
 
                     log_state0 = (1 - eps) * log_state0 + eps * math.log(pixel[t] / 255.0 + log_eps)

@@ -41,15 +41,28 @@ foreach(PackageGroup All Public)
         file(APPEND ${PACKAGES_CONFIG_FILE} "SET(CPACK_COMPONENTS_ALL ${cpack_${package_group_lower}_components})\n")
         file(APPEND ${PACKAGES_CONFIG_FILE} "SET(CPACK_OUTPUT_FILE_PREFIX packages/${package_group_lower})")
 
-        add_custom_target(${package_group_lower}_deb_packages
+        add_custom_target(${package_group_lower}_build
                           COMMAND ${CUSTOM_COMMAND_RECURSIVE_MAKEFILE_TOKEN} ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} # To make sure that project has been built (otherwise cpack would wait for a long time - user may think that is blocking)
-                          COMMAND LD_LIBRARY_PATH=${CMAKE_LIBRARY_OUTPUT_DIRECTORY} ${CMAKE_CPACK_COMMAND} -G DEB --config ${PACKAGES_CONFIG_FILE}
-                          COMMENT "Building and running CPack. Please wait..."
+                          COMMENT "Building project. Please wait..."
         )
+        add_custom_target(${package_group_lower}_deb_packages
+                          COMMAND LD_LIBRARY_PATH=${CMAKE_LIBRARY_OUTPUT_DIRECTORY} ${CMAKE_CPACK_COMMAND} -G DEB --config ${PACKAGES_CONFIG_FILE} -V
+                          COMMENT "Running CPack. Please wait..."
+        )
+
+        # setting proper dependencies : 
+        #                       |-- <all/public>_deb1 <--|
+        # <all/public>_build <--|--        ...        <--|-- <all/public>_deb_packages 
+        #                       |-- <all/public>_debN <--|
+        add_dependencies(${package_group_lower}_deb_packages ${package_group_lower}_build)
+        foreach (dep ${${package_group_lower}_deb_packages_dependencies})
+            add_dependencies(${dep} ${package_group_lower}_build)
+            add_dependencies(${package_group_lower}_deb_packages ${dep})
+        endforeach (dep ${${package_group_lower}_deb_packages_dependencies})
     else()
         add_custom_target(${package_group_lower}_deb_packages
                           COMMAND ${CMAKE_COMMAND} -E "WARNING : no ${package_group_lower} packages registered"
         )
     endif(cpack_${package_group_lower}_components)
-    
+
 endforeach(PackageGroup)

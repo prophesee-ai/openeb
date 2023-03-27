@@ -21,46 +21,50 @@
 #include "metavision/hal/utils/hal_exception.h"
 #include "metavision/hal/device/device_discovery.h"
 #include "metavision/hal/device/device.h"
+#include "metavision/hal/facilities/i_camera_synchronization.h"
 #include "metavision/hal/facilities/i_geometry.h"
-#include "metavision/hal/facilities/i_device_control.h"
 #include "metavision/hal/facilities/i_roi.h"
-#include "metavision/hal/facilities/i_decoder.h"
+#include "metavision/hal/facilities/i_events_stream_decoder.h"
 #include "metavision/hal/facilities/i_event_decoder.h"
 #include "metavision/hal/facilities/i_events_stream.h"
 
+#include "utils/device_test.h"
+
 using namespace Metavision;
 
-class I_ROI_GTest : public GTestWithTmpDir {};
+class I_ROI_GTest : public Metavision::testing::DeviceTest {
+protected:
+    void on_opened_device(Metavision::Device &device) override {
+        ASSERT_NE(nullptr, device_.get());
 
-TEST_F_WITH_CAMERA(I_ROI_GTest, roi_columns_lines_with_camera) {
-    std::unique_ptr<Device> device;
-    try {
-        device = DeviceDiscovery::open("");
-    } catch (const HalException &e) {
-        std::cerr << "Plug a camera to run this test." << std::endl;
-        FAIL();
+        geometry               = device_->get_facility<I_Geometry>();
+        es                     = device_->get_facility<I_EventsStream>();
+        decoder                = device_->get_facility<I_EventsStreamDecoder>();
+        cd_decoder             = device_->get_facility<I_EventDecoder<EventCD>>();
+        camera_synchronization = device_->get_facility<I_CameraSynchronization>();
+        roi                    = device_->get_facility<I_ROI>();
+
+        // Check geometry
+        ASSERT_NE(nullptr, geometry);
+
+        // Check board facilities presence
+        ASSERT_NE(nullptr, decoder);
+        ASSERT_NE(nullptr, cd_decoder);
+        ASSERT_NE(nullptr, camera_synchronization);
+        ASSERT_NE(nullptr, roi);
+        ASSERT_NE(nullptr, es);
     }
 
-    ASSERT_NE(nullptr, device.get());
+    I_Geometry *geometry                            = nullptr;
+    I_EventsStream *es                              = nullptr;
+    I_EventsStreamDecoder *decoder                  = nullptr;
+    I_EventDecoder<EventCD> *cd_decoder             = nullptr;
+    I_CameraSynchronization *camera_synchronization = nullptr;
+    I_ROI *roi                                      = nullptr;
+};
 
-    // Check geometry
-    I_Geometry *geometry = device->get_facility<I_Geometry>();
-    ASSERT_NE(nullptr, geometry);
-
-    // Check board facilities presence
-    auto device_control = device->get_facility<I_DeviceControl>();
-    auto roi            = device->get_facility<I_ROI>();
-    auto es             = device->get_facility<I_EventsStream>();
-    auto decoder        = device->get_facility<I_Decoder>();
-    auto cd_decoder     = device->get_facility<I_EventDecoder<EventCD>>();
-
-    ASSERT_NE(nullptr, decoder);
-    ASSERT_NE(nullptr, cd_decoder);
-    ASSERT_NE(nullptr, device_control);
-    ASSERT_NE(nullptr, roi);
-    ASSERT_NE(nullptr, es);
-
-    std::vector<bool> rows_to_enable(geometry->get_height(), true), cols_to_enable(geometry->get_width(), true);
+TEST_F_WITH_CAMERA(I_ROI_GTest, roi_columns_lines_with_camera) {
+    std::vector<bool> rows(geometry->get_height(), true), cols(geometry->get_width(), true);
 
     std::vector<size_t> rows_disabled(100, 0);
     std::vector<size_t> cols_disabled(100, 0);
@@ -71,11 +75,11 @@ TEST_F_WITH_CAMERA(I_ROI_GTest, roi_columns_lines_with_camera) {
     std::iota(cols_disabled.begin() + 50, cols_disabled.end(), 200);   // disabled cols from 200 to 249
 
     for (auto row_to_disable : rows_disabled) {
-        rows_to_enable[row_to_disable] = false; // disable the line
+        rows[row_to_disable] = false; // disable the line
     }
 
     for (auto col_to_disable : cols_disabled) {
-        cols_to_enable[col_to_disable] = false; // disable the line
+        cols[col_to_disable] = false; // disable the line
     }
 
     std::atomic<size_t> n_cd_counts{0};
@@ -94,10 +98,9 @@ TEST_F_WITH_CAMERA(I_ROI_GTest, roi_columns_lines_with_camera) {
         }
     });
 
-    roi->set_ROIs(cols_to_enable, rows_to_enable);
+    roi->set_lines(cols, rows);
 
     es->start();
-    device_control->start();
 
     const auto tnow = std::chrono::system_clock::now();
     while (n_cd_counts < max_cd_count) {
@@ -119,34 +122,7 @@ TEST_F_WITH_CAMERA(I_ROI_GTest, roi_columns_lines_with_camera) {
 }
 
 TEST_F_WITH_CAMERA(I_ROI_GTest, roi_rectangle_with_camera) {
-    std::unique_ptr<Device> device;
-    try {
-        device = DeviceDiscovery::open("");
-    } catch (const HalException &e) {
-        std::cerr << "Plug a camera to run this test." << std::endl;
-        FAIL();
-    }
-
-    ASSERT_NE(nullptr, device.get());
-
-    // Check geometry
-    I_Geometry *geometry = device->get_facility<I_Geometry>();
-    ASSERT_NE(nullptr, geometry);
-
-    // Check board facilities presence
-    auto device_control = device->get_facility<I_DeviceControl>();
-    auto roi            = device->get_facility<I_ROI>();
-    auto es             = device->get_facility<I_EventsStream>();
-    auto decoder        = device->get_facility<I_Decoder>();
-    auto cd_decoder     = device->get_facility<I_EventDecoder<EventCD>>();
-
-    ASSERT_NE(nullptr, decoder);
-    ASSERT_NE(nullptr, cd_decoder);
-    ASSERT_NE(nullptr, device_control);
-    ASSERT_NE(nullptr, roi);
-    ASSERT_NE(nullptr, es);
-
-    DeviceRoi roi_to_set(10, 100, 10, 100);
+    I_ROI::Window roi_to_set(10, 100, 10, 100);
 
     std::atomic<size_t> n_cd_counts{0};
     static constexpr size_t max_cd_count = 1000;
@@ -154,17 +130,16 @@ TEST_F_WITH_CAMERA(I_ROI_GTest, roi_rectangle_with_camera) {
     cd_decoder->add_event_buffer_callback([&](const EventCD *it_begin, const EventCD *it_end) {
         n_cd_counts += (it_end - it_begin);
         for (; it_begin != it_end; ++it_begin) {
-            EXPECT_GE(it_begin->x, roi_to_set.x_);
-            EXPECT_LT(it_begin->x, roi_to_set.x_ + roi_to_set.width_);
-            EXPECT_GE(it_begin->y, roi_to_set.y_);
-            EXPECT_LT(it_begin->y, roi_to_set.y_ + roi_to_set.height_);
+            EXPECT_GE(it_begin->x, roi_to_set.x);
+            EXPECT_LT(it_begin->x, roi_to_set.x + roi_to_set.width);
+            EXPECT_GE(it_begin->y, roi_to_set.y);
+            EXPECT_LT(it_begin->y, roi_to_set.y + roi_to_set.height);
         }
     });
 
-    roi->set_ROI(roi_to_set);
+    roi->set_window(roi_to_set);
 
     es->start();
-    device_control->start();
 
     const auto tnow = std::chrono::system_clock::now();
     while (n_cd_counts < max_cd_count) {
@@ -186,35 +161,8 @@ TEST_F_WITH_CAMERA(I_ROI_GTest, roi_rectangle_with_camera) {
 }
 
 TEST_F_WITH_CAMERA(I_ROI_GTest, several_roi_rectangle_with_camera) {
-    std::unique_ptr<Device> device;
-    try {
-        device = DeviceDiscovery::open("");
-    } catch (const HalException &e) {
-        std::cerr << "Plug a camera to run this test." << std::endl;
-        FAIL();
-    }
-
-    ASSERT_NE(nullptr, device.get());
-
-    // Check geometry
-    I_Geometry *geometry = device->get_facility<I_Geometry>();
-    ASSERT_NE(nullptr, geometry);
-
-    // Check board facilities presence
-    auto device_control = device->get_facility<I_DeviceControl>();
-    auto roi            = device->get_facility<I_ROI>();
-    auto es             = device->get_facility<I_EventsStream>();
-    auto decoder        = device->get_facility<I_Decoder>();
-    auto cd_decoder     = device->get_facility<I_EventDecoder<EventCD>>();
-
-    ASSERT_NE(nullptr, decoder);
-    ASSERT_NE(nullptr, cd_decoder);
-    ASSERT_NE(nullptr, device_control);
-    ASSERT_NE(nullptr, roi);
-    ASSERT_NE(nullptr, es);
-
-    std::vector<DeviceRoi> rois_to_set{{10, 10, 20, 20},
-                                       {100, 100, 20, 20}}; // 2 ROIs creates 4 rois on the sensor (AND operator)
+    std::vector<I_ROI::Window> rois_to_set{{10, 10, 20, 20},
+                                           {100, 100, 20, 20}}; // 2 ROIs creates 4 rois on the sensor (AND operator)
 
     std::atomic<size_t> n_cd_counts{0};
     static constexpr size_t max_cd_count = 1000;
@@ -223,24 +171,23 @@ TEST_F_WITH_CAMERA(I_ROI_GTest, several_roi_rectangle_with_camera) {
         n_cd_counts += (it_end - it_begin);
         for (; it_begin != it_end; ++it_begin) {
             const bool x_good =
-                (it_begin->x >= rois_to_set[0].x_ && it_begin->x < rois_to_set[0].x_ + rois_to_set[0].width_) ||
-                (it_begin->x >= rois_to_set[1].x_ && it_begin->x < rois_to_set[0].x_ + rois_to_set[0].width_) ||
-                (it_begin->x >= rois_to_set[0].x_ && it_begin->x < rois_to_set[1].x_ + rois_to_set[1].width_) ||
-                (it_begin->x >= rois_to_set[1].x_ && it_begin->x < rois_to_set[1].x_ + rois_to_set[1].width_);
+                (it_begin->x >= rois_to_set[0].x && it_begin->x < rois_to_set[0].x + rois_to_set[0].width) ||
+                (it_begin->x >= rois_to_set[1].x && it_begin->x < rois_to_set[0].x + rois_to_set[0].width) ||
+                (it_begin->x >= rois_to_set[0].x && it_begin->x < rois_to_set[1].x + rois_to_set[1].width) ||
+                (it_begin->x >= rois_to_set[1].x && it_begin->x < rois_to_set[1].x + rois_to_set[1].width);
             const bool y_good =
-                (it_begin->y >= rois_to_set[0].y_ && it_begin->y < rois_to_set[0].y_ + rois_to_set[0].height_) ||
-                (it_begin->y >= rois_to_set[1].y_ && it_begin->y < rois_to_set[0].y_ + rois_to_set[0].height_) ||
-                (it_begin->y >= rois_to_set[0].y_ && it_begin->y < rois_to_set[1].y_ + rois_to_set[1].height_) ||
-                (it_begin->y >= rois_to_set[1].y_ && it_begin->y < rois_to_set[1].y_ + rois_to_set[1].height_);
+                (it_begin->y >= rois_to_set[0].y && it_begin->y < rois_to_set[0].y + rois_to_set[0].height) ||
+                (it_begin->y >= rois_to_set[1].y && it_begin->y < rois_to_set[0].y + rois_to_set[0].height) ||
+                (it_begin->y >= rois_to_set[0].y && it_begin->y < rois_to_set[1].y + rois_to_set[1].height) ||
+                (it_begin->y >= rois_to_set[1].y && it_begin->y < rois_to_set[1].y + rois_to_set[1].height);
 
             EXPECT_TRUE(x_good && y_good);
         }
     });
 
-    roi->set_ROIs(rois_to_set);
+    roi->set_windows(rois_to_set);
 
     es->start();
-    device_control->start();
 
     const auto tnow = std::chrono::system_clock::now();
     while (n_cd_counts < max_cd_count) {

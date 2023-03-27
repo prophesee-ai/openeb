@@ -22,7 +22,7 @@ MTWindow::MTWindow(const std::string &title, int width, int height, RenderMode m
 
 MTWindow::~MTWindow() noexcept {
     if (rendering_loop_.joinable()) {
-        glfwSetWindowShouldClose(glfwWindow_, GLFW_TRUE);
+        glfwSetWindowShouldClose(glfw_window_, GLFW_TRUE);
 
         rendering_loop_.join();
     }
@@ -42,12 +42,12 @@ void MTWindow::show_async(cv::Mat &image, bool auto_poll) {
 }
 
 void MTWindow::rendering_loop() {
-    glfwMakeContextCurrent(glfwWindow_);
+    glfwMakeContextCurrent(glfw_window_);
 
     // Enable the V-Sync
     glfwSwapInterval(1);
 
-    while (!glfwWindowShouldClose(glfwWindow_)) {
+    while (!glfwWindowShouldClose(glfw_window_)) {
         upload_texture_if_updated();
 
         draw_background_texture();

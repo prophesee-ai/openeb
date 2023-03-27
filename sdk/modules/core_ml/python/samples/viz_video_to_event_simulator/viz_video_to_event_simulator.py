@@ -45,6 +45,7 @@ def parse_args(only_default_values=False):
                         help='number of events to display at once')
     parser.add_argument('--height_width', nargs=2, default=None, type=int,
                         help="if set, scales the input image to the requested values.")
+    parser.add_argument('--crop_image', action="store_true", help='crop images instead of resizing them.')
     parser.add_argument("--no_display", dest="display", action="store_false", help='disable the graphical return.')
     parser.add_argument("--verbose", action="store_true", help='set to have the speed of the simulator in ev/s')
     parser.add_argument('-o', "--output", help="if provided, will write the events in the corresponding path")
@@ -75,11 +76,12 @@ def parse_args(only_default_values=False):
 def main(args):
     [height, width] = [-1, -1] if args.height_width is None else args.height_width
     path = args.path
+    crop_image = args.crop_image
     assert os.path.exists(path), f"{path} doesn't exist!"
     assert os.path.isfile(path), f"{path} is not a file"
     start = time.time()
     if os.path.splitext(path)[1] in [".jpg", ".JPG", ".png", ".PNG"]:
-        image_stream = PlanarMotionStream(path, height, width)
+        image_stream = PlanarMotionStream(path, height, width, crop_image)
     else:
         image_stream = TimedVideoStream(path, height, width, override_fps=args.override_fps)
 

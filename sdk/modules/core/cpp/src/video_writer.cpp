@@ -83,7 +83,8 @@ inline T castParameterTo(int paramValue) {
 
 namespace cv45 {
 
-using String = ::cv::String;
+using String    = ::cv::String;
+using Exception = ::cv::Exception;
 template<typename T>
 using Ptr              = ::cv::Ptr<T>;
 using Size             = ::cv::Size;
@@ -115,6 +116,7 @@ public:
         return false;
     }
     virtual bool isOpened() const  = 0;
+    virtual void close()           = 0;
     virtual void write(InputArray) = 0;
     virtual int getCaptureDomain() const {
         return cv::CAP_ANY;
@@ -235,12 +237,16 @@ VideoWriter::VideoWriter(const cv::String &filename, int apiPreference, int four
 }
 
 void VideoWriter::release() {
-    writer_.release();
+    if (writer_) {
+        writer_->close();
+    }
     cv::VideoWriter::release();
 }
 
 VideoWriter::~VideoWriter() {
-    release();
+    try {
+        release();
+    } catch (...) {}
 }
 
 bool VideoWriter::open(const cv::String &filename, int _fourcc, double fps, cv::Size frameSize, bool isColor) {
@@ -273,7 +279,7 @@ bool VideoWriter::open(const cv::String &filename, int apiPreference, int fourcc
                 if (writer_->isOpened()) {
                     return true;
                 }
-                writer_.release();
+                writer_->close();
             }
         } catch (const cv::Exception &e) {
             MV_SDK_LOG_ERROR() << cv::format("VideoWriter raised OpenCV exception:\n\n%s\n", e.what());

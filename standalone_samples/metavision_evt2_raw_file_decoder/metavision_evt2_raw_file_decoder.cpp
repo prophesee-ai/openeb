@@ -107,6 +107,9 @@ int main(int argc, char *argv[]) {
     while (line_first_char == '%') {
         std::string line;
         std::getline(input_file, line);
+        if (line == "% end") {
+            break;
+        }
         line_first_char = input_file.peek();
     };
 

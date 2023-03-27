@@ -15,20 +15,30 @@
 namespace Metavision {
 
 namespace {
-static const std::string integrator_key  = "integrator_name";
-static const std::string plugin_name_key = "plugin_name";
+static const std::string legacy_integrator_key = "integrator_name";
+static const std::string camera_integrator_key = "camera_integrator_name";
+static const std::string plugin_integrator_key = "plugin_integrator_name";
+static const std::string plugin_name_key       = "plugin_name";
 } // namespace
 
 RawFileHeader::RawFileHeader() = default;
 RawFileHeader::RawFileHeader(std::istream &stream) : GenericHeader(stream) {}
 RawFileHeader::RawFileHeader(const HeaderMap &header) : GenericHeader(header) {}
 
-std::string RawFileHeader::get_integrator_name() const {
-    return get_field(integrator_key);
+std::string RawFileHeader::get_camera_integrator_name() const {
+    return get_field(camera_integrator_key);
 }
 
-void RawFileHeader::set_integrator_name(const std::string &integrator_name) {
-    set_field(integrator_key, integrator_name);
+void RawFileHeader::set_camera_integrator_name(const std::string &integrator_name) {
+    set_field(camera_integrator_key, integrator_name);
+}
+
+std::string RawFileHeader::get_plugin_integrator_name() const {
+    return get_field(plugin_integrator_key);
+}
+
+void RawFileHeader::set_plugin_integrator_name(const std::string &integrator_name) {
+    set_field(plugin_integrator_key, integrator_name);
 }
 
 std::string RawFileHeader::get_plugin_name() const {

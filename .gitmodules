@@ -1,0 +1,3 @@
+[submodule "sdk/modules/driver/cpp/3rdparty/hdf5_ecf"]
+	path = sdk/modules/driver/cpp/3rdparty/hdf5_ecf
+	url = https://github.com/prophesee-ai/hdf5_ecf.git

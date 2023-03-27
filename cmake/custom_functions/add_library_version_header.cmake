@@ -8,14 +8,12 @@
 # See the License for the specific language governing permissions and limitations under the License.
 
 set(GIT_BRANCH "HEAD")
-set(GIT_COMMIT_ID "6a744effa905d697563baa52a50715ae69d8ba35")
-set(GIT_COMMIT_DATE "2022-12-15 13:50:43 +0100")
+set(GIT_COMMIT_ID "dc13230743cffb95508a3ed8f101869a8d97607f")
+set(GIT_COMMIT_DATE "2023-03-27 15:26:33 +0200")
+
+find_program(GIT_SCM git DOC "Git version control" HINTS "C:\\Program Files\\Git\\bin\\")
 
 # If git information are not provided in command line when running cmake, try to automatically determine them
-if(NOT GIT_BRANCH OR NOT GIT_COMMIT_ID OR NOT GIT_COMMIT_DATE)
-    find_program(GIT_SCM git DOC "Git version control" HINTS "C:\\Program Files\\Git\\bin\\")
-endif()
-
 if(NOT GIT_BRANCH)
     set(GIT_COMMAND_GET_BRANCH "${GIT_SCM} -C \"${PROJECT_SOURCE_DIR}\" rev-parse --abbrev-ref HEAD")
 else()

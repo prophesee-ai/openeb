@@ -10,7 +10,6 @@
  **********************************************************************************************************************/
 
 #include "metavision/sdk/driver/roi.h"
-#include "metavision/hal/utils/device_roi.h"
 #include "metavision/sdk/driver/camera_error_code.h"
 #include "metavision/sdk/driver/camera_exception.h"
 
@@ -20,25 +19,25 @@ Roi::Roi(I_ROI *roi) : pimpl_(roi) {}
 
 Roi::~Roi() {}
 
-void Roi::set(Rectangle roi) {
-    auto roi_to_set = DeviceRoi(roi.x, roi.y, roi.width, roi.height);
-    pimpl_->set_ROI(roi_to_set, true);
+void Roi::set(Window roi) {
+    auto roi_to_set = I_ROI::Window(roi.x, roi.y, roi.width, roi.height);
+    pimpl_->set_window(roi_to_set);
 }
 
-void Roi::set(const std::vector<bool> &cols_to_enable, const std::vector<bool> &rows_to_enable) {
-    if (!pimpl_->set_ROIs(cols_to_enable, rows_to_enable, true)) {
+void Roi::set(const std::vector<bool> &cols, const std::vector<bool> &rows) {
+    if (!pimpl_->set_lines(cols, rows)) {
         throw(CameraException(
             CameraErrorCode::RoiError,
             "When trying to set advanced ROI: input binary map must be of the same size of the sensor's dimension."));
     }
 }
 
-void Roi::set(const std::vector<Roi::Rectangle> &rois_to_set) {
-    std::vector<DeviceRoi> to_set;
-    for (auto roi : rois_to_set) {
-        to_set.push_back({roi.x, roi.y, roi.width, roi.height});
+void Roi::set(const std::vector<Roi::Window> &rois) {
+    std::vector<I_ROI::Window> windows;
+    for (auto roi : rois) {
+        windows.push_back({roi.x, roi.y, roi.width, roi.height});
     }
-    pimpl_->set_ROIs(to_set);
+    pimpl_->set_windows(windows);
 }
 
 void Roi::unset() {

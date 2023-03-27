@@ -9,129 +9,52 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-#include "metavision/hal/facilities/future/i_events_stream.h"
-#include "metavision/hal/facilities/future/i_decoder.h"
-#include "metavision/hal/utils/future/raw_file_config.h"
+#include "metavision/hal/facilities/i_events_stream.h"
+#include "metavision/hal/utils/raw_file_config.h"
 #include "metavision/sdk/driver/camera.h"
 #include "metavision/sdk/driver/internal/camera_internal.h"
+#include "metavision/sdk/driver/event_file_reader.h"
 #include "metavision/sdk/driver/offline_streaming_control.h"
 #include "metavision/sdk/driver/internal/offline_streaming_control_internal.h"
 #include <thread>
 
 namespace Metavision {
-OfflineStreamingControl::Private::Private(Camera::Private &cam_priv) :
-    camera_priv_(cam_priv), start_ts_(-1), end_ts_(-1), duration_(-1) {
-    i_events_stream_ = camera_priv_.i_future_events_stream_;
-    i_decoder_       = camera_priv_.i_future_decoder_;
+OfflineStreamingControl *OfflineStreamingControl::Private::build(EventFileReader &reader) {
+    return new OfflineStreamingControl(new Private(reader));
 }
 
-bool OfflineStreamingControl::Private::is_valid() const {
-    return i_events_stream_ && i_decoder_;
-}
+OfflineStreamingControl::Private::Private(EventFileReader &reader) : reader_(reader) {}
 
 bool OfflineStreamingControl::Private::is_ready() const {
-    if (!i_events_stream_) {
-        return false;
-    }
-    if (start_ts_ >= 0 && end_ts_ >= 0) {
-        return true;
-    }
-    return i_events_stream_->get_seek_range(start_ts_, end_ts_) == Future::I_EventsStream::IndexStatus::Good;
+    timestamp start_ts, end_ts;
+    return !reader_.seekable() || reader_.get_seek_range(start_ts, end_ts);
 }
 
 bool OfflineStreamingControl::Private::seek(timestamp ts) {
-    if (!i_events_stream_) {
-        return false;
-    }
-    if (start_ts_ < 0 || end_ts_ < 0) {
-        if (i_events_stream_->get_seek_range(start_ts_, end_ts_) != Future::I_EventsStream::IndexStatus::Good) {
-            return false;
-        }
-    }
-
-    auto f = [this, ts] {
-        timestamp ts_reached;
-        if (i_events_stream_->seek(ts, ts_reached) == Future::I_EventsStream::SeekStatus::Success) {
-            i_decoder_->reset_timestamp(ts_reached);
-            camera_priv_.init_clocks();
-            return true;
-        }
-        return false;
-    };
-
-    // if main loop is not running, we can directly seek without risks of the events stream being used
-    // by another thread
-    if (!camera_priv_.is_running_) {
-        return f();
-    }
-
-    // otherwise, submit the seek callback to the camera thread and wait for it to be called
-    auto cb = camera_priv_.add_events_stream_update_callback(f);
-    return cb->wait();
+    return reader_.seek(ts);
 }
 
 timestamp OfflineStreamingControl::Private::get_seek_start_time() const {
-    if (!i_events_stream_) {
-        return false;
-    }
-    if (start_ts_ >= 0 && end_ts_ >= 0) {
-        return start_ts_;
-    }
-    if (i_events_stream_->get_seek_range(start_ts_, end_ts_) == Future::I_EventsStream::IndexStatus::Good) {
-        return start_ts_;
+    timestamp start_ts, end_ts;
+    if (reader_.get_seek_range(start_ts, end_ts)) {
+        return start_ts;
     }
     return -1;
 }
 
 timestamp OfflineStreamingControl::Private::get_seek_end_time() const {
-    if (!i_events_stream_) {
-        return false;
-    }
-    if (start_ts_ >= 0 && end_ts_ >= 0) {
-        return end_ts_;
-    }
-    if (i_events_stream_->get_seek_range(start_ts_, end_ts_) == Future::I_EventsStream::IndexStatus::Good) {
-        return end_ts_;
+    timestamp start_ts, end_ts;
+    if (reader_.get_seek_range(start_ts, end_ts)) {
+        return end_ts;
     }
     return -1;
 }
 
 timestamp OfflineStreamingControl::Private::get_duration() const {
-    if (!i_events_stream_) {
-        return false;
-    }
-    if (duration_ >= 0) {
-        return duration_;
-    }
-    Camera cam = Camera::from_file(i_events_stream_->get_underlying_filename(), false, Future::RawFileConfig());
-    try {
-        auto *i_future_decoder = cam.get_device().get_facility<Future::I_Decoder>();
-        auto *i_decoder        = cam.get_device().get_facility<I_Decoder>();
-        if (i_future_decoder) {
-            i_future_decoder->add_protocol_violation_callback([](auto) {});
-        }
-        if (i_decoder) {
-            i_decoder->add_protocol_violation_callback([](auto) {});
-        }
-    } catch (HalException &e) {}
-    cam.cd().add_callback(
-        [this](const EventCD *begin, const EventCD *end) { duration_ = std::max(duration_, std::prev(end)->t); });
-    cam.offline_streaming_control().seek(get_seek_end_time());
-    cam.start();
-    bool seek_done = false;
-    while (cam.is_running()) {
-        if (!seek_done && cam.offline_streaming_control().is_ready()) {
-            cam.offline_streaming_control().seek(cam.offline_streaming_control().get_seek_end_time());
-            duration_ = std::max(duration_, cam.offline_streaming_control().get_seek_end_time());
-            seek_done = true;
-        }
-        std::this_thread::yield();
-    }
-    return duration_;
+    return reader_.get_duration();
 }
 
-template<>
-OfflineStreamingControl::OfflineStreamingControl(Camera::Private &cam_priv) : pimpl_(new Private(cam_priv)) {}
+OfflineStreamingControl::OfflineStreamingControl(Private *pimpl) : pimpl_(pimpl) {}
 
 OfflineStreamingControl::~OfflineStreamingControl() {}
 

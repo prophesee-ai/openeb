@@ -42,8 +42,6 @@ std::vector<std::function<void(py::module &, py::class_<Device, std::shared_ptr<
 } // namespace Metavision
 
 PYBIND11_MODULE(MODULE_NAME, m) {
-    PyEval_InitThreads();
-
     try {
         py::module::import("metavision_sdk_base");
     } catch (const std::exception &e) {

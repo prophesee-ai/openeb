@@ -31,9 +31,21 @@ public:
     FacilityType *get_facility() {
         static_assert(std::is_base_of<I_RegistrableFacility<FacilityType>, FacilityType>::value,
                       "Unable to get facility of unregistrable facility type.");
-        auto it = facilities_.find(std::hash<std::string>{}(FacilityType::class_registration_info().name()));
+        auto it = facilities_.find(I_RegistrableFacility<FacilityType>::class_registration_info());
         if (it != facilities_.end()) {
-            return static_cast<FacilityType *>(it->second->facility().get());
+            return dynamic_cast<FacilityType *>(it->second->facility().get());
+        }
+        return nullptr;
+    }
+
+    /// @brief Returns facility
+    template<typename FacilityType>
+    const FacilityType *get_facility() const {
+        static_assert(std::is_base_of<I_RegistrableFacility<FacilityType>, FacilityType>::value,
+                      "Unable to get facility of unregistrable facility type.");
+        auto it = facilities_.find(I_RegistrableFacility<FacilityType>::class_registration_info());
+        if (it != facilities_.end()) {
+            return dynamic_cast<const FacilityType *>(it->second->facility().get());
         }
         return nullptr;
     }
@@ -46,9 +58,6 @@ public:
     /// @param dev Device from which a new instance will be moved from
     /// @return A device moved from @p dev
     Device &operator=(Device &&dev) = default;
-
-    /// @brief Destructor
-    ~Device();
 
 private:
     // A device can't be copied

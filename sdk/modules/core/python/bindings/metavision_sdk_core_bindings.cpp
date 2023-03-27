@@ -50,14 +50,14 @@ void export_mostrecent_timestamp_buffer(py::module &m);
 void export_periodic_frame_generation_algorithm(py::module &);
 void export_polarity_filter_algorithm(py::module &);
 void export_polarity_inverter_algorithm(py::module &);
+void export_raw_event_frame_converter(py::module &);
 void export_roi_filter_algorithm(py::module &);
 void export_shared_cd_events_buffer_producer(py::module &);
+void export_stream_logger_algorithm(py::module &);
 void export_timesurface_producer_algorithm(py::module &);
 } // namespace Metavision
 
 PYBIND11_MODULE(MODULE_NAME, m) {
-    PyEval_InitThreads();
-
     // 1. Import dependencies
     try {
         py::module::import("metavision_sdk_base");
@@ -85,7 +85,9 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     Metavision::export_periodic_frame_generation_algorithm(m);
     Metavision::export_polarity_filter_algorithm(m);
     Metavision::export_polarity_inverter_algorithm(m);
+    Metavision::export_raw_event_frame_converter(m);
     Metavision::export_roi_filter_algorithm(m);
     Metavision::export_shared_cd_events_buffer_producer(m);
+    Metavision::export_stream_logger_algorithm(m);
     Metavision::export_timesurface_producer_algorithm(m);
 }

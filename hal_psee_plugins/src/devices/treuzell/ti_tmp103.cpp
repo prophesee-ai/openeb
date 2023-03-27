@@ -10,7 +10,8 @@
  **********************************************************************************************************************/
 
 #include "devices/treuzell/ti_tmp103.h"
-#include "boards/treuzell/tz_libusb_board_command.h"
+#include "devices/treuzell/tz_device_builder.h"
+#include "metavision/psee_hw_layer/boards/treuzell/tz_libusb_board_command.h"
 
 namespace Metavision {
 
@@ -23,17 +24,13 @@ std::shared_ptr<TzDevice> TiTmp103::build(std::shared_ptr<TzLibUSBBoardCommand> 
 }
 static TzRegisterBuildMethod method("ti,tmp103", TiTmp103::build);
 
-void TiTmp103::spawn_facilities(DeviceBuilder &device_builder) {}
+void TiTmp103::spawn_facilities(DeviceBuilder &device_builder, const DeviceConfig &device_config) {}
 
 TiTmp103::~TiTmp103() {}
 
 void TiTmp103::start() {}
 
 void TiTmp103::stop() {}
-
-TzDevice::StreamFormat TiTmp103::get_output_format() {
-    return {std::string("NONE"), nullptr};
-}
 
 int TiTmp103::get_temperature() {
     return cmd->read_device_register(tzID, 0)[0];

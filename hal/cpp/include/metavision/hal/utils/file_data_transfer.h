@@ -34,9 +34,20 @@ public:
     /// @brief Stops ongoing transfers
     ~FileDataTransfer();
 
+    /// @brief Seeks the target position in the file
+    /// @param target_position The target position of the cursor to seek in the file
+    bool seek(const std::streampos &target_position);
+
+    /// @brief Gets the range of available positions when using @ref seek
+    /// @param data_start_pos The offset position of the first data in the file
+    /// @param data_end_pos The offset position of the next position after the last data in the file
+    void get_seek_range(std::streampos &data_start_pos, std::streampos &data_end_pos) const;
+
 private:
     void start_impl(BufferPtr buffer) override final;
     void run_impl() override final;
+
+    virtual bool seek_impl(const std::streampos &target_position);
 
     /// Buffer
     BufferPtr data_read_;
@@ -44,6 +55,15 @@ private:
     /// Bytes batch size to read from stream at each read iteration
     uint32_t read_bytes_size_{0};
 
+    std::mutex seek_mutex_;
+    std::condition_variable seek_cond_;
+    std::atomic<bool> seeking_;
+    BufferPtr seek_buffer_; // extra slack buffer we can use to unblock any pending acquire from the transfer buffer
+                            // pool before doing a seek
+
+    std::mutex stream_mutex_;
+    std::condition_variable stream_cond_;
+    std::streampos data_start_pos_, data_end_pos_;
     std::unique_ptr<std::istream> stream_to_read_;
 };
 } // namespace Metavision

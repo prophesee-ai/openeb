@@ -12,7 +12,10 @@
 #ifndef METAVISION_DRIVER_CAMERA_GENERATION_INTERNAL_H
 #define METAVISION_DRIVER_CAMERA_GENERATION_INTERNAL_H
 
+#include "metavision/sdk/driver/camera_generation.h"
+
 namespace Metavision {
+class Device;
 
 struct CameraGeneration::Private {
     Private(short version_major, short version_minor);

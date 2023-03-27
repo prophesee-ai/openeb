@@ -12,17 +12,16 @@
 #ifndef METAVISION_SDK_UI_BASE_WINDOW_H
 #define METAVISION_SDK_UI_BASE_WINDOW_H
 
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
 #include <functional>
 #include <queue>
 #include <mutex>
 
+#include "metavision/sdk/ui/utils/base_glfw_window.h"
 #include "metavision/sdk/ui/utils/ui_event.h"
 
 namespace Metavision {
 
-/// @brief Base class for displaying images in a window. It uses GLFW and OpenGL under the hood.
+/// @brief Base class for displaying images and handling events in a window, deriving from BaseGLFWUI.
 ///
 /// This class cannot directly be used as is, instead, one needs to instantiate one of its derived class (i.e. @ref
 /// Window or @ref MTWindow).
@@ -32,7 +31,7 @@ namespace Metavision {
 /// @p auto_poll = true (default behavior). Events are polled from the system and push to the windows' internal queue by
 /// calling @ref EventLoop::poll_and_dispatch.
 /// @warning The constructor and destructor of this class must only be called from the main thread
-class BaseWindow {
+class BaseWindow : public BaseGLFWWindow {
 public:
     using KeyCallback       = std::function<void(UIKeyEvent key, int scancode, UIAction action, int mods)>;
     using MouseCallback     = std::function<void(UIMouseButton button, UIAction action, int mods)>;
@@ -53,16 +52,6 @@ public:
     /// @brief Gets the window's color rendering mode
     /// @return The window's color rendering mode (Either @ref RenderMode::GRAY or @ref RenderMode::BGR)
     RenderMode get_rendering_mode() const;
-
-    /// @brief Indicates whether the window has been asked to close
-    /// @return True if the window should close, False otherwise
-    /// @note This returns the window's close flag
-    bool should_close() const;
-
-    /// @brief Asks the window to close
-    /// @note This only sets the window's close flag to True but doesn't actually close the window. The window will
-    /// effectively be closed when the destructor is called.
-    void set_close_flag();
 
     /// @brief Sets a callback that will be called when a key is pressed
     /// @param cb The callback to call on a key event
@@ -110,7 +99,6 @@ protected:
     /// @brief Displays the image as a textured quad
     void draw_background_texture();
 
-    GLFWwindow *glfwWindow_;
     int width_;
     int height_;
 
@@ -158,5 +146,7 @@ private:
     MouseCallback on_mouse_cb_;
     CursorPosCallback on_cursor_pos_cb_;
 };
+
 } // namespace Metavision
+
 #endif // METAVISION_SDK_UI_BASE_WINDOW_H

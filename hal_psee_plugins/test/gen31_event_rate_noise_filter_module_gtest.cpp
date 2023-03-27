@@ -20,11 +20,10 @@
 #include "metavision/hal/utils/hal_exception.h"
 #include "metavision/hal/facilities/i_hw_identification.h"
 #include "metavision/hal/facilities/i_event_rate_noise_filter_module.h"
-#include "metavision/hal/facilities/i_device_control.h"
 #include "metavision/hal/facilities/i_events_stream.h"
-#include "decoders/base/event_base.h"
-#include "decoders/evt2/evt2_event_types.h"
-#include "devices/gen31/gen31_event_rate_noise_filter_module.h"
+#include "metavision/hal/decoders/base/event_base.h"
+#include "metavision/hal/decoders/evt2/evt2_event_types.h"
+#include "metavision/psee_hw_layer/devices/gen31/gen31_event_rate_noise_filter_module.h"
 
 using namespace Metavision;
 
@@ -38,7 +37,7 @@ public:
     void open() {
         try {
             device_ = DeviceDiscovery::open("");
-        } catch (const HalException &e) {
+        } catch (const HalException &) {
             std::cerr << "Plug a camera to run this test." << std::endl;
             FAIL();
             return;

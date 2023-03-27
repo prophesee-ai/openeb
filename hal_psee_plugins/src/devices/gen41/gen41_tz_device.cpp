@@ -9,43 +9,49 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-#ifdef _MSC_VER
-#define NOMINMAX
-#endif
-
-#include "devices/gen41/gen41_tz_device.h"
-#include "devices/utils/device_system_id.h"
-#include "boards/treuzell/tz_libusb_board_command.h"
-#include "devices/treuzell/tz_device.h"
-#include "devices/common/issd.h"
-#include "devices/gen41/gen41_evk3_issd.h"
-#include "devices/gen41/gen41_antiflicker_module.h"
-#include "devices/gen41/gen41_erc.h"
-#include "devices/gen41/gen41_ll_biases.h"
-#include "devices/gen41/gen41_noise_filter_module.h"
-#include "devices/gen41/gen41_roi_command.h"
-#include "devices/gen41/gen41_evk3_regmap_builder.h"
-#include "devices/gen41/gen41_tz_trigger_event.h"
-#include "facilities/psee_hw_register.h"
-#include "geometries/hd_geometry.h"
-#include "metavision/hal/facilities/i_events_stream.h"
-#include "metavision/hal/utils/device_builder.h"
-#include "plugin/psee_plugin.h"
 #include <math.h>
 #include <thread>
 #include <chrono>
+
+#include "devices/gen41/gen41_tz_device.h"
+#include "devices/utils/device_system_id.h"
+#include "metavision/psee_hw_layer/boards/treuzell/tz_libusb_board_command.h"
+#include "metavision/psee_hw_layer/devices/treuzell/tz_device.h"
+#include "devices/treuzell/tz_device_builder.h"
+#include "metavision/psee_hw_layer/boards/treuzell/tz_libusb_board_command.h"
+#include "metavision/psee_hw_layer/devices/treuzell/tz_device.h"
+#include "devices/common/issd.h"
+#include "devices/gen41/gen41_evk3_issd.h"
+#include "metavision/psee_hw_layer/devices/gen41/gen41_antiflicker_module.h"
+#include "metavision/psee_hw_layer/devices/gen41/gen41_digital_event_mask.h"
+#include "metavision/psee_hw_layer/devices/gen41/gen41_digital_crop.h"
+#include "metavision/psee_hw_layer/devices/gen41/gen41_erc.h"
+#include "metavision/psee_hw_layer/devices/gen41/gen41_ll_biases.h"
+#include "metavision/psee_hw_layer/devices/gen41/gen41_event_trail_filter_module.h"
+#include "metavision/psee_hw_layer/devices/gen41/gen41_roi_command.h"
+#include "devices/gen41/register_maps/gen41_evk3_registermap.h"
+#include "metavision/psee_hw_layer/devices/gen41/gen41_tz_trigger_event.h"
+#include "metavision/psee_hw_layer/facilities/psee_hw_register.h"
+#include "geometries/hd_geometry.h"
+#include "metavision/psee_hw_layer/utils/psee_format.h"
+#include "metavision/hal/facilities/i_events_stream.h"
+#include "metavision/hal/utils/device_builder.h"
+#include "plugin/psee_plugin.h"
+#include "utils/psee_hal_utils.h"
 
 using vfield = std::map<std::string, uint32_t>;
 
 namespace Metavision {
 namespace {
 std::string ROOT_PREFIX   = "PSEE/";
-std::string SENSOR_PREFIX = ROOT_PREFIX + "GEN41/";
+std::string SENSOR_PREFIX = "GEN41/";
 } // namespace
 
 TzGen41::TzGen41(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent) :
-    TzDevice(cmd, dev_id, parent), TzIssdDevice(gen41_evk3_issd), TzDeviceWithRegmap(build_gen41_evk3_register_map) {
-    sync_mode_ = I_DeviceControl::SyncMode::STANDALONE;
+    TzDevice(cmd, dev_id, parent),
+    TzIssdDevice(gen41_evk3_issd),
+    TzDeviceWithRegmap(Gen41Evk3RegisterMap, Gen41Evk3RegisterMapSize, ROOT_PREFIX) {
+    sync_mode_ = I_CameraSynchronization::SyncMode::STANDALONE;
     iph_mirror_control(true);
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
     lifo_control(true, true, true);
@@ -66,8 +72,8 @@ bool TzGen41::can_build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_
     return (ret == 0xA0301003 || ret == 0xA0301002);
 }
 
-void TzGen41::spawn_facilities(DeviceBuilder &device_builder) {
-    device_builder.add_facility(std::make_unique<Gen41NoiseFilterModule>(register_map, SENSOR_PREFIX));
+void TzGen41::spawn_facilities(DeviceBuilder &device_builder, const DeviceConfig &device_config) {
+    device_builder.add_facility(std::make_unique<Gen41EventTrailFilterModule>(register_map, SENSOR_PREFIX));
     device_builder.add_facility(std::make_unique<Gen41AntiFlickerModule>(register_map, SENSOR_PREFIX));
 
     auto erc = device_builder.add_facility(
@@ -77,24 +83,58 @@ void TzGen41::spawn_facilities(DeviceBuilder &device_builder) {
 
     auto geometry = HDGeometry();
 
-    auto hw_register = device_builder.add_facility(std::make_unique<PseeHWRegister>(register_map));
-
-    device_builder.add_facility(std::make_unique<Gen41_LL_Biases>(hw_register, SENSOR_PREFIX));
+    auto hw_register = std::make_shared<PseeHWRegister>(register_map);
+    device_builder.add_facility(std::make_unique<Gen41_LL_Biases>(device_config, hw_register, SENSOR_PREFIX));
 
     device_builder.add_facility(
         std::make_unique<Gen41ROICommand>(geometry.get_width(), geometry.get_height(), register_map, SENSOR_PREFIX));
 
     device_builder.add_facility(std::make_unique<Gen41TzTriggerEvent>(register_map, SENSOR_PREFIX, shared_from_this()));
+
+    device_builder.add_facility(
+        std::make_unique<Gen41DigitalEventMask>(register_map, SENSOR_PREFIX + "ro/digital_mask_pixel_"));
+
+    device_builder.add_facility(std::make_unique<Gen41DigitalCrop>(register_map, SENSOR_PREFIX));
 }
 
 TzGen41::~TzGen41() {}
 
 long long TzGen41::get_sensor_id() {
-    return (*register_map)[SENSOR_PREFIX + "chip_id"].read_value();
+    return (*register_map)[SENSOR_PREFIX + "Reserved_0014"].read_value();
 }
 
-TzDevice::StreamFormat TzGen41::get_output_format() {
-    return {std::string("EVT3"), std::make_unique<HDGeometry>()};
+DeviceConfigOptionMap TzGen41::get_device_config_options() const {
+    return {{"format", DeviceConfigOption({"EVT21", "EVT3"}, "EVT3")}};
+}
+
+std::list<StreamFormat> TzGen41::get_supported_formats() const {
+    std::list<StreamFormat> formats;
+    formats.push_back(StreamFormat("EVT3;height=720;width=1280"));
+    formats.push_back(StreamFormat("EVT21;height=720;width=1280;endianness=legacy"));
+    return formats;
+}
+
+StreamFormat TzGen41::set_output_format(const std::string &format_name) {
+    if (format_name == "EVT21") {
+        (*register_map)[SENSOR_PREFIX + "edf/pipeline_control"]["format"].write_value(0x1);
+        (*register_map)[SENSOR_PREFIX + "eoi/Reserved_8000"]["Reserved_7_6"].write_value(0x0);
+    } else {
+        // Default as EVT3
+        (*register_map)[SENSOR_PREFIX + "edf/pipeline_control"]["format"].write_value(0x0);
+        (*register_map)[SENSOR_PREFIX + "eoi/Reserved_8000"]["Reserved_7_6"].write_value(0x2);
+    }
+    return get_output_format();
+}
+
+StreamFormat TzGen41::get_output_format() const {
+    StreamFormat format((*register_map)[SENSOR_PREFIX + "edf/pipeline_control"]["format"].read_value() ? "EVT21" :
+                                                                                                         "EVT3");
+    format["width"]  = "1280";
+    format["height"] = "720";
+    if (format.name() == "EVT21") {
+        format["endianness"] = "legacy";
+    }
+    return format;
 }
 
 long TzGen41::get_system_id() const {
@@ -104,25 +144,25 @@ long TzGen41::get_system_id() const {
 bool TzGen41::set_mode_standalone() {
     time_base_config(false, true);
 
-    sync_mode_ = I_DeviceControl::SyncMode::STANDALONE;
+    sync_mode_ = I_CameraSynchronization::SyncMode::STANDALONE;
     return true;
 }
 
 bool TzGen41::set_mode_master() {
     time_base_config(true, true);
 
-    sync_mode_ = I_DeviceControl::SyncMode::MASTER;
+    sync_mode_ = I_CameraSynchronization::SyncMode::MASTER;
     return true;
 }
 
 bool TzGen41::set_mode_slave() {
     time_base_config(true, false);
 
-    sync_mode_ = I_DeviceControl::SyncMode::SLAVE;
+    sync_mode_ = I_CameraSynchronization::SyncMode::SLAVE;
     return true;
 }
 
-I_DeviceControl::SyncMode TzGen41::get_mode() {
+I_CameraSynchronization::SyncMode TzGen41::get_mode() {
     return sync_mode_;
 }
 

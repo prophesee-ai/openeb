@@ -15,6 +15,8 @@
 
 #include "metavision/hal/device/device.h"
 #include "metavision/hal/facilities/i_hal_software_info.h"
+#include "metavision/hal/facilities/i_hw_identification.h"
+#include "metavision/hal/facilities/i_ll_biases.h"
 #include "metavision/hal/facilities/i_plugin_software_info.h"
 #include "metavision/hal/utils/hal_log.h"
 #include "metavision/hal/utils/device_builder.h"
@@ -40,7 +42,18 @@ const std::shared_ptr<I_PluginSoftwareInfo> &DeviceBuilder::get_plugin_software_
 }
 
 std::unique_ptr<Device> DeviceBuilder::operator()() {
-    return std::unique_ptr<Device>(new Device(facilities_.begin(), facilities_.end()));
+    Device *dev = new Device(facilities_.begin(), facilities_.end());
+
+    if (dev && dev->get_facility<I_LL_Biases>()) {
+        auto hw_identification = dev->get_facility<I_HW_Identification>();
+
+        if (hw_identification) {
+            hw_identification->add_hal_device_config_option(DeviceConfig::get_biases_range_check_bypass_key(),
+                                                            DeviceConfigOption(false));
+        }
+    }
+
+    return std::unique_ptr<Device>(dev);
 }
 
 } // namespace Metavision

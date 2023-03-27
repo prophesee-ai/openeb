@@ -23,7 +23,9 @@ static HALFacilityPythonBinder<I_Monitoring> bind(
             .def("get_temperature", &I_Monitoring::get_temperature,
                  pybind_doc_hal["Metavision::I_Monitoring::get_temperature"])
             .def("get_illumination", &I_Monitoring::get_illumination,
-                 pybind_doc_hal["Metavision::I_Monitoring::get_illumination"]);
+                 pybind_doc_hal["Metavision::I_Monitoring::get_illumination"])
+            .def("get_pixel_dead_time", &I_Monitoring::get_pixel_dead_time,
+                 pybind_doc_hal["Metavision::I_Monitoring::get_pixel_dead_time"]);
     },
     "I_Monitoring", pybind_doc_hal["Metavision::I_Monitoring"]);
 

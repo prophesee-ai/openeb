@@ -7,6 +7,7 @@
  **********************************************************************************************************************/
 
 #include <boost/filesystem.hpp>
+#include <iostream>
 #include <cstddef>
 #include <utility>
 #include <thread>
@@ -124,6 +125,7 @@ void ChromeTracingProfiler::save() {
         }
 
         file_stream << "]}";
+        std::cout << "ChromeTracingProfiler results saved to '" << output_path_ << "'" << std::endl;
     }
 }
 

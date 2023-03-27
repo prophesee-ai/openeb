@@ -13,9 +13,13 @@
 
 namespace Metavision {
 
-I_PluginSoftwareInfo::I_PluginSoftwareInfo(const std::string &plugin_name,
+I_PluginSoftwareInfo::I_PluginSoftwareInfo(const std::string &plugin_integrator_name, const std::string &plugin_name,
                                            const Metavision::SoftwareInfo &software_info) :
-    plugin_name_(plugin_name), pimpl_(software_info) {}
+    plugin_integrator_name_(plugin_integrator_name), plugin_name_(plugin_name), pimpl_(software_info) {}
+
+const std::string &I_PluginSoftwareInfo::get_plugin_integrator_name() const {
+    return plugin_integrator_name_;
+}
 
 const std::string &I_PluginSoftwareInfo::get_plugin_name() const {
     return plugin_name_;

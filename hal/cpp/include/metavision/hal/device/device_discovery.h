@@ -16,8 +16,8 @@
 #include <memory>
 #include <string>
 
+#include "metavision/hal/utils/device_config.h"
 #include "metavision/hal/utils/raw_file_config.h"
-#include "metavision/hal/utils/future/raw_file_config.h"
 
 namespace Metavision {
 
@@ -97,6 +97,12 @@ public:
     /// @brief Lists only remote available sources.
     static SystemList list_available_sources_remote();
 
+    /// @brief Lists DeviceConfig options supported by the camera
+    /// @param serial Serial number of the camera which options' should be listed. If it is an empty string, the first
+    /// available camera will be considered
+    /// @return A map of (key,option) that represent the DeviceConfig options
+    static DeviceConfigOptionMap list_device_config_options(const std::string &serial);
+
     /// @brief Builds a new Device
     /// @param serial Serial number of the camera to open. If it is an empty string, the first available camera will be
     /// opened
@@ -120,12 +126,6 @@ public:
     /// @param file_config Configuration describing how to read the file (see @ref RawFileConfig)
     /// @return A new Device
     static std::unique_ptr<Device> open_raw_file(const std::string &raw_file, RawFileConfig &file_config);
-
-    /// @brief Builds a new Device from file
-    /// @param raw_file Path to the file to open
-    /// @param file_config Configuration describing how to read the file (see @ref RawFileConfig)
-    /// @return A new Device
-    static std::unique_ptr<Device> open_raw_file(const std::string &raw_file, Future::RawFileConfig &file_config);
 
     /// @brief Builds a new Device from a standard input stream
     /// @param stream The input stream to read from. The device takes ownership of the input stream to ensure its

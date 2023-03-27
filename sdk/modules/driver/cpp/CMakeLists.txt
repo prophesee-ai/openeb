@@ -7,6 +7,9 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
+# Add third party projects
+add_subdirectory(3rdparty)
+
 # Add library
 add_subdirectory(lib)
 

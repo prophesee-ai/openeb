@@ -6,7 +6,7 @@ on:
     - cron: "15 2 1 */2 *"
 
 env:
-  win_binaries_download_address: "https://prophesee-bamboo.s3.eu-west-1.amazonaws.com/build-env/vcpkg-export-20221025-MV3.1.0.zip"
+  win_binaries_download_address: "https://prophesee-bamboo.s3.eu-west-1.amazonaws.com/build-env/vcpkg-export-20230323-MV4.0.0.zip"
   ffmpeg_archive_download_address: "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full.7z"
 
 jobs:
@@ -31,14 +31,3 @@ jobs:
         with:
           name: ffmpeg_archive
           path: ffmpeg-archive.7z
-
-      - name: Slack Notification
-        if: always()
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_WEBHOOK: ${{ secrets.OPENEB_GITHUB_PROPHESEE_SLACK_WEBHOOK }}
-          SLACK_TITLE: VCPKG export update
-          SLACK_MESSAGE: "Status: ${{ job.status }}"
-          SLACK_COLOR: ${{ job.status }}
-          SLACK_FOOTER: ""
-          MSG_MINIMAL: true

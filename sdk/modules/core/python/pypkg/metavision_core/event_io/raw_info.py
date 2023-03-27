@@ -12,8 +12,53 @@ Get Raw Duration: Either search for a json filename called "path_name_info.json"
 """
 
 import json
-from os.path import exists, splitext
+from os.path import exists, splitext, isfile
 from metavision_core.event_io.raw_reader import RawReader
+from metavision_sdk_base import GenericHeader
+
+
+def raw_file_header(path):
+    """
+    Reads path raw and returns a dictionary of the header
+    """
+    assert isfile(path)
+    header = GenericHeader(path)
+    return header.get_header_map()
+
+
+def is_event_raw(path):
+    """
+    Reads the header of a raw file and returns True if it contains events, False otherwise
+    """
+    header_dic = raw_file_header(path)
+    if header_dic == {}:
+        return False
+    return "format" not in header_dic or header_dic["format"] not in ["DIFF3D", "HISTO3D"]
+
+
+def is_event_frame_raw(path):
+    """
+    Reads the header of a raw file and returns True if it contains event frames, False otherwise
+    """
+    header_dic = raw_file_header(path)
+    if header_dic == {}:
+        return False
+    return "format" in header_dic and header_dic["format"] in ["DIFF3D", "HISTO3D"]
+
+
+def raw_histo_header_bits_per_channel(path):
+    """
+    Reads the header of a histo raw file and returns the number of bits used for the negative and positive channels
+    """
+    header_dic = raw_file_header(path)
+    assert "pixellayout" in header_dic
+    pixel_layout = header_dic["pixellayout"]
+    pixel_layout_array = pixel_layout.split("p/")
+    assert len(pixel_layout_array) == 2
+    assert pixel_layout_array[1][-1] == "n"
+    bits_pos = int(pixel_layout_array[0])
+    bits_neg = int(pixel_layout_array[1][:-1])
+    return bits_neg, bits_pos
 
 
 def read_raw_info(path):

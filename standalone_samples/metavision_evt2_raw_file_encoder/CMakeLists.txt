@@ -10,7 +10,7 @@
 project(metavision_evt2_raw_file_encoder)
 cmake_minimum_required(VERSION 3.0)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 add_executable(metavision_evt2_raw_file_encoder metavision_evt2_raw_file_encoder.cpp)
 

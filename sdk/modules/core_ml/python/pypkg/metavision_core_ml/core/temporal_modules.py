@@ -242,8 +242,8 @@ class ConvLSTMCell(RNNCell):
             assert mask.shape == torch.Size([len(self.prev_h), 1, 1, 1])
             self.prev_h.detach_()
             self.prev_c.detach_()
-            self.prev_h *= mask.to(device=self.prev_h.device)
-            self.prev_c *= mask.to(device=self.prev_c.device)
+            self.prev_h = self.prev_h*mask.to(device=self.prev_h.device)
+            self.prev_c = self.prev_c*mask.to(device=self.prev_c.device)
 
     @torch.jit.export
     def reset_all(self):
@@ -320,7 +320,7 @@ class ConvGRUCell(RNNCell):
         if batch_size == len(mask) and self.prev_h.device == mask.device:
             assert mask.shape == torch.Size([len(self.prev_h), 1, 1, 1])
             self.prev_h.detach_()
-            self.prev_h *= mask.to(device=self.prev_h.device)
+            self.prev_h = self.prev_h*mask.to(device=self.prev_h.device)
 
 
 class ConvRNN(nn.Module):

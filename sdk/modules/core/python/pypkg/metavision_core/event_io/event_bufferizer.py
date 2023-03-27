@@ -42,7 +42,8 @@ class FixedTimeBuffer(object):
         if dt > self.delta_t:
             expected_time = self.current_time + self.delta_t
             idx = np.searchsorted(events["t"], expected_time)
-            tmp = np.concatenate(self.event_buffer+[events[:idx]])
+            ev_dtype = events[0].dtype
+            tmp = np.concatenate(self.event_buffer+[events[:idx]]).astype(ev_dtype)
             self.event_buffer = [events[idx:]]
             self.current_time += self.delta_t
             return tmp
@@ -69,8 +70,9 @@ class FixedCountBuffer(object):
             return self.no_events
         count = self.count + len(events)
         if count > self.max_count:
-            idx = self.max_count - self.count
-            tmp = np.concatenate(self.event_buffer+[events[:idx]])
+            idx = int(self.max_count - self.count)
+            ev_dtype = events[0].dtype
+            tmp = np.concatenate(self.event_buffer+[events[:idx]]).astype(ev_dtype)
             self.event_buffer = [events[idx:]]
             self.count = len(self.event_buffer[0])
             return tmp

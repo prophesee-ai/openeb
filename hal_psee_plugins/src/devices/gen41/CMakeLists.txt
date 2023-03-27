@@ -7,21 +7,21 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-target_sources(metavision_hal_gen41_camera_obj PRIVATE
+target_sources(metavision_psee_hw_layer_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/gen41_ll_biases.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gen41_roi_command.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gen41_antiflicker_module.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/gen41_noise_filter_module.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gen41_event_trail_filter_module.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gen41_erc.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gen41_tz_trigger_event.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gen41_digital_event_mask.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gen41_digital_crop.cpp
 )
 
 target_sources(metavision_hal_gen41_evk2_system_obj PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/gen41_evk2_regmap_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gen41_evk2_tz_device.cpp
 )
 
 target_sources(metavision_hal_gen41_evk3_system_obj PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/gen41_evk3_regmap_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gen41_tz_device.cpp
 )

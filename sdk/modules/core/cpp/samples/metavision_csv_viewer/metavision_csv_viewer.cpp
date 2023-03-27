@@ -10,7 +10,7 @@
  **********************************************************************************************************************/
 
 // This code sample demonstrates how to use Metavision Core SDK pipeline utility to display events read from a CSV
-// formatted event-based file, such as one produced by the sample metavision_raw_to_csv. It also shows how to create a
+// formatted event-based file, such as one produced by the sample metavision_file_to_csv. It also shows how to create a
 // class deriving from BaseStage that produces data but consumes nothing.
 
 #include <iostream>

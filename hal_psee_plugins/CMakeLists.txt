@@ -7,17 +7,18 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/src/devices/gen4")
-    set(HAL_GEN4_SUPPORT TRUE)
-endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/src/devices/gen4")
+if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/src/devices/saphir")
+    set(HAL_SAPHIR_SUPPORT TRUE)
+endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/src/devices/saphir")
 
-if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/src/devices/raven")
-    set(HAL_RAVEN_SUPPORT TRUE)
-endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/src/devices/raven")
+if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/src/devices/sensorlib")
+    set(HAL_SENSORLIB_SUPPORT TRUE)
+endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/src/devices/sensorlib")
 
 # Add libraries (plugins)
 set(biasgen_calib_files_dir "${GENERATE_FILES_DIRECTORY}/biasgen_calib")
 set(metavision_hal_psee_plugins_include_dir "${CMAKE_CURRENT_SOURCE_DIR}/include")
+set(metavision_psee_hw_layer_include_dir "${CMAKE_CURRENT_SOURCE_DIR}/psee_hw_layer_headers/include")
 add_subdirectory(lib)
 
 # Add sources plugins
@@ -29,9 +30,18 @@ add_subdirectory(resources)
 # Apps
 add_subdirectory(apps)
 
+# Samples
+add_subdirectory(samples)
+
 # Tests
 if (BUILD_TESTING)
     add_subdirectory(test)
 endif (BUILD_TESTING)
 
+# Project Raven
+if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/raven")
+    add_subdirectory(raven)
+endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/raven")
+
+add_cpack_component(PUBLIC metavision-hal-prophesee-hw-layer-lib metavision-hal-prophesee-hw-layer-dev)
 add_cpack_component(PUBLIC metavision-hal-prophesee-plugins)

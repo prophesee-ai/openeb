@@ -9,57 +9,52 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-#include "devices/common/evk2_tz_trigger_event.h"
-#include "utils/register_map.h"
+#include "metavision/psee_hw_layer/devices/common/evk2_tz_trigger_event.h"
+#include "metavision/psee_hw_layer/utils/register_map.h"
 
 namespace Metavision {
 
 Evk2TzTriggerEvent::Evk2TzTriggerEvent(const std::shared_ptr<RegisterMap> &register_map, const std::string &prefix,
                                        const std::shared_ptr<TzDevice> tzDev) :
-    register_map_(register_map), prefix_(prefix), tzDev_(tzDev) {
-    for (const auto &id : chan_ids_) {
-        disable(static_cast<int>(id));
+    register_map_(register_map), prefix_(prefix), tzDev_(tzDev), chan_map_{{Channel::Main, 1}, {Channel::Loopback, 3}} {
+    for (const auto &p : chan_map_) {
+        disable(p.first);
     }
 }
 
-bool Evk2TzTriggerEvent::is_valid_id(uint32_t channel) {
-    for (const auto &id : chan_ids_) {
-        if (static_cast<uint32_t>(id) == channel) {
-            return true;
-        }
+bool Evk2TzTriggerEvent::enable(const Channel &channel) {
+    auto it = chan_map_.find(channel);
+    if (it == chan_map_.end()) {
+        return false;
     }
-    return false;
+    (*register_map_)[prefix_ + "SYSTEM_MONITOR/EXT_TRIGGERS/ENABLE"]["TRIGGER_" + std::to_string(it->second)]
+        .write_value(1);
+    return true;
 }
 
-bool Evk2TzTriggerEvent::enable(uint32_t channel) {
-    bool valid = is_valid_id(channel);
-
-    if (valid) {
-        (*register_map_)[prefix_ + "SYSTEM_MONITOR/EXT_TRIGGERS/ENABLE"]["TRIGGER_" + std::to_string(channel)]
-            .write_value(1);
+bool Evk2TzTriggerEvent::disable(const Channel &channel) {
+    auto it = chan_map_.find(channel);
+    if (it == chan_map_.end()) {
+        return false;
     }
-    return valid;
+    (*register_map_)[prefix_ + "SYSTEM_MONITOR/EXT_TRIGGERS/ENABLE"]["TRIGGER_" + std::to_string(it->second)]
+        .write_value(0);
+    return true;
 }
 
-bool Evk2TzTriggerEvent::disable(uint32_t channel) {
-    bool valid = is_valid_id(channel);
-
-    if (valid) {
-        (*register_map_)[prefix_ + "SYSTEM_MONITOR/EXT_TRIGGERS/ENABLE"]["TRIGGER_" + std::to_string(channel)]
-            .write_value(0);
+bool Evk2TzTriggerEvent::is_enabled(const Channel &channel) const {
+    auto it = chan_map_.find(channel);
+    if (it == chan_map_.end()) {
+        return false;
     }
-    return valid;
+    long value =
+        (*register_map_)[prefix_ + "SYSTEM_MONITOR/EXT_TRIGGERS/ENABLE"]["TRIGGER_" + std::to_string(it->second)]
+            .read_value();
+    return (value == 1);
 }
 
-bool Evk2TzTriggerEvent::is_enabled(uint32_t channel) {
-    bool valid = is_valid_id(channel);
-    long value = 0;
-
-    if (valid) {
-        value = (*register_map_)[prefix_ + "SYSTEM_MONITOR/EXT_TRIGGERS/ENABLE"]["TRIGGER_" + std::to_string(channel)]
-                    .read_value();
-    }
-    return valid && (value == 1);
+std::map<I_TriggerIn::Channel, short> Evk2TzTriggerEvent::get_available_channels() const {
+    return chan_map_;
 }
 
 } // namespace Metavision

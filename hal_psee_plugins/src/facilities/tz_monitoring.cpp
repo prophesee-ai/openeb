@@ -9,24 +9,35 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-#include "facilities/tz_monitoring.h"
+#include "metavision/hal/utils/hal_exception.h"
+#include "metavision/psee_hw_layer/facilities/tz_monitoring.h"
 
 namespace Metavision {
 
 TzMonitoring::TzMonitoring(const std::shared_ptr<TemperatureProvider> &temp,
-                           const std::shared_ptr<IlluminationProvider> &illu) :
-    temp_(temp), illu_(illu) {}
+                           const std::shared_ptr<IlluminationProvider> &illu,
+                           const std::shared_ptr<PixelDeadTimeProvider> &pixel_dead_time_provider) :
+    temp_(temp), illu_(illu), pixel_dead_time_provider_(pixel_dead_time_provider) {}
 
 int TzMonitoring::get_temperature() {
-    if (temp_)
-        return temp_->get_temperature();
-    return -274;
+    if (!temp_) {
+        throw HalException(HalErrorCode::OperationNotImplemented);
+    }
+    return temp_->get_temperature();
 }
 
 int TzMonitoring::get_illumination() {
-    if (illu_)
-        return illu_->get_illumination();
-    return 0;
+    if (!illu_) {
+        throw HalException(HalErrorCode::OperationNotImplemented);
+    }
+    return illu_->get_illumination();
+}
+
+int TzMonitoring::get_pixel_dead_time() {
+    if (!pixel_dead_time_provider_) {
+        throw HalException(HalErrorCode::OperationNotImplemented);
+    }
+    return pixel_dead_time_provider_->get_pixel_dead_time();
 }
 
 } // namespace Metavision

@@ -11,6 +11,7 @@
 Unit tests for EventDatReader class
 """
 import os
+import math
 import numpy as np
 
 from metavision_core.event_io.py_reader import EventDatReader
@@ -42,7 +43,7 @@ def pytestcase_init(dataset_dir):
     assert record.done is False
     assert record.current_time == 0
     assert record.current_event_index() == 0
-    assert record.duration_s == 7.702845
+    assert math.isclose(record.duration_s, 7.702821)
     assert record.load_n_events(1).dtype == np.dtype({'names': ['x', 'y', 'p', 't'],
                                                       'formats': ['<u2', '<u2', '<i2', '<i8'],
                                                       'offsets': [0, 2, 4, 8], 'itemsize': 16})
@@ -64,8 +65,7 @@ def pytestcase_load_n_events(dataset_dir):
     # we loaded 10 events, so cursor should have been shifted by 10
     assert record.current_event_index() == 12
     assert record.done is False
-    # current time should be the timestamp of the event that will be loaded next
-    assert record.current_time == 88
+    assert record.current_time == 87
 
 
 def pytestcase_load_n_events_second_test(dataset_dir):
@@ -78,8 +78,7 @@ def pytestcase_load_n_events_second_test(dataset_dir):
     events = record.load_n_events(824)
     assert record.current_event_index() == 824
     assert record.done is False
-    # current time should be the timestamp of the event that will be loaded next
-    assert record.current_time == 9814
+    assert record.current_time == 9812
     events = record.load_n_events(2)
     reference = np.array([(364, 97, 0, 9814), (254, 463, 0, 9824)],
                          dtype={'names': ['x', 'y', 'p', 't'], 'formats': ['<u2', '<u2', '<i2', '<i8'],
@@ -88,8 +87,7 @@ def pytestcase_load_n_events_second_test(dataset_dir):
     assert all([np.allclose(events[name], reference[name]) for name in events.dtype.names])
     assert record.current_event_index() == 826
     assert not record.done
-    # current time should be the timestamp of the last event + 1
-    assert record.current_time == 9867
+    assert record.current_time == 9824
 
 
 def pytestcase_reset(dataset_dir):
@@ -117,9 +115,9 @@ def pytestcase_load_event_plus_delta_t(dataset_dir):
                                 'offsets': [0, 2, 4, 8], 'itemsize': 16})
     assert all([np.allclose(test[name], reference[name]) for name in events.dtype.names])
     # current time should be the timestamp of the event that will be loaded next
-    assert record.current_time == 93
-    events = record.load_delta_t(82)
-    # current time will be 93 + 82 = 175 but event with ts 175 will not be loaded
+    assert record.current_time == 88
+    events = record.load_delta_t(87)
+    # current time will be 88 + 87 = 175 but event with ts 175 will not be loaded
     reference = np.array([(401, 367, 1,  93), (421, 332, 1, 118), (569, 360, 1, 121), (385, 220, 1, 135),
                           (182, 213, 1, 138), (354, 340, 1, 138), (390, 331, 0, 163)],
                          dtype={'names': ['x', 'y', 'p', 't'], 'formats': ['<u2', '<u2', '<i2', '<i8'],
@@ -141,8 +139,8 @@ def pytestcase_seek_event_future(dataset_dir):
     record.seek_event(13)
     assert record.current_event_index() == 13
     assert record.done is False
-    # current_time should be the timestamp of the fourteenth event
-    assert record.current_time == 93
+    # current_time should be the timestamp of the thirteenth event
+    assert record.current_time == 88
 
 
 def pytestcase_seek_event_past(dataset_dir):
@@ -156,51 +154,13 @@ def pytestcase_seek_event_past(dataset_dir):
     record.load_n_events(18)
     assert record.current_event_index() == 18
     assert record.done is False
-    # current_time should be the timestamp of the nineteenth event
+    # current_time should be the timestamp of the eighteenth event
     assert record.current_time == 138
     record.seek_event(15)
     assert record.current_event_index() == 15
     assert record.done is False
-    # current_time should be the timestamp of the sixteenth event
-    assert record.current_time == 121
-
-
-def pytestcase_seek_event_zero(dataset_dir):
-    """Tests seeking in the file after 0 event"""
-    filename = os.path.join(dataset_dir,
-                            "openeb", "core", "event_io", "recording_td.dat")
-    record = EventDatReader(filename)
-    assert record.current_event_index() == 0
-    assert record.done is False
-    assert record.current_time == 0
-    record.load_n_events(18)
-    assert record.current_event_index() == 18
-    assert record.done is False
-    # current_time should be the timestamp of the nineteenth event
-    assert record.current_time == 138
-    record.seek_event(0)
-    assert record.current_event_index() == 0
-    assert record.done is False
-    assert record.current_time == 0
-
-
-def pytestcase_seek_event_negative(dataset_dir):
-    """Tests seeking in the file after a negative number of events"""
-    filename = os.path.join(dataset_dir,
-                            "openeb", "core", "event_io", "recording_td.dat")
-    record = EventDatReader(filename)
-    assert record.current_event_index() == 0
-    assert record.done is False
-    assert record.current_time == 0
-    record.load_n_events(18)
-    assert record.current_event_index() == 18
-    assert record.done is False
-    # current_time should be the timestamp of the nineteenth event
-    assert record.current_time == 138
-    record.seek_event(-4)
-    assert record.current_event_index() == 0
-    assert record.done is False
-    assert record.current_time == 0
+    # current_time should be the timestamp of the fifteenth event
+    assert record.current_time == 118
 
 
 def pytestcase_seek_time_with_numerous_events(dataset_dir):
@@ -213,17 +173,6 @@ def pytestcase_seek_time_with_numerous_events(dataset_dir):
     assert record.current_event_index() == 14
     assert record.done is False
     assert record.current_time == 100
-
-
-def pytestcase_seek_time_with_negative_time(dataset_dir):
-    """Tests seeking in a file at a position with negative time"""
-    filename = os.path.join(dataset_dir,
-                            "openeb", "core", "event_io", "recording_td.dat")
-    record = EventDatReader(filename)
-    record.seek_time(-15)
-    assert record.current_event_index() == 0
-    assert record.done is False
-    assert record.current_time == 0
 
 
 def pytestcase_cycle_consistency_read_write(tmpdir, dataset_dir):
@@ -245,12 +194,11 @@ def pytestcase_cycle_consistency_read_write(tmpdir, dataset_dir):
         writer.write(events)
     writer.close()
 
-    new_event_buffers = []
     new_record = EventDatReader(tmp_filename)
     assert new_record.ev_type == 0
     assert new_record.get_size() == [480, 640]
     assert record.current_time >= new_record.duration_s * 1e6
-    assert events['t'][-1] == new_record.duration_s * 1e6
+    assert math.isclose(events['t'][-1] - event_buffers[0]['t'][0], new_record.duration_s * 1e6)
     assert new_record.event_count() == 20 * 1000
 
     for i, events in enumerate(event_buffers):

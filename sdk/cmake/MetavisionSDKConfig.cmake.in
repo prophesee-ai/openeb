@@ -489,4 +489,9 @@ else()
     endif(MetavisionSDK_FIND_REQUIRED)
 endif(MetavisionSDK_FOUND)
 
+if (NOT CMAKE_BUILD_TYPE)
+    message(WARNING "Beware your built type isn't set and it may result in your app running slow."
+    "\nIf this is not intended, please use `-DCMAKE_BUILD_TYPE=Release` when invoking CMake to ensure good performances")
+endif()
+
 cmake_policy(POP)

@@ -9,30 +9,36 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-#ifdef _MSC_VER
-#define NOMINMAX
-#endif
+#include <math.h>
 
 #include "devices/gen31/gen31_ccam5_tz_device.h"
 #include "devices/utils/device_system_id.h"
-#include "boards/treuzell/tz_libusb_board_command.h"
-#include "devices/treuzell/tz_device.h"
+#include "metavision/psee_hw_layer/boards/treuzell/tz_libusb_board_command.h"
+#include "metavision/psee_hw_layer/devices/treuzell/tz_device.h"
 #include "devices/common/issd.h"
 #include "devices/gen31/gen31_evk3_issd.h"
-#include "devices/gen31/gen31_event_rate_noise_filter_module.h"
+#include "devices/treuzell/tz_device_builder.h"
+#include "metavision/psee_hw_layer/devices/gen31/gen31_event_rate_noise_filter_module.h"
 #include "devices/gen31/gen31_ccam5_trigger_event.h"
 #include "devices/gen31/gen31_ccam5_trigger_out.h"
-#include "devices/gen31/gen31_ll_biases.h"
-//#include "devices/gen31/gen31_pattern_generator.h"
-#include "devices/gen31/gen31_roi_command.h"
-#include "devices/gen31/register_maps/gen31_evk3_device.h"
-#include "facilities/psee_hw_register.h"
+#include "metavision/psee_hw_layer/devices/gen31/gen31_ll_biases.h"
+#include "metavision/psee_hw_layer/devices/gen31/gen31_roi_command.h"
+#include "metavision/psee_hw_layer/facilities/psee_hw_register.h"
+#include "metavision/psee_hw_layer/utils/psee_format.h"
 #include "geometries/vga_geometry.h"
 #include "metavision/hal/utils/device_builder.h"
 #include "plugin/psee_plugin.h"
 #include "metavision/hal/utils/hal_error_code.h"
 #include "metavision/hal/utils/hal_exception.h"
-#include <math.h>
+#include "utils/psee_hal_utils.h"
+#include "metavision/psee_hw_layer/utils/regmap_data.h"
+
+#include "devices/gen31/register_maps/ccam5_single_gen31_system_control_registermap.h"
+#include "devices/utils/register_maps/common/ccam2_system_monitor_trigger_ext_adc.h"
+#include "devices/utils/register_maps/common/system_config_registermap.h"
+#include "devices/gen31/register_maps/ccam3_single_gen31_sensorif_registermap.h"
+#include "devices/utils/register_maps/common/mipitx_registermap.h"
+#include "devices/utils/register_maps/common/spi_flash_master_registermap.h"
 
 namespace Metavision {
 
@@ -46,10 +52,22 @@ TzCcam5Gen31::TzCcam5Gen31(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t d
                            std::shared_ptr<TzDevice> parent) :
     TzDevice(cmd, dev_id, parent),
     TzPseeFpgaDevice(),
-    TzDeviceWithRegmap(build_gen31_evk3_register_map),
+    TzDeviceWithRegmap(
+        {
+            std::make_tuple(ccam5_single_gen31_SystemControlRegisterMap,
+                            ccam5_single_gen31_SystemControlRegisterMapSize, "SYSTEM_CONTROL/", 0),
+            std::make_tuple(CCAM2SystemMonitorTriggerExtADC, CCAM2SystemMonitorTriggerExtADCSize, "SYSTEM_MONITOR/",
+                            0x40),
+            std::make_tuple(ccam3_single_gen31_Gen31SensorIFRegisterMap,
+                            ccam3_single_gen31_Gen31SensorIFRegisterMapSize, "SENSOR_IF/", 0x200),
+            std::make_tuple(SystemConfigRegisterMap, SystemConfigRegisterMapSize, "SYSTEM_CONFIG/", 0x800),
+            std::make_tuple(MIPITXRegisterMap, MIPITXRegisterMapSize, "MIPI_TX/", 0x1500),
+            std::make_tuple(SPIFlashMasterRegisterMap, SPIFlashMasterRegisterMapSize, "FLASH/", 0x1600),
+        },
+        CCAM5_PREFIX),
     TzIssdDevice(gen31_evk3_sequence) {
     (*register_map)["SENSOR_IF/GEN31/lifo_ctrl"]["lifo_en"] = 0x1;
-    sync_mode_                                              = I_DeviceControl::SyncMode::STANDALONE;
+    sync_mode_                                              = I_CameraSynchronization::SyncMode::STANDALONE;
 }
 
 std::shared_ptr<TzDevice> TzCcam5Gen31::build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id,
@@ -60,15 +78,14 @@ std::shared_ptr<TzDevice> TzCcam5Gen31::build(std::shared_ptr<TzLibUSBBoardComma
 }
 static TzRegisterBuildMethod method("psee,ccam5_fpga", TzCcam5Gen31::build);
 
-void TzCcam5Gen31::spawn_facilities(DeviceBuilder &device_builder) {
+void TzCcam5Gen31::spawn_facilities(DeviceBuilder &device_builder, const DeviceConfig &device_config) {
     device_builder.add_facility(std::make_unique<Gen31Ccam5TriggerEvent>(register_map, shared_from_this()));
     device_builder.add_facility(std::make_unique<Gen31Ccam5TriggerOut>(
         register_map, std::dynamic_pointer_cast<TzCcam5Gen31>(shared_from_this())));
 
-    auto hw_register = device_builder.add_facility(std::make_unique<PseeHWRegister>(register_map));
-    device_builder.add_facility(std::make_unique<Gen31_LL_Biases>(hw_register, SENSOR_PREFIX));
+    auto hw_register = std::make_shared<PseeHWRegister>(register_map);
+    device_builder.add_facility(std::make_unique<Gen31_LL_Biases>(device_config, hw_register, SENSOR_PREFIX));
     device_builder.add_facility(std::make_unique<Gen31_EventRateNoiseFilterModule>(hw_register, SENSOR_PREFIX));
-
     auto geometry = VGAGeometry();
     device_builder.add_facility(
         std::make_unique<Gen31ROICommand>(geometry.get_width(), geometry.get_height(), register_map, SENSOR_PREFIX));
@@ -82,23 +99,25 @@ long TzCcam5Gen31::get_system_id() const {
     return TzPseeFpgaDevice::get_system_id();
 }
 
-long TzCcam5Gen31::get_system_version() const {
-    return TzPseeFpgaDevice::get_system_version();
-}
-
 long long TzCcam5Gen31::get_sensor_id() {
     return (*register_map)["SENSOR_IF/GEN31/chip_id"].read_value();
 }
 
-TzDevice::StreamFormat TzCcam5Gen31::get_output_format() {
-    return {std::string("EVT3"), std::make_unique<VGAGeometry>()};
+std::list<StreamFormat> TzCcam5Gen31::get_supported_formats() const {
+    std::list<StreamFormat> formats;
+    formats.push_back(StreamFormat("EVT3;height=480;width=640"));
+    return formats;
+}
+
+StreamFormat TzCcam5Gen31::get_output_format() const {
+    return StreamFormat("EVT3;height=480;width=640");
 }
 
 bool TzCcam5Gen31::set_mode_standalone() {
     (*register_map)["SYSTEM_CONTROL/ATIS_CONTROL"]["MASTER_MODE"]   = 0x1;
     (*register_map)["SYSTEM_CONTROL/ATIS_CONTROL"]["USE_EXT_START"] = 0x0;
 
-    sync_mode_ = I_DeviceControl::SyncMode::STANDALONE;
+    sync_mode_ = I_CameraSynchronization::SyncMode::STANDALONE;
     return true;
 }
 
@@ -106,7 +125,7 @@ bool TzCcam5Gen31::set_mode_master() {
     (*register_map)["SYSTEM_CONTROL/ATIS_CONTROL"]["MASTER_MODE"]   = 0x1;
     (*register_map)["SYSTEM_CONTROL/ATIS_CONTROL"]["USE_EXT_START"] = 0x1;
 
-    sync_mode_ = I_DeviceControl::SyncMode::MASTER;
+    sync_mode_ = I_CameraSynchronization::SyncMode::MASTER;
     return true;
 }
 
@@ -114,11 +133,11 @@ bool TzCcam5Gen31::set_mode_slave() {
     (*register_map)["SYSTEM_CONTROL/ATIS_CONTROL"]["MASTER_MODE"]   = 0x0;
     (*register_map)["SYSTEM_CONTROL/ATIS_CONTROL"]["USE_EXT_START"] = 0x1;
 
-    sync_mode_ = I_DeviceControl::SyncMode::SLAVE;
+    sync_mode_ = I_CameraSynchronization::SyncMode::SLAVE;
     return true;
 }
 
-I_DeviceControl::SyncMode TzCcam5Gen31::get_mode() {
+I_CameraSynchronization::SyncMode TzCcam5Gen31::get_mode() {
     return sync_mode_;
 }
 

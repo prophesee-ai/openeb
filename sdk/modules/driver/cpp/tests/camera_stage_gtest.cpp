@@ -17,14 +17,13 @@
 #include <array>
 #include <boost/filesystem.hpp>
 
-#include "metavision/hal/facilities/future/i_decoder.h"
 #include "metavision/sdk/base/events/event_cd.h"
 #include "metavision/utils/gtest/gtest_with_tmp_dir.h"
 #include "metavision/sdk/driver/camera_exception.h"
 #include "metavision/sdk/driver/pipeline/camera_stage.h"
 #include "metavision/sdk/driver/internal/camera_internal.h"
 #include "metavision/sdk/core/pipeline/pipeline.h"
-#include "metavision/hal/facilities/i_decoder.h"
+#include "metavision/hal/facilities/i_events_stream_decoder.h"
 #include "metavision/hal/utils/raw_file_header.h"
 #include "tencoder_gtest_common.h"
 
@@ -45,7 +44,8 @@ protected:
 
         RawFileHeader header_to_write;
         header_to_write.set_plugin_name(dummy_plugin_name_);
-        header_to_write.set_integrator_name(dummy_integrator_name_);
+        header_to_write.set_camera_integrator_name(dummy_camera_integrator_name_);
+        header_to_write.set_plugin_integrator_name(dummy_plugin_integrator_name_);
         header_to_write.set_field(dummy_custom_key_, dummy_custom_value_);
 
         // Prophesee header only. Duplicated what PropheseeRawHeader does to be able to encode then read test RAW
@@ -68,7 +68,8 @@ protected:
 
 public:
     static const std::string dummy_plugin_name_;
-    static const std::string dummy_integrator_name_;
+    static const std::string dummy_camera_integrator_name_;
+    static const std::string dummy_plugin_integrator_name_;
     static const std::string dummy_custom_key_;
     static const std::string dummy_custom_value_;
 
@@ -80,10 +81,11 @@ protected:
 };
 
 constexpr long CameraStage_Gtest::gen31_system_id;
-const std::string CameraStage_Gtest::dummy_plugin_name_     = "hal_plugin_gen31_fx3";
-const std::string CameraStage_Gtest::dummy_integrator_name_ = "Prophesee";
-const std::string CameraStage_Gtest::dummy_custom_key_      = "custom";
-const std::string CameraStage_Gtest::dummy_custom_value_    = "field";
+const std::string CameraStage_Gtest::dummy_plugin_name_            = "hal_plugin_gen31_fx3";
+const std::string CameraStage_Gtest::dummy_camera_integrator_name_ = "Prophesee";
+const std::string CameraStage_Gtest::dummy_plugin_integrator_name_ = "Prophesee";
+const std::string CameraStage_Gtest::dummy_custom_key_             = "custom";
+const std::string CameraStage_Gtest::dummy_custom_value_           = "field";
 
 struct MockStage : public BaseStage {
 public:
@@ -120,10 +122,9 @@ TEST_F(CameraStage_Gtest, camera_stage_produces_correct_events) {
 
     timestamp tshift;
     {
-        const auto &device = cam_stage.camera().get_pimpl().device_;
-        ASSERT_TRUE(device);
-
-        const auto &decoder = device->get_facility<Future::I_Decoder>();
+        ASSERT_NO_THROW(cam_stage.camera().get_device());
+        auto &device        = cam_stage.camera().get_device();
+        const auto &decoder = device.get_facility<I_EventsStreamDecoder>();
 
         ASSERT_TRUE(decoder);
 

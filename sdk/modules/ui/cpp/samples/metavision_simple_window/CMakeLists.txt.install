@@ -11,7 +11,7 @@ project(metavision_simple_window)
 
 cmake_minimum_required(VERSION 3.5)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(OpenGL_GL_PREFERENCE GLVND)
 
 find_package(MetavisionSDK COMPONENTS base ui REQUIRED)

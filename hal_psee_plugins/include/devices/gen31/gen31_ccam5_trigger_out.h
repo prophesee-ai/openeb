@@ -25,9 +25,11 @@ public:
     Gen31Ccam5TriggerOut(const std::shared_ptr<RegisterMap> &regmap, const std::shared_ptr<TzCcam5Gen31> &dev);
 
     bool enable() override final;
-    void disable() override final;
-    void set_period(uint32_t period_us) override final;
-    void set_duty_cycle(double period_ratio) override final;
+    bool disable() override final;
+    bool set_period(uint32_t period_us) override final;
+    uint32_t get_period() const override final;
+    bool set_duty_cycle(double period_ratio) override final;
+    double get_duty_cycle() const override final;
     bool is_enabled() override final;
 
 private:

@@ -117,7 +117,7 @@ class PreActBlock(nn.Module):
         w = torch.sigmoid(self.fc2(w))
         # Excitation
         out = out * w
-        out += self.downsample(x)
+        out = out + self.downsample(x)
         return out
 
 
@@ -171,6 +171,6 @@ class ResBlock(nn.Module):
     def forward(self, x):
         out = self.conv1(x)
         out = self.conv2(out)
-        out += self.downsample(x)
+        out = out + self.downsample(x)
         out = F.relu(out)
         return out

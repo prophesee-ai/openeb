@@ -44,15 +44,20 @@ bool DeviceBuilderFactory::build(long key, DeviceBuilder &device_builder,
                                  const DeviceConfig &device_config) {
     auto iter = builder_map_.find(key);
     if (iter == builder_map_.end()) {
-        MV_HAL_LOG_ERROR() << "Trying to build a device with a key that was not registered before";
+        MV_HAL_LOG_TRACE() << "Trying to build a device with a key that was not registered before";
         return {};
     }
     return iter->second(device_builder, device_builder_params, device_config);
 }
 
-bool DeviceBuilderFactory::contains(long key) {
+bool DeviceBuilderFactory::contains(long key) const {
     auto iter = builder_map_.find(key);
     return iter != builder_map_.end();
+}
+
+DeviceBuilderFactory::BuilderMap &DeviceBuilderFactory::generic_map() {
+    static BuilderMap static_map;
+    return static_map;
 }
 
 } // namespace Metavision

@@ -9,16 +9,12 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-#ifdef _MSC_VER
-#define NOMINMAX // libusb.h includes windows.h which defines min max macros that we don't want
-#endif
-
 #include <algorithm>
 #include <cstdint>
 
 #include "devices/gen31/gen31_ccam5_trigger_out.h"
 #include "devices/gen31/gen31_ccam5_tz_device.h"
-#include "utils/register_map.h"
+#include "metavision/psee_hw_layer/utils/register_map.h"
 
 static constexpr uint32_t MAX_SIGNAL_PERIOD_US_FPGA_OLDER_THAN_3_0 = (1 << 8) - 1;
 
@@ -31,17 +27,20 @@ Gen31Ccam5TriggerOut::Gen31Ccam5TriggerOut(const std::shared_ptr<RegisterMap> &r
 }
 
 bool Gen31Ccam5TriggerOut::enable() {
-    if (tz_dev_->get_mode() == I_DeviceControl::SyncMode::MASTER)
+    if (tz_dev_->get_mode() == I_CameraSynchronization::SyncMode::MASTER)
         return false;
     (*register_map_)["SYSTEM_MONITOR/EXT_TRIGGERS/OUT_ENABLE"] = 1;
     return true;
 }
 
-void Gen31Ccam5TriggerOut::disable() {
+bool Gen31Ccam5TriggerOut::disable() {
+    if (tz_dev_->get_mode() == I_CameraSynchronization::SyncMode::MASTER)
+        return false;
     (*register_map_)["SYSTEM_MONITOR/EXT_TRIGGERS/OUT_ENABLE"] = 0;
+    return true;
 }
 
-void Gen31Ccam5TriggerOut::set_duty_cycle(double period_ratio) {
+bool Gen31Ccam5TriggerOut::set_duty_cycle(double period_ratio) {
     /*
      * Convert the ratio (between 0 and 1) to a signal duration
      * -> if ratio is 0.5 i.e. 50%, then the pulse will last 50% of the pulse period
@@ -55,9 +54,15 @@ void Gen31Ccam5TriggerOut::set_duty_cycle(double period_ratio) {
 
     (*register_map_)["SYSTEM_MONITOR/EXT_TRIGGERS/OUT_PULSE_WIDTH"] =
         static_cast<uint32_t>(signal_period_us * period_ratio_);
+
+    return true;
 }
 
-void Gen31Ccam5TriggerOut::set_period(uint32_t signal_period_us) {
+double Gen31Ccam5TriggerOut::get_duty_cycle() const {
+    return period_ratio_;
+}
+
+bool Gen31Ccam5TriggerOut::set_period(uint32_t signal_period_us) {
     /*
      * Triggers out on 32 bits are supported only from fpga version 3.0.
      * Before trigger out were supported only on Pronto and with 8 bits resolutions for the duty cycle
@@ -70,6 +75,12 @@ void Gen31Ccam5TriggerOut::set_period(uint32_t signal_period_us) {
     (*register_map_)["SYSTEM_MONITOR/EXT_TRIGGERS/OUT_PULSE_PERIOD"] = signal_period_us;
     /* reapply duty cycle in order to update pulse width */
     set_duty_cycle(period_ratio_);
+
+    return true;
+}
+
+uint32_t Gen31Ccam5TriggerOut::get_period() const {
+    return (*register_map_)["SYSTEM_MONITOR/EXT_TRIGGERS/OUT_PULSE_PERIOD"].read_value();
 }
 
 bool Gen31Ccam5TriggerOut::is_enabled() {

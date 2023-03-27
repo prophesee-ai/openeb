@@ -10,22 +10,24 @@
 set(hal_python_srcs
     ${CMAKE_CURRENT_SOURCE_DIR}/device_config_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/device_discovery_python.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/device_roi_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/i_antiflicker_module_python.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/i_decoder_python.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/i_device_control_python.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/i_erc_python.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/i_camera_synchronization_python.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/i_digital_event_mask.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/i_digital_crop.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/i_erc_module_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/i_event_cd_decoder_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/i_event_ext_trigger_decoder_python.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/i_event_frame_decoder_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/i_event_rate_noise_filter_module_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/i_events_stream_python.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/i_events_stream_decoder_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/i_geometry_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/i_hal_software_info_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/i_hw_identification_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/i_hw_register_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/i_ll_biases_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/i_monitoring_python.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/i_noise_filter_module_python.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/i_event_trail_filter_module_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/i_plugin_software_info_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/i_roi_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/i_trigger_in_python.cpp

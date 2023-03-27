@@ -23,9 +23,15 @@ namespace Metavision {
 class I_PluginSoftwareInfo : public I_RegistrableFacility<I_PluginSoftwareInfo> {
 public:
     /// @brief Constructor
+    /// @param plugin_integrator_name Name of the plugin integrator
     /// @param plugin_name Name of the plugin
     /// @param software_info Information about the HAL software version
-    I_PluginSoftwareInfo(const std::string &plugin_name, const Metavision::SoftwareInfo &software_info);
+    I_PluginSoftwareInfo(const std::string &plugin_integrator_name, const std::string &plugin_name,
+                         const Metavision::SoftwareInfo &software_info);
+
+    /// @brief Gets plugin integrator name
+    /// @return The name of the plugin integrator
+    const std::string &get_plugin_integrator_name() const;
 
     /// @brief Gets plugin name
     /// @return The plugin name
@@ -37,6 +43,7 @@ public:
 
 private:
     std::string plugin_name_;
+    std::string plugin_integrator_name_;
     Metavision::SoftwareInfo pimpl_;
 };
 

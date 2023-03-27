@@ -19,10 +19,18 @@ static DeviceFacilityGetter<I_TriggerIn> getter("get_i_trigger_in");
 
 static HALFacilityPythonBinder<I_TriggerIn> bind(
     [](auto &module, auto &class_binding) {
+        py::enum_<I_TriggerIn::Channel>(module, "Channel", py::arithmetic())
+            .value("MAIN", I_TriggerIn::Channel::Main)
+            .value("AUX", I_TriggerIn::Channel::Aux)
+            .value("LOOPBACK", I_TriggerIn::Channel::Loopback)
+            .export_values();
+
         class_binding
             .def("enable", &I_TriggerIn::enable, py::arg("channel"), pybind_doc_hal["Metavision::I_TriggerIn::enable"])
             .def("disable", &I_TriggerIn::disable, py::arg("channel"),
-                 pybind_doc_hal["Metavision::I_TriggerIn::disable"]);
+                 pybind_doc_hal["Metavision::I_TriggerIn::disable"])
+            .def("is_enabled", &I_TriggerIn::is_enabled, py::arg("channel"),
+                 pybind_doc_hal["Metavision::I_TriggerIn::is_enabled"]);
     },
     "I_TriggerIn", pybind_doc_hal["Metavision::I_TriggerIn"]);
 

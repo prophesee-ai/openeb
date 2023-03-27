@@ -23,9 +23,7 @@
 
 namespace Metavision {
 
-/// @brief Callback type alias for @ref EventCD
-/// @param begin @ref EventCD pointer to the beginning of the buffer.
-/// @param end @ref EventCD pointer to the end of the buffer.
+/// @brief Type alias for a callback on a buffer of @ref EventCD
 using EventsCDCallback = std::function<void(const EventCD *begin, const EventCD *end)>;
 
 /// @brief Facility class to handle CD events

@@ -10,11 +10,10 @@
 target_sources(metavision_hal PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/camera_discovery.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/data_transfer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/future/data_transfer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/demangle.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/device_builder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/device_config.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/file_data_transfer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/future/file_data_transfer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/file_discovery.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/raw_file_header.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/resources_folder.cpp

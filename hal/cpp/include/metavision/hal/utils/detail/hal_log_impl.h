@@ -21,7 +21,7 @@ static std::string PrefixFmt("[HAL][<LEVEL>] ");
 
 template<Metavision::LogLevel Level>
 Metavision::LoggingOperation<Level> log(const std::string &file, int line, const std::string &function) {
-    return Metavision::LoggingOperation<Level>(Metavision::getLogStream(), PrefixFmt, file, line, function);
+    return Metavision::LoggingOperation<Level>(getLogOptions(), PrefixFmt, file, line, function);
 }
 } // namespace hal
 } // namespace detail

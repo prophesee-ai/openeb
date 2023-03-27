@@ -17,54 +17,32 @@ namespace Metavision {
 
 namespace {
 
-std::vector<unsigned int> create_ROIs_wrapper(I_ROI &i_roi, py::list &roi_list) {
-    std::vector<DeviceRoi> roi_vec;
-    const ssize_t n_roi = py::len(roi_list);
+void set_windows_wrapper(I_ROI &i_roi, py::list &windows_list) {
+    std::vector<I_ROI::Window> windows;
+    const ssize_t n_roi = py::len(windows_list);
 
-    for (ssize_t roi_ind = 0; roi_ind < n_roi; ++roi_ind) {
-        roi_vec.push_back((roi_list[roi_ind]).cast<DeviceRoi>());
+    for (ssize_t i = 0; i < n_roi; ++i) {
+        windows.push_back((windows_list[i]).cast<I_ROI::Window>());
     }
 
-    return i_roi.create_ROIs(roi_vec);
+    i_roi.set_windows(windows);
 }
 
-void set_ROIs_from_bitword_wrapper(I_ROI &i_roi, py::list &roi_list, bool enable = true) {
-    std::vector<unsigned int> roi_vec;
-    const ssize_t n_roi = py::len(roi_list);
-
-    for (ssize_t roi_ind = 0; roi_ind < n_roi; ++roi_ind) {
-        roi_vec.push_back((roi_list[roi_ind]).cast<unsigned int>());
-    }
-
-    i_roi.set_ROIs_from_bitword(roi_vec, enable);
-}
-
-void set_ROIs_wrapper(I_ROI &i_roi, py::list &roi_list, bool enable = true) {
-    std::vector<DeviceRoi> roi_vec;
-    const ssize_t n_roi = py::len(roi_list);
-
-    for (ssize_t roi_ind = 0; roi_ind < n_roi; ++roi_ind) {
-        roi_vec.push_back((roi_list[roi_ind]).cast<DeviceRoi>());
-    }
-
-    i_roi.set_ROIs(roi_vec, enable);
-}
-
-void set_ROIs_cols_rows_wrapper(I_ROI &i_roi, py::list &cols_to_enable, py::list &rows_to_enable, bool enable = true) {
-    std::vector<bool> cols_to_enable_vec;
-    std::vector<bool> rows_to_enable_vec;
-    const ssize_t n_cols = py::len(cols_to_enable);
-    const ssize_t n_rows = py::len(rows_to_enable);
+void set_lines_wrapper(I_ROI &i_roi, py::list &cols, py::list &rows) {
+    std::vector<bool> cols_vec;
+    std::vector<bool> rows_vec;
+    const ssize_t n_cols = py::len(cols);
+    const ssize_t n_rows = py::len(rows);
 
     for (ssize_t idx = 0; idx < n_cols; ++idx) {
-        cols_to_enable_vec.push_back((cols_to_enable[idx]).cast<bool>());
+        cols_vec.push_back((cols[idx]).cast<bool>());
     }
 
     for (ssize_t idx = 0; idx < n_rows; ++idx) {
-        rows_to_enable_vec.push_back((rows_to_enable[idx]).cast<bool>());
+        rows_vec.push_back((rows[idx]).cast<bool>());
     }
 
-    i_roi.set_ROIs(cols_to_enable_vec, rows_to_enable_vec, enable);
+    i_roi.set_lines(cols_vec, rows_vec);
 }
 } /* anonymous namespace */
 
@@ -73,24 +51,25 @@ static DeviceFacilityGetter<I_ROI> getter("get_i_roi");
 static HALFacilityPythonBinder<I_ROI> bind(
     [](auto &module, auto &class_binding) {
         class_binding.def("enable", &I_ROI::enable, py::arg("enable"), pybind_doc_hal["Metavision::I_ROI::enable"])
-            .def("set_ROI", &I_ROI::set_ROI, py::arg("roi"), py::arg("enable") = true,
-                 pybind_doc_hal["Metavision::I_ROI::set_ROI"])
-            .def("set_ROIs_from_bitword", &I_ROI::set_ROIs_from_bitword, py::arg("vroiparams"),
-                 py::arg("enable") = true, pybind_doc_hal["Metavision::I_ROI::set_ROIs_from_bitword"])
-            .def("set_ROIs_from_bitword", &set_ROIs_from_bitword_wrapper, py::arg("roi_list"), py::arg("enable") = true)
-            .def("set_ROIs", &set_ROIs_wrapper, py::arg("roi_list"), py::arg("enable") = true)
-            .def("set_ROIs_from_file", &I_ROI::set_ROIs_from_file, py::arg("file_path"), py::arg("enable") = true,
-                 pybind_doc_hal["Metavision::I_ROI::set_ROIs_from_file"])
-            .def("set_ROIs", &set_ROIs_cols_rows_wrapper, py::arg("cols_to_enable"), py::arg("rows_to_enable"),
-                 py::arg("enable") = true)
-            .def("create_ROI", &I_ROI::create_ROI, py::arg("roi"), pybind_doc_hal["Metavision::I_ROI::create_ROI"])
-            .def("create_ROIs", &create_ROIs_wrapper, py::arg("roi_list"),
-                 "Creates several rectangular ROIs in bitword register format\n"
-                 "\n"
-                 "Args:\n"
-                 "    vroi (list): Vector of ROI to transform to bitword register format\n\n"
-                 "Returns:\n"
-                 "   The ROIs in bitword register format\n");
+            .def("set_mode", &I_ROI::set_mode, py::arg("mode"), pybind_doc_hal["Metavision::I_ROI::set_mode"])
+            .def("set_window", &I_ROI::set_window, py::arg("roi"), pybind_doc_hal["Metavision::I_ROI::set_window"])
+            .def("get_max_supported_windows_count", &I_ROI::get_max_supported_windows_count,
+                 pybind_doc_hal["Metavision::I_ROI::get_max_supported_windows_count"])
+            .def("set_windows", &set_windows_wrapper, py::arg("roi_list"))
+            .def("set_lines", &set_lines_wrapper, py::arg("cols"), py::arg("rows"));
+
+        py::enum_<I_ROI::Mode>(class_binding, "Mode", py::module_local())
+            .value("ROI", I_ROI::Mode::ROI)
+            .value("RONI", I_ROI::Mode::RONI);
+
+        py::class_<I_ROI::Window>(class_binding, "Window", pybind_doc_hal["Metavision::I_ROI::Window"])
+            .def(py::init<const I_ROI::Window &>())
+            .def(py::init<int, int, int, int>(), pybind_doc_hal["Metavision::I_ROI::Window::Window"])
+            .def("to_string", &I_ROI::Window::to_string, pybind_doc_hal["Metavision::I_ROI::Window::to_string"])
+            .def_readwrite("x", &I_ROI::Window::x)
+            .def_readwrite("y", &I_ROI::Window::y)
+            .def_readwrite("width", &I_ROI::Window::width)
+            .def_readwrite("height", &I_ROI::Window::height);
     },
     "I_ROI", pybind_doc_hal["Metavision::I_ROI"]);
 

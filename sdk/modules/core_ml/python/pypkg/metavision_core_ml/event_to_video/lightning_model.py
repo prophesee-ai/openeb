@@ -35,7 +35,7 @@ from metavision_core_ml.losses.warp import ssl_flow_l1
 from kornia.losses import ssim_loss
 
 
-class EventToVideoCallback(pl.callbacks.base.Callback):
+class EventToVideoCallback(pl.callbacks.Callback):
     """
     callbacks to our model
     """
@@ -46,7 +46,7 @@ class EventToVideoCallback(pl.callbacks.base.Callback):
         self.video_every = int(video_result_every_n_epochs)
         self.show_window = show_window
 
-    def on_epoch_end(self, trainer, pl_module):
+    def on_train_epoch_end(self, trainer, pl_module):
         if trainer.current_epoch and not (trainer.current_epoch % self.video_every):
             pl_module.demo_video(self.data_module.val_dataloader(), trainer.current_epoch, show_video=self.show_window)
 

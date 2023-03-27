@@ -12,11 +12,11 @@
 #ifndef METAVISION_HAL_GEN31_EVK2_TZ_DEVICE_H
 #define METAVISION_HAL_GEN31_EVK2_TZ_DEVICE_H
 
-#include "devices/treuzell/tz_psee_video.h"
+#include "metavision/psee_hw_layer/devices/psee-video/tz_psee_video.h"
 #include "devices/treuzell/tz_issd_device.h"
-#include "devices/treuzell/tz_regmap_device.h"
-#include "facilities/tz_monitoring.h"
-#include "devices/treuzell/tz_main_device.h"
+#include "metavision/psee_hw_layer/devices/treuzell/tz_regmap_device.h"
+#include "metavision/psee_hw_layer/facilities/tz_monitoring.h"
+#include "metavision/psee_hw_layer/devices/treuzell/tz_main_device.h"
 #include "devices/common/evk2_system_control.h"
 
 namespace Metavision {
@@ -31,25 +31,26 @@ public:
 
     virtual void start();
     virtual void stop();
-    virtual StreamFormat get_output_format();
+    virtual std::list<StreamFormat> get_supported_formats() const override;
+    StreamFormat get_output_format() const override;
     virtual long get_system_id();
     virtual bool set_mode_standalone();
     virtual bool set_mode_master();
     virtual bool set_mode_slave();
-    virtual I_DeviceControl::SyncMode get_mode();
+    virtual I_CameraSynchronization::SyncMode get_mode();
     virtual I_HW_Identification::SensorInfo get_sensor_info() {
-        return {3, 1};
+        return {3, 1, "Gen3.1"};
     }
     long long get_sensor_id();
     virtual int get_temperature();
     virtual int get_illumination();
 
 protected:
-    virtual void spawn_facilities(DeviceBuilder &device_builder);
+    virtual void spawn_facilities(DeviceBuilder &device_builder, const DeviceConfig &device_config);
 
 private:
     Evk2SystemControl sys_ctrl_;
-    I_DeviceControl::SyncMode sync_mode_;
+    I_CameraSynchronization::SyncMode sync_mode_;
 };
 
 } // namespace Metavision

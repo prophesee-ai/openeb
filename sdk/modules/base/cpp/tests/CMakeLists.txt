@@ -19,7 +19,7 @@ target_link_libraries(gtest_metavision_sdk_base
     PRIVATE
         MetavisionSDK::base
         MetavisionUtils::gtest
-        GTest::Main
+        MetavisionUtils::gtest-main
 )
 
 register_gtest(TEST sdk-base-unit-tests TARGET gtest_metavision_sdk_base)

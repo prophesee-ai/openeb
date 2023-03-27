@@ -12,14 +12,10 @@
 #ifndef METAVISION_HAL_SAMPLE_DEVICE_CONTROL_H
 #define METAVISION_HAL_SAMPLE_DEVICE_CONTROL_H
 
-#include <metavision/hal/facilities/i_device_control.h>
+#include <metavision/hal/facilities/i_camera_synchronization.h>
+#include <metavision/hal/utils/device_control.h>
 
-/// @brief Interface for controlling live camera
-///
-/// This class is the implementation of HAL's facility @ref Metavision::I_DeviceControl.
-/// In this sample is just an empty class, but for a real camera you'll need to implement
-/// the methods that allows to start, reset and stop the camera.
-class SampleDeviceControl : public Metavision::I_DeviceControl {
+class SampleDeviceControl : public Metavision::DeviceControl {
 public:
     /// @brief Restarts the device and the connection with it
     void reset() override final;
@@ -29,31 +25,6 @@ public:
 
     /// @brief Stops the generation of events from the camera side
     void stop() override final;
-
-    /// @brief Sets the camera in standalone mode.
-    ///
-    /// The camera does not interact with other devices.
-    ///
-    /// @return true on success
-    bool set_mode_standalone() override final;
-
-    /// @brief Sets the camera as master
-    ///
-    /// The camera sends clock signal to another device
-    ///
-    /// @return true on success
-    bool set_mode_master() override final;
-
-    /// @brief Sets the camera as slave
-    ///
-    /// The camera receives the clock from another device
-    ///
-    /// @return true on success
-    bool set_mode_slave() override final;
-
-    /// @brief Retrieves Synchronization mode
-    /// @return synchronization mode
-    SyncMode get_mode() override final;
 };
 
 #endif // METAVISION_HAL_SAMPLE_DEVICE_CONTROL_H

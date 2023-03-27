@@ -48,9 +48,9 @@ void CDFrameGenerator::set_colors(const cv::Scalar &background_color, const cv::
 
 void CDFrameGenerator::set_color_palette(const Metavision::ColorPalette &palette) {
     std::lock_guard<std::mutex> lock(processing_mutex_);
-    off_color_        = BaseFrameGenerationAlgorithm::get_cv_color(palette, ColorType::Negative);
-    on_color_         = BaseFrameGenerationAlgorithm::get_cv_color(palette, ColorType::Positive);
-    background_color_ = BaseFrameGenerationAlgorithm::get_cv_color(palette, ColorType::Background);
+    off_color_        = get_bgr_color(palette, ColorType::Negative);
+    on_color_         = get_bgr_color(palette, ColorType::Positive);
+    background_color_ = get_bgr_color(palette, ColorType::Background);
     colored_          = palette != ColorPalette::Gray;
 }
 

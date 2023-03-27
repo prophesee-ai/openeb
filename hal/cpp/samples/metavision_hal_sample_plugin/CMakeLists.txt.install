@@ -10,7 +10,7 @@
 project(metavision_hal_sample_plugin)
 cmake_minimum_required(VERSION 3.5)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 if (MSVC)
     set(CMAKE_DEBUG_POSTFIX "_d")
 endif(MSVC)
@@ -18,11 +18,11 @@ endif(MSVC)
 find_package(MetavisionHAL REQUIRED)
 
 add_library(hal_sample_plugin SHARED
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/sample_decoder.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/future/sample_decoder.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/sample_device_control.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/sample_camera_synchronization.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sample_camera_discovery.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sample_data_transfer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/sample_decoder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/sample_device_control.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sample_geometry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sample_file_discovery.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sample_hw_identification.cpp

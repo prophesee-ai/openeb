@@ -23,10 +23,10 @@
 #include "metavision/hal/utils/hal_exception.h"
 #include "metavision/hal/facilities/i_events_stream.h"
 #include "metavision/hal/facilities/i_hw_identification.h"
-#include "metavision/hal/facilities/i_decoder.h"
+#include "metavision/hal/facilities/i_events_stream_decoder.h"
+#include "metavision/hal/decoders/evt2/evt2_decoder.h"
 #include "devices/utils/device_system_id.h"
-#include "boards/rawfile/psee_raw_file_header.h"
-#include "decoders/evt2/evt2_decoder.h"
+#include "metavision/psee_hw_layer/boards/rawfile/psee_raw_file_header.h"
 
 using namespace Metavision;
 
@@ -76,10 +76,10 @@ protected:
     PseeRawFileHeader write_random_header() {
         auto header = std::stringstream();
         header << "\% Date 2014-02-28 13:37:42" << std::endl
-               << "\% system_ID " << gen31_system_id << std::endl
+               << "\% system_ID " << gen41_system_id << std::endl
                << "\% integrator_name Prophesee" << std::endl
                << "\% firmware_version 0.0.0" << std::endl
-               << "\% plugin_name hal_plugin_gen31_fx3" << std::endl
+               << "\% plugin_name hal_plugin_gen41_evk3" << std::endl
                << "\% evt 2.0" << std::endl
                << "\% subsystem_ID " << dummy_sub_system_id_ << std::endl
                << "\% " << dummy_custom_key_ << " " << dummy_custom_value_ << std::endl
@@ -130,7 +130,7 @@ protected:
         } else {
             file_events_stream_ = device_->get_facility<I_EventsStream>();
             file_id_            = device_->get_facility<I_HW_Identification>();
-            decoder_            = device_->get_facility<I_Decoder>();
+            decoder_            = device_->get_facility<I_EventsStreamDecoder>();
 
             return (file_events_stream_ != nullptr);
         }
@@ -159,14 +159,14 @@ public:
     static const std::string dummy_custom_key_;
     static const std::string dummy_custom_value_;
 
-    static constexpr SystemId gen31_system_id   = SystemId::SYSTEM_CCAM3_GEN31;
+    static constexpr SystemId gen41_system_id   = SystemId::SYSTEM_EVK3_GEN41;
     static constexpr long dummy_sub_system_id_  = 0;
     static constexpr long dummy_system_version_ = 0;
 
 protected:
     std::unique_ptr<Device> device_;
     I_EventsStream *file_events_stream_ = nullptr;
-    I_Decoder *decoder_                 = nullptr;
+    I_EventsStreamDecoder *decoder_     = nullptr;
     I_HW_Identification *file_id_       = nullptr;
 
     std::unique_ptr<std::ofstream> rawfile_to_log_;
@@ -182,7 +182,7 @@ constexpr uint32_t FileEventsStream_Gtest::n_events_to_read_default_;
 constexpr uint32_t FileEventsStream_Gtest::n_events_read_in_last_buffer_;
 
 constexpr long FileEventsStream_Gtest::dummy_system_version_;
-constexpr SystemId FileEventsStream_Gtest::gen31_system_id;
+constexpr SystemId FileEventsStream_Gtest::gen41_system_id;
 const long FileEventsStream_Gtest::dummy_sub_system_id_;
 const std::string FileEventsStream_Gtest::dummy_serial_       = "dummy_serial";
 const std::string FileEventsStream_Gtest::dummy_events_type_  = "events_type";
@@ -273,12 +273,6 @@ TEST_F(FileEventsStream_Gtest, file_events_stream_read_param) {
     write_random_header();
     auto data_ref = write_ref_data();
     close_raw();
-
-    config_.n_read_buffers_ = 0;
-    ASSERT_THROW(open_and_start_file_events_stream(), HalException);
-
-    config_.n_read_buffers_ = 1;
-    ASSERT_THROW(open_and_start_file_events_stream(), HalException);
 
     config_.n_events_to_read_ = 0;
     ASSERT_THROW(open_and_start_file_events_stream(), HalException);
@@ -385,7 +379,7 @@ TEST_F(FileEventsStream_Gtest, reading_from_custom_istream) {
 
     file_events_stream_ = device_->get_facility<I_EventsStream>();
     file_id_            = device_->get_facility<I_HW_Identification>();
-    decoder_            = device_->get_facility<I_Decoder>();
+    decoder_            = device_->get_facility<I_EventsStreamDecoder>();
     ASSERT_NE(nullptr, file_events_stream_);
     ASSERT_NE(nullptr, file_id_);
 

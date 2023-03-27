@@ -11,18 +11,43 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <unordered_map>
 
 #include "utils/psee_hal_utils.h"
 
 namespace Metavision {
 
-bool is_expert_mode_enabled() {
-    static const char *expert_mode_var = getenv("MV_FLAGS_HAL_EXPERT_MODE");
-
-    if (expert_mode_var == nullptr) {
-        expert_mode_var = "0";
+const std::string &get_bias_description(const std::string &bias) {
+    static const std::unordered_map<std::string, std::string> bias_descriptions = {
+        {"bias_diff", "reference value for comparison with bias_diff_on and bias_diff_off"},
+        {"bias_diff_on", "controls the light sensitivity for ON events"},
+        {"bias_diff_off", "controls the light sensitivity for OFF events"},
+        {"bias_fo", "controls the pixel low-pass cut-off frequency"},
+        {"bias_fo_p", "controls the pixel low-pass cut-off frequency"},
+        {"bias_fo_n", "controls the pixel low-pass cut-off frequency"},
+        {"bias_hpf", "controls the pixel high-pass cut-off frequency"},
+        {"bias_pr", "controls the photoreceptor bandwidth"},
+        {"bias_refr", "controls the refractory period during which the change detector is switched off after "
+                      "generating an event"}};
+    static const std::string empty_string;
+    auto it = bias_descriptions.find(bias);
+    if (it != bias_descriptions.end()) {
+        return it->second;
     }
-    return !strcmp(expert_mode_var, "1");
+    return empty_string;
+}
+
+const std::string &get_bias_category(const std::string &bias) {
+    static const std::unordered_map<std::string, std::string> bias_category = {
+        {"bias_diff", "Contrast"}, {"bias_diff_on", "Contrast"}, {"bias_diff_off", "Contrast"},
+        {"bias_fo", "Bandwidth"},  {"bias_fo_p", "Bandwidth"},   {"bias_fo_n", "Bandwidth"},
+        {"bias_hpf", "Bandwidth"}, {"bias_pr", "Advanced"},      {"bias_refr", "Advanced"}};
+    static const std::string empty_string = "";
+    auto it                               = bias_category.find(bias);
+    if (it != bias_category.end()) {
+        return it->second;
+    }
+    return empty_string;
 }
 
 } // namespace Metavision

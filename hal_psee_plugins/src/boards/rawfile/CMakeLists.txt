@@ -7,8 +7,11 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
+target_sources(metavision_psee_hw_layer_obj PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/file_hw_identification.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/psee_raw_file_header.cpp
+)
+
 target_sources(metavision_hal_psee_plugin_obj PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/file_hw_identification.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/psee_file_discovery.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/psee_raw_file_header.cpp
 )

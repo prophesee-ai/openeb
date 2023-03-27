@@ -9,15 +9,26 @@
 
 # Register a pytest to the project that will be run by `ctest`
 #
-# Usege : add_pytest(
+# Usage : add_pytest(
 #           NAME <pytest_name   : name of the pytest
 #           PATH <path1>  : path or directory to your pytests
 #           WORKING_DIRECTORY <wd> : working dir in which to execute the tests
+#           HAL_PLUGIN_PATH <plugin_path> : Optional - override path to HAL plugins libraries
+#           PYTHONPATH <path1>[;<path2>]... : Optional - directories to be added to the python path
+#           ENV <var1=val1;var2=val2;...;varN=valN> : Optional - environment variables defined for the tests
 #         )
+
+include(get_prepended_env_paths)
+
 function(add_pytest)
-    set(oneValueArgs NAME PATH WORKING_DIRECTORY)
-    cmake_parse_arguments(PYTEST_ARGS "" "${oneValueArgs}" "" ${ARGN})
-    foreach(arg IN LISTS oneValueArgs)
+    set(oneValueMandatoryArgs NAME PATH WORKING_DIRECTORY)
+    set(oneValueOptionalArgs HAL_PLUGIN_PATH)
+
+    set(oneValueArgs ${oneValueMandatoryArgs} ${oneValueOptionalArgs})
+    set(multiValueArgs PYTHONPATH ENV )
+    cmake_parse_arguments(PYTEST_ARGS "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    foreach(arg IN LISTS oneValueMandatoryArgs)
         if(NOT PYTEST_ARGS_${arg})
             message(FATAL_ERROR "Missing argument '${arg}' in function 'add_pytest()'")
         endif()
@@ -27,8 +38,28 @@ function(add_pytest)
         COMMAND ${PYTEST_CMD} ${PYTEST_ARGS_PATH} -vv --capture=no --color=yes --junitxml=${JUNIT_XML_OUTPUT_DIRECTORY}/${PYTEST_ARGS_NAME}.xml
         WORKING_DIRECTORY ${PYTEST_ARGS_WORKING_DIRECTORY}
     )
+
+    get_prepended_env_paths(PYTHONPATH python_path_val 
+        "${PROJECT_SOURCE_DIR}/utils/python" 
+        "${PYTEST_ARGS_PYTHONPATH}")
+
+    set(MV_HAL_PLUGIN_PATH ${HAL_BUILD_PLUGIN_PATH})
+    if(PYTEST_ARGS_HAL_PLUGIN_PATH)
+        set(MV_HAL_PLUGIN_PATH ${PYTEST_ARGS_HAL_PLUGIN_PATH})
+    endif()
+    
     set_property(TEST ${PYTEST_ARGS_NAME} PROPERTY ENVIRONMENT
-        PYTHONPATH=${PROJECT_SOURCE_DIR}/utils/python # to be able to use prophesee_utils python module
-        MV_HAL_PLUGIN_PATH=${HAL_BUILD_PLUGIN_PATH}
+        "PYTHONPATH=${python_path_val}"
+        "MV_HAL_PLUGIN_PATH=${MV_HAL_PLUGIN_PATH}"
     )
+
+    if(WIN32)
+        # add DLLs & executables to windows path
+        get_prepended_env_paths(PATH path_value "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIG>")
+        set_property(TEST ${PYTEST_ARGS_NAME} APPEND PROPERTY ENVIRONMENT "PATH=${path_value}")
+    endif(WIN32)
+
+    if (PYTEST_ARGS_ENV)
+        set_property(TEST ${PYTEST_ARGS_NAME} APPEND PROPERTY ENVIRONMENT ${PYTEST_ARGS_ENV} APPEND)
+    endif (PYTEST_ARGS_ENV)
 endfunction(add_pytest)

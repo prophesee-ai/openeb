@@ -11,7 +11,7 @@
 
 #if !defined(__ANDROID__) || defined(ANDROID_USES_LIBUSB)
 #include "boards/treuzell/tz_camera_discovery.h"
-#include "boards/treuzell/tz_libusb_board_command.h"
+#include "metavision/psee_hw_layer/boards/treuzell/tz_libusb_board_command.h"
 #include "devices/imx636/imx636_evk2_tz_device.h"
 #endif
 #include "boards/rawfile/psee_file_discovery.h"
@@ -27,11 +27,12 @@ void initialize_plugin(void *plugin_ptr) {
     initialize_psee_plugin(plugin);
 
 #if !defined(__ANDROID__) || defined(ANDROID_USES_LIBUSB)
+    auto cam_discovery = std::make_unique<TzCameraDiscovery>();
     // Register the known USB vendor ID, with the subclass used for Treuzell
-    TzLibUSBBoardCommand::add_usb_id(0x03fd, 0x5832, 0x19);
-    TzLibUSBBoardCommand::add_usb_id(0x03fd, 0x5832, 0x0);
+    cam_discovery->add_usb_id(0x03fd, 0x5832, 0x19);
+    cam_discovery->add_usb_id(0x03fd, 0x5832, 0x0);
     // Register live camera discoveries
-    auto &evk2_disc = plugin.add_camera_discovery(std::make_unique<TzCameraDiscovery>());
+    auto &evk2_disc = plugin.add_camera_discovery(std::move(cam_discovery));
     evk2_disc.factory().set("psee,video", TzEvk2Imx636::build, TzEvk2Imx636::can_build);
 #endif
 

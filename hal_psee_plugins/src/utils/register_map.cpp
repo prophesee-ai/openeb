@@ -14,8 +14,10 @@
 #include <iomanip>
 #include <stdlib.h>
 
-#include "utils/register_map.h"
+#include "metavision/psee_hw_layer/utils/register_map.h"
+#include "metavision/psee_hw_layer/utils/regmap_data.h"
 #include "metavision/hal/utils/hal_log.h"
+#include "metavision/sdk/base/utils/log.h"
 
 namespace Metavision {
 
@@ -38,11 +40,12 @@ template<Metavision::LogLevel Level>
 Metavision::LoggingOperation<Level> log_registers(const std::string &file, int line, const std::string &function) {
 #ifndef _WIN32
     if (getenv("LOG_REGISTERS")) {
-        return Metavision::LoggingOperation<Level>(Metavision::getLogStream(), PrefixFmt, file, line, function);
+        return Metavision::LoggingOperation<Level>(Metavision::getLogOptions(), PrefixFmt, file, line, function);
     }
 #endif
     // Default to NullStream
-    return Metavision::LoggingOperation<Level>(NullOStream, PrefixFmt, file, line, function);
+    return Metavision::LoggingOperation<Level>(Metavision::LogOptions(Level, NullOStream), PrefixFmt, file, line,
+                                               function);
 }
 } // namespace hal
 } // namespace detail
@@ -112,14 +115,19 @@ void RegisterMap::Field::set_len(uint8_t len) {
     init_mask();
 }
 
+const RegisterMap::Field *RegisterMap::FieldAccess::get_field() const {
+    return field_;
+}
+
 RegisterMap::Field *RegisterMap::FieldAccess::get_field() {
     return field_;
 }
+
 void RegisterMap::FieldAccess::write_value(uint32_t v) {
     if (field_ && register_) {
         MV_HAL_LOG_REGISTERS() << "Write Register" << register_->get_name() << "Field" << field_->get_name() << std::hex
                                << v << std::dec;
-        uint32_t cur_value = register_->get_value();
+        uint32_t cur_value = register_->read_value();
         field_->set_bitfield_in_value(v, cur_value);
         register_->write_value(cur_value);
     } else {
@@ -130,7 +138,8 @@ void RegisterMap::FieldAccess::write_value(uint32_t v) {
         }
     }
 }
-uint32_t RegisterMap::FieldAccess::read_value() {
+
+uint32_t RegisterMap::FieldAccess::read_value() const {
     if (field_ && register_) {
         uint32_t cur_value = register_->read_value();
         return field_->get_bitfield_in_value(cur_value);
@@ -138,6 +147,7 @@ uint32_t RegisterMap::FieldAccess::read_value() {
     MV_HAL_LOG_ERROR() << "Read: Invalid register or field";
     return 0;
 }
+
 RegisterMap::FieldAccess::FieldAccess(Register *reg, Field *field) {
     field_    = field;
     register_ = reg;
@@ -209,6 +219,17 @@ RegisterMap::RegisterAccess &RegisterMap::RegisterAccess::operator=(const std::m
     return *this;
 }
 
+bool RegisterMap::RegisterAccess::operator==(const RegisterMap::RegisterAccess &rhs) const {
+    return this->register_ == rhs.register_;
+}
+
+const RegisterMap::FieldAccess RegisterMap::RegisterAccess::operator[](const std::string &name) const {
+    if (register_) {
+        return (*register_)[name];
+    }
+    return RegisterMap::FieldAccess(nullptr, nullptr);
+}
+
 RegisterMap::FieldAccess RegisterMap::RegisterAccess::operator[](const std::string &name) {
     if (register_) {
         return (*register_)[name];
@@ -216,20 +237,14 @@ RegisterMap::FieldAccess RegisterMap::RegisterAccess::operator[](const std::stri
     return RegisterMap::FieldAccess(nullptr, nullptr);
 }
 
-uint32_t RegisterMap::RegisterAccess::read_value() {
-    if (register_) {
-        return register_->read_value();
-    }
-    return -1;
-}
-uint32_t RegisterMap::RegisterAccess::get_value() {
+uint32_t RegisterMap::RegisterAccess::read_value() const {
     if (register_) {
         return register_->read_value();
     }
     return -1;
 }
 
-uint32_t RegisterMap::RegisterAccess::get_address() {
+uint32_t RegisterMap::RegisterAccess::get_address() const {
     if (register_) {
         return register_->get_address();
     }
@@ -268,7 +283,7 @@ void RegisterMap::Register::set_name(const std::string &n) {
     name_ = n;
 }
 
-RegisterMap::FieldAccess RegisterMap::Register::operator[](const std::string &name) {
+const RegisterMap::FieldAccess RegisterMap::Register::operator[](const std::string &name) {
     auto it = name_to_field_.find(name);
     if (it == name_to_field_.end()) {
         MV_HAL_LOG_ERROR() << "Unknown field" << name << "for register" << this->get_name();
@@ -330,7 +345,7 @@ void RegisterMap::Register::write_value(const std::string &bitfieldname, const s
     }
 }
 
-uint32_t RegisterMap::Register::read_value() {
+uint32_t RegisterMap::Register::read_value() const {
     if (register_map_) {
         MV_HAL_LOG_REGISTERS() << "register_map_->read" << name_;
         return register_map_->read(address_);
@@ -348,31 +363,70 @@ RegisterMap::Field *RegisterMap::Register::bit_to_field(uint32_t bit) {
     return nullptr;
 }
 
-uint32_t RegisterMap::Register::get_value() {
-    return this->read_value();
-}
-
-RegisterMap::RegisterMap() {
+RegisterMap::RegisterMap(RegmapData device_regmap_description) {
     set_write_cb([](uint32_t address, uint32_t v) {});
     set_read_cb([](uint32_t address) { return uint32_t(-1); });
+
+    bool is_curreg_valid   = false;
+    bool is_curfield_valid = false;
+    RegisterMap::Register curreg;
+    RegisterMap::Field curfield;
+    for (auto sub_desc : device_regmap_description) {
+        RegmapElement *curdata = std::get<0>(sub_desc);
+        size_t size            = std::get<1>(sub_desc);
+        std::string prefix(std::get<2>(sub_desc));
+        RegmapElement *data_end = curdata + size;
+
+        for (; curdata != data_end; ++curdata) {
+            if (curdata->type == R) {
+                if (is_curfield_valid) {
+                    curreg.add_field(curfield);
+                }
+                if (is_curreg_valid) {
+                    this->add_register(curreg);
+                }
+                curreg            = RegisterMap::Register(prefix + curdata->register_data.name,
+                                               curdata->register_data.addr + std::get<3>(sub_desc));
+                is_curreg_valid   = true;
+                is_curfield_valid = false;
+            } else if (curdata->type == F) {
+                if (is_curfield_valid) {
+                    curreg.add_field(curfield);
+                }
+                is_curfield_valid = true;
+                curfield          = RegisterMap::Field(curdata->field_data.name, curdata->field_data.start,
+                                              curdata->field_data.len, curdata->field_data.default_value);
+            } else if (curdata->type == A) {
+                if (is_curfield_valid) {
+                    curfield.add_alias(curdata->alias_data.name, curdata->alias_data.value);
+                }
+            }
+        }
+        if (is_curfield_valid) {
+            curreg.add_field(curfield);
+        }
+        if (is_curreg_valid) {
+            this->add_register(curreg);
+        }
+    }
+
+    dump();
 }
 
 RegisterMap::RegisterAccess RegisterMap::operator[](uint32_t addr) {
-    auto it = addr_to_register_.find(addr);
-    if (it == addr_to_register_.end()) {
-        MV_HAL_LOG_ERROR() << "Unknown register address" << addr;
-        return RegisterAccess(nullptr);
-    }
-    return RegisterAccess(it->second.get());
+    return access(addr_to_register_, addr);
+}
+
+const RegisterMap::RegisterAccess RegisterMap::operator[](uint32_t addr) const {
+    return access(addr_to_register_, addr);
 }
 
 RegisterMap::RegisterAccess RegisterMap::operator[](const std::string &name) {
-    auto it = name_to_register_.find(name);
-    if (it == name_to_register_.end()) {
-        MV_HAL_LOG_ERROR() << "Unknown register" << name;
-        return RegisterAccess(nullptr);
-    }
-    return RegisterAccess(it->second.get());
+    return access(name_to_register_, name);
+}
+
+const RegisterMap::RegisterAccess RegisterMap::operator[](const std::string &name) const {
+    return access(name_to_register_, name);
 }
 
 void RegisterMap::add_register(const Register &r) {

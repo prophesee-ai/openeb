@@ -61,8 +61,12 @@ function(add_sdk_python_module_test module_name)
     )
 
     if(WIN32)
-        # add DLL to windows path
+        # add DLLs & executables to windows path
         get_prepended_env_paths(PATH path_value "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIG>")
+        set_property(TEST ${test_name} APPEND PROPERTY ENVIRONMENT "PATH=${path_value}")
+    else(WIN32)
+        # add executables to path
+        get_prepended_env_paths(PATH path_value "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/")
         set_property(TEST ${test_name} APPEND PROPERTY ENVIRONMENT "PATH=${path_value}")
     endif(WIN32)
 endfunction(add_sdk_python_module_test)

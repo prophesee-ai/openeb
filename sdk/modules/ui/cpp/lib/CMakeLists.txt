@@ -17,7 +17,6 @@ find_package(GLEW REQUIRED)
 # GLFW
 find_package(glfw3 REQUIRED)
 
-
 MetavisionSDK_add_module(ui
     REQUIRED_METAVISION_SDK_MODULES
         PUBLIC
@@ -36,4 +35,3 @@ target_link_libraries(metavision_sdk_ui
         glfw
         OpenGL::GL
         GLEW::GLEW)
-

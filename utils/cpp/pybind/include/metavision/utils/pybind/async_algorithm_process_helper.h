@@ -21,6 +21,13 @@ static const char doc_process_events_array_async_str[] = "Processes a buffer of 
                                                          "   :events_np: numpy structured array of events whose fields "
                                                          "are ('x', 'y', 'p', 't'). Note that this order is mandatory";
 
+static const char doc_process_events_array_ts_async_str[] =
+    "Processes a buffer of events for later frame generation\n"
+    "\n"
+    "   :events_np: numpy structured array of events whose fields are ('x', 'y', 'p', 't'). Note that this order is "
+    "mandatory"
+    "   :ts: array of events' timestamp";
+
 template<typename Algo, typename InputEvent>
 void process_events_array_async(Algo &algo, const py::array_t<InputEvent> &in) {
     auto info = in.request();
@@ -32,6 +39,19 @@ void process_events_array_async(Algo &algo, const py::array_t<InputEvent> &in) {
 
     algo.process_events(in_ptr, in_ptr + nelem);
 }
+
+template<typename Algo, typename InputEvent>
+void process_events_array_ts_async(Algo &algo, const py::array_t<InputEvent> &in, timestamp ts) {
+    auto info = in.request();
+    if (info.ndim != 1) {
+        throw std::runtime_error("Bad input numpy array");
+    }
+    auto nelem   = static_cast<size_t>(info.shape[0]);
+    auto *in_ptr = static_cast<InputEvent *>(info.ptr);
+
+    algo.process_events(in_ptr, in_ptr + nelem, ts);
+}
+
 } // namespace Metavision
 
 #endif // METAVISION_UTILS_PYBIND_ASYNC_ALGORITHM_PROCESS_HELPER_H

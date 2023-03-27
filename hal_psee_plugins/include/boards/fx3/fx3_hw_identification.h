@@ -19,16 +19,18 @@
 
 namespace Metavision {
 
-class PseeLibUSBBoardCommand;
+class Fx3LibUSBBoardCommand;
+class PseeDeviceControl;
 
 /// @brief Facility to provide information about the available system
-class Fx3HWIdentification : public I_HW_Identification {
+class Fx3HWIdentification : public Metavision::I_HW_Identification {
 public:
     /// @brief Facility Constructor
     ///
     /// @param integrator Name of the system integrator
-    Fx3HWIdentification(const std::shared_ptr<I_PluginSoftwareInfo> &plugin_sw_info,
-                        const std::shared_ptr<PseeLibUSBBoardCommand> &board_cmd, bool is_EVT3, long subsystem_ID,
+    Fx3HWIdentification(const std::shared_ptr<Metavision::I_PluginSoftwareInfo> &plugin_sw_info,
+                        const std::shared_ptr<Fx3LibUSBBoardCommand> &board_cmd,
+                        const std::shared_ptr<PseeDeviceControl> &device_ctrl,
                         const std::string &integrator = "Prophesee");
 
     /// @brief Returns the serial number of the camera
@@ -46,12 +48,7 @@ public:
     /// @brief Returns the detail about the sensor available
     ///
     /// @return The sensor information
-    virtual I_HW_Identification::SensorInfo get_sensor_info() const override final;
-
-    /// @brief Returns the version number for this system
-    ///
-    /// @return System version as an integer
-    virtual long get_system_version() const override final;
+    virtual Metavision::I_HW_Identification::SensorInfo get_sensor_info() const override final;
 
     /// @brief Returns the name of the available RAW format
     ///
@@ -60,7 +57,12 @@ public:
     /// @note currently the available formats are:
     ///      - EVT2
     ///      - EVT3
-    virtual std::vector<std::string> get_available_raw_format() const override final;
+    virtual std::vector<std::string> get_available_data_encoding_formats() const override final;
+
+    /// @brief Returns the name of the currently used data encoding format
+    /// @return The currently used data encoding format
+    /// @sa get_available_data_encoding_formats
+    virtual std::string get_current_data_encoding_format() const override final;
 
     /// @brief Returns the integrator name
     ///
@@ -79,14 +81,17 @@ public:
     /// @return A string providing the kind of connection with the available camera
     virtual std::string get_connection_type() const override final;
 
-private:
-    virtual RawFileHeader get_header_impl() const override;
+    /// @brief Lists device config options supported by the camera
+    /// @return the map of (key,option) device config options
+    virtual DeviceConfigOptionMap get_device_config_options_impl() const override final;
 
-    std::shared_ptr<PseeLibUSBBoardCommand> icmd_;
-    I_HW_Identification::SensorInfo sensor_info_;
-    bool is_evt3_;
-    long subsystem_ID_;
+private:
+    virtual Metavision::RawFileHeader get_header_impl() const override;
+
+    std::shared_ptr<Fx3LibUSBBoardCommand> icmd_;
+    Metavision::I_HW_Identification::SensorInfo sensor_info_;
     std::string integrator_;
+    std::shared_ptr<PseeDeviceControl> dev_ctrl_;
 };
 
 } // namespace Metavision

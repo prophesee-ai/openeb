@@ -20,12 +20,18 @@ namespace Metavision {
 class I_Monitoring : public I_RegistrableFacility<I_Monitoring> {
 public:
     /// @brief Gets temperature
-    /// @return Sensor's temperature (in C)
+    /// @return Sensor's temperature (in C) or throw on Error
     virtual int get_temperature() = 0;
 
     /// @brief Gets illumination
-    /// @return Sensor's illumination (in lux)
+    /// @return Sensor's illumination (in lux) or throw on Error
     virtual int get_illumination() = 0;
+
+    /// @brief Gets Pixel Dead Time (aka. "refractory period").
+    /// This is the minimum time latency between the generation of 2 events by a pixel
+    /// @return Estimated dead time (in us) throw on Error
+    /// @note This feature is available on Gen4 sensors and newer
+    virtual int get_pixel_dead_time() = 0;
 };
 
 } // namespace Metavision

@@ -12,16 +12,16 @@
 #ifndef METAVISION_HAL_SAMPLE_DECODER_H
 #define METAVISION_HAL_SAMPLE_DECODER_H
 
-#include <metavision/hal/facilities/i_decoder.h>
+#include <metavision/hal/facilities/i_events_stream_decoder.h>
 
 /// @brief Interface for decoding events.
 ///
-/// This class is the implementation of HAL's facility @ref Metavision::I_Decoder
+/// This class is the implementation of HAL's facility @ref Metavision::I_EventsStreamDecoder
 /// The implementation must have the following feature :
 ///
 /// - support of time shifting : If enabled, the timestamp of the decoded events will be shifted of the value of the
 ///   time of the first event
-class SampleDecoder : public Metavision::I_Decoder {
+class SampleDecoder : public Metavision::I_EventsStreamDecoder {
 public:
     /// @brief Constructor
     ///
@@ -57,7 +57,21 @@ private:
     ///
     /// @param ev Pointer on first event
     /// @param evend Pointer after the last event
-    void decode_impl(RawData *ev, RawData *evend) override final;
+    void decode_impl(const RawData *const ev, const RawData *const evend) override final;
+
+    /// @brief Resets the decoder last timestamp
+    ///
+    /// @param timestamp Timestamp to reset the decoder to
+    /// @return True if the reset operation could complete, false otherwise.
+    /// @note It is expected after this call has succeeded, that @ref get_last_timestamp returns @p timestamp
+    /// @warning If time shifting is enabled, the @p timestamp must be in the shifted time reference
+    bool reset_timestamp_impl(const Metavision::timestamp &timestamp) override final;
+
+    /// @brief Resets the decoder timestamp shift
+    /// @param shift Timestamp shift to reset the decoder to
+    /// @return True if the reset operation could complete, false otherwise.
+    /// @note If time shifting is disabled, this function does nothing and returns false
+    bool reset_timestamp_shift_impl(const Metavision::timestamp &shift) override final;
 
     Metavision::timestamp last_timestamp_{0};
     Metavision::timestamp time_shift_{0};

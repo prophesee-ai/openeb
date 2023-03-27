@@ -13,6 +13,7 @@ directly stream the voxel grid.
 """
 # pylint: disable=access-member-before-definition
 # pylint: disable=undefined-variable
+# pylint: disable=not-callable
 
 import torch
 import torch.nn as nn
@@ -39,7 +40,9 @@ class GPUEventSimulator(nn.Module):
         batch_size (int): number of video clips / batch
         height (int): height
         width (int): width
-        c_mu (float): threshold average
+        c_mu (float or list): threshold average
+                              if scalar will consider same OFF and ON thresholds
+                              if list, will be considered as [ths_OFF, ths_ON] 
         c_std (float): threshold standard deviation
         refractory period (int): time before event can be triggered again
         leak_rate_hz (float): frequency of reference voltage leakage
@@ -58,18 +61,24 @@ class GPUEventSimulator(nn.Module):
         self.register_buffer("counts", torch.zeros(shape1, dtype=torch.int32))
         self.register_buffer("timestamps", torch.zeros(shape1, dtype=torch.float32))
 
-        thresholds = torch.randn(shape2, dtype=torch.float32) * c_std + c_mu
+        if isinstance(c_mu, list):
+            assert len(c_mu) >= 2
+            assert c_mu[0] > 0, "contrast thresholds must be positive"
+            assert c_mu[1] > 0, "contrast thresholds must be positive"
+            self.threshold_mu = c_mu
+        else:
+            assert c_mu > 0, "contrast thresholds must be positive"
+            self.threshold_mu = [c_mu, c_mu]
+
+        thresholds = torch.randn(shape2, dtype=torch.float32)
+        assert c_std >= 0, "contrast thresholds std deviation must be non-negative"
+        self.threshold_std = c_std
+        for p in [0, 1]:
+            thresholds[p, :] = thresholds[p, :]*c_std + self.threshold_mu[p]
         self.register_buffer("thresholds", thresholds)
         self.register_buffer("prev_image_ts", torch.zeros((batch_size), dtype=torch.float32))
         self.register_buffer("filtering_prev_image_ts", torch.zeros((batch_size), dtype=torch.float32))
         self.thresholds.clamp_(0.01, 1.0)
-
-        self.threshold_mu = c_mu
-        self.threshold_std = c_std
-        self.leak_rate_micro_hz = leak_rate_hz * 1e-6
-        self.cutoff_hz = cutoff_hz
-        self.shot_noise_micro_hz = shot_noise_hz * 1e-6
-        self.refractory_period = refractory_period
 
         self.register_buffer("prev_log_images_0", torch.zeros(shape1, dtype=torch.float32))
         self.register_buffer("prev_log_images_1", torch.zeros(shape1, dtype=torch.float32))
@@ -77,12 +86,12 @@ class GPUEventSimulator(nn.Module):
         self.register_buffer("rng_states", torch.zeros(shape1, dtype=torch.float32))
 
         # generate array of noise parameters
-        self.register_buffer("refractory_periods", torch.LongTensor([self.refractory_period] * batch_size))
-        self.register_buffer("cutoff_rates", torch.tensor([self.cutoff_hz] * batch_size, dtype=torch.float32))
-        self.register_buffer("leak_rates", torch.tensor([self.leak_rate_micro_hz] * batch_size, dtype=torch.float32))
-        self.register_buffer("shot_rates", torch.tensor([self.shot_noise_micro_hz] * batch_size, dtype=torch.float32))
-        self.register_buffer("threshold_mus", torch.tensor([c_mu] * batch_size, dtype=torch.float32))
-        self.register_buffer("rgb_to_gray", torch.tensor([0.33, 0.33, 0.33], dtype=torch.float32))
+        self.register_buffer("refractory_periods", torch.LongTensor([refractory_period] * batch_size))
+        self.register_buffer("cutoff_rates", torch.tensor([cutoff_hz] * batch_size, dtype=torch.float32))
+        self.register_buffer("leak_rates", torch.tensor([leak_rate_hz * 1e-6] * batch_size, dtype=torch.float32))
+        self.register_buffer("shot_rates", torch.tensor([shot_noise_hz * 1e-6] * batch_size, dtype=torch.float32))
+        self.register_buffer("threshold_mus", torch.tensor(self.threshold_mu * batch_size,
+                                                           dtype=torch.float32).reshape(-1, 2))  # shape (B,2)
 
     def get_size(self):
         return self.thresholds.shape[-2:]
@@ -114,20 +123,43 @@ class GPUEventSimulator(nn.Module):
 
         Args:
             first_times: B video just started flags
-            th_mu_min:
-            th_mu_max:
-            th_std_min:
-            th_std_max:
+            th_mu_min (scalar or list of scalars): min average threshold 
+                              if list, will be considered as [th_mu_min_OFF, th_mu_min_ON] 
+            th_mu_max (scalar or list of scalars): max average threshold 
+                              if list, will be considered as [th_mu_max_OFF, th_mu_max_ON] 
+            th_std_min: min threshold standard deviation
+            th_std_max: max threshold standard deviation
         """
+
+        # support both symmetric and asymmetric OFF and ON thresholds
+        if not isinstance(th_mu_min, list):
+            assert th_mu_min > 0, "contrast thresholds must be positive"
+            th_mu_min_list = [th_mu_min, th_mu_min]
+        else:
+            assert len(th_mu_min) >= 2
+            assert th_mu_min[0] > 0, "contrast thresholds must be positive"
+            assert th_mu_min[1] > 0, "contrast thresholds must be positive"
+            th_mu_min_list = th_mu_min
+
+        if not isinstance(th_mu_max, list):
+            assert th_mu_max > 0, "contrast thresholds must be positive"
+            th_mu_max_list = [th_mu_max, th_mu_max]
+        else:
+            assert len(th_mu_max) >= 2
+            assert th_mu_max[0] > 0, "contrast thresholds must be positive"
+            assert th_mu_max[1] > 0, "contrast thresholds must be positive"
+            th_mu_max_list = th_mu_max
+
         batch_size = len(first_times)
         ft = first_times[:, None, None]
         for i in range(batch_size):
             if ft[i].item():
-                mu = np.random.uniform(th_mu_min, th_mu_max)
-                std = np.random.uniform(th_std_min, th_std_max)
-                self.threshold_mus[i] = mu
-                self.thresholds[:, i].normal_(mean=mu, std=std)
-                self.thresholds[:, i].clamp_(0.01, 1.0)
+                for p in [0, 1]:  # for ON and OFF separately
+                    mu = np.random.uniform(th_mu_min_list[p], th_mu_max_list[p])
+                    std = np.random.uniform(th_std_min, th_std_max)
+                    self.threshold_mus[i, p] = mu
+                    self.thresholds[p, i].normal_(mean=mu, std=std)
+                    self.thresholds[p, i].clamp_(0.01, 1.0)
 
     def randomize_cutoff(self, first_times, cutoff_min=0, cutoff_max=900):
         """
@@ -384,7 +416,8 @@ class GPUEventSimulator(nn.Module):
         return torch.log(u8imgs.float() / 255.0 + eps)
 
     @torch.no_grad()
-    def dynamic_moving_average(self, images, num_frames, timestamps, first_times, eps=1e-7):
+    def dynamic_moving_average(self, images, num_frames, timestamps, first_times, min_pixel_range=20,
+                               max_pixel_incr=20, eps=1e-7):
         """
 
         Converts byte images to log and
@@ -415,10 +448,10 @@ class GPUEventSimulator(nn.Module):
             block_dim = (1, 16, 16)
             sizes = (batch_size, height, width)
             grid_dim = tuple(int(np.ceil(a / b)) for a, b in zip(sizes, block_dim))
-            _cuda_kernel_dynamic_moving_average[grid_dim, block_dim](*cu_args, eps)
+            _cuda_kernel_dynamic_moving_average[grid_dim, block_dim](*cu_args, min_pixel_range, max_pixel_incr, eps)
         else:
             args = [v.numpy() for v in args]
-            _cpu_kernel_dynamic_moving_average(*args, eps)
+            _cpu_kernel_dynamic_moving_average(*args, min_pixel_range, max_pixel_incr, eps)
 
         self.filtering_prev_image_ts = timestamps[:, -1]
 

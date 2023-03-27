@@ -22,16 +22,18 @@ namespace Metavision {
 /// @note The trigger out signal is a binary signal
 class I_TriggerOut : public I_RegistrableFacility<I_TriggerOut> {
 public:
-    /// @brief Enables the trigger out
-    /// @return true if trigger was successfully enabled, false otherwise
-    virtual bool enable() = 0;
-
-    /// @brief Disables the trigger out
-    virtual void disable() = 0;
+    /// @brief Gets the trigger out signal period (in us)
+    /// @return the period set (in us)
+    virtual uint32_t get_period() const = 0;
 
     /// @brief Sets the trigger out signal period (in us)
     /// @param period_us the period to set (in us)
-    virtual void set_period(uint32_t period_us) = 0;
+    /// @return true on success
+    virtual bool set_period(uint32_t period_us) = 0;
+
+    /// @brief Gets the duty cycle of the trigger out signal
+    /// @return the ratio representing pulse_width_us/period_us
+    virtual double get_duty_cycle() const = 0;
 
     /// @brief Sets the duty cycle of the trigger out signal i.e. the pulse duration
     ///
@@ -44,7 +46,15 @@ public:
     ///
     /// @param period_ratio the ratio representing pulse_width_us/period_us which must be in the range [0,1]
     /// (value is clamped in this range otherwise)
-    virtual void set_duty_cycle(double period_ratio) = 0;
+    /// @return true on success
+    virtual bool set_duty_cycle(double period_ratio) = 0;
+
+    /// @brief Enables the trigger out
+    /// @return true if trigger was successfully enabled, false otherwise
+    virtual bool enable() = 0;
+
+    /// @brief Disables the trigger out
+    virtual bool disable() = 0;
 
     /// @brief Checks if trigger out is enabled
     /// @return true if trigger out is enabled, False otherwise

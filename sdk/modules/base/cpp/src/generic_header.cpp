@@ -22,6 +22,7 @@ namespace {
 
 static const std::string field_prefix           = "%";
 static const std::vector<std::string> date_keys = {"date", "Date"};
+static const std::string end_key                = "end";
 } // namespace
 
 GenericHeader::GenericHeader() = default;
@@ -92,6 +93,8 @@ std::string GenericHeader::to_string() const {
         header_str += field_prefix + " " + field.first + " " + field.second + "\n";
     }
 
+    header_str += field_prefix + " " + end_key + "\n";
+
     return header_str;
 }
 
@@ -130,6 +133,9 @@ void GenericHeader::parse_header(std::istream &stream) {
             // so we expect the key to be the first extracted field
             std::string key, value;
             if (iss >> key) {
+                if (key == end_key) {
+                    break;
+                }
                 std::string tot_value;
                 iss >> tot_value;
                 while (iss >> value) {

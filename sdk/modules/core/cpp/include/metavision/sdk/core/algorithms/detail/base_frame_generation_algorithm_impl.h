@@ -43,9 +43,9 @@ template<typename EventIt>
 void BaseFrameGenerationAlgorithm::generate_frame_from_events(EventIt it_begin, EventIt it_end, cv::Mat &frame,
                                                               const uint32_t accumulation_time_us,
                                                               const Metavision::ColorPalette &palette) {
-    const cv::Vec4b bg_color = detail::bgra(get_cv_color(palette, Metavision::ColorType::Background));
-    const std::array<cv::Vec4b, 2> off_on_colors{detail::bgra(get_cv_color(palette, Metavision::ColorType::Negative)),
-                                                 detail::bgra(get_cv_color(palette, Metavision::ColorType::Positive))};
+    const cv::Vec4b bg_color = get_bgra_color(palette, Metavision::ColorType::Background);
+    const std::array<cv::Vec4b, 2> off_on_colors{get_bgra_color(palette, Metavision::ColorType::Negative),
+                                                 get_bgra_color(palette, Metavision::ColorType::Positive)};
     int flags = (palette != Metavision::ColorPalette::Gray ? Parameters::BGR : Parameters::GRAY);
 
     // Process the entire range of events if the accumulation time is set to zero, or if there's no events.
@@ -55,28 +55,6 @@ void BaseFrameGenerationAlgorithm::generate_frame_from_events(EventIt it_begin, 
                                     [](const auto &lhs, auto rhs) { return lhs.t < rhs; });
 
     generate_frame_from_events(it_begin, it_end, frame, bg_color, off_on_colors, flags);
-}
-
-template<typename EventIt>
-void BaseFrameGenerationAlgorithm::generate_frame_from_events(EventIt it_begin, EventIt it_end, cv::Mat &frame,
-                                                              const cv::Vec3b &bg_color,
-                                                              const std::array<cv::Vec3b, 2> &off_on_colors,
-                                                              bool colored) {
-    if (frame.type() != (colored ? CV_8UC3 : CV_8UC1)) {
-        std::ostringstream ss;
-        ss << "Incompatible matrix type. Must be " << (colored ? "CV_8UC3" : "CV_8UC1") << ".";
-        throw std::invalid_argument(ss.str());
-    }
-
-    if (colored) {
-        frame.setTo(bg_color);
-        for (auto it = it_begin; it != it_end; ++it)
-            frame.at<cv::Vec3b>(it->y, it->x) = off_on_colors[it->p];
-    } else {
-        frame.setTo(bg_color[0]);
-        for (auto it = it_begin; it != it_end; ++it)
-            frame.at<uint8_t>(it->y, it->x) = off_on_colors[it->p][0];
-    }
 }
 
 template<typename EventIt>
