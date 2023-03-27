@@ -28,8 +28,9 @@
 #include "metavision/hal/utils/device_builder.h"
 #include "metavision/hal/utils/raw_file_header.h"
 #include "metavision/hal/facilities/i_events_stream.h"
-#include "metavision/hal/facilities/future/i_events_stream.h"
+#include "metavision/hal/facilities/i_events_stream_decoder.h"
 #include "metavision/hal/facilities/i_hal_software_info.h"
+#include "metavision/hal/facilities/i_hw_identification.h"
 #include "metavision/hal/facilities/i_plugin_software_info.h"
 #include "metavision/hal/device/device_discovery.h"
 #include "metavision/hal/utils/camera_discovery.h"
@@ -56,22 +57,37 @@ std::string CameraTypeLabels[] = {"remote", "local", "any"};
 Metavision::PluginLoader plugin_loader;
 
 Metavision::PluginLoader::PluginList get_plugins() {
-    static bool loaded            = false;
-    static char *last_plugin_path = nullptr;
+    static bool loaded                         = false;
+    static char *last_plugin_path              = nullptr;
+    static const char *last_plugin_search_mode = nullptr;
 
     MV_HAL_LOG_TRACE() << "Loading plugins";
 
-    char *plugin_path = getenv("MV_HAL_PLUGIN_PATH");
-    if (loaded && (!plugin_path || strcmp(plugin_path, last_plugin_path) == 0)) {
+    char *plugin_path              = getenv("MV_HAL_PLUGIN_PATH");
+    const char *plugin_search_mode = getenv("MV_HAL_PLUGIN_SEARCH_MODE");
+
+    if (plugin_search_mode && strcmp(plugin_search_mode, "PLUGIN_PATH_ONLY") != 0 &&
+        strcmp(plugin_search_mode, "SYSTEM_PATHS_ONLY") != 0 && strcmp(plugin_search_mode, "DEFAULT") != 0 &&
+        strcmp(plugin_search_mode, "") != 0) {
+        MV_HAL_LOG_WARNING() << "Invalid MV_HAL_PLUGIN_SEARCH_MODE value: " << plugin_search_mode
+                             << ", using \"DEFAULT\" instead";
+        plugin_search_mode = "DEFAULT";
+    } else if (!plugin_search_mode) {
+        plugin_search_mode = "DEFAULT";
+    }
+
+    if (loaded && (!plugin_path || strcmp(plugin_path, last_plugin_path) == 0) &&
+        (last_plugin_search_mode && strcmp(plugin_search_mode, last_plugin_search_mode) == 0)) {
         MV_HAL_LOG_TRACE()
             << "  MV_HAL_PLUGIN_PATH did not change and plugins are already loaded, no need to reload plugins";
         return plugin_loader.get_plugin_list();
     }
-    last_plugin_path = plugin_path;
+    last_plugin_path        = plugin_path;
+    last_plugin_search_mode = plugin_search_mode;
 
     plugin_loader.clear_folders();
     MV_HAL_LOG_TRACE() << "  Setting up search paths";
-    if (plugin_path) {
+    if (plugin_path && strcmp(plugin_search_mode, "SYSTEM_PATHS_ONLY") != 0) {
         std::string plugin_folders(plugin_path);
 #ifdef _WIN32
         std::string delimiter = ";";
@@ -96,16 +112,18 @@ Metavision::PluginLoader::PluginList get_plugins() {
         plugin_loader.clear_folders();
     }
 
-    // Insert installation path to plugin folders
-    // Remark : we do it here (after adding folders from MV_HAL_PLUGIN_PATH)
-    // because we want to look first in env var MV_HAL_PLUGIN_PATH (if set by the user)
-    // and then in the installation path
-    std::string plugin_install_path = Metavision::ResourcesFolder::get_plugin_install_path();
-    if (!plugin_install_path.empty()) {
-        MV_HAL_LOG_TRACE() << "    Adding plugin search path:" << plugin_install_path;
-        plugin_loader.insert_folder(plugin_install_path);
-        plugin_loader.load_plugins();
-        plugin_loader.clear_folders();
+    if (strcmp(plugin_search_mode, "PLUGIN_PATH_ONLY") != 0) {
+        // Insert installation path to plugin folders
+        // Remark : we do it here (after adding folders from MV_HAL_PLUGIN_PATH)
+        // because we want to look first in env var MV_HAL_PLUGIN_PATH (if set by the user)
+        // and then in the installation path
+        std::string plugin_install_path = Metavision::ResourcesFolder::get_plugin_install_path();
+        if (!plugin_install_path.empty()) {
+            MV_HAL_LOG_TRACE() << "    Adding plugin search path:" << plugin_install_path;
+            plugin_loader.insert_folder(plugin_install_path);
+            plugin_loader.load_plugins();
+            plugin_loader.clear_folders();
+        }
     }
 
     MV_HAL_LOG_TRACE() << "  Loading plugins...";
@@ -295,6 +313,19 @@ DeviceDiscovery::SystemList DeviceDiscovery::list_available_sources_local() {
     return list_systems_camera(LOCAL);
 }
 
+DeviceConfigOptionMap DeviceDiscovery::list_device_config_options(const std::string &input_serial) {
+    auto device = open(input_serial);
+    if (device) {
+        auto hw_identification = device->get_facility<I_HW_Identification>();
+
+        if (hw_identification) {
+            return hw_identification->get_device_config_options();
+        }
+    }
+
+    return {};
+}
+
 std::unique_ptr<Device> DeviceDiscovery::open(const std::string &serial) {
     DeviceConfig default_config;
     return DeviceDiscovery::open(serial, default_config);
@@ -307,7 +338,7 @@ std::unique_ptr<Device> DeviceDiscovery::open(const std::string &input_serial, D
     std::string integrator_name;
     std::string plugin_name;
 
-    // split name plugin_name:intergrator:serial
+    // split name plugin_name:integrator:serial
     size_t pos             = 0;
     std::string tmp_serial = input_serial;
     std::string delimiter  = ":";
@@ -363,9 +394,10 @@ std::unique_ptr<Device> DeviceDiscovery::open(const std::string &input_serial, D
             }
             MV_HAL_LOG_TRACE() << "    Camera discovery" << camera_discovery.get_name();
             try {
-                DeviceBuilder device_builder(
-                    std::make_unique<I_HALSoftwareInfo>(plugin.get_hal_info()),
-                    std::make_unique<I_PluginSoftwareInfo>(plugin.get_plugin_name(), plugin.get_plugin_info()));
+                DeviceBuilder device_builder(std::make_unique<I_HALSoftwareInfo>(plugin.get_hal_info()),
+                                             std::make_unique<I_PluginSoftwareInfo>(plugin.get_integrator_name(),
+                                                                                    plugin.get_plugin_name(),
+                                                                                    plugin.get_plugin_info()));
                 if (camera_discovery.discover(device_builder, serial, config)) {
                     MV_HAL_LOG_TRACE() << "        -> can open the serial";
                     device = device_builder();
@@ -388,7 +420,6 @@ std::unique_ptr<Device> DeviceDiscovery::open_raw_file(const std::string &raw_fi
     return open_raw_file(raw_file, cfg);
 }
 
-// TODO MV-166: remove this overload
 std::unique_ptr<Device> DeviceDiscovery::open_raw_file(const std::string &raw_file, RawFileConfig &file_config) {
     auto ifs = std::make_unique<std::ifstream>(raw_file, std::ios::in | std::ios::binary);
     if (!ifs->good()) {
@@ -403,48 +434,21 @@ std::unique_ptr<Device> DeviceDiscovery::open_raw_file(const std::string &raw_fi
             event_stream->set_underlying_filename(raw_file);
         }
 
-    } catch (const HalException &e) {
-        MV_HAL_LOG_ERROR() << Log::no_space << "While opening RAW file '" << raw_file << "':" << std::endl;
-        throw e;
-    }
-
-    return device;
-}
-
-std::unique_ptr<Device> DeviceDiscovery::open_raw_file(const std::string &raw_file,
-                                                       Future::RawFileConfig &file_config) {
-    auto ifs = std::make_unique<std::ifstream>(raw_file, std::ios::in | std::ios::binary);
-    if (!ifs->good()) {
-        throw HalException(HalErrorCode::FailedInitialization, "Unable to open RAW file '" + raw_file + "'");
-    }
-
-    RawFileConfig config;
-    config.n_events_to_read_ = file_config.n_events_to_read_;
-    config.n_read_buffers_   = file_config.n_read_buffers_;
-    config.do_time_shifting_ = file_config.do_time_shifting_;
-    std::unique_ptr<Device> device;
-    try {
-        device             = open_stream(std::move(ifs), config);
-        auto *event_stream = device->get_facility<I_EventsStream>();
-        if (event_stream) {
-            event_stream->set_underlying_filename(raw_file);
-        }
-
-        auto *future_events_stream = device->get_facility<Future::I_EventsStream>();
-        if (future_events_stream) {
-            future_events_stream->set_underlying_filename(raw_file);
-            if (file_config.build_index_) {
+        auto *events_stream = device->get_facility<I_EventsStream>();
+        if (events_stream) {
+            events_stream->set_underlying_filename(raw_file);
+            if (file_config.build_index_ && device->get_facility<I_EventsStreamDecoder>()) {
                 // We create an additional decicated device that we will use for indexing the RAW file
                 // We set build_index_ = false for this device, because it won't be used for seeking, so it does
                 // not need to have an index automatically built. Not doing so would create an infinite loop
                 // of devices created for the purpose of building the index for the one previously created.
-                Future::RawFileConfig cfg;
+                RawFileConfig cfg;
                 cfg.do_time_shifting_    = true;
                 cfg.build_index_         = false;
                 auto device_for_indexing = open_raw_file(raw_file, cfg);
                 if (device_for_indexing) {
                     try {
-                        future_events_stream->index(std::move(device_for_indexing));
+                        events_stream->index(std::move(device_for_indexing));
                     } catch (const HalException &e) {
                         MV_HAL_LOG_TRACE() << "Could not build index for the file. Exception caught:\n" << e.what();
                     }
@@ -470,66 +474,105 @@ std::unique_ptr<Device> DeviceDiscovery::open_stream(std::unique_ptr<std::istrea
     std::unique_ptr<Device> device;
 
     RawFileHeader header(*stream);
+    if (header.get_plugin_integrator_name().empty() && header.get_camera_integrator_name().empty()) {
+        MV_HAL_LOG_TRACE() << "Opening camera from stream with no plugin/camera integrator in header";
+        // Pre-Metavision 4.0 recordings had the same integrator for camera and plugin
+        header.set_camera_integrator_name(header.get_field("integrator_name"));
+        header.set_plugin_integrator_name(header.get_field("integrator_name"));
+    }
 
-    std::string input_integrator_name = header.get_integrator_name();
-    std::string input_plugin_name     = header.get_plugin_name();
+    std::string input_camera_integrator_name = header.get_camera_integrator_name();
+    std::string input_plugin_integrator_name = header.get_plugin_integrator_name();
+    std::string input_plugin_name            = header.get_plugin_name();
     std::string plugin_name, integrator_name;
 
     MV_HAL_LOG_TRACE() << Log::no_space << "Opening camera from stream, identified as ["
-                       << (input_plugin_name.empty() ? "Unknown" : input_plugin_name) << "] ("
-                       << (input_integrator_name.empty() ? "Unknown" : input_integrator_name) << ")";
+                       << (input_plugin_name.empty() ? "Unknown" : input_plugin_name) << " ("
+                       << (input_plugin_integrator_name.empty() ? "Unknown" : input_plugin_integrator_name) << ")] ("
+                       << (input_camera_integrator_name.empty() ? "Unknown" : input_camera_integrator_name) << ")";
 
     auto list_plugins = get_plugins();
 
-    for (auto &plugin : list_plugins) {
+    // The lookup is done in several rounds, with different acceptance rules, to first try to get the best matching
+    // plugin, until it checks indiscriminately any FileDiscovery that it may handle a recording created by a
+    // different plugin
+    using Check    = std::function<bool(const RawFileHeader &, const Plugin &, const FileDiscovery &)>;
+    using Strategy = std::pair<std::string, Check>;
+    std::vector<Strategy> strategies;
+
+    strategies.push_back({"created the recording",
+                          [](const RawFileHeader &header, const Plugin &plugin, const FileDiscovery &discovery) {
+                              if (header.get_plugin_integrator_name() != plugin.get_integrator_name()) {
+                                  return false;
+                              }
+                              if (header.get_plugin_name() != plugin.get_plugin_name()) {
+                                  return false;
+                              }
+                              return true;
+                          }});
+
+    strategies.push_back({"same plugin integrator",
+                          [](const RawFileHeader &header, const Plugin &plugin, const FileDiscovery &discovery) {
+                              if (header.get_plugin_integrator_name() != plugin.get_integrator_name()) {
+                                  return false;
+                              }
+                              return true;
+                          }});
+
+    strategies.push_back({"any plugin", [](const RawFileHeader &header, const Plugin &plugin,
+                                           const FileDiscovery &discovery) { return true; }});
+
+    for (auto &strategy : strategies) {
         if (device) {
             break;
         }
 
-        plugin_name     = plugin.get_plugin_name();
-        integrator_name = plugin.get_integrator_name();
-        if (input_integrator_name.empty() && input_plugin_name.empty()) {
-            if (integrator_name != "Prophesee") {
-                // for backward compatibility with our old RAW files where these
-                // fields were not yet added in the header
-                continue;
-            }
-        } else if ((!input_integrator_name.empty() && input_integrator_name != integrator_name) ||
-                   (!input_plugin_name.empty() && input_plugin_name != plugin_name)) {
-            MV_HAL_LOG_TRACE() << Log::no_space << "  Plugin [" << plugin_name << "] (" << integrator_name
-                               << ") does not match the header";
-            continue;
-        }
-
-        MV_HAL_LOG_TRACE() << Log::no_space << "  Plugin [" << plugin.get_plugin_name() << "] ("
-                           << plugin.get_integrator_name() << ") matches the header";
-        for (auto &file_discovery : plugin.get_file_discovery_list()) {
+        for (auto &plugin : list_plugins) {
             if (device) {
                 break;
             }
-            MV_HAL_LOG_TRACE() << "    File discovery" << file_discovery.get_name();
-            try {
-                DeviceBuilder device_builder(
-                    std::make_unique<I_HALSoftwareInfo>(plugin.get_hal_info()),
-                    std::make_unique<I_PluginSoftwareInfo>(plugin.get_plugin_name(), plugin.get_plugin_info()));
-                if (file_discovery.discover(device_builder, stream, header, stream_config)) {
-                    MV_HAL_LOG_TRACE() << "      -> Can open the file";
-                    device = device_builder();
-                } else {
-                    MV_HAL_LOG_TRACE() << "      -> Cannot open the file";
+
+            plugin_name     = plugin.get_plugin_name();
+            integrator_name = plugin.get_integrator_name();
+
+            for (auto &file_discovery : plugin.get_file_discovery_list()) {
+                if (device) {
+                    break;
                 }
-            } catch (HalException &e) {
-                log_plugin_error(plugin, file_discovery.get_name(), e);
-            } catch (const std::exception &e) { log_plugin_error(plugin, file_discovery.get_name(), e); } catch (...) {
-                log_plugin_error(plugin, file_discovery.get_name());
-            }
-            if (!device && !stream) {
-                // We can get here if the implementation takes ownership of the stream but the output device is
-                // null. The requirements (see documentation of the 'discover' method in the FileDiscovery) have
-                // not been fulfilled.
-                throw HalException(HalErrorCode::FailedInitialization,
-                                   "The plugin was expected to be able to read from the input stream, but a "
-                                   "null device was constructed.");
+                if (!strategy.second(header, plugin, file_discovery)) {
+                    MV_HAL_LOG_DEBUG() << "  Plugin" << plugin_name << "-" << integrator_name;
+                    MV_HAL_LOG_DEBUG() << "    File discovery" << file_discovery.get_name();
+                    MV_HAL_LOG_DEBUG() << "      -> Does not match:" << strategy.first;
+                    continue;
+                }
+                MV_HAL_LOG_TRACE() << Log::no_space << "  Plugin [" << plugin_name << "] (" << integrator_name << ")";
+                MV_HAL_LOG_TRACE() << "    File discovery" << file_discovery.get_name();
+                MV_HAL_LOG_TRACE() << "      -> Match:" << strategy.first;
+
+                try {
+                    DeviceBuilder device_builder(std::make_unique<I_HALSoftwareInfo>(plugin.get_hal_info()),
+                                                 std::make_unique<I_PluginSoftwareInfo>(plugin.get_integrator_name(),
+                                                                                        plugin.get_plugin_name(),
+                                                                                        plugin.get_plugin_info()));
+                    if (file_discovery.discover(device_builder, stream, header, stream_config)) {
+                        MV_HAL_LOG_TRACE() << "      -> Can open the file";
+                        device = device_builder();
+                    } else {
+                        MV_HAL_LOG_TRACE() << "      -> Cannot open the file";
+                    }
+                } catch (HalException &e) {
+                    log_plugin_error(plugin, file_discovery.get_name(), e);
+                } catch (const std::exception &e) {
+                    log_plugin_error(plugin, file_discovery.get_name(), e);
+                } catch (...) { log_plugin_error(plugin, file_discovery.get_name()); }
+                if (!device && !stream) {
+                    // We can get here if the implementation takes ownership of the stream but the output device is
+                    // null. The requirements (see documentation of the 'discover' method in the FileDiscovery) have
+                    // not been fulfilled.
+                    throw HalException(HalErrorCode::FailedInitialization,
+                                       "The plugin was expected to be able to read from the input stream, but a "
+                                       "null device was constructed.");
+                }
             }
         }
     }

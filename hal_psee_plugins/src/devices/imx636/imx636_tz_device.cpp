@@ -9,45 +9,47 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-#ifdef _MSC_VER
-#define NOMINMAX
-#endif
+#include <math.h>
+#include <thread>
+#include <chrono>
 
 #include "devices/imx636/imx636_tz_device.h"
 #include "devices/utils/device_system_id.h"
-#include "boards/treuzell/tz_libusb_board_command.h"
-#include "devices/treuzell/tz_device.h"
+#include "metavision/psee_hw_layer/boards/treuzell/tz_libusb_board_command.h"
+#include "metavision/psee_hw_layer/devices/treuzell/tz_device.h"
 #include "devices/common/issd.h"
 #include "devices/imx636/imx636_evk3_issd.h"
-#include "devices/imx636/imx636_ll_biases.h"
-#include "devices/gen41/gen41_antiflicker_module.h"
-#include "devices/gen41/gen41_erc.h"
-#include "devices/gen41/gen41_noise_filter_module.h"
-#include "devices/gen41/gen41_roi_command.h"
-#include "devices/imx636/imx636_evk3_regmap_builder.h"
-#include "devices/imx636/imx636_tz_trigger_event.h"
-#include "facilities/psee_hw_register.h"
+#include "devices/treuzell/tz_device_builder.h"
+#include "metavision/psee_hw_layer/devices/imx636/imx636_ll_biases.h"
+#include "metavision/psee_hw_layer/devices/gen41/gen41_antiflicker_module.h"
+#include "metavision/psee_hw_layer/devices/gen41/gen41_erc.h"
+#include "metavision/psee_hw_layer/devices/imx636/imx636_event_trail_filter_module.h"
+#include "metavision/psee_hw_layer/devices/gen41/gen41_roi_command.h"
+#include "metavision/psee_hw_layer/devices/gen41/gen41_digital_event_mask.h"
+#include "metavision/psee_hw_layer/devices/gen41/gen41_digital_crop.h"
+#include "devices/imx636/register_maps/imx636_evk3_registermap.h"
+#include "metavision/psee_hw_layer/devices/imx636/imx636_tz_trigger_event.h"
+#include "metavision/psee_hw_layer/facilities/psee_hw_register.h"
+#include "metavision/psee_hw_layer/utils/psee_format.h"
 #include "geometries/hd_geometry.h"
 #include "metavision/hal/facilities/i_events_stream.h"
 #include "metavision/hal/utils/device_builder.h"
 #include "plugin/psee_plugin.h"
-#include <math.h>
-#include <thread>
-#include <chrono>
+#include "utils/psee_hal_utils.h"
 
 using vfield = std::map<std::string, uint32_t>;
 
 namespace Metavision {
 namespace {
 std::string ROOT_PREFIX   = "PSEE/";
-std::string SENSOR_PREFIX = ROOT_PREFIX + "IMX636/";
+std::string SENSOR_PREFIX = "IMX636/";
 } // namespace
 
 TzImx636::TzImx636(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent) :
     TzDevice(cmd, dev_id, parent),
     TzIssdDevice(issd_evk3_imx636_sequence),
-    TzDeviceWithRegmap(build_imx636_evk3_register_map) {
-    sync_mode_ = I_DeviceControl::SyncMode::STANDALONE;
+    TzDeviceWithRegmap(Imx636Evk3RegisterMap, Imx636Evk3RegisterMapSize, ROOT_PREFIX) {
+    sync_mode_ = I_CameraSynchronization::SyncMode::STANDALONE;
     temperature_init();
     iph_mirror_control(true);
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -66,39 +68,82 @@ static TzRegisterBuildMethod method0("psee,ccam5_gen42", TzImx636::build, TzImx6
 static TzRegisterBuildMethod method1("psee,ccam5_imx636", TzImx636::build, TzImx636::can_build);
 
 bool TzImx636::can_build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id) {
-    return (cmd->read_device_register(dev_id, 0x14)[0] == 0xA0401806);
+    bool res = (cmd->read_device_register(dev_id, 0x14)[0] == 0xA0401806);
+    res      = res && ((cmd->read_device_register(dev_id, 0xF128)[0] & 3) == 0);
+    return res;
 }
 
-void TzImx636::spawn_facilities(DeviceBuilder &device_builder) {
-    device_builder.add_facility(std::make_unique<Gen41NoiseFilterModule>(register_map, SENSOR_PREFIX));
+void TzImx636::spawn_facilities(DeviceBuilder &device_builder, const DeviceConfig &device_config) {
+    device_builder.add_facility(std::make_unique<Imx636EventTrailFilterModule>(register_map, SENSOR_PREFIX));
     device_builder.add_facility(std::make_unique<Gen41AntiFlickerModule>(register_map, SENSOR_PREFIX));
 
     auto erc = device_builder.add_facility(
         std::make_unique<Gen41Erc>(register_map, SENSOR_PREFIX + "erc/", shared_from_this()));
     erc->initialize();
-    erc->enable(true);
 
     auto geometry = HDGeometry();
 
-    auto hw_register = device_builder.add_facility(std::make_unique<PseeHWRegister>(register_map));
-
-    device_builder.add_facility(std::make_unique<Imx636_LL_Biases>(hw_register, SENSOR_PREFIX));
+    auto hw_register = std::make_shared<PseeHWRegister>(register_map);
+    device_builder.add_facility(std::make_unique<Imx636_LL_Biases>(device_config, hw_register, SENSOR_PREFIX));
 
     device_builder.add_facility(
         std::make_unique<Gen41ROICommand>(geometry.get_width(), geometry.get_height(), register_map, SENSOR_PREFIX));
 
     device_builder.add_facility(
         std::make_unique<Imx636TzTriggerEvent>(register_map, SENSOR_PREFIX, shared_from_this()));
+
+    device_builder.add_facility(
+        std::make_unique<Gen41DigitalEventMask>(register_map, SENSOR_PREFIX + "ro/digital_mask_pixel_"));
+
+    device_builder.add_facility(std::make_unique<Gen41DigitalCrop>(register_map, SENSOR_PREFIX));
 }
 
 TzImx636::~TzImx636() {}
 
 long long TzImx636::get_sensor_id() {
-    return (*register_map)[SENSOR_PREFIX + "chip_id"].read_value();
+    return (*register_map)[SENSOR_PREFIX + "Reserved_0014"].read_value();
 }
 
-TzDevice::StreamFormat TzImx636::get_output_format() {
-    return {std::string("EVT3"), std::make_unique<HDGeometry>()};
+DeviceConfigOptionMap TzImx636::get_device_config_options() const {
+    const auto formats = get_supported_formats();
+    if (formats.size() > 1) {
+        std::vector<std::string> values;
+        for (auto &fmt : formats) {
+            values.push_back(fmt.name());
+        }
+        return {{"format", DeviceConfigOption(values, values[0])}};
+    }
+    return {};
+}
+
+std::list<StreamFormat> TzImx636::get_supported_formats() const {
+    std::list<StreamFormat> formats;
+    formats.push_back(StreamFormat("EVT3;height=720;width=1280"));
+    formats.push_back(StreamFormat("EVT21;height=720;width=1280;endianness=legacy"));
+    return formats;
+}
+
+StreamFormat TzImx636::set_output_format(const std::string &format_name) {
+    if (format_name == "EVT21") {
+        (*register_map)[SENSOR_PREFIX + "edf/pipeline_control"]["format"].write_value(0x1);
+        (*register_map)[SENSOR_PREFIX + "eoi/Reserved_8000"]["Reserved_7_6"].write_value(0x0);
+    } else {
+        // Default as EVT3
+        (*register_map)[SENSOR_PREFIX + "edf/pipeline_control"]["format"].write_value(0x0);
+        (*register_map)[SENSOR_PREFIX + "eoi/Reserved_8000"]["Reserved_7_6"].write_value(0x2);
+    }
+    return get_output_format();
+}
+
+StreamFormat TzImx636::get_output_format() const {
+    StreamFormat format((*register_map)[SENSOR_PREFIX + "edf/pipeline_control"]["format"].read_value() ? "EVT21" :
+                                                                                                         "EVT3");
+    format["width"]  = "1280";
+    format["height"] = "720";
+    if (format.name() == "EVT21") {
+        format["endianness"] = "legacy";
+    }
+    return format;
 }
 
 long TzImx636::get_system_id() const {
@@ -108,25 +153,25 @@ long TzImx636::get_system_id() const {
 bool TzImx636::set_mode_standalone() {
     time_base_config(false, true);
 
-    sync_mode_ = I_DeviceControl::SyncMode::STANDALONE;
+    sync_mode_ = I_CameraSynchronization::SyncMode::STANDALONE;
     return true;
 }
 
 bool TzImx636::set_mode_master() {
     time_base_config(true, true);
 
-    sync_mode_ = I_DeviceControl::SyncMode::MASTER;
+    sync_mode_ = I_CameraSynchronization::SyncMode::MASTER;
     return true;
 }
 
 bool TzImx636::set_mode_slave() {
     time_base_config(true, false);
 
-    sync_mode_ = I_DeviceControl::SyncMode::SLAVE;
+    sync_mode_ = I_CameraSynchronization::SyncMode::SLAVE;
     return true;
 }
 
-I_DeviceControl::SyncMode TzImx636::get_mode() {
+I_CameraSynchronization::SyncMode TzImx636::get_mode() {
     return sync_mode_;
 }
 
@@ -180,6 +225,25 @@ int TzImx636::get_illumination() {
         return powf(10, 3.5 - logf(t * 0.37) / logf(10));
     }
     return -1;
+}
+
+int TzImx636::get_pixel_dead_time() {
+    auto reg = (*register_map)[SENSOR_PREFIX + "refractory_ctrl"];
+
+    reg.write_value({
+        {"refr_en", 1},
+        {"refr_cnt_en", 1},
+    });
+
+    int max_retries = 10;
+    while (reg["refr_valid"].read_value() == 0) {
+        if (max_retries == 0) {
+            throw HalException(HalErrorCode::MaximumRetriesExeeded);
+        }
+        max_retries--;
+    }
+
+    return reg["refr_counter"].read_value() / (100 * 2);
 }
 
 void TzImx636::temperature_init() {

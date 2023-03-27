@@ -9,8 +9,8 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-#include "devices/imx636/imx636_tz_trigger_event.h"
-#include "utils/register_map.h"
+#include "metavision/psee_hw_layer/devices/imx636/imx636_tz_trigger_event.h"
+#include "metavision/psee_hw_layer/utils/register_map.h"
 
 using vfield = std::map<std::string, uint32_t>;
 
@@ -18,27 +18,28 @@ namespace Metavision {
 
 Imx636TzTriggerEvent::Imx636TzTriggerEvent(const std::shared_ptr<RegisterMap> &register_map, const std::string &prefix,
                                            const std::shared_ptr<TzDevice> tzDev) :
-    Gen41TzTriggerEvent(register_map, prefix, tzDev) {}
+    Gen41TzTriggerEvent(register_map, prefix, tzDev), chan_map_({{Channel::Main, 0}}) {}
 
-bool Imx636TzTriggerEvent::enable(uint32_t channel) {
-    bool valid    = is_valid_id(channel);
-    long read_val = 0;
-    long value    = 0;
-
-    if (valid) {
-        (*register_map_)[prefix_ + "edf/Reserved_7004"]["Reserved_10"].write_value(1);
+bool Imx636TzTriggerEvent::enable(const Channel &channel) {
+    auto it = chan_map_.find(channel);
+    if (it == chan_map_.end()) {
+        return false;
     }
-    return valid;
+    (*register_map_)[prefix_ + "edf/Reserved_7004"]["Reserved_10"].write_value(1);
+    return true;
 }
 
-bool Imx636TzTriggerEvent::is_enabled(uint32_t channel) {
-    bool valid = is_valid_id(channel);
-    long value = 0;
-
-    if (valid) {
-        value = (*register_map_)[prefix_ + "edf/Reserved_7004"]["Reserved_10"].read_value();
+bool Imx636TzTriggerEvent::is_enabled(const Channel &channel) const {
+    auto it = chan_map_.find(channel);
+    if (it == chan_map_.end()) {
+        return false;
     }
-    return valid && (value == 1);
+    auto value = (*register_map_)[prefix_ + "edf/Reserved_7004"]["Reserved_10"].read_value();
+    return (value == 1);
+}
+
+std::map<I_TriggerIn::Channel, short> Imx636TzTriggerEvent::get_available_channels() const {
+    return chan_map_;
 }
 
 } // namespace Metavision

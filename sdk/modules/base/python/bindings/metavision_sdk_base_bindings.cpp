@@ -37,14 +37,13 @@ PythonBindingsDoc pybind_doc_base;
 
 void export_event_cd(py::module &m);
 void export_event_ext_trigger(py::module &m);
+void export_raw_event_frame_diff_and_histo(py::module &m);
 void export_software_info(py::module &m);
 void export_debug_buffer_info(py::module &m);
 void export_generic_header(py::module &m);
 } // namespace Metavision
 
 PYBIND11_MODULE(MODULE_NAME, m) {
-    PyEval_InitThreads();
-
     try {
         py::module::import("numpy");
     } catch (const std::exception &e) {
@@ -55,6 +54,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     // Export events
     Metavision::export_event_cd(m);
     Metavision::export_event_ext_trigger(m);
+    Metavision::export_raw_event_frame_diff_and_histo(m);
 
     // Export tools
     Metavision::export_software_info(m);

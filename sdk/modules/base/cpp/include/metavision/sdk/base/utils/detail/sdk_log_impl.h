@@ -21,16 +21,18 @@ static std::string PrefixFmt("[SDK][<LEVEL>] ");
 
 template<Metavision::LogLevel Level>
 Metavision::LoggingOperation<Level> log(const std::string &file, int line, const std::string &function) {
-    return Metavision::LoggingOperation<Level>(Metavision::getLogStream(), PrefixFmt, file, line, function);
+    return Metavision::LoggingOperation<Level>(Metavision::getLogOptions(), PrefixFmt, file, line, function);
 }
 } // namespace sdk
 } // namespace detail
 } // namespace Metavision
 
-#define MV_SDK_LOG_DEBUG MV_LOG_WRAP(Metavision::detail::sdk::log, Metavision::LogLevel::Debug)
-#define MV_SDK_LOG_TRACE MV_LOG_WRAP(Metavision::detail::sdk::log, Metavision::LogLevel::Trace)
-#define MV_SDK_LOG_INFO MV_LOG_WRAP(Metavision::detail::sdk::log, Metavision::LogLevel::Info)
-#define MV_SDK_LOG_WARNING MV_LOG_WRAP(Metavision::detail::sdk::log, Metavision::LogLevel::Warning)
-#define MV_SDK_LOG_ERROR MV_LOG_WRAP(Metavision::detail::log, Metavision::LogLevel::Error)
+#define MV_SDK_LOG_WRAP_LEVEL(level) MV_LOG_WRAP(Metavision::detail::sdk::log, (level))
+
+#define MV_SDK_LOG_DEBUG MV_SDK_LOG_WRAP_LEVEL(Metavision::LogLevel::Debug)
+#define MV_SDK_LOG_TRACE MV_SDK_LOG_WRAP_LEVEL(Metavision::LogLevel::Trace)
+#define MV_SDK_LOG_INFO MV_SDK_LOG_WRAP_LEVEL(Metavision::LogLevel::Info)
+#define MV_SDK_LOG_WARNING MV_SDK_LOG_WRAP_LEVEL(Metavision::LogLevel::Warning)
+#define MV_SDK_LOG_ERROR MV_SDK_LOG_WRAP_LEVEL(Metavision::LogLevel::Error)
 
 #endif // METAVISION_SDK_BASE_SDK_LOG_IMPL_H

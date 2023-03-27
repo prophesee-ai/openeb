@@ -10,8 +10,12 @@
  **********************************************************************************************************************/
 
 #include "cstdint"
-#include <libusb.h>
 #include <vector>
+
+#ifdef _MSC_VER
+#define NOMINMAX // libusb.h includes windows.h which defines min max macros that we don't want
+#endif
+#include <libusb.h>
 
 enum class I2cEepromCmd : uint8_t {
     WRITE  = 0xBA,

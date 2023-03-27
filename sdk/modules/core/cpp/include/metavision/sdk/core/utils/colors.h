@@ -14,6 +14,7 @@
 
 #include <unordered_map>
 #include <string>
+#include <opencv2/core.hpp>
 
 namespace Metavision {
 
@@ -44,7 +45,7 @@ inline RGBColor hsv2rgb(HSVColor hsv);
 inline HSVColor rgb2hsv(RGBColor rgb);
 
 /// @brief Enum class representing available color palettes
-enum class ColorPalette { Light, Dark, Gray };
+enum class ColorPalette { Light, Dark, CoolWarm, Gray };
 
 /// @brief Enum class representing one of the possible type of colors
 enum class ColorType { Background, Positive, Negative, Auxiliary };
@@ -53,13 +54,35 @@ enum class ColorType { Background, Positive, Negative, Auxiliary };
 /// @param palette The requested color palette
 /// @param type The requested color type
 /// @return The color associated to the given palette and type
-inline const RGBColor &getColor(const ColorPalette &palette, const ColorType &type);
+inline const RGBColor &get_color(const ColorPalette &palette, const ColorType &type);
 
 /// @brief Gets a color given a palette and the color name
 /// @param palette The requested color palette
 /// @param name The requested color name
 /// @return The color associated to the given palette and name
-inline const RGBColor &getColor(const ColorPalette &palette, const std::string &name);
+inline const RGBColor &get_color(const ColorPalette &palette, const std::string &name);
+
+/// @brief Converts a RGBColor into a 8-bit BGR color in OpenCV format
+/// @param c A color in RBG colorspace
+/// @return The color in 8-bit BGR OpenCV format
+inline cv::Vec3b get_bgr_color(const RGBColor &c);
+
+/// @brief Gets a color in 8-bit BGR OpenCV format given a palette and the color type
+/// @param palette The requested color palette
+/// @param type The requested color type
+/// @return The color in 8-bit BGR OpenCV format associated to the given palette and type
+inline cv::Vec3b get_bgr_color(const ColorPalette &palette, const ColorType &type);
+
+/// @brief Converts a RGBColor into a 8-bit BGRA color in OpenCV format
+/// @param c A color in RBG colorspace
+/// @return The color in 8-bit BGRA OpenCV format
+inline cv::Vec4b get_bgra_color(const RGBColor &c);
+
+/// @brief Gets a color in 8-bit BGRA OpenCV format given a palette and the color type
+/// @param palette The requested color palette
+/// @param type The requested color type
+/// @return The color in 8-bit BGRA OpenCV format associated to the given palette and type
+inline cv::Vec4b get_bgra_color(const ColorPalette &palette, const ColorType &type);
 
 } // namespace Metavision
 

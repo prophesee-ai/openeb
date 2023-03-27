@@ -12,15 +12,17 @@
 #ifndef METAVISION_HAL_I_HW_IDENTIFICATION_H
 #define METAVISION_HAL_I_HW_IDENTIFICATION_H
 
+#include <map>
 #include <string>
 #include <vector>
-#include <map>
 
+#include "metavision/hal/utils/device_config.h"
 #include "metavision/hal/utils/raw_file_header.h"
 #include "metavision/hal/facilities/i_registrable_facility.h"
 
 namespace Metavision {
 
+class DeviceBuilder;
 class I_PluginSoftwareInfo;
 
 /// @brief Facility to provide information about the available system
@@ -39,17 +41,23 @@ public:
     ///  - major_version = 3
     ///  - minor_version = 1
     struct SensorInfo {
+        /// @brief Constructor
+        SensorInfo() = default;
+
+        /// @brief Constructor
+        SensorInfo(uint16_t major_version, uint16_t minor_version, const std::string& name);
+
+        /// @brief Constructor
+        SensorInfo(const std::string& name);
+
         /// Sensor Generation
         uint16_t major_version_;
 
         /// Sensor Revision
         uint16_t minor_version_;
 
-        /// Returns the sensor's information
-        /// @return The sensor's version as a string
-        std::string as_string() const {
-            return std::to_string(major_version_) + "." + std::to_string(minor_version_);
-        }
+        /// Sensor Name
+        std::string name_;
     };
 
     /// @brief Constructor
@@ -69,16 +77,18 @@ public:
     /// @return The sensor information
     virtual SensorInfo get_sensor_info() const = 0;
 
-    /// @brief Returns the version number for this system
-    /// @return System version as an integer
-    virtual long get_system_version() const = 0;
-
-    /// @brief Returns the name of the available RAW format
-    /// @return The available format
+    /// @brief Returns the name of the available data encoding formats
+    /// @return The available data encoding formats
     /// @note Currently the available formats are:
     ///      - EVT2
+    ///      - EVT21
     ///      - EVT3
-    virtual std::vector<std::string> get_available_raw_format() const = 0;
+    virtual std::vector<std::string> get_available_data_encoding_formats() const = 0;
+
+    /// @brief Returns the name of the currently used data encoding format
+    /// @return The currently used data encoding format
+    /// @sa get_available_data_encoding_formats
+    virtual std::string get_current_data_encoding_format() const = 0;
 
     /// @brief Returns the integrator name
     /// @return Name of the integrator
@@ -98,17 +108,31 @@ public:
     /// @return A header that contains information compatible with this system
     RawFileHeader get_header() const;
 
+    /// @brief Lists device config options supported by the camera
+    /// @return the map of (key,option) device config options
+    DeviceConfigOptionMap get_device_config_options() const;
+
 protected:
     /// @brief Gets the plugin software info facility
     /// @return The plugin software info facility
     const std::shared_ptr<I_PluginSoftwareInfo> &get_plugin_software_info() const;
+
+    /// @brief Lists device config options supported by the camera
+    /// @return the map of (key,option) device config options
+    virtual DeviceConfigOptionMap get_device_config_options_impl() const = 0;
 
 private:
     /// @brief Returns a header that can be used to log a RAW file
     /// @return A header that contains information compatible with this system
     virtual RawFileHeader get_header_impl() const;
 
+    /// @brief Adds a key to the set of HAL supported device config keys
+    void add_hal_device_config_option(const std::string &key, const DeviceConfigOption &option);
+
+    friend DeviceBuilder;
+
     std::shared_ptr<I_PluginSoftwareInfo> plugin_sw_info_;
+    DeviceConfigOptionMap hal_device_config_options_;
 };
 
 } // namespace Metavision

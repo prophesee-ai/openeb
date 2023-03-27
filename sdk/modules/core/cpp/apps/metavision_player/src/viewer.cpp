@@ -44,7 +44,7 @@ void Viewer::setup_camera() {
     }
     // RAW file.
     else {
-        camera_ = Metavision::Camera::from_file(parameters_.in_raw_file, true);
+        camera_ = Metavision::Camera::from_file(parameters_.in_raw_file);
     }
 
     // Get sensor size

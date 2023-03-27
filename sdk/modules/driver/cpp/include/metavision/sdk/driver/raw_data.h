@@ -22,9 +22,7 @@
 
 namespace Metavision {
 
-/// @brief Callback type alias for RAW data
-/// @param data Pointer to the beginning of the raw buffer.
-/// @param size Number of bytes in the buffer.
+/// @brief Type alias for a callback on a buffer of raw data
 using RawDataCallback = std::function<void(const uint8_t *data, size_t size)>;
 
 /// @brief Facility class to handle RAW data

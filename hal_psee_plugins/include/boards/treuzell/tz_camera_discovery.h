@@ -14,15 +14,17 @@
 
 #include <string>
 
-#include "boards/utils/psee_camera_discovery.h"
-#include "devices/treuzell/tz_device.h"
+#include "metavision/psee_hw_layer/boards/treuzell/tz_libusb_board_command.h"
+#include "metavision/psee_hw_layer/devices/treuzell/tz_device.h"
+#include "metavision/hal/utils/camera_discovery.h"
+#include "metavision/hal/utils/device_builder.h"
+#include "devices/treuzell/tz_device_builder.h"
 
 namespace Metavision {
 
 class LibUSBContext;
-class TzLibUSBBoardCommand;
 
-class TzCameraDiscovery : public PseeCameraDiscovery {
+class TzCameraDiscovery : public Metavision::CameraDiscovery {
 public:
     TzCameraDiscovery();
 
@@ -36,16 +38,22 @@ public:
 
     virtual CameraDiscovery::SerialList list() override;
     virtual CameraDiscovery::SystemList list_available_sources() override;
-    virtual bool discover(DeviceBuilder &device_builder, const std::string &serial,
-                          const DeviceConfig &config) override;
+    virtual bool discover(Metavision::DeviceBuilder &device_builder, const std::string &serial,
+                          const Metavision::DeviceConfig &config) override;
     TzDeviceBuilder &factory() {
         return *builder.get();
     }
 
+    void add_usb_id(uint16_t vid, uint16_t pid, uint8_t subclass);
+
 private:
-    std::vector<std::shared_ptr<TzLibUSBBoardCommand>> list_boards();
+    std::vector<std::shared_ptr<TzLibUSBBoardCommand>> list_boards() const;
     std::shared_ptr<LibUSBContext> libusb_ctx;
     std::unique_ptr<TzDeviceBuilder> builder;
+
+    // By default, nothing is supported, because we want boards to be ignored by the plugins that can manage it, so that
+    // only one open a given board
+    std::vector<UsbInterfaceId> known_usb_ids;
 };
 
 } // namespace Metavision

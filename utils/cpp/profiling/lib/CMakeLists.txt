@@ -11,16 +11,19 @@
 find_package(Boost REQUIRED COMPONENTS filesystem system)
 
 # Create shared library for internal profiling tools:
-add_library(metavision_utils_profiling STATIC)
+add_library(metavision_utils_profiling INTERFACE)
 add_library(MetavisionUtils::profiling ALIAS metavision_utils_profiling) # Create alias target to refer to
 
 target_include_directories(metavision_utils_profiling
-    PUBLIC
+    INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
 )
 
-target_link_libraries(metavision_utils_profiling PUBLIC Boost::filesystem Boost::system)
+target_link_libraries(metavision_utils_profiling
+    INTERFACE
+        Boost::filesystem Boost::system
+)
 
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../include/"
-        DESTINATION include
-        )
+    DESTINATION include
+)

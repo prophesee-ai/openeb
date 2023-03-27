@@ -12,7 +12,8 @@
 #ifndef METAVISION_HAL_I_FACILITY_H
 #define METAVISION_HAL_I_FACILITY_H
 
-#include <typeinfo>
+#include <cstddef>
+#include <unordered_set>
 
 namespace Metavision {
 
@@ -23,9 +24,9 @@ class I_Facility {
 public:
     virtual ~I_Facility() {}
 
-    /// @brief Provides type information of the facility used for registration on a @ref Metavision::Device
-    /// @return Type information of the facility
-    virtual const std::type_info &registration_info() const = 0;
+    /// @brief Provides hashes used for the facility's registration on a @ref Metavision::Device
+    /// @return Set of hashes of the facility
+    virtual std::unordered_set<std::size_t> registration_info() const = 0;
 
 protected:
     virtual void setup() {}

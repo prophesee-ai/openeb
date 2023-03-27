@@ -379,7 +379,7 @@ void CameraView::update(cv::Mat &frame, int key_pressed) {
         int x_end = cv::min(roi_control_.camera.geometry().width(), cv::max(roi_control_.x, roi_control_.x_end));
         int y_end = cv::min(roi_control_.camera.geometry().height(), cv::max(roi_control_.y, roi_control_.y_end));
 
-        Metavision::Roi::Rectangle rect_roi;
+        Metavision::Roi::Window rect_roi;
         rect_roi.x      = x;
         rect_roi.y      = y;
         rect_roi.width  = x_end - x;

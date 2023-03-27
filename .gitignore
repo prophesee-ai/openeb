@@ -12,6 +12,10 @@ __pycache__/
 .vscode/
 .vs/
 out/
+.idea
 
 # Raw data index files
 *.raw.tmp_index
+
+# Generated open source license RST file
+doc/source/open_source_licenses.rst

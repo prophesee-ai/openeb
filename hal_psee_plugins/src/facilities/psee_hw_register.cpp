@@ -9,8 +9,8 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-#include "facilities/psee_hw_register.h"
-#include "utils/register_map.h"
+#include "metavision/psee_hw_layer/facilities/psee_hw_register.h"
+#include "metavision/psee_hw_layer/utils/register_map.h"
 
 namespace Metavision {
 

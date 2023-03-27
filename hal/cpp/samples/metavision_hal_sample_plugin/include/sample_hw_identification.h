@@ -41,15 +41,15 @@ public:
     /// @return The sensor information
     I_HW_Identification::SensorInfo get_sensor_info() const override final;
 
-    /// @brief Returns the version number for this system
+    /// @brief Returns the name of the available data encoding formats
     ///
-    /// @return System version as an integer
-    long get_system_version() const override final;
+    /// @return The available data encoding formats
+    std::vector<std::string> get_available_data_encoding_formats() const override final;
 
-    /// @brief Returns the name of the available RAW format
+    /// @brief Returns the name of the currently used data encoding format
     ///
-    /// @return The available format
-    std::vector<std::string> get_available_raw_format() const override final;
+    /// @return The currently used data encoding format
+    std::string get_current_data_encoding_format() const override;
 
     /// @brief Returns the integrator name
     ///
@@ -61,10 +61,14 @@ public:
     /// @return A string providing the type of connection with the available camera
     std::string get_connection_type() const override final;
 
+    /// @brief Lists device config options supported by the camera
+    /// @return the map of (key,option) device config options
+    Metavision::DeviceConfigOptionMap get_device_config_options_impl() const override final;
+
     static constexpr auto SAMPLE_SERIAL         = "000000";
     static constexpr long SAMPLE_SYSTEM_ID      = 42;
-    static constexpr long SAMPLE_SYSTEM_VERSION = 1;
     static constexpr auto SAMPLE_INTEGRATOR     = "SampleIntegratorName";
+    static constexpr auto SAMPLE_FORMAT         = "SAMPLE-FORMAT-1.0";
 
 private:
     std::string connection_type_;

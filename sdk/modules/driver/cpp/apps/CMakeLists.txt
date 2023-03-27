@@ -7,6 +7,10 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-add_subdirectory(metavision_raw_info)
-add_subdirectory(metavision_raw_to_dat)
+add_subdirectory(metavision_file_cutter)
+add_subdirectory(metavision_file_info)
+add_subdirectory(metavision_file_to_dat)
 add_subdirectory(metavision_viewer)
+if (HDF5_FOUND)
+    add_subdirectory(metavision_file_to_hdf5)
+endif ()

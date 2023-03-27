@@ -9,41 +9,161 @@
 
 # Compile code that is used multiple times in object libraries :
 
-set(lib_common_obj_list
-        metavision_hal_psee_plugin_obj
+set(lib_common_obj_list metavision_hal_psee_plugin_obj)
+
+add_library(metavision_psee_hw_layer_obj OBJECT)
+target_link_libraries(metavision_psee_hw_layer_obj
+    PUBLIC
+        metavision_hal
+)
+
+# The following line is needed because when linking a shared library to an object one,
+# the object library needs to be compiled with -fPIC
+# cf https://stackoverflow.com/questions/50600708/combining-cmake-object-libraries-with-shared-libraries
+set_target_properties(metavision_psee_hw_layer_obj
+    PROPERTIES
+        POSITION_INDEPENDENT_CODE ON
+)
+
+target_link_libraries(metavision_psee_hw_layer_obj
+    PUBLIC
+        libusb-1.0
+)
+
+target_include_directories(metavision_psee_hw_layer_obj
+    PUBLIC
+        ${metavision_psee_hw_layer_include_dir}
+    PRIVATE
+        ${biasgen_calib_files_dir}
+        ${metavision_hal_psee_plugins_include_dir}
+)
+
+add_library(metavision_psee_hw_layer SHARED)
+
+target_sources(metavision_psee_hw_layer
+    PRIVATE
+        $<TARGET_OBJECTS:metavision_psee_hw_layer_obj>
+        $<TARGET_OBJECTS:metavision_hal_info_obj>
+)
+
+target_include_directories(metavision_psee_hw_layer
+  PUBLIC
+     $<BUILD_INTERFACE:${metavision_psee_hw_layer_include_dir}>
+     $<INSTALL_INTERFACE:include>
+)
+
+target_link_libraries(metavision_psee_hw_layer
+    PRIVATE
+        metavision_psee_hw_layer_obj
+        metavision_hal_info_obj
+    PUBLIC
+        metavision_hal
+)
+
+install(TARGETS metavision_psee_hw_layer
+    EXPORT MetavisionPSEEHWLayerTargets
+    RUNTIME
+        DESTINATION "${HAL_INSTALL_PLUGIN_RELATIVE_PATH}"
+        COMPONENT metavision-hal-prophesee-hw-layer-lib
+    ARCHIVE
+        DESTINATION "${HAL_INSTALL_PLUGIN_RELATIVE_PATH}"
+        COMPONENT metavision-hal-prophesee-hw-layer-lib
+    LIBRARY
+        DESTINATION "${HAL_INSTALL_PLUGIN_RELATIVE_PATH}"
+        COMPONENT metavision-hal-prophesee-hw-layer-lib
+)
+
+add_custom_command(TARGET metavision_psee_hw_layer POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${HAL_BUILD_PLUGIN_PATH}"
+    COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:metavision_psee_hw_layer>" "${HAL_BUILD_PLUGIN_PATH}")
+add_custom_command(TARGET metavision_psee_hw_layer POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${HAL_BUILD_PLUGIN_PATH}/universal"
+    COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:metavision_psee_hw_layer>" "${HAL_BUILD_PLUGIN_PATH}/universal")
+if(HAL_SENSORLIB_SUPPORT)
+    add_custom_command(TARGET metavision_psee_hw_layer POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${HAL_BUILD_PLUGIN_PATH}/sensorlib"
+        COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:metavision_psee_hw_layer>" "${HAL_BUILD_PLUGIN_PATH}/sensorlib")
+endif(HAL_SENSORLIB_SUPPORT)
+
+# Install public headers
+install(DIRECTORY ${metavision_psee_hw_layer_include_dir}/metavision
+    DESTINATION include
+    COMPONENT metavision-hal-prophesee-hw-layer-dev
+)
+
+set(METAVISION_PSEEHWLayer_EXPORT_FILE_NAME MetavisionPSEEHWLayerTargets.cmake)
+set(metavision_psee_hw_layer_config_files_output_dir "${GENERATE_FILES_DIRECTORY}/share/cmake/MetavisionPSEEHWLayerCMakePackagesFilesDir")
+add_library(Metavision::PSEEHWLayer ALIAS metavision_psee_hw_layer)
+
+set_target_properties(metavision_psee_hw_layer
+    PROPERTIES
+        EXPORT_NAME PSEEHWLayer
+)
+
+export(EXPORT MetavisionPSEEHWLayerTargets
+       FILE ${metavision_psee_hw_layer_config_files_output_dir}/${METAVISION_PSEEHWLayer_EXPORT_FILE_NAME}
+       NAMESPACE Metavision::
+)
+
+install(EXPORT MetavisionPSEEHWLayerTargets
+        FILE ${METAVISION_PSEEHWLayer_EXPORT_FILE_NAME}
+        NAMESPACE Metavision::
+        DESTINATION share/cmake/MetavisionPSEEHWLayer
+        COMPONENT metavision-hal-prophesee-hw-layer-dev
+)
+
+# Create and install configuration files
+include(CMakePackageConfigHelpers)
+set(metavision_psee_hw_layer_config_file "${metavision_psee_hw_layer_config_files_output_dir}/MetavisionPSEEHWLayerConfig.cmake")
+configure_package_config_file(
+    "${PROJECT_SOURCE_DIR}/hal_psee_plugins/cmake/MetavisionPSEEHWLayerConfig.cmake.in"
+    "${metavision_psee_hw_layer_config_file}"
+    INSTALL_DESTINATION share/cmake/MetavisionPSEEHWLayer
+)
+set(metavision_psee_hw_layer_config_version_file "${metavision_psee_hw_layer_config_files_output_dir}/MetavisionPSEEHWLayerConfigVersion.cmake")
+write_basic_package_version_file(
+    "${metavision_psee_hw_layer_config_version_file}"
+    COMPATIBILITY ExactVersion
+)
+
+install(FILES ${metavision_psee_hw_layer_config_file} ${metavision_psee_hw_layer_config_version_file}
+        DESTINATION share/cmake/MetavisionPSEEHWLayer
+        COMPONENT metavision-hal-prophesee-hw-layer-dev
 )
 
 set(lib_camera_obj_list "")
-if (NOT ANDROID)
-    set(lib_camera_obj_list
-            metavision_hal_gen3_camera_obj
-            metavision_hal_gen3_pattern_checkers_obj
-            metavision_hal_gen31_camera_obj
-            metavision_hal_gen41_camera_obj
-            metavision_hal_imx636_camera_obj
-            metavision_hal_fx3_protocol_obj
-            metavision_hal_treuzell_protocol_obj
-            metavision_hal_ccam3_obj
-            metavision_hal_psee_video_obj
-            metavision_hal_psee_video_build_obj
-            metavision_hal_ti_tmp103_obj
-            metavision_hal_gen31_fx3_system_obj
-            metavision_hal_gen31_evk2_system_obj
-            metavision_hal_gen31_evk3_system_obj
-            metavision_hal_gen41_evk2_system_obj
-            metavision_hal_gen41_evk3_system_obj
-            metavision_hal_imx636_evk2_system_obj
-            metavision_hal_imx636_evk3_system_obj
-            metavision_hal_libusb_utils_obj
-    )
-    if(HAL_GEN4_SUPPORT)
-        list(APPEND lib_camera_obj_list
-            metavision_hal_gen4_camera_obj
-            metavision_hal_gen4_fx3_system_obj
-            metavision_hal_gen4_evk2_system_obj
-         )
-    endif(HAL_GEN4_SUPPORT)
-endif (NOT ANDROID)
+
+set(lib_camera_obj_list
+        metavision_hal_gen3_pattern_checkers_obj
+        metavision_hal_gen31_camera_obj
+        metavision_hal_fx3_protocol_obj
+        metavision_hal_treuzell_protocol_obj
+        metavision_hal_treuzell_unknown_obj
+        metavision_hal_psee_video_obj
+        metavision_hal_ti_tmp103_obj
+        metavision_hal_gen31_evk2_system_obj
+        metavision_hal_gen31_evk3_system_obj
+        metavision_hal_gen41_evk2_system_obj
+        metavision_hal_gen41_evk3_system_obj
+        metavision_hal_imx636_evk2_system_obj
+        metavision_hal_imx636_evk3_system_obj
+        metavision_hal_psee_lab_obj
+)
+
+if(HAL_SAPHIR_SUPPORT)
+    list(APPEND lib_camera_obj_list
+        metavision_hal_saphir_camera_obj
+        metavision_hal_saphir_evk2_system_obj
+        metavision_hal_saphir_cx3_system_obj
+     )
+endif(HAL_SAPHIR_SUPPORT)
+
+if(HAL_SENSORLIB_SUPPORT)
+    list(APPEND lib_camera_obj_list
+        metavision_hal_sensorlib_tz_obj
+        metavision_hal_sensorlib_fx3_obj
+     )
+endif(HAL_SENSORLIB_SUPPORT)
 
 set(lib_obj_list ${lib_common_obj_list} ${lib_camera_obj_list})
 
@@ -52,6 +172,7 @@ foreach(lib_obj ${lib_obj_list})
     target_link_libraries(${lib_obj}
         PUBLIC
             metavision_hal
+            metavision_psee_hw_layer
     )
     target_include_directories(${lib_obj}
         PUBLIC
@@ -64,14 +185,14 @@ foreach(lib_obj ${lib_obj_list})
     set_target_properties(${lib_obj}
         PROPERTIES
             POSITION_INDEPENDENT_CODE ON
+            LINKER_LANGUAGE CXX
     )
 endforeach()
 
 # Custom target for all plugins (useful to use as a dependency)
 add_custom_target(hal_plugins)
+add_dependencies(hal_plugins metavision_psee_hw_layer)
 
-# Android does not support live cameras -> we need to compile only the common objects for RAW file reading.
-if (NOT ANDROID)
     # Otherwise, all the code for live cameras is compiled
 
     #########################
@@ -80,20 +201,13 @@ if (NOT ANDROID)
         target_link_libraries(${lib_obj}
             PUBLIC
                 libusb-1.0
-        )
-
-        target_include_directories(${lib_obj}
-            PRIVATE
-                ${biasgen_calib_files_dir}
+                metavision_psee_hw_layer
         )
     endforeach()
-endif (NOT ANDROID)
 
 set(hal_psee_plugins_target_file_list)
 
 set(plugin_list
-    hal_plugin_gen3_fx3
-    hal_plugin_gen31_fx3
     hal_plugin_gen31_evk2
     hal_plugin_gen31_evk3
     hal_plugin_gen41_evk2
@@ -101,30 +215,19 @@ set(plugin_list
     hal_plugin_imx636_evk2
     hal_plugin_imx636_evk3
     hal_plugin_imx636_evk4
-    hal_plugin_golden_fallbacks
     hal_plugin_prophesee
 )
-
-if(HAL_GEN4_SUPPORT)
-  list(APPEND plugin_list
-      hal_plugin_gen4_fx3
-      hal_plugin_gen4_evk2
-  )
-endif(HAL_GEN4_SUPPORT)
-
-if(HAL_RAVEN_SUPPORT)
+if(HAL_SENSORLIB_SUPPORT)
     list(APPEND plugin_list
-        hal_plugin_raven0_evk2
-        hal_plugin_raven1_evk2
-        hal_plugin_raven2_evk2
-        hal_plugin_raven0_evk3
-        hal_plugin_raven1_evk3
-        hal_plugin_raven2_evk3
-        hal_plugin_raven0_evk4
-        hal_plugin_raven1_evk4
-        hal_plugin_raven2_evk4
+        hal_plugin_sensorlib_tz
+        hal_plugin_sensorlib_fx3
     )
-endif(HAL_RAVEN_SUPPORT)
+endif(HAL_SENSORLIB_SUPPORT)
+
+if(POLICY CMP0095)
+    # Don't escape RPATH content
+    cmake_policy(SET CMP0095 OLD)
+endif (POLICY CMP0095)
 
 foreach(plugin ${plugin_list})
     # Declare the plugin as a shared library
@@ -139,6 +242,7 @@ foreach(plugin ${plugin_list})
 
     target_link_libraries(${plugin}
         PRIVATE
+            metavision_psee_hw_layer
             metavision_hal_psee_plugin_obj
             metavision_hal_info_obj
         PUBLIC
@@ -154,12 +258,23 @@ foreach(plugin ${plugin_list})
         target_link_options(${plugin} PRIVATE "LINKER:-z,defs")
     endif()
 
+    # Have run-time linker look for metavision_psee_hw_layer library in plugin folder
+    get_target_property(plugin_rpath ${plugin} "INSTALL_RPATH")
+
+    if(APPLE)
+        set_target_properties(${plugin} PROPERTIES "INSTALL_RPATH" "@loader_path;${plugin_rpath}")
+    else ()
+        set_target_properties(${plugin} PROPERTIES "INSTALL_RPATH" "\\\${ORIGIN};${plugin_rpath}")
+    endif()
+
     list(APPEND hal_psee_plugins_target_file_list $<TARGET_FILE:${plugin}>)
 
-    if (plugin MATCHES ".*raven.*")
-        set(HAL_COPY_PLUGIN_PATH "${HAL_BUILD_PLUGIN_PATH}/raven")
-    elseif (plugin MATCHES ".*prophesee$")
+    if(plugin STREQUAL "hal_plugin_prophesee")
         set(HAL_COPY_PLUGIN_PATH "${HAL_BUILD_PLUGIN_PATH}/universal")
+    elseif(plugin STREQUAL "hal_plugin_sensorlib_tz")
+        set(HAL_COPY_PLUGIN_PATH "${HAL_BUILD_PLUGIN_PATH}/sensorlib")
+    elseif(plugin STREQUAL "hal_plugin_sensorlib_fx3")
+        set(HAL_COPY_PLUGIN_PATH "${HAL_BUILD_PLUGIN_PATH}/sensorlib")
     else()
         set(HAL_COPY_PLUGIN_PATH "${HAL_BUILD_PLUGIN_PATH}")
         install(TARGETS ${plugin}
@@ -179,47 +294,6 @@ foreach(plugin ${plugin_list})
 
 endforeach()
 
-if (NOT ANDROID)
-# Linkage with generic hal plugin object
-target_sources(hal_plugin_gen3_fx3
-    PRIVATE
-        $<TARGET_OBJECTS:metavision_hal_gen3_camera_obj>
-        $<TARGET_OBJECTS:metavision_hal_gen3_pattern_checkers_obj>
-        $<TARGET_OBJECTS:metavision_hal_fx3_protocol_obj>
-        $<TARGET_OBJECTS:metavision_hal_ccam3_obj>
-        $<TARGET_OBJECTS:metavision_hal_libusb_utils_obj>
-)
-
-target_link_libraries(hal_plugin_gen3_fx3
-    PRIVATE
-        metavision_hal_gen3_camera_obj
-        metavision_hal_gen3_pattern_checkers_obj
-        metavision_hal_fx3_protocol_obj
-        metavision_hal_ccam3_obj
-        metavision_hal_libusb_utils_obj
-)
-
-# Linkage with generic hal plugin object
-target_sources(hal_plugin_gen31_fx3
-    PRIVATE
-        $<TARGET_OBJECTS:metavision_hal_gen31_camera_obj>
-        $<TARGET_OBJECTS:metavision_hal_gen3_pattern_checkers_obj>
-        $<TARGET_OBJECTS:metavision_hal_fx3_protocol_obj>
-        $<TARGET_OBJECTS:metavision_hal_ccam3_obj>
-        $<TARGET_OBJECTS:metavision_hal_gen31_fx3_system_obj>
-        $<TARGET_OBJECTS:metavision_hal_libusb_utils_obj>
-)
-
-target_link_libraries(hal_plugin_gen31_fx3
-    PRIVATE
-        metavision_hal_gen31_camera_obj
-        metavision_hal_gen3_pattern_checkers_obj
-        metavision_hal_fx3_protocol_obj
-        metavision_hal_ccam3_obj
-        metavision_hal_gen31_fx3_system_obj
-        metavision_hal_libusb_utils_obj
-)
-
 # Linkage with generic hal plugin object
 target_sources(hal_plugin_gen31_evk2
     PRIVATE
@@ -228,7 +302,6 @@ target_sources(hal_plugin_gen31_evk2
         $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
         $<TARGET_OBJECTS:metavision_hal_psee_video_obj>
         $<TARGET_OBJECTS:metavision_hal_gen31_evk2_system_obj>
-        $<TARGET_OBJECTS:metavision_hal_libusb_utils_obj>
 )
 
 target_link_libraries(hal_plugin_gen31_evk2
@@ -238,7 +311,6 @@ target_link_libraries(hal_plugin_gen31_evk2
         metavision_hal_treuzell_protocol_obj
         metavision_hal_psee_video_obj
         metavision_hal_gen31_evk2_system_obj
-        metavision_hal_libusb_utils_obj
 )
 
 # Linkage with generic hal plugin object
@@ -249,7 +321,6 @@ target_sources(hal_plugin_gen31_evk3
         $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
         $<TARGET_OBJECTS:metavision_hal_ti_tmp103_obj>
         $<TARGET_OBJECTS:metavision_hal_gen31_evk3_system_obj>
-        $<TARGET_OBJECTS:metavision_hal_libusb_utils_obj>
 )
 
 target_link_libraries(hal_plugin_gen31_evk3
@@ -259,344 +330,111 @@ target_link_libraries(hal_plugin_gen31_evk3
         metavision_hal_treuzell_protocol_obj
         metavision_hal_ti_tmp103_obj
         metavision_hal_gen31_evk3_system_obj
-        metavision_hal_libusb_utils_obj
 )
-
-if(HAL_GEN4_SUPPORT)
-    # Linkage with generic hal plugin object
-    target_sources(hal_plugin_gen4_fx3
-        PRIVATE
-            $<TARGET_OBJECTS:metavision_hal_gen4_camera_obj>
-            $<TARGET_OBJECTS:metavision_hal_fx3_protocol_obj>
-            $<TARGET_OBJECTS:metavision_hal_ccam3_obj>
-            $<TARGET_OBJECTS:metavision_hal_gen4_fx3_system_obj>
-            $<TARGET_OBJECTS:metavision_hal_libusb_utils_obj>
-    )
-
-    target_link_libraries(hal_plugin_gen4_fx3
-        PRIVATE
-            metavision_hal_gen4_camera_obj
-            metavision_hal_fx3_protocol_obj
-            metavision_hal_ccam3_obj
-            metavision_hal_gen4_fx3_system_obj
-            metavision_hal_libusb_utils_obj
-    )
-
-    # Linkage with generic hal plugin object
-    target_sources(hal_plugin_gen4_evk2
-        PRIVATE
-            $<TARGET_OBJECTS:metavision_hal_gen4_camera_obj>
-            $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
-            $<TARGET_OBJECTS:metavision_hal_psee_video_obj>
-            $<TARGET_OBJECTS:metavision_hal_gen4_evk2_system_obj>
-            $<TARGET_OBJECTS:metavision_hal_libusb_utils_obj>
-    )
-
-    target_link_libraries(hal_plugin_gen4_evk2
-        PRIVATE
-            metavision_hal_gen4_camera_obj
-            metavision_hal_treuzell_protocol_obj
-            metavision_hal_psee_video_obj
-            metavision_hal_gen4_evk2_system_obj
-            metavision_hal_libusb_utils_obj
-    )
-endif(HAL_GEN4_SUPPORT)
 
 # Linkage with generic hal plugin object
 target_sources(hal_plugin_gen41_evk2
     PRIVATE
-        $<TARGET_OBJECTS:metavision_hal_gen41_camera_obj>
         $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
         $<TARGET_OBJECTS:metavision_hal_psee_video_obj>
         $<TARGET_OBJECTS:metavision_hal_gen41_evk2_system_obj>
-        $<TARGET_OBJECTS:metavision_hal_libusb_utils_obj>
 )
 
 target_link_libraries(hal_plugin_gen41_evk2
     PRIVATE
-        metavision_hal_gen41_camera_obj
         metavision_hal_treuzell_protocol_obj
         metavision_hal_psee_video_obj
         metavision_hal_gen41_evk2_system_obj
-        metavision_hal_libusb_utils_obj
 )
 
 # Linkage with generic hal plugin object
 target_sources(hal_plugin_gen41_evk3
     PRIVATE
-        $<TARGET_OBJECTS:metavision_hal_gen41_camera_obj>
         $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
         $<TARGET_OBJECTS:metavision_hal_ti_tmp103_obj>
         $<TARGET_OBJECTS:metavision_hal_gen41_evk3_system_obj>
-        $<TARGET_OBJECTS:metavision_hal_libusb_utils_obj>
 )
 
 target_link_libraries(hal_plugin_gen41_evk3
     PRIVATE
-        metavision_hal_gen41_camera_obj
         metavision_hal_treuzell_protocol_obj
         metavision_hal_ti_tmp103_obj
         metavision_hal_gen41_evk3_system_obj
-        metavision_hal_libusb_utils_obj
 )
+
+if(HAL_SENSORLIB_SUPPORT)
+    # Linkage with generic hal plugin object
+    target_sources(hal_plugin_sensorlib_tz
+        PRIVATE
+            $<TARGET_OBJECTS:metavision_hal_sensorlib_tz_obj>
+            $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
+            $<TARGET_OBJECTS:metavision_hal_ti_tmp103_obj>
+    )
+
+    target_link_libraries(hal_plugin_sensorlib_tz
+        PRIVATE
+            metavision_hal_sensorlib_tz_obj
+            metavision_hal_treuzell_protocol_obj
+            metavision_hal_ti_tmp103_obj
+    )
+
+    # Linkage with generic hal plugin object
+    target_sources(hal_plugin_sensorlib_fx3
+        PRIVATE
+            $<TARGET_OBJECTS:metavision_hal_sensorlib_fx3_obj>
+            $<TARGET_OBJECTS:metavision_hal_fx3_protocol_obj>
+    )
+
+    target_link_libraries(hal_plugin_sensorlib_fx3
+        PRIVATE
+            metavision_hal_sensorlib_fx3_obj
+            metavision_hal_fx3_protocol_obj
+    )
+endif(HAL_SENSORLIB_SUPPORT)
 
 # Linkage with generic hal plugin object
 target_sources(hal_plugin_imx636_evk2
     PRIVATE
-        $<TARGET_OBJECTS:metavision_hal_gen41_camera_obj>
-        $<TARGET_OBJECTS:metavision_hal_imx636_camera_obj>
         $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
         $<TARGET_OBJECTS:metavision_hal_psee_video_obj>
         $<TARGET_OBJECTS:metavision_hal_imx636_evk2_system_obj>
-        $<TARGET_OBJECTS:metavision_hal_libusb_utils_obj>
 )
 
 target_link_libraries(hal_plugin_imx636_evk2
     PRIVATE
-        metavision_hal_gen41_camera_obj
-        metavision_hal_imx636_camera_obj
         metavision_hal_treuzell_protocol_obj
         metavision_hal_psee_video_obj
         metavision_hal_imx636_evk2_system_obj
-        metavision_hal_libusb_utils_obj
 )
 
 # Linkage with generic hal plugin object
 target_sources(hal_plugin_imx636_evk3
     PRIVATE
-        $<TARGET_OBJECTS:metavision_hal_gen41_camera_obj>
-        $<TARGET_OBJECTS:metavision_hal_imx636_camera_obj>
         $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
         $<TARGET_OBJECTS:metavision_hal_ti_tmp103_obj>
         $<TARGET_OBJECTS:metavision_hal_imx636_evk3_system_obj>
-        $<TARGET_OBJECTS:metavision_hal_libusb_utils_obj>
 )
 
 target_link_libraries(hal_plugin_imx636_evk3
     PRIVATE
-        metavision_hal_gen41_camera_obj
-        metavision_hal_imx636_camera_obj
         metavision_hal_treuzell_protocol_obj
         metavision_hal_ti_tmp103_obj
         metavision_hal_imx636_evk3_system_obj
-        metavision_hal_libusb_utils_obj
 )
 
 # Linkage with generic hal plugin object
 target_sources(hal_plugin_imx636_evk4
     PRIVATE
-        $<TARGET_OBJECTS:metavision_hal_gen41_camera_obj>
-        $<TARGET_OBJECTS:metavision_hal_imx636_camera_obj>
         $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
         $<TARGET_OBJECTS:metavision_hal_ti_tmp103_obj>
         $<TARGET_OBJECTS:metavision_hal_imx636_evk3_system_obj>
-        $<TARGET_OBJECTS:metavision_hal_libusb_utils_obj>
 )
 
 target_link_libraries(hal_plugin_imx636_evk4
     PRIVATE
-        metavision_hal_gen41_camera_obj
-        metavision_hal_imx636_camera_obj
         metavision_hal_treuzell_protocol_obj
         metavision_hal_ti_tmp103_obj
         metavision_hal_imx636_evk3_system_obj
-        metavision_hal_libusb_utils_obj
-)
-
-if (HAL_RAVEN_SUPPORT)
-target_sources(hal_plugin_raven0_evk2
-    PRIVATE
-        $<TARGET_OBJECTS:metavision_hal_gen41_camera_obj>
-        $<TARGET_OBJECTS:metavision_hal_imx636_camera_obj>
-        $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
-        $<TARGET_OBJECTS:metavision_hal_psee_video_obj>
-        $<TARGET_OBJECTS:metavision_hal_imx636_evk2_system_obj>
-        $<TARGET_OBJECTS:metavision_hal_libusb_utils_obj>
-)
-
-target_link_libraries(hal_plugin_raven0_evk2
-    PRIVATE
-        metavision_hal_gen41_camera_obj
-        metavision_hal_imx636_camera_obj
-        metavision_hal_treuzell_protocol_obj
-        metavision_hal_psee_video_obj
-        metavision_hal_imx636_evk2_system_obj
-        metavision_hal_libusb_utils_obj
-)
-
-target_sources(hal_plugin_raven1_evk2
-    PRIVATE
-        $<TARGET_OBJECTS:metavision_hal_gen41_camera_obj>
-        $<TARGET_OBJECTS:metavision_hal_imx636_camera_obj>
-        $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
-        $<TARGET_OBJECTS:metavision_hal_psee_video_obj>
-        $<TARGET_OBJECTS:metavision_hal_imx636_evk2_system_obj>
-        $<TARGET_OBJECTS:metavision_hal_libusb_utils_obj>
-)
-
-target_link_libraries(hal_plugin_raven1_evk2
-    PRIVATE
-        metavision_hal_gen41_camera_obj
-        metavision_hal_imx636_camera_obj
-        metavision_hal_treuzell_protocol_obj
-        metavision_hal_psee_video_obj
-        metavision_hal_imx636_evk2_system_obj
-        metavision_hal_libusb_utils_obj
-)
-
-target_sources(hal_plugin_raven2_evk2
-    PRIVATE
-        $<TARGET_OBJECTS:metavision_hal_gen41_camera_obj>
-        $<TARGET_OBJECTS:metavision_hal_imx636_camera_obj>
-        $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
-        $<TARGET_OBJECTS:metavision_hal_psee_video_obj>
-        $<TARGET_OBJECTS:metavision_hal_imx636_evk2_system_obj>
-        $<TARGET_OBJECTS:metavision_hal_libusb_utils_obj>
-)
-
-target_link_libraries(hal_plugin_raven2_evk2
-    PRIVATE
-        metavision_hal_gen41_camera_obj
-        metavision_hal_imx636_camera_obj
-        metavision_hal_treuzell_protocol_obj
-        metavision_hal_psee_video_obj
-        metavision_hal_imx636_evk2_system_obj
-        metavision_hal_libusb_utils_obj
-)
-
-target_sources(hal_plugin_raven0_evk3
-    PRIVATE
-        $<TARGET_OBJECTS:metavision_hal_gen41_camera_obj>
-        $<TARGET_OBJECTS:metavision_hal_imx636_camera_obj>
-        $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
-        $<TARGET_OBJECTS:metavision_hal_ti_tmp103_obj>
-        $<TARGET_OBJECTS:metavision_hal_imx636_evk3_system_obj>
-        $<TARGET_OBJECTS:metavision_hal_libusb_utils_obj>
-)
-
-target_link_libraries(hal_plugin_raven0_evk3
-    PRIVATE
-        metavision_hal_gen41_camera_obj
-        metavision_hal_imx636_camera_obj
-        metavision_hal_treuzell_protocol_obj
-        metavision_hal_ti_tmp103_obj
-        metavision_hal_imx636_evk3_system_obj
-        metavision_hal_libusb_utils_obj
-)
-
-target_sources(hal_plugin_raven1_evk3
-    PRIVATE
-        $<TARGET_OBJECTS:metavision_hal_gen41_camera_obj>
-        $<TARGET_OBJECTS:metavision_hal_imx636_camera_obj>
-        $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
-        $<TARGET_OBJECTS:metavision_hal_ti_tmp103_obj>
-        $<TARGET_OBJECTS:metavision_hal_imx636_evk3_system_obj>
-        $<TARGET_OBJECTS:metavision_hal_libusb_utils_obj>
-)
-
-target_link_libraries(hal_plugin_raven1_evk3
-    PRIVATE
-        metavision_hal_gen41_camera_obj
-        metavision_hal_imx636_camera_obj
-        metavision_hal_treuzell_protocol_obj
-        metavision_hal_ti_tmp103_obj
-        metavision_hal_imx636_evk3_system_obj
-        metavision_hal_libusb_utils_obj
-)
-
-target_sources(hal_plugin_raven2_evk3
-    PRIVATE
-        $<TARGET_OBJECTS:metavision_hal_gen41_camera_obj>
-        $<TARGET_OBJECTS:metavision_hal_imx636_camera_obj>
-        $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
-        $<TARGET_OBJECTS:metavision_hal_ti_tmp103_obj>
-        $<TARGET_OBJECTS:metavision_hal_imx636_evk3_system_obj>
-        $<TARGET_OBJECTS:metavision_hal_libusb_utils_obj>
-)
-
-target_link_libraries(hal_plugin_raven2_evk3
-    PRIVATE
-        metavision_hal_gen41_camera_obj
-        metavision_hal_imx636_camera_obj
-        metavision_hal_treuzell_protocol_obj
-        metavision_hal_ti_tmp103_obj
-        metavision_hal_imx636_evk3_system_obj
-        metavision_hal_libusb_utils_obj
-)
-
-target_sources(hal_plugin_raven0_evk4
-    PRIVATE
-        $<TARGET_OBJECTS:metavision_hal_gen41_camera_obj>
-        $<TARGET_OBJECTS:metavision_hal_imx636_camera_obj>
-        $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
-        $<TARGET_OBJECTS:metavision_hal_ti_tmp103_obj>
-        $<TARGET_OBJECTS:metavision_hal_imx636_evk3_system_obj>
-        $<TARGET_OBJECTS:metavision_hal_libusb_utils_obj>
-)
-
-target_link_libraries(hal_plugin_raven0_evk4
-    PRIVATE
-        metavision_hal_gen41_camera_obj
-        metavision_hal_imx636_camera_obj
-        metavision_hal_treuzell_protocol_obj
-        metavision_hal_ti_tmp103_obj
-        metavision_hal_imx636_evk3_system_obj
-        metavision_hal_libusb_utils_obj
-)
-
-target_sources(hal_plugin_raven1_evk4
-    PRIVATE
-        $<TARGET_OBJECTS:metavision_hal_gen41_camera_obj>
-        $<TARGET_OBJECTS:metavision_hal_imx636_camera_obj>
-        $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
-        $<TARGET_OBJECTS:metavision_hal_ti_tmp103_obj>
-        $<TARGET_OBJECTS:metavision_hal_imx636_evk3_system_obj>
-        $<TARGET_OBJECTS:metavision_hal_libusb_utils_obj>
-)
-
-target_link_libraries(hal_plugin_raven1_evk4
-    PRIVATE
-        metavision_hal_gen41_camera_obj
-        metavision_hal_imx636_camera_obj
-        metavision_hal_treuzell_protocol_obj
-        metavision_hal_ti_tmp103_obj
-        metavision_hal_imx636_evk3_system_obj
-        metavision_hal_libusb_utils_obj
-)
-
-target_sources(hal_plugin_raven2_evk4
-    PRIVATE
-        $<TARGET_OBJECTS:metavision_hal_gen41_camera_obj>
-        $<TARGET_OBJECTS:metavision_hal_imx636_camera_obj>
-        $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
-        $<TARGET_OBJECTS:metavision_hal_ti_tmp103_obj>
-        $<TARGET_OBJECTS:metavision_hal_imx636_evk3_system_obj>
-        $<TARGET_OBJECTS:metavision_hal_libusb_utils_obj>
-)
-
-target_link_libraries(hal_plugin_raven2_evk4
-    PRIVATE
-        metavision_hal_gen41_camera_obj
-        metavision_hal_imx636_camera_obj
-        metavision_hal_treuzell_protocol_obj
-        metavision_hal_ti_tmp103_obj
-        metavision_hal_imx636_evk3_system_obj
-        metavision_hal_libusb_utils_obj
-)
-endif(HAL_RAVEN_SUPPORT)
-
-target_sources(hal_plugin_golden_fallbacks
-    PRIVATE
-        $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
-        $<TARGET_OBJECTS:metavision_hal_fx3_protocol_obj>
-        $<TARGET_OBJECTS:metavision_hal_libusb_utils_obj>
-)
-
-target_link_libraries(hal_plugin_golden_fallbacks
-    PRIVATE
-        metavision_hal_treuzell_protocol_obj
-        metavision_hal_fx3_protocol_obj
-        metavision_hal_libusb_utils_obj
 )
 
 foreach(object ${lib_camera_obj_list})
@@ -612,9 +450,14 @@ foreach(object ${lib_camera_obj_list})
     )
 endforeach()
 
-endif(NOT ANDROID)
+set(output_universal_plugin_path "${GENERATE_FILES_DIRECTORY}/universal_plugin_${PROJECT_VERSION_FULL}.tar")
+add_custom_target(create_universal_plugin_archive
+  COMMAND ${CMAKE_COMMAND} -E remove_directory "universal_plugin"
+  COMMAND ${CMAKE_COMMAND} -E copy_directory "${HAL_BUILD_PLUGIN_PATH}/universal" "universal_plugin"
+  COMMAND ${CMAKE_COMMAND} -E tar cvf ${output_universal_plugin_path} "universal_plugin")
+add_dependencies(create_universal_plugin_archive hal_plugin_prophesee)
 
-if(EXISTS "${PROJECT_SOURCE_DIR}/licensing/LICENSE_METAVISION_INTELLIGENCE")
-    install(FILES ${PROJECT_SOURCE_DIR}/licensing/LICENSE_METAVISION_INTELLIGENCE
+if(EXISTS "${PROJECT_SOURCE_DIR}/licensing/LICENSE_METAVISION_SDK")
+    install(FILES ${PROJECT_SOURCE_DIR}/licensing/LICENSE_METAVISION_SDK
             DESTINATION share/metavision/licensing)
 endif()

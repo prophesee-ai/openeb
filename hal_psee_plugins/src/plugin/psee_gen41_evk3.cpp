@@ -11,7 +11,7 @@
 
 #if !defined(__ANDROID__) || defined(ANDROID_USES_LIBUSB)
 #include "boards/treuzell/tz_camera_discovery.h"
-#include "boards/treuzell/tz_libusb_board_command.h"
+#include "metavision/psee_hw_layer/boards/treuzell/tz_libusb_board_command.h"
 #endif
 #include "boards/rawfile/psee_file_discovery.h"
 #include "metavision/hal/plugin/plugin.h"
@@ -26,10 +26,11 @@ void initialize_plugin(void *plugin_ptr) {
     initialize_psee_plugin(plugin);
 
 #if !defined(__ANDROID__) || defined(ANDROID_USES_LIBUSB)
+    auto cam_discovery = std::make_unique<TzCameraDiscovery>();
     // Register the known USB vendor ID, with the subclass used for Treuzell
-    TzLibUSBBoardCommand::add_usb_id(0x04b4, 0x00f4, 0x19);
+    cam_discovery->add_usb_id(0x04b4, 0x00f4, 0x19);
     // Register live camera discoveries
-    auto &evk3_disc = plugin.add_camera_discovery(std::make_unique<TzCameraDiscovery>());
+    auto &evk3_disc = plugin.add_camera_discovery(std::move(cam_discovery));
 #endif
 
     // Register raw file discoveries

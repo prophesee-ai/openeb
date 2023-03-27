@@ -17,20 +17,20 @@ AntiFlickerModule::AntiFlickerModule(I_AntiFlickerModule *afk) : pimpl_(afk) {}
 
 AntiFlickerModule::~AntiFlickerModule() {}
 
-void AntiFlickerModule::enable() {
-    pimpl_->enable();
+void AntiFlickerModule::enable(bool b) {
+    pimpl_->enable(b);
 }
 
-void AntiFlickerModule::disable() {
-    pimpl_->disable();
+bool AntiFlickerModule::is_enabled() {
+    return pimpl_->is_enabled();
 }
 
-void AntiFlickerModule::set_frequency(uint32_t frequency_center, uint32_t bandwidth, bool stop) {
-    pimpl_->set_frequency(frequency_center, bandwidth, stop);
+void AntiFlickerModule::set_frequency_band(uint32_t min_freq, uint32_t max_freq) {
+    pimpl_->set_frequency_band(min_freq, max_freq);
 }
 
-void AntiFlickerModule::set_frequency_band(uint32_t min_freq, uint32_t max_freq, bool stop) {
-    pimpl_->set_frequency_band(min_freq, max_freq, stop);
+void AntiFlickerModule::set_filtering_mode(I_AntiFlickerModule::AntiFlickerMode mode) {
+    pimpl_->set_filtering_mode(mode);
 }
 
 I_AntiFlickerModule *AntiFlickerModule::get_facility() const {

@@ -41,7 +41,8 @@ template<typename Facility>
 struct DeviceFacilityGetter {
     DeviceFacilityGetter(const std::string &getter_name) {
         detail::get_device_facility_getters_cbs().push_back([getter_name](auto &module, auto &device_python) {
-            device_python.def(&getter_name[0], &Device::get_facility<Facility>, py::return_value_policy::reference);
+            device_python.def(&getter_name[0], static_cast<Facility *(Device::*)()>(&Device::get_facility<Facility>),
+                              py::return_value_policy::reference);
         });
     }
 };

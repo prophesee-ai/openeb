@@ -8,7 +8,7 @@
 # See the License for the specific language governing permissions and limitations under the License.
 
 """
-Metavision RAW to CSV python sample.
+Metavision RAW or DAT to CSV python sample.
 """
 
 from metavision_core.event_io import EventsIterator
@@ -19,7 +19,7 @@ from tqdm import tqdm
 def parse_args():
     import argparse
     """Parse command line arguments."""
-    parser = argparse.ArgumentParser(description='Metavision RAW to CSV.',
+    parser = argparse.ArgumentParser(description='Metavision RAW or DAT to CSV.',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-i', '--input-file', dest='input_path', required=True, help="Path to input RAW/DAT file")
     parser.add_argument('-o', '--output-dir', required=True, help="Path to csv output directory")

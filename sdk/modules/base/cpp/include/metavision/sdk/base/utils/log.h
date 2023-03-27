@@ -71,7 +71,6 @@
 namespace Metavision {
 
 /// @brief Enumeration used to control the level of logged messages that are allowed to pass through
-/// @enum Metavision::LogLevel
 enum class LogLevel {
     /// This level is reserved for internal debugging purposes
     /// @note These messages are simply ignored when the code is compiled in Release even if @ref setLogLevel is called
@@ -87,50 +86,123 @@ enum class LogLevel {
     Error
 };
 
-/// @brief Gets the current level of logging
-/// @return The current level of logging
-/// @sa @ref setLogLevel
+/// @brief Get global level of logging
+/// @sa @ref LogOptions::getLevel and @ref getLogOptions
 LogLevel getLogLevel();
 
 /// @brief Sets the current level of logging
-///
-/// Any message that has a higher or equal level will be enabled to pass through, and
-/// any message that has a lower level will be ignored
-///
 /// @param level The minimum level of messages allowed to pass through
-/// @note By default, the level is LogLevel::Info
-/// @note It is also possible to set the current level of logging by setting the environment variable
-/// MV_LOG_LEVEL with one of the following (string) value : DEBUG, TRACE, INFO, WARNING, ERROR. If the
-/// environment variable is set, it will have precedence over the value set by this function.
-/// @note The environment variable MV_LOG_LEVEL is only read once at initialization of the logging utility,
-/// if the value of the environment variable is changed after, its value won't be reflected unless you explicitly call
-/// @ref resetLogLevelFromEnv
+/// @sa @ref LogOptions::setLevel and @ref getLogOptions
 void setLogLevel(const LogLevel &level);
 
 /// @brief Resets the current level of logging value read from the environment variable MV_LOG_LEVEL
-/// @sa @ref getLogLevel and @ref setLogLevel
+/// @sa @ref LogOptions::setLevel and @ref getLogOptions
 void resetLogLevelFromEnv();
 
 /// @brief Gets the current stream in which all messages are logged
 /// @return The current stream in which all messages are logged
-/// @sa @ref setLogStream
+/// @sa @ref LogOptions::setStream and @ref getLogOptions
 std::ostream &getLogStream();
 
 /// @brief Sets the current stream in which all messages are logged
 /// @param stream The stream in which all messages will be written
-/// @note By default, the stream is std::cerr.
-/// @note If you want to log in a file, you can pass your own file stream, but you have to manage its life time.
-/// @note It is also possible to set the current stream to point to a file by setting the environment variable
-/// MV_LOG_FILE with the path corresponding to the desired log file. If the environment variable is set, it will
-/// have precedence over the value set by this function.
-/// @note The environment variable MV_LOG_FILE is only read once at initialization of the logging utility,
-/// if the value of the environment variable is changed after, its value won't be reflected unless you explicitly call
-/// @ref resetLogStreamFromEnv
+/// @sa @ref LogOptions::setStream and ref @ref getLogOptions
 void setLogStream(std::ostream &stream);
 
 /// @brief Resets the current logging stream read from the environment variable MV_LOG_FILE
-/// @sa @ref getLogLevel and @ref setLogLevel
 void resetLogStreamFromEnv();
+
+/// @brief Struct that defines the settings used for the logging behaviors
+class LogOptions {
+private:
+    /// @brief the current level of logging
+    LogLevel level_ = LogLevel::Info;
+
+    /// @brief The stream in which message tokens will be written
+    std::ostream *stream_ = &std::cerr;
+
+    /// @brief When set to true, the log level block `[<level>]` will be padded with leading space,
+    /// so that all level label will be displayed with a fixed length.
+    bool level_prefix_padding_ = false;
+
+public:
+    /// @brief Construct a LogOptions object.
+    /// @param level The current level of logging
+    /// @param stream The stream that will be used to issue the logs
+    /// @param level_prefix_padding If enabled, the [level] prefix is padded with whitespace to a fixed length
+    LogOptions(LogLevel level = LogLevel::Info, std::ostream &stream = std::cerr, bool level_prefix_padding = false);
+
+    /// @brief Sets the current level of logging
+    ///
+    /// Any message that has a higher or equal level will be enabled to pass through, and
+    /// any message that has a lower level will be ignored
+    ///
+    /// @param level The minimum level of messages allowed to pass through
+    /// @return The current LogOptions object
+    /// @note By default, the level is LogLevel::Info
+    /// @note It is also possible to set the current level of logging by setting the environment variable
+    /// MV_LOG_LEVEL with one of the following (string) value : DEBUG, TRACE, INFO, WARNING, ERROR. If the
+    /// environment variable is set, it will have precedence over the value set by this function.
+    /// @note The environment variable MV_LOG_LEVEL is only read once at initialization of the logging utility,
+    /// if the value of the environment variable is changed after, its value won't be reflected unless you explicitly
+    /// call
+    /// @ref resetLogLevelFromEnv
+    /// @note In Android the environment variable for logging must be set by using one of the following commands:
+    /// - works until next reboot, has higher priority to persist property
+    ///
+    ///       adb shell setprop debug.metavision.log.level <LEVEL>
+    /// - root permissions requested, works permanently
+    ///
+    ///       adb shell setprop persist.metavision.log.level <LEVEL>
+    /// @note To reset a property in Android environment use the following command:
+    ///
+    ///     adb shell setprop \<property_name\> \"\"
+    LogOptions &setLevel(const LogLevel &level);
+
+    /// @brief Gets the current level of logging
+    /// @return The current level of logging
+    /// @sa @ref setLevel
+    LogLevel getLevel() const;
+
+    /// @brief Sets the current stream in which all messages are logged
+    /// @param stream The stream in which all messages will be written
+    /// @return The current LogOptions object
+    /// @note By default, the stream is std::cerr.
+    /// @note If you want to log in a file, you can pass your own file stream, but you have to manage its life time.
+    /// @note It is also possible to set the current stream to point to a file by setting the environment variable
+    /// MV_LOG_FILE with the path corresponding to the desired log file. If the environment variable is set, it will
+    /// have precedence over the value set by this function.
+    /// @note The environment variable MV_LOG_FILE is only read once at initialization of the logging utility,
+    /// if the value of the environment variable is changed after, its value won't be reflected unless you explicitly
+    /// call
+    /// @ref resetLogStreamFromEnv
+    LogOptions &setStream(std::ostream &stream);
+
+    /// @brief Gets the current stream in which all messages are logged
+    /// @return The current stream in which all messages are logged
+    std::ostream &getStream() const;
+
+    /// @brief Define if the [level] prefix should be padded with white spaces
+    /// @return The current LogOptions object
+    LogOptions &setLevelPrefixPadding(bool is_padded);
+
+    /// @brief Is the "[level]" prefix padded with white spaces
+    /// @return a boolean that defines if the option is enabled
+    bool isLevelPrefixPadding() const;
+};
+
+/// @brief define global options to tweak logging behavior
+/// @param opts The LogOptions to be globally set
+/// @sa @ref getLogOptions to retrieve current Log options
+void setLogOptions(LogOptions opts);
+
+/// @brief retrieve global logging options
+/// @return a copy of the global LogOptions object
+/// @sa @ref setLogOptions to set Log options
+LogOptions getLogOptions();
+
+/// @brief Set global logging options bask to its original state.
+void resetLogOptions();
 
 // Forward declaration
 namespace detail {
@@ -168,14 +240,14 @@ public:
     ///  - \<DATETIME:strftime_fmt\> : the date and time formatted with a format as specified by std::strftime function
     ///                                (e.g. %d%H%m), note that the formatted string can not exceed 1024 characters.
     ///
-    /// @param stream The stream in which message tokens will be written
+    /// @param opts The object that defines the general configuration for the logging mechanisms
     /// @param prefixFmt The prefix format to display
     /// @param file The file from which the logging operation was created
     /// @param line The line where the logging operation was created
     /// @param function The function in which the logging operation was created
     /// @note The replacement in the prefix format only occurs once, i.e. each token is searched only once and not
     /// replaced multiple times.
-    LoggingOperation(std::ostream &stream = std::cerr, const std::string &prefixFmt = std::string(),
+    LoggingOperation(const LogOptions &opts = LogOptions(), const std::string &prefixFmt = std::string(),
                      const std::string &file = std::string(), int line = 0,
                      const std::string &function = std::string());
 

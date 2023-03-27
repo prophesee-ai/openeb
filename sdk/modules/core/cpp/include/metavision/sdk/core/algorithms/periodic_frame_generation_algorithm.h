@@ -14,8 +14,8 @@
 
 #include <functional>
 
-#include "metavision/sdk/core/algorithms/async_algorithm.h"
 #include "metavision/sdk/core/algorithms/base_frame_generation_algorithm.h"
+#include "metavision/sdk/core/algorithms/event_buffer_reslicer_algorithm.h"
 #include "metavision/sdk/base/utils/timestamp.h"
 
 namespace Metavision {
@@ -26,7 +26,8 @@ class PeriodicFrameGenerationAlgorithm;
 /// the input events.
 ///
 /// As an asynchronous algorithm, this class processes any stream of events and triggers the frames generation by
-/// itself to output frames regularly spaced in time through its output callback.
+/// itself to output frames regularly spaced in time through its output callback. Note that the implementation of this
+/// class uses EventBufferReslicerAlgorithm in place of AsyncAlgorithm, with the same overall behavior.
 ///
 /// The elapsed time between two frame generations (frame period = 1 / fps) and the accumulation time can be updated
 /// on the fly.
@@ -35,11 +36,8 @@ class PeriodicFrameGenerationAlgorithm;
 /// algorithm to generate the frames for increasing multiples of the frame period.
 /// However, this class shouldn't be used in case the user wants to generate a frame inside the callback of an
 /// algorithm (See @ref OnDemandFrameGenerationAlgorithm)
-class PeriodicFrameGenerationAlgorithm : public BaseFrameGenerationAlgorithm,
-                                         private AsyncAlgorithm<PeriodicFrameGenerationAlgorithm> {
+class PeriodicFrameGenerationAlgorithm : public BaseFrameGenerationAlgorithm {
 public:
-    friend class AsyncAlgorithm<PeriodicFrameGenerationAlgorithm>;
-
     /// @brief Alias for frame generated callback
     using OutputCb = std::function<void(timestamp, cv::Mat &)>;
 
@@ -67,6 +65,11 @@ public:
     /// @param it_end Iterator to the past-the-end event
     template<typename EventIt>
     inline void process_events(EventIt it_begin, EventIt it_end);
+
+    /// @brief Notify the frame generator that time has elapsed without new events, which may trigger several calls
+    /// to the image generated callback depending on the configured slicing condition.
+    /// @param ts current timestamp
+    void notify_elapsed_time(timestamp ts);
 
     /// @brief Forces the generation of a frame for the current period with the input events that have been processed
     ///
@@ -102,21 +105,26 @@ public:
     void skip_frames_up_to(timestamp ts);
 
     /// @brief Resets the internal states
+    /// @warning the user is responsible for explicitly calling @ref force_generate if needed to retrieve the frame for
+    /// the last processed events.
     void reset();
 
 private:
     template<typename EventIt>
-    inline void process_online(EventIt it_begin, EventIt it_end);
+    inline void process_event_buffer(EventIt it_begin, EventIt it_end);
 
     /// @brief Generates a frame from the events history and accumulation time
     ///
     /// This method is called at the input fps frequency
-    void process_async(const timestamp processing_ts, const size_t n_processed_events);
+    void process_new_slice(EventBufferReslicerAlgorithm::ConditionStatus slicing_status, timestamp processing_ts,
+                           size_t n_processed_events);
 
     /// @brief Resets the time surface
     void reset_time_surface();
 
     OutputCb output_cb_; ///< The callback to call when a frame is generated
+
+    EventBufferReslicerAlgorithm reslicer_; ///< Event buffer reslicer algorithm.
 
     cv::Mat frame_;            ///< Internal image that is filled when asynchronous condition is met
     uint32_t frame_period_us_; ///< Period (in us) between two frames generation (i.e. period between two calls to
@@ -139,11 +147,12 @@ private:
 
 template<typename EventIt>
 void PeriodicFrameGenerationAlgorithm::process_events(EventIt it_begin, EventIt it_end) {
-    AsyncAlgorithm<PeriodicFrameGenerationAlgorithm>::process_events(it_begin, it_end);
+    reslicer_.process_events(it_begin, it_end,
+                             [&](EventIt it_begin, EventIt it_end) { this->process_event_buffer(it_begin, it_end); });
 }
 
 template<typename EventIt>
-void PeriodicFrameGenerationAlgorithm::process_online(EventIt it_begin, EventIt it_end) {
+void PeriodicFrameGenerationAlgorithm::process_event_buffer(EventIt it_begin, EventIt it_end) {
     if (std::distance(it_begin, it_end) == 0)
         return;
 

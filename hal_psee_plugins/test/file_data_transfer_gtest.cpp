@@ -198,9 +198,8 @@ TEST_F(FileDataTransfer_Gtest, invalid_parameters) {
     auto data_ref = write_ref_data();
 
     // WHEN opening the data transfer to read the file with invalid parameters
-    // RAW events per read = 0 or read buffers count < 2
+    // RAW events per read = 0
     ASSERT_THROW(open_file_data_transfer(0), HalException);
-    ASSERT_THROW(open_file_data_transfer(1, 1), HalException);
 }
 
 TEST_F(FileDataTransfer_Gtest, remove_calback) {

@@ -15,7 +15,6 @@ import numpy as np
 import argparse
 import torch
 import torch.nn.functional as F
-
 from metavision_sdk_base import EventCD
 from metavision_core_ml.event_to_video.lightning_model import EventToVideoLightningModel
 from metavision_core_ml.preprocessing.event_to_tensor_torch import event_cd_to_torch, event_volume
@@ -100,7 +99,6 @@ def run(params):
             tensor_th = event_volume(events_th, 1, height, width, start_times, durations, nbins, 'bilinear')
             tensor_th = F.interpolate(tensor_th, size=(in_height, in_width),
                                       mode='bilinear', align_corners=True)
-            tensor_th = tensor_th * 0.1
             tensor_th = tensor_th.view(1, 1, nbins, in_height, in_width)
         else:
             tensor_th = torch.zeros((1, 1, nbins, in_height, in_width), dtype=torch.float32, device=device)

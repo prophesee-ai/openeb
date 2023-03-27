@@ -22,15 +22,15 @@
 #include "metavision/hal/device/device_discovery.h"
 #include "metavision/hal/device/device.h"
 #include "metavision/hal/utils/hal_exception.h"
+#include "metavision/hal/facilities/i_camera_synchronization.h"
 #include "metavision/hal/facilities/i_hw_identification.h"
 #include "metavision/hal/facilities/i_geometry.h"
 #include "metavision/hal/facilities/i_trigger_in.h"
 #include "metavision/hal/facilities/i_trigger_out.h"
 #include "metavision/hal/facilities/i_ll_biases.h"
 #include "metavision/hal/facilities/i_event_rate_noise_filter_module.h"
-#include "metavision/hal/facilities/i_decoder.h"
+#include "metavision/hal/facilities/i_events_stream_decoder.h"
 #include "metavision/hal/facilities/i_event_decoder.h"
-#include "metavision/hal/facilities/i_device_control.h"
 #include "metavision/hal/facilities/i_hw_register.h"
 #include "metavision/hal/facilities/i_roi.h"
 #include "metavision/hal/facilities/i_monitoring.h"
@@ -39,7 +39,7 @@
 #include "devices/utils/device_system_id.h"
 #include "geometries/vga_geometry.h"
 #include "geometries/hd_geometry.h"
-#include "boards/rawfile/psee_raw_file_header.h"
+#include "metavision/psee_hw_layer/boards/rawfile/psee_raw_file_header.h"
 
 using namespace Metavision;
 
@@ -64,27 +64,13 @@ protected:
     std::string rawfile_to_log_path_;
 };
 
-static const std::vector<SystemId> offline_supported_system_ids{{
-    SystemId::SYSTEM_CCAM3_GEN3,
-    SystemId::SYSTEM_CCAM3_GEN31,
-    SystemId::SYSTEM_EVK3_GEN31_EVT2,
-    SystemId::SYSTEM_EVK3_GEN31_EVT3,
-    SystemId::SYSTEM_EVK2_GEN31,
-    SystemId::SYSTEM_CCAM4_GEN3,
-    SystemId::SYSTEM_CCAM4_GEN3_EVK,
-    SystemId::SYSTEM_CCAM4_GEN3_REV_B,
-    SystemId::SYSTEM_CCAM4_GEN3_REV_B_EVK,
-    SystemId::SYSTEM_CCAM4_GEN3_REV_B_EVK_BRIDGE,
-    SystemId::SYSTEM_VISIONCAM_GEN3,
-    SystemId::SYSTEM_VISIONCAM_GEN3_EVK,
-    SystemId::SYSTEM_VISIONCAM_GEN31,
-    SystemId::SYSTEM_VISIONCAM_GEN31_EVK,
-    SystemId::SYSTEM_EVK2_GEN41,
-#ifdef HAL_GEN4_SUPPORT
-    SystemId::SYSTEM_CCAM3_GEN4,
-    SystemId::SYSTEM_EVK2_GEN4,
-#endif
-}};
+static const std::vector<SystemId> offline_supported_system_ids{
+    {SystemId::SYSTEM_CCAM3_GEN3, SystemId::SYSTEM_CCAM3_GEN31, SystemId::SYSTEM_EVK3_GEN31_EVT2,
+     SystemId::SYSTEM_EVK3_GEN31_EVT3, SystemId::SYSTEM_EVK2_GEN31, SystemId::SYSTEM_CCAM4_GEN3,
+     SystemId::SYSTEM_CCAM4_GEN3_EVK, SystemId::SYSTEM_CCAM4_GEN3_REV_B, SystemId::SYSTEM_CCAM4_GEN3_REV_B_EVK,
+     SystemId::SYSTEM_CCAM4_GEN3_REV_B_EVK_BRIDGE, SystemId::SYSTEM_VISIONCAM_GEN3, SystemId::SYSTEM_VISIONCAM_GEN3_EVK,
+     SystemId::SYSTEM_CCAM3_GEN4, SystemId::SYSTEM_EVK2_GEN4, SystemId::SYSTEM_VISIONCAM_GEN31,
+     SystemId::SYSTEM_VISIONCAM_GEN31_EVK, SystemId::SYSTEM_EVK2_GEN41}};
 
 static const std::vector<SystemId> offline_unsupported_system_ids{
     {SystemId::SYSTEM_CCAM3_GEN2, SystemId::SYSTEM_CCAM2_STEREO, SystemId::SYSTEM_CCAM2_STEREO_MAPPING,
@@ -183,9 +169,6 @@ TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_succeeds_with_no_integrato
                << "\% serial_number 00001337" << std::endl;
         write_header(RawFileHeader(header));
         ASSERT_NO_THROW(device = DeviceDiscovery::open_raw_file(rawfile_to_log_path_));
-
-        I_PluginSoftwareInfo *plugin_soft_info = device->get_facility<I_PluginSoftwareInfo>();
-        ASSERT_EQ(plugin_name, plugin_soft_info->get_plugin_name());
     }
 }
 
@@ -202,22 +185,10 @@ TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_fails_with_bad_integrator_
     }
 }
 
-TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_fails_with_bad_plugin_name) {
-    std::unique_ptr<Device> device;
-    // This test actually tests HAL, as Psee plugins don't care about their name
-    for (const long system_id : offline_supported_system_ids) {
-        auto header = std::stringstream();
-        header << "\% Date 2014-02-28 13:37:42" << std::endl
-               << "\% system_ID " << system_id << std::endl
-               << "\% plugin_name _aZ0$fooBar@%!" << std::endl
-               << "\% serial_number 00001337" << std::endl;
-        write_header(RawFileHeader(header));
-        ASSERT_THROW(device = DeviceDiscovery::open_raw_file(rawfile_to_log_path_), HalException);
-    }
-}
-
 TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_fails_with_bad_integrator_and_plugin_name) {
     std::unique_ptr<Device> device;
+    // This test shall fail because we can't infer features with a system_ID from an unknown
+    // integrator, and the header doesn't explicitely specify the data format
     for (const long system_id : offline_supported_system_ids) {
         auto header = std::stringstream();
         header << "\% Date 2014-02-28 13:37:42" << std::endl
@@ -248,7 +219,7 @@ TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_success_with_supported_sys
         ASSERT_EQ("File", hw_id->get_connection_type());
 
         // Check decoder
-        I_Decoder *decoder = device->get_facility<I_Decoder>();
+        I_EventsStreamDecoder *decoder = device->get_facility<I_EventsStreamDecoder>();
         ASSERT_NE(nullptr, decoder);
 
         // Check geometry
@@ -264,7 +235,7 @@ TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_success_with_supported_sys
         case SystemId::SYSTEM_CCAM4_GEN3_REV_B_EVK_BRIDGE:
         case SystemId::SYSTEM_VISIONCAM_GEN3:
         case SystemId::SYSTEM_VISIONCAM_GEN3_EVK:
-            ASSERT_EQ("3.0", hw_id->get_sensor_info().as_string());
+            ASSERT_EQ("Gen3.0", hw_id->get_sensor_info().name_);
             ASSERT_EQ(VGAGeometry::width_, geometry->get_width());
             ASSERT_EQ(VGAGeometry::height_, geometry->get_height());
             ASSERT_EQ(4, decoder->get_raw_event_size_bytes());
@@ -274,20 +245,20 @@ TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_success_with_supported_sys
         case SystemId::SYSTEM_EVK2_GEN31:
         case SystemId::SYSTEM_VISIONCAM_GEN31:
         case SystemId::SYSTEM_VISIONCAM_GEN31_EVK:
-            ASSERT_EQ("3.1", hw_id->get_sensor_info().as_string());
+            ASSERT_EQ("Gen3.1", hw_id->get_sensor_info().name_);
             ASSERT_EQ(VGAGeometry::width_, geometry->get_width());
             ASSERT_EQ(VGAGeometry::height_, geometry->get_height());
             ASSERT_EQ(4, decoder->get_raw_event_size_bytes());
             break;
         case SystemId::SYSTEM_EVK3_GEN31_EVT3:
-            ASSERT_EQ("3.1", hw_id->get_sensor_info().as_string());
+            ASSERT_EQ("Gen3.1", hw_id->get_sensor_info().name_);
             ASSERT_EQ(VGAGeometry::width_, geometry->get_width());
             ASSERT_EQ(VGAGeometry::height_, geometry->get_height());
             ASSERT_EQ(2, decoder->get_raw_event_size_bytes());
             break;
         case SystemId::SYSTEM_CCAM3_GEN4:
         case SystemId::SYSTEM_EVK2_GEN4:
-            ASSERT_EQ("4.0", hw_id->get_sensor_info().as_string());
+            ASSERT_EQ("Gen4.0", hw_id->get_sensor_info().name_);
             ASSERT_EQ(HDGeometry::width_, geometry->get_width());
             ASSERT_EQ(HDGeometry::height_, geometry->get_height());
             ASSERT_EQ(4,
@@ -295,7 +266,7 @@ TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_success_with_supported_sys
                                                             // rawfile header
             break;
         case SystemId::SYSTEM_EVK2_GEN41:
-            ASSERT_EQ("4.1", hw_id->get_sensor_info().as_string());
+            ASSERT_EQ("Gen4.1", hw_id->get_sensor_info().name_);
             ASSERT_EQ(HDGeometry::width_, geometry->get_width());
             ASSERT_EQ(HDGeometry::height_, geometry->get_height());
             ASSERT_EQ(4,
@@ -312,7 +283,7 @@ TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_success_with_supported_sys
 
         // Check other facilities presence
         ASSERT_NE(nullptr, device->get_facility<I_PluginSoftwareInfo>());
-        ASSERT_NE(nullptr, device->get_facility<I_Decoder>());
+        ASSERT_NE(nullptr, device->get_facility<I_EventsStreamDecoder>());
         ASSERT_NE(nullptr, device->get_facility<I_EventDecoder<EventCD>>());
         ASSERT_NE(nullptr, device->get_facility<I_EventDecoder<EventExtTrigger>>());
     }
@@ -328,7 +299,7 @@ TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_with_geometry_and_format) 
         ASSERT_NO_THROW(device = DeviceDiscovery::open_raw_file(rawfile_to_log_path_));
 
         // Check decoder
-        I_Decoder *decoder = device->get_facility<I_Decoder>();
+        I_EventsStreamDecoder *decoder = device->get_facility<I_EventsStreamDecoder>();
         ASSERT_NE(nullptr, decoder);
 
         // Check geometry
@@ -341,7 +312,7 @@ TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_with_geometry_and_format) 
 
         // Check facilites presence
         ASSERT_NE(nullptr, device->get_facility<I_PluginSoftwareInfo>());
-        ASSERT_NE(nullptr, device->get_facility<I_Decoder>());
+        ASSERT_NE(nullptr, device->get_facility<I_EventsStreamDecoder>());
         ASSERT_NE(nullptr, device->get_facility<I_EventDecoder<EventCD>>());
         ASSERT_NE(nullptr, device->get_facility<I_EventDecoder<EventExtTrigger>>());
     }
@@ -353,7 +324,7 @@ TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_with_geometry_and_format) 
         ASSERT_NO_THROW(device = DeviceDiscovery::open_raw_file(rawfile_to_log_path_));
 
         // Check decoder
-        I_Decoder *decoder = device->get_facility<I_Decoder>();
+        I_EventsStreamDecoder *decoder = device->get_facility<I_EventsStreamDecoder>();
         ASSERT_NE(nullptr, decoder);
 
         // Check geometry
@@ -366,7 +337,7 @@ TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_with_geometry_and_format) 
 
         // Check facilites presence
         ASSERT_NE(nullptr, device->get_facility<I_PluginSoftwareInfo>());
-        ASSERT_NE(nullptr, device->get_facility<I_Decoder>());
+        ASSERT_NE(nullptr, device->get_facility<I_EventsStreamDecoder>());
         ASSERT_NE(nullptr, device->get_facility<I_EventDecoder<EventCD>>());
         ASSERT_NE(nullptr, device->get_facility<I_EventDecoder<EventExtTrigger>>());
     }
@@ -393,13 +364,94 @@ TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_doesnt_have_board_faciliti
 
         // Check hw identification
         ASSERT_EQ(nullptr, device->get_facility<I_LL_Biases>());
-        ASSERT_EQ(nullptr, device->get_facility<I_DeviceControl>());
+        ASSERT_EQ(nullptr, device->get_facility<I_CameraSynchronization>());
         ASSERT_EQ(nullptr, device->get_facility<I_HW_Register>());
         ASSERT_EQ(nullptr, device->get_facility<I_TriggerIn>());
         ASSERT_EQ(nullptr, device->get_facility<I_TriggerOut>());
         ASSERT_EQ(nullptr, device->get_facility<I_ROI>());
         ASSERT_EQ(nullptr, device->get_facility<I_Monitoring>());
     }
+}
+
+TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_succeeds_with_evt_converter_output) {
+    // MetavisionESP::evt_converter removed redundant information, but kept a unique set of fields
+    std::unique_ptr<Device> device;
+    auto header = std::stringstream();
+    header << "\% format EVT3" << std::endl
+           << "\% integrator_name Prophesee" << std::endl
+           << "\% plugin_name hal_plugin_gen41_evk2" << std::endl
+           << "\% system_ID 39" << std::endl;
+    write_header(RawFileHeader(header));
+    ASSERT_NO_THROW(device = DeviceDiscovery::open_raw_file(rawfile_to_log_path_));
+    I_HW_Identification *hw_id = device->get_facility<I_HW_Identification>();
+    ASSERT_EQ("Prophesee", hw_id->get_integrator());
+
+    // Check facilites presence
+    ASSERT_NE(nullptr, device->get_facility<I_PluginSoftwareInfo>());
+    ASSERT_NE(nullptr, device->get_facility<I_EventsStreamDecoder>());
+    ASSERT_NE(nullptr, device->get_facility<I_EventDecoder<EventCD>>());
+    ASSERT_NE(nullptr, device->get_facility<I_EventDecoder<EventExtTrigger>>());
+    I_EventsStreamDecoder *decoder = device->get_facility<I_EventsStreamDecoder>();
+    ASSERT_NE(nullptr, decoder);
+    ASSERT_EQ(2, decoder->get_raw_event_size_bytes());
+    I_Geometry *geometry = device->get_facility<I_Geometry>();
+    ASSERT_NE(nullptr, geometry);
+    ASSERT_EQ(1280, geometry->get_width());
+    ASSERT_EQ(720, geometry->get_height());
+}
+
+TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_succeeds_with_saphir_bringup) {
+    std::unique_ptr<Device> device;
+    auto header = std::stringstream();
+    header << "\% date 2022-07-14 13:37:00" << std::endl
+           << "\% firmware_version 0.0.0" << std::endl
+           << "\% format EVT21" << std::endl
+           << "\% geometry 1792x1792" << std::endl
+           << "\% integrator_name Prophesee" << std::endl
+           << "\% plugin_name hal_plugin_sensorlib_tz" << std::endl
+           << "\% sensor_generation 0.0" << std::endl
+           << "\% system_ID 0" << std::endl;
+    write_header(RawFileHeader(header));
+    ASSERT_NO_THROW(device = DeviceDiscovery::open_raw_file(rawfile_to_log_path_));
+    I_HW_Identification *hw_id = device->get_facility<I_HW_Identification>();
+    ASSERT_EQ("Prophesee", hw_id->get_integrator());
+
+    // We should have absurd geometry and Evt2.1 decoder
+    ASSERT_NE(nullptr, device->get_facility<I_PluginSoftwareInfo>());
+    ASSERT_NE(nullptr, device->get_facility<I_EventsStreamDecoder>());
+    ASSERT_NE(nullptr, device->get_facility<I_EventDecoder<EventCD>>());
+    ASSERT_NE(nullptr, device->get_facility<I_EventDecoder<EventExtTrigger>>());
+    I_EventsStreamDecoder *decoder = device->get_facility<I_EventsStreamDecoder>();
+    ASSERT_NE(nullptr, decoder);
+    ASSERT_EQ(8, decoder->get_raw_event_size_bytes());
+    I_Geometry *geometry = device->get_facility<I_Geometry>();
+    ASSERT_NE(nullptr, geometry);
+    ASSERT_EQ(1792, geometry->get_width());
+    ASSERT_EQ(1792, geometry->get_height());
+}
+
+TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_succeeds_with_hal_info_and_format) {
+    std::unique_ptr<Device> device;
+    auto header = std::stringstream();
+    header << "\% camera_integrator_name Prophesee" << std::endl
+           << "\% format EVT3;width=1920;height=1200" << std::endl
+           << "\% plugin_integrator_name Prophesee" << std::endl
+           << "\% plugin_name hal_plugin_prophesee" << std::endl;
+    write_header(RawFileHeader(header));
+    ASSERT_NO_THROW(device = DeviceDiscovery::open_raw_file(rawfile_to_log_path_));
+
+    // We should have FullHD 16:10 geometry and Evt3 decoder
+    ASSERT_NE(nullptr, device->get_facility<I_PluginSoftwareInfo>());
+    ASSERT_NE(nullptr, device->get_facility<I_EventsStreamDecoder>());
+    ASSERT_NE(nullptr, device->get_facility<I_EventDecoder<EventCD>>());
+    ASSERT_NE(nullptr, device->get_facility<I_EventDecoder<EventExtTrigger>>());
+    I_EventsStreamDecoder *decoder = device->get_facility<I_EventsStreamDecoder>();
+    ASSERT_NE(nullptr, decoder);
+    ASSERT_EQ(2, decoder->get_raw_event_size_bytes());
+    I_Geometry *geometry = device->get_facility<I_Geometry>();
+    ASSERT_NE(nullptr, geometry);
+    ASSERT_EQ(1920, geometry->get_width());
+    ASSERT_EQ(1200, geometry->get_height());
 }
 
 TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_does_not_work_with_unsupported_id) {
@@ -423,7 +475,7 @@ TEST_WITH_CAMERA(DeviceDiscoveryRepositoryNoF_GTest, open_camera_check_facilitie
     std::unique_ptr<Device> device;
     try {
         device = DeviceDiscovery::open("");
-    } catch (const HalException &e) {
+    } catch (const HalException &) {
         std::cerr << "Plug a camera to run this test." << std::endl;
         FAIL();
     }
@@ -435,7 +487,7 @@ TEST_WITH_CAMERA(DeviceDiscoveryRepositoryNoF_GTest, open_camera_check_facilitie
     ASSERT_NE(nullptr, device->get_facility<I_EventsStream>());
     ASSERT_NE(nullptr, device->get_facility<I_Geometry>());
     ASSERT_NE(nullptr, device->get_facility<I_LL_Biases>());
-    ASSERT_NE(nullptr, device->get_facility<I_DeviceControl>());
+    ASSERT_NE(nullptr, device->get_facility<I_CameraSynchronization>());
     ASSERT_NE(nullptr, device->get_facility<I_TriggerIn>());
     ASSERT_NE(nullptr, device->get_facility<I_TriggerOut>());
     ASSERT_NE(nullptr, device->get_facility<I_ROI>());
@@ -443,7 +495,7 @@ TEST_WITH_CAMERA(DeviceDiscoveryRepositoryNoF_GTest, open_camera_check_facilitie
     // check others facilities presence
     ASSERT_NE(nullptr, device->get_facility<I_PluginSoftwareInfo>());
     ASSERT_NE(nullptr, device->get_facility<I_EventsStream>());
-    ASSERT_NE(nullptr, device->get_facility<I_Decoder>());
+    ASSERT_NE(nullptr, device->get_facility<I_EventsStreamDecoder>());
     ASSERT_NE(nullptr, device->get_facility<I_EventDecoder<EventCD>>());
     ASSERT_NE(nullptr, device->get_facility<I_EventDecoder<EventExtTrigger>>());
 }
@@ -454,7 +506,7 @@ TEST_WITH_CAMERA(DeviceDiscoveryRepositoryNoF_GTest, open_camera_check_facilitie
     std::unique_ptr<Device> device;
     try {
         device = DeviceDiscovery::open("");
-    } catch (const HalException &e) {
+    } catch (const HalException &) {
         std::cerr << "Plug a camera to run this test." << std::endl;
         FAIL();
     }
@@ -466,12 +518,12 @@ TEST_WITH_CAMERA(DeviceDiscoveryRepositoryNoF_GTest, open_camera_check_facilitie
     ASSERT_NE(nullptr, device->get_facility<I_EventsStream>());
     ASSERT_NE(nullptr, device->get_facility<I_Geometry>());
     ASSERT_NE(nullptr, device->get_facility<I_LL_Biases>());
-    ASSERT_NE(nullptr, device->get_facility<I_DeviceControl>());
+    ASSERT_NE(nullptr, device->get_facility<I_CameraSynchronization>());
     ASSERT_NE(nullptr, device->get_facility<I_ROI>());
 
     // check others facilities presence
     ASSERT_NE(nullptr, device->get_facility<I_PluginSoftwareInfo>());
-    ASSERT_NE(nullptr, device->get_facility<I_Decoder>());
+    ASSERT_NE(nullptr, device->get_facility<I_EventsStreamDecoder>());
     ASSERT_NE(nullptr, device->get_facility<I_EventDecoder<EventCD>>());
     ASSERT_NE(nullptr, device->get_facility<I_EventDecoder<EventExtTrigger>>());
 }
@@ -481,7 +533,7 @@ TEST_WITH_CAMERA(DeviceDiscoveryRepositoryNoF_GTest, open_camera_build_gen3,
     std::unique_ptr<Device> device;
     try {
         device = DeviceDiscovery::open("");
-    } catch (const HalException &e) {
+    } catch (const HalException &) {
         std::cerr << "Plug a camera to run this test." << std::endl;
         FAIL();
     }
@@ -489,7 +541,7 @@ TEST_WITH_CAMERA(DeviceDiscoveryRepositoryNoF_GTest, open_camera_build_gen3,
     ASSERT_NE(nullptr, device.get());
 
     // Assert that the needed facilities for this test exist
-    I_Decoder *decoder = device->get_facility<I_Decoder>();
+    I_EventsStreamDecoder *decoder = device->get_facility<I_EventsStreamDecoder>();
     ASSERT_NE(nullptr, decoder);
     I_Geometry *geometry = device->get_facility<I_Geometry>();
     ASSERT_NE(nullptr, geometry);
@@ -505,7 +557,7 @@ TEST_WITH_CAMERA(DeviceDiscoveryRepositoryNoF_GTest, open_camera_build_gen31,
     std::unique_ptr<Device> device;
     try {
         device = DeviceDiscovery::open("");
-    } catch (const HalException &e) {
+    } catch (const HalException &) {
         std::cerr << "Plug a camera to run this test." << std::endl;
         FAIL();
     }
@@ -513,7 +565,7 @@ TEST_WITH_CAMERA(DeviceDiscoveryRepositoryNoF_GTest, open_camera_build_gen31,
     ASSERT_NE(nullptr, device.get());
 
     // Assert that the needed facilities for this test exist
-    I_Decoder *decoder = device->get_facility<I_Decoder>();
+    I_EventsStreamDecoder *decoder = device->get_facility<I_EventsStreamDecoder>();
     ASSERT_NE(nullptr, decoder);
     I_Geometry *geometry = device->get_facility<I_Geometry>();
     ASSERT_NE(nullptr, geometry);
@@ -538,7 +590,7 @@ TEST_WITH_CAMERA(DeviceDiscoveryRepositoryNoF_GTest, open_camera_build_gen4,
     std::unique_ptr<Device> device;
     try {
         device = DeviceDiscovery::open("");
-    } catch (const HalException &e) {
+    } catch (const HalException &) {
         std::cerr << "Plug a camera to run this test." << std::endl;
         FAIL();
     }
@@ -546,7 +598,7 @@ TEST_WITH_CAMERA(DeviceDiscoveryRepositoryNoF_GTest, open_camera_build_gen4,
     ASSERT_NE(nullptr, device.get());
 
     // Assert that the needed facilities for this test exist
-    I_Decoder *decoder = device->get_facility<I_Decoder>();
+    I_EventsStreamDecoder *decoder = device->get_facility<I_EventsStreamDecoder>();
     ASSERT_NE(nullptr, decoder);
     I_Geometry *geometry = device->get_facility<I_Geometry>();
     ASSERT_NE(nullptr, geometry);

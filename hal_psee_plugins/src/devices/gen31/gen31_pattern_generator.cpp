@@ -12,9 +12,9 @@
 #include <iostream>
 
 #include "devices/gen31/gen31_pattern_generator.h"
-#include "boards/utils/psee_libusb_board_command.h"
+#include "metavision/psee_hw_layer/boards/fx3/fx3_libusb_board_command.h"
 #include "metavision/hal/utils/hal_log.h"
-#include "utils/register_map.h"
+#include "metavision/psee_hw_layer/utils/register_map.h"
 
 namespace Metavision {
 using vfield = std::map<std::string, uint32_t>;

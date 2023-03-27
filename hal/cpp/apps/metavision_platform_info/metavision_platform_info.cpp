@@ -37,7 +37,7 @@
 
 namespace po = boost::program_options;
 
-static constexpr int label_size = 30;
+static constexpr int label_size = 50;
 
 struct ExecState {
     std::string cmd_result = "";
@@ -180,13 +180,13 @@ void do_short_diagnosis() {
             if (i_hal_software_info) {
                 auto &hal_software_info = i_hal_software_info->get_software_info();
                 MV_LOG_INFO() << "## HAL Software";
-                MV_LOG_INFO() << Metavision::Log::no_space << std::left << std::setw(30)
+                MV_LOG_INFO() << Metavision::Log::no_space << std::left << std::setw(label_size)
                               << "Version:" << hal_software_info.get_version();
-                MV_LOG_INFO() << Metavision::Log::no_space << std::left << std::setw(30)
+                MV_LOG_INFO() << Metavision::Log::no_space << std::left << std::setw(label_size)
                               << "VCS branch:" << hal_software_info.get_vcs_branch();
-                MV_LOG_INFO() << Metavision::Log::no_space << std::left << std::setw(30)
+                MV_LOG_INFO() << Metavision::Log::no_space << std::left << std::setw(label_size)
                               << "VCS commit:" << hal_software_info.get_vcs_commit();
-                MV_LOG_INFO() << Metavision::Log::no_space << std::left << std::setw(30)
+                MV_LOG_INFO() << Metavision::Log::no_space << std::left << std::setw(label_size)
                               << "VCS commit's date:" << hal_software_info.get_vcs_date() << "\n";
             }
 
@@ -194,15 +194,15 @@ void do_short_diagnosis() {
             if (i_plugin_software_info) {
                 auto &plugin_software_info = i_plugin_software_info->get_software_info();
                 MV_LOG_INFO() << "## Plugin Software";
-                MV_LOG_INFO() << Metavision::Log::no_space << std::left << std::setw(30)
+                MV_LOG_INFO() << Metavision::Log::no_space << std::left << std::setw(label_size)
                               << "Name:" << i_plugin_software_info->get_plugin_name();
-                MV_LOG_INFO() << Metavision::Log::no_space << std::left << std::setw(30)
+                MV_LOG_INFO() << Metavision::Log::no_space << std::left << std::setw(label_size)
                               << "Version:" << plugin_software_info.get_version();
-                MV_LOG_INFO() << Metavision::Log::no_space << std::left << std::setw(30)
+                MV_LOG_INFO() << Metavision::Log::no_space << std::left << std::setw(label_size)
                               << "VCS branch:" << plugin_software_info.get_vcs_branch();
-                MV_LOG_INFO() << Metavision::Log::no_space << std::left << std::setw(30)
+                MV_LOG_INFO() << Metavision::Log::no_space << std::left << std::setw(label_size)
                               << "VCS commit:" << plugin_software_info.get_vcs_commit();
-                MV_LOG_INFO() << Metavision::Log::no_space << std::left << std::setw(30)
+                MV_LOG_INFO() << Metavision::Log::no_space << std::left << std::setw(label_size)
                               << "VCS commit's date:" << plugin_software_info.get_vcs_date() << "\n";
             }
 
@@ -216,7 +216,7 @@ void do_short_diagnosis() {
                     auto key            = system_info.first;
                     auto value          = system_info.second;
                     const std::string s = key + ":";
-                    MV_LOG_INFO() << Metavision::Log::no_space << std::left << std::setw(30) << s << value;
+                    MV_LOG_INFO() << Metavision::Log::no_space << std::left << std::setw(label_size) << s << value;
                 }
             }
         }
@@ -250,8 +250,13 @@ void do_systems_diagnosis() {
 
     auto serial_list = Metavision::DeviceDiscovery::list();
 
+#ifdef __linux
     bool do_usb_port_analysis = false;
+#endif
     for (auto s : serial_list) {
+        // Get the options before opening the device
+        auto options = Metavision::DeviceDiscovery::list_device_config_options(s);
+
         // Open the camera
         std::unique_ptr<Metavision::Device> device(Metavision::DeviceDiscovery::open(s));
 
@@ -260,10 +265,12 @@ void do_systems_diagnosis() {
                 device->get_facility<Metavision::I_HW_Identification>();
             if (hw_identification != nullptr) {
                 const auto &sensor_info = hw_identification->get_sensor_info();
-                MV_LOG_INFO() << "# FOUND" << hw_identification->get_integrator() << "GEN" << sensor_info.as_string()
-                              << get_geometry(device.get()) << "#";
+                MV_LOG_INFO() << "##" << hw_identification->get_integrator() << sensor_info.name_
+                              << get_geometry(device.get()) << "##";
 
                 MV_LOG_INFO();
+
+                MV_LOG_INFO() << "# System information";
                 // Retrieves a map of key/value with the information
                 for (auto system_info : hw_identification->get_system_info()) {
                     auto key   = system_info.first;
@@ -271,25 +278,35 @@ void do_systems_diagnosis() {
                     MV_LOG_INFO() << Metavision::Log::no_space << std::left << std::setw(label_size) << key << value
                                   << std::right;
                 }
-            }
+                MV_LOG_INFO() << "";
 
-            Metavision::I_LL_Biases *i_ll_biases = device->get_facility<Metavision::I_LL_Biases>();
-            if (i_ll_biases != nullptr) {
-                MV_LOG_INFO();
-                MV_LOG_INFO() << "DEFAULT BIASES";
-                auto all_biases = i_ll_biases->get_all_biases();
-                for (auto it = all_biases.begin(), it_end = all_biases.end(); it != it_end; ++it) {
-                    std::string bias_name = it->first;
-                    int bias_value        = it->second;
-                    MV_LOG_INFO() << Metavision::Log::no_space << std::left << std::setw(label_size) << bias_name
-                                  << bias_value << std::right;
+                MV_LOG_INFO() << "# Available device config options";
+                for (auto option : options) {
+                    MV_LOG_INFO() << Metavision::Log::no_space << std::left << std::setw(label_size) << option.first
+                                  << option.second;
+                }
+                MV_LOG_INFO() << "";
+
+                Metavision::I_LL_Biases *i_ll_biases = device->get_facility<Metavision::I_LL_Biases>();
+                if (i_ll_biases != nullptr) {
+                    MV_LOG_INFO();
+                    MV_LOG_INFO() << "# Default Biases";
+                    auto all_biases = i_ll_biases->get_all_biases();
+                    for (auto it = all_biases.begin(), it_end = all_biases.end(); it != it_end; ++it) {
+                        std::string bias_name = it->first;
+                        int bias_value        = it->second;
+                        MV_LOG_INFO() << Metavision::Log::no_space << std::left << std::setw(label_size) << bias_name
+                                      << bias_value << std::right;
+                    }
                 }
             }
 
+#ifdef __linux
             do_usb_port_analysis = true;
+#endif
             device.reset(nullptr);
+            MV_LOG_INFO() << "";
         }
-        MV_LOG_INFO();
     }
 
 #ifdef __linux__

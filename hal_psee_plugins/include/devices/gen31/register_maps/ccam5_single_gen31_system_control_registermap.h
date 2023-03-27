@@ -12,7 +12,8 @@
 #ifndef METAVISION_HAL_CCAM5_SINGLE_GEN31_SYSTEM_CONTROL_REGISTERMAP_H
 #define METAVISION_HAL_CCAM5_SINGLE_GEN31_SYSTEM_CONTROL_REGISTERMAP_H
 
-RegmapData ccam5_single_gen31_SystemControlRegisterMap[] = {
+static RegmapElement ccam5_single_gen31_SystemControlRegisterMap[] = {
+    // clang-format off
     {R, {{"ATIS_CONTROL", 0x0}}},
     {F, {{"EN_VDDA", 0, 1, 0x0}}},
     {F, {{"EN_VDDC", 1, 1, 0x0}}},
@@ -48,7 +49,8 @@ RegmapData ccam5_single_gen31_SystemControlRegisterMap[] = {
     {R, {{"EVT_RATE_CONTROL", 0x18}}},
     {F, {{"ENABLE", 0, 1, 0}}},
     {F, {{"T_DROP_FACTOR", 16, 16, 0}}},
+    // clang-format on
 };
-unsigned int ccam5_single_gen31_SystemControlRegisterMapSize =
+static uint32_t ccam5_single_gen31_SystemControlRegisterMapSize =
     sizeof(ccam5_single_gen31_SystemControlRegisterMap) / sizeof(ccam5_single_gen31_SystemControlRegisterMap[0]);
 #endif // METAVISION_HAL_CCAM5_SINGLE_GEN31_SYSTEM_CONTROL_REGISTERMAP_H

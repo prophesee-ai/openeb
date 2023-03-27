@@ -9,9 +9,9 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-#include "devices/imx636/imx636_bias.h"
-#include "devices/imx636/imx636_ll_biases.h"
-#include "devices/imx636/imx636_bias_settings.h"
+#include <cassert>
+#include <vector>
+#include "metavision/psee_hw_layer/devices/imx636/imx636_ll_biases.h"
 #include "metavision/hal/facilities/i_hw_register.h"
 #include "metavision/hal/utils/hal_log.h"
 #include "metavision/hal/utils/hal_exception.h"
@@ -20,142 +20,27 @@
 
 namespace Metavision {
 
-Imx636LLBias::Imx636LLBias(bool modifiable, std::string register_name, int sensor_offset, int current_value,
-                           int factory_default, int min_offset, int max_offset) {
-    register_name_   = register_name;
-    modifiable_      = modifiable;
-    current_offset_  = sensor_offset;
-    factory_default_ = factory_default;
-    current_value_   = factory_default;
-    min_offset_      = min_offset;
-    max_offset_      = max_offset;
+#include "devices/imx636/imx636_bias_settings.h"
+#include "devices/imx636/imx636_bias_settings_iterator.h"
 
-    display_bias();
-}
-
-Imx636LLBias::~Imx636LLBias(){};
-
-bool Imx636LLBias::is_modifiable() const {
-    return modifiable_;
-}
-
-int Imx636LLBias::get_min_offset() {
-    return min_offset_;
-}
-
-int Imx636LLBias::get_max_offset() {
-    return max_offset_;
-}
-
-const std::string &Imx636LLBias::get_register_name() const {
-    return register_name_;
-}
-
-int Imx636LLBias::get_current_offset() {
-    return current_offset_;
-}
-
-void Imx636LLBias::set_current_offset(const int val) {
-    current_offset_ = val;
-}
-
-int Imx636LLBias::get_current_value() {
-    return current_value_;
-}
-
-void Imx636LLBias::set_current_value(const int val) {
-    current_value_ = val;
-}
-
-int Imx636LLBias::get_factory_default_value() {
-    return factory_default_;
-}
-
-void Imx636LLBias::set_factory_default_value(const int val) {
-    factory_default_ = val;
-}
-
-void Imx636LLBias::display_bias() {
-    MV_HAL_LOG_TRACE() << "register name:" << register_name_ << ", factory default:" << factory_default_
-                       << ", current value:" << current_value_ << ", current offset:" << current_offset_
-                       << ", min offset:" << min_offset_ << ", max offset:" << max_offset_ << "]";
-}
-
-uint32_t get_imx636_bias_encoding(const Imx636LLBias &bias, int bias_value) {
-    if (!Metavision::is_expert_mode_enabled()) {
-        if (bias_value < 0) {
-            bias_value = 0;
-        }
-        if (bias_value > 255) {
-            bias_value = 255;
-        }
-    }
-    return (uint32_t)bias_value | BIAS_CONF;
-}
-
-} // namespace Metavision
-
-namespace Metavision {
-
-Imx636_LL_Biases::Imx636_LL_Biases(const std::shared_ptr<I_HW_Register> &i_hw_register,
+Imx636_LL_Biases::Imx636_LL_Biases(const DeviceConfig &device_config,
+                                   const std::shared_ptr<I_HW_Register> &i_hw_register,
                                    const std::string &sensor_prefix) :
-    i_hw_register_(i_hw_register), base_name_(sensor_prefix) {
-    if (!i_hw_register_) {
-        throw(HalException(PseeHalPluginErrorCode::HWRegisterNotFound, "HW Register facility is null."));
+    Imx636_LL_Biases(device_config, i_hw_register, sensor_prefix, bias_settings /* from bias_settings_iterator.h */) {}
+
+Imx636_LL_Biases::Imx636_LL_Biases(const DeviceConfig &device_config,
+                                   const std::shared_ptr<I_HW_Register> &i_hw_register,
+                                   const std::string &sensor_prefix, std::vector<imx636_bias_setting> &bias_settings) :
+    I_LL_Biases(device_config), bypass_range_check_(device_config.biases_range_check_bypass()) {
+    std::string BIAS_PATH = "bias/";
+
+    for (auto &bias_setting : bias_settings) {
+        Imx636LLBias bias(bias_setting.name, sensor_prefix + BIAS_PATH, i_hw_register, bias_setting.min_allowed_offset,
+                          bias_setting.max_allowed_offset, bias_setting.min_recommended_offset,
+                          bias_setting.max_recommended_offset, get_bias_description(bias_setting.name),
+                          bias_setting.modifiable, get_bias_category(bias_setting.name));
+        biases_map_.insert({bias_setting.name, bias});
     }
-
-    int bias_fo_factory_default  = 0xff & (get_hw_register()->read_register(base_name_ + BIAS_PATH + bias_fo_name));
-    int bias_hpf_factory_default = 0xff & (get_hw_register()->read_register(base_name_ + BIAS_PATH + bias_hpf_name));
-    int bias_diff_on_factory_default =
-        0xff & (get_hw_register()->read_register(base_name_ + BIAS_PATH + bias_diff_on_name));
-    int bias_diff_factory_default = 0xff & (get_hw_register()->read_register(base_name_ + BIAS_PATH + bias_diff_name));
-    int bias_diff_off_factory_default =
-        0xff & (get_hw_register()->read_register(base_name_ + BIAS_PATH + bias_diff_off_name));
-    int bias_refr_factory_default = 0xff & (get_hw_register()->read_register(base_name_ + BIAS_PATH + bias_refr_name));
-
-    int bias_fo_current_value       = bias_fo_factory_default;
-    int bias_hpf_current_value      = bias_hpf_factory_default;
-    int bias_diff_on_current_value  = bias_diff_on_factory_default;
-    int bias_diff_current_value     = bias_diff_factory_default;
-    int bias_diff_off_current_value = bias_diff_off_factory_default;
-    int bias_refr_current_value     = bias_refr_factory_default;
-
-    int bias_fo_min_offset       = BIAS_FO_MIN_OFFSET;
-    int bias_fo_max_offset       = BIAS_FO_MAX_OFFSET;
-    int bias_hpf_min_offset      = BIAS_HPF_MIN_OFFSET;
-    int bias_hpf_max_offset      = BIAS_HPF_MAX_OFFSET;
-    int bias_diff_on_min_offset  = BIAS_DIFF_ON_MIN_OFFSET;
-    int bias_diff_on_max_offset  = BIAS_DIFF_ON_MAX_OFFSET;
-    int bias_diff_min_offset     = BIAS_DIFF_MIN_OFFSET;
-    int bias_diff_max_offset     = BIAS_DIFF_MAX_OFFSET;
-    int bias_diff_off_min_offset = BIAS_DIFF_OFF_MIN_OFFSET;
-    int bias_diff_off_max_offset = BIAS_DIFF_OFF_MAX_OFFSET;
-    int bias_refr_min_offset     = BIAS_REFR_MIN_OFFSET;
-    int bias_refr_max_offset     = BIAS_REFR_MAX_OFFSET;
-
-    Imx636LLBias fo(bias_fo_modifiable, BIAS_PATH + bias_fo_name, bias_fo_sensor_current_offset, bias_fo_current_value,
-                    bias_fo_factory_default, bias_fo_min_offset, bias_fo_max_offset);
-    Imx636LLBias hpf(bias_hpf_modifiable, BIAS_PATH + bias_hpf_name, bias_hpf_sensor_current_offset,
-                     bias_hpf_current_value, bias_hpf_factory_default, bias_hpf_min_offset, bias_hpf_max_offset);
-    Imx636LLBias diff_on(bias_diff_on_modifiable, BIAS_PATH + bias_diff_on_name, bias_diff_on_sensor_current_offset,
-                         bias_diff_on_current_value, bias_diff_on_factory_default, bias_diff_on_min_offset,
-                         bias_diff_on_max_offset);
-    Imx636LLBias diff(bias_diff_modifiable, BIAS_PATH + bias_diff_name, bias_diff_sensor_current_offset,
-                      bias_diff_current_value, bias_diff_factory_default, bias_diff_min_offset, bias_diff_max_offset);
-    Imx636LLBias diff_off(bias_diff_off_modifiable, BIAS_PATH + bias_diff_off_name, bias_diff_off_sensor_current_offset,
-                          bias_diff_off_current_value, bias_diff_off_factory_default, bias_diff_off_min_offset,
-                          bias_diff_off_max_offset);
-    Imx636LLBias refr(bias_refr_modifiable, BIAS_PATH + bias_refr_name, bias_refr_sensor_current_offset,
-                      bias_refr_current_value, bias_refr_factory_default, bias_refr_min_offset, bias_refr_max_offset);
-
-    // Init map with the values in the registers
-    biases_map_.clear();
-    biases_map_.insert({bias_fo_name, fo});
-    biases_map_.insert({bias_hpf_name, hpf});
-    biases_map_.insert({bias_diff_on_name, diff_on});
-    biases_map_.insert({bias_diff_name, diff});
-    biases_map_.insert({bias_diff_off_name, diff_off});
-    biases_map_.insert({bias_refr_name, refr});
 }
 
 /**
@@ -165,42 +50,14 @@ Imx636_LL_Biases::Imx636_LL_Biases(const std::shared_ptr<I_HW_Register> &i_hw_re
  * @param bias_value Offset to adjust by
  * @return true if successful, false otherwise
  */
-bool Imx636_LL_Biases::set(const std::string &bias_name, int bias_value) {
+bool Imx636_LL_Biases::set_impl(const std::string &bias_name, int bias_value) {
     auto it = biases_map_.find(bias_name);
     if (it == biases_map_.end()) {
         return false;
     }
-    if (it->second.is_modifiable() == false) {
-        return false;
-    }
-
-    // Display old bias settings
-    it->second.display_bias();
-
-    // What the new value will be if all checks pass
-    auto potential_update_value = it->second.get_factory_default_value() + bias_value;
-    // Check bounds
-    if (!Metavision::is_expert_mode_enabled()) {
-        if (bias_value < it->second.get_min_offset()) {
-            MV_HAL_LOG_WARNING() << "Attempted to set" << bias_name << "offset lower than min offset of"
-                                 << it->second.get_min_offset();
-            return false;
-        } else if (bias_value > it->second.get_max_offset()) {
-            MV_HAL_LOG_WARNING() << "Attempted to set" << bias_name << "offset greater than max offset of"
-                                 << it->second.get_max_offset();
-            return false;
-        }
-    }
 
     // Update the value
-    it->second.set_current_value(potential_update_value);
-    // Tracking the total offset for later
-    it->second.set_current_offset(bias_value);
-    it->second.display_bias();
-
-    // Update the hardware
-    auto reg = get_imx636_bias_encoding(it->second, it->second.get_current_value());
-    get_hw_register()->write_register(base_name_ + it->second.get_register_name(), reg);
+    it->second.set_offset(bias_value);
     return true;
 }
 
@@ -210,14 +67,21 @@ bool Imx636_LL_Biases::set(const std::string &bias_name, int bias_value) {
  * @param bias_name name of the desired bias
  * @return int the offset
  */
-int Imx636_LL_Biases::get(const std::string &bias_name) {
+int Imx636_LL_Biases::get_impl(const std::string &bias_name) {
+    auto it = biases_map_.find(bias_name);
+    assert(it != biases_map_.end());
+    auto &bias_info = it->second;
+
+    return bias_info.current_offset();
+}
+
+bool Imx636_LL_Biases::get_bias_info_impl(const std::string &bias_name, LL_Bias_Info &bias_info) const {
     auto it = biases_map_.find(bias_name);
     if (it == biases_map_.end()) {
-        MV_HAL_LOG_WARNING() << "Failed Bias Name check";
-        return -1;
+        return false;
     }
-    it->second.display_bias();
-    return it->second.get_current_offset();
+    bias_info = it->second;
+    return true;
 }
 
 std::map<std::string, int> Imx636_LL_Biases::get_all_biases() {
@@ -228,8 +92,48 @@ std::map<std::string, int> Imx636_LL_Biases::get_all_biases() {
     return ret;
 }
 
-const std::shared_ptr<I_HW_Register> &Imx636_LL_Biases::get_hw_register() const {
-    return i_hw_register_;
+Imx636_LL_Biases::Imx636LLBias::Imx636LLBias(std::string register_name, std::string bias_path,
+                                             std::shared_ptr<I_HW_Register> hw_register, int min_allowed_offset,
+                                             int max_allowed_offset, int min_recommended_offset,
+                                             int max_recommended_offset, const std::string &description,
+                                             bool modifiable, const std::string &category) :
+    LL_Bias_Info(min_allowed_offset, max_allowed_offset, min_recommended_offset, max_recommended_offset, description,
+                 modifiable, category),
+    register_name_(register_name),
+    bias_path_(bias_path),
+    i_hw_register_(hw_register) {
+    factory_default_ = 0xff & (hw_register->read_register(bias_path + register_name));
+    current_value_   = factory_default_;
+
+    display_bias();
+}
+int Imx636_LL_Biases::Imx636LLBias::current_offset() const {
+    display_bias();
+    return current_value_ - factory_default_;
+}
+void Imx636_LL_Biases::Imx636LLBias::set_offset(const int val) {
+    display_bias();
+    current_value_ = factory_default_ + val;
+    i_hw_register_->write_register(bias_path_ + register_name_, get_encoding());
+    display_bias();
+}
+
+void Imx636_LL_Biases::Imx636LLBias::display_bias() const {
+    MV_HAL_LOG_TRACE() << "register name:" << register_name_ << ", factory default:" << factory_default_
+                       << ", current value:" << current_value_ << ", diff:" << current_value_ - factory_default_
+                       << ", value range: [" << get_bias_range().first << ", " << get_bias_range().second << "]";
+}
+
+static constexpr uint32_t BIAS_CONF = 0x11A10000;
+
+uint32_t Imx636_LL_Biases::Imx636LLBias::get_encoding() {
+    if (current_value_ < 0) {
+        current_value_ = 0;
+    }
+    if (current_value_ > 255) {
+        current_value_ = 255;
+    }
+    return (uint32_t)current_value_ | BIAS_CONF;
 }
 
 } // namespace Metavision

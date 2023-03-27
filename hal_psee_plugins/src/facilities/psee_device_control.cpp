@@ -11,14 +11,14 @@
 
 #include <memory>
 
-#include "facilities/psee_device_control.h"
+#include "metavision/psee_hw_layer/facilities/psee_device_control.h"
 #include "metavision/hal/utils/hal_exception.h"
 #include "utils/psee_hal_plugin_error_code.h"
 
 namespace Metavision {
 
-PseeDeviceControl::PseeDeviceControl(EvtFormat fmt) :
-    evt_format_(fmt), sync_mode_(SyncMode::STANDALONE), streaming_(false) {}
+PseeDeviceControl::PseeDeviceControl(StreamFormat fmt) :
+    format_(fmt), sync_mode_(SyncMode::STANDALONE), streaming_(false) {}
 
 void PseeDeviceControl::start() {
     start_impl();
@@ -30,19 +30,19 @@ void PseeDeviceControl::stop() {
     streaming_ = false;
 }
 
-bool PseeDeviceControl::set_evt_format(EvtFormat fmt) {
+bool PseeDeviceControl::set_evt_format(const StreamFormat &fmt) {
     if (streaming_) {
         return false;
     }
     bool valid = set_evt_format_impl(fmt);
     if (valid) {
-        evt_format_ = fmt;
+        format_ = fmt;
     }
     return valid;
 }
 
-EvtFormat PseeDeviceControl::get_evt_format() {
-    return evt_format_;
+const StreamFormat &PseeDeviceControl::get_evt_format() const {
+    return format_;
 }
 
 bool PseeDeviceControl::set_mode_standalone() {
@@ -51,7 +51,7 @@ bool PseeDeviceControl::set_mode_standalone() {
     }
     bool valid = set_mode_standalone_impl();
     if (valid) {
-        sync_mode_ = I_DeviceControl::SyncMode::STANDALONE;
+        sync_mode_ = I_CameraSynchronization::SyncMode::STANDALONE;
     }
     return valid;
 }
@@ -62,7 +62,7 @@ bool PseeDeviceControl::set_mode_slave() {
     }
     bool valid = set_mode_slave_impl();
     if (valid) {
-        sync_mode_ = I_DeviceControl::SyncMode::SLAVE;
+        sync_mode_ = I_CameraSynchronization::SyncMode::SLAVE;
     }
     return valid;
 }
@@ -73,12 +73,12 @@ bool PseeDeviceControl::set_mode_master() {
     }
     bool valid = set_mode_master_impl();
     if (valid) {
-        sync_mode_ = I_DeviceControl::SyncMode::MASTER;
+        sync_mode_ = I_CameraSynchronization::SyncMode::MASTER;
     }
     return valid;
 }
 
-I_DeviceControl::SyncMode PseeDeviceControl::get_mode() {
+I_CameraSynchronization::SyncMode PseeDeviceControl::get_mode() {
     return sync_mode_;
 }
 

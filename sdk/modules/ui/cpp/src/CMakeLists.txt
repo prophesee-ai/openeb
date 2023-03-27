@@ -7,6 +7,7 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 target_sources(metavision_sdk_ui PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/base_glfw_window.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/base_window.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/event_loop.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/frame_display_stage.cpp

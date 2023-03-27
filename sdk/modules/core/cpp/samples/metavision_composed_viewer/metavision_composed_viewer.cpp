@@ -27,7 +27,7 @@ namespace po = boost::program_options;
 
 /// [PIPELINE_COMPOSED_BEGIN]
 int main(int argc, char *argv[]) {
-    std::string in_raw_file_path;
+    std::string in_file_path;
 
     const std::string program_desc("Code sample demonstrating how to use Metavision SDK CV to filter events\n"
                                    "and show a frame combining unfiltered and filtered events.\n");
@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
     // clang-format off
     options_desc.add_options()
         ("help,h", "Produce help message.")
-        ("input-raw-file,i", po::value<std::string>(&in_raw_file_path), "Path to input RAW file. If not specified, the camera live stream is used.")
+        ("input-file,i", po::value<std::string>(&in_file_path), "Path to input file. If not specified, the camera live stream is used.")
         ;
     // clang-format on
 
@@ -62,8 +62,8 @@ int main(int argc, char *argv[]) {
 
     // Construct a camera from a file or a live stream
     Metavision::Camera cam;
-    if (!in_raw_file_path.empty()) {
-        cam = Metavision::Camera::from_file(in_raw_file_path);
+    if (!in_file_path.empty()) {
+        cam = Metavision::Camera::from_file(in_file_path);
     } else {
         cam = Metavision::Camera::from_first_available();
     }

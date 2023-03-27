@@ -12,11 +12,17 @@
 #ifndef METAVISION_HAL_PSEE_HAL_UTILS_H
 #define METAVISION_HAL_PSEE_HAL_UTILS_H
 
+#include <string>
+
 namespace Metavision {
 
-/// @brief Checks whether expert mode (env var MV_FLAGS_HAL_EXPERT_MODE) is on
-/// @return True if expert mode is enabled, False otherwise
-bool is_expert_mode_enabled();
+/// @brief Returns a description for a given bias name
+/// @return The bias description or an empty string
+const std::string &get_bias_description(const std::string &bias);
+
+/// @brief Returns a category for a given bias name
+/// @return The bias category or an empty string
+const std::string &get_bias_category(const std::string &bias);
 
 } // namespace Metavision
 

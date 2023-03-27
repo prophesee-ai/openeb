@@ -10,8 +10,30 @@
 set(metavision_sdk_driver_tests_srcs
     ${CMAKE_CURRENT_SOURCE_DIR}/biases_gtest.cpp
 )
+if (HDF5_FOUND)
+    list(APPEND metavision_sdk_driver_tests_srcs
+        ${CMAKE_CURRENT_SOURCE_DIR}/event_file_reader_writer_gtest.cpp
+    )
+endif ()
 
 add_executable(gtest_metavision_sdk_driver ${metavision_sdk_driver_tests_srcs})
+if (HDF5_FOUND)
+    target_compile_definitions(gtest_metavision_sdk_driver
+        PRIVATE
+            HAS_HDF5
+            ${HDF5_DEFINITIONS}
+            ${HDF5_CXX_DEFINITIONS}
+    )
+    target_include_directories(gtest_metavision_sdk_driver
+        PRIVATE
+            ${HDF5_INCLUDE_DIRS}
+    )
+    target_link_libraries(gtest_metavision_sdk_driver 
+        PRIVATE
+            ${HDF5_LIBRARIES} 
+            hdf5_ecf_codec
+    )
+endif ()
 target_link_libraries(gtest_metavision_sdk_driver
     PRIVATE
         MetavisionSDK::driver
@@ -19,14 +41,14 @@ target_link_libraries(gtest_metavision_sdk_driver
         Boost::filesystem
 )
 
-if (TARGET metavision_hal_psee_plugins_gtest_utils)
+if (TARGET metavision_hal_gtest_utils)
     target_sources(gtest_metavision_sdk_driver PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/camera_generation_gtest.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/camera_stage_gtest.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/camera_gtest.cpp
     )
-    target_link_libraries(gtest_metavision_sdk_driver PRIVATE metavision_hal_psee_plugins_gtest_utils)
-endif (TARGET metavision_hal_psee_plugins_gtest_utils)
+    target_link_libraries(gtest_metavision_sdk_driver PRIVATE metavision_hal_gtest_utils)
+endif (TARGET metavision_hal_gtest_utils)
 
 target_include_directories(gtest_metavision_sdk_driver PRIVATE 
     ${CMAKE_SOURCE_DIR}/sdk/modules/driver/cpp/src/include

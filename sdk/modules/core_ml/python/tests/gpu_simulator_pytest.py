@@ -384,7 +384,7 @@ def pytestcase_cpu_gpu_event(dataset_dir):
         events2 = event_cpu.get_events(batch, video_len, timestamps, first_times)
 
         t1 = events[:, -1]
-        idx = torch.argsort(t1)
+        idx = torch.argsort(t1).to('cpu')
         events = events[idx]
         events2 = events2[idx]
         diff = (events.cpu() - events2)
@@ -486,6 +486,120 @@ def pytestcase_event_volume_equivalence(dataset_dir):
     batch_size = 1
     height, width = 460, 480
     threshold_mu = 0.1
+    refractory_period = 10
+    nbins = 4
+    leak_rate = 0.0
+    cutoff_hz = 0
+    mode = 'nearest'
+
+    dataloader = make_video_dataset(path, 0, batch_size, height, width, 30, 300, seed=1)
+    batches = [batch for batch in islice(dataloader, 5)]
+
+    sim1 = GPUEventSimulator(batch_size, height, width, threshold_mu, 0, refractory_period, leak_rate, cutoff_hz)
+    sim2 = GPUEventSimulator(batch_size, height, width, threshold_mu, 0, refractory_period, leak_rate, cutoff_hz)
+
+    sim2.thresholds[...] = sim1.thresholds
+
+    # THEN
+    for i, batch_dict in enumerate(batches):
+        batch = sim1.log_images(batch_dict['images'].squeeze(0))
+        timestamps = batch_dict['timestamps'].long()
+        first_times = batch_dict['first_times']
+        video_len = batch_dict['video_len']
+
+        start_times = sim1.prev_image_ts * (1 - first_times) + timestamps[:, 0] * first_times
+        durations = timestamps[:, -1] - start_times
+
+        events = sim1.get_events(batch, video_len, timestamps, first_times)
+        vol1 = event_volume(events, batch_size, height, width, start_times, durations, nbins, mode)
+        vol2 = sim2.event_volume(batch, video_len, timestamps, first_times, nbins, mode)
+
+        mean_per_bin_1 = vol1.sum(-1).sum(-1).mean(0).cpu().abs().numpy()
+        mean_per_bin_2 = vol2.sum(-1).sum(-1).mean(0).cpu().abs().numpy()
+
+        assert (mean_per_bin_1 > 0).any()
+        assert (mean_per_bin_2 > 0).any()
+        assert torch.allclose(vol1, vol2, atol=1e-4)
+
+
+def pytestcase_new_old_different_on_off_ths(dataset_dir):
+    """
+    Testing that Old Simulator is equivalent to the New GPU one, 
+    when usin different ON and OFF ths
+    """
+    path = os.path.join(dataset_dir, "openeb", "core_ml", "mini_image_dataset")
+    batch_size = 1
+    height, width = 256, 256
+    threshold_mu_off = 0.2
+    threshold_mu_on = 0.1
+    threshold_std = 0.001
+    refractory_period = 100
+    nbins = 1
+    dataloader = make_video_dataset(path, 0, batch_size, height, width, 30, 300, seed=1)
+    batches = [batch for batch in islice(dataloader, 40)]
+
+    event_cpu = GPUEventSimulator(batch_size, height, width, [threshold_mu_off, threshold_mu_on], 0, refractory_period)
+    old_event_cpu = EventSimulator(height, width, threshold_mu_on, threshold_mu_off, refractory_period, 0)
+    old_event_cpu.Cps = event_cpu.thresholds[1, 0].numpy()
+    old_event_cpu.Cns = event_cpu.thresholds[0, 0].numpy()
+
+    for i, batch_dict in enumerate(batches):
+        batch = batch_dict['images'].squeeze(0)
+        timestamps = batch_dict['timestamps']
+        first_times = batch_dict['first_times']
+        log_batch = event_cpu.log_images(batch)
+
+        start_times = timestamps[:, 0] * first_times + (1 - first_times) * event_cpu.prev_image_ts
+        durations = timestamps[:, -1] - start_times
+
+        # old: reset
+        if first_times[0] == 1:
+            old_event_cpu.reset()
+            old_event_cpu.Cps = event_cpu.thresholds[1, 0].numpy()
+            old_event_cpu.Cns = event_cpu.thresholds[0, 0].numpy()
+
+        # old: actual simulation
+        for t in range(log_batch.shape[-1]):
+            img = log_batch[:, :, t].numpy().copy()
+            ts = timestamps[0, t].item()
+            old_event_cpu.log_image_callback(img, ts)
+
+        old_events = old_event_cpu.get_events().copy()
+        old_event_cpu.flush_events()
+
+        events = event_cpu.get_events(log_batch, batch_dict['video_len'], timestamps, first_times)
+        t1 = events[:, -1]
+        idx = torch.argsort(t1)
+        events = events[idx]
+
+        if not len(events):
+            continue
+
+        # Event-Volume Difference?
+        ev_vol1 = event_volume(events, batch_size, height, width, start_times, durations, nbins, 'nearest')
+
+        events2 = torch.zeros((len(old_events), 5), dtype=torch.int32)
+        events2[:, 1] = torch.from_numpy(old_events['x'] * 1.0)
+        events2[:, 2] = torch.from_numpy(old_events['y'] * 1.0)
+        events2[:, 3] = torch.from_numpy(old_events['p'] * 2.0 - 1)
+        events2[:, 4] = torch.from_numpy(old_events['t'] * 1.0)
+
+        ev_vol2 = event_volume(events2, batch_size, height, width, start_times, durations, nbins, 'nearest')
+        diff = (ev_vol1 - ev_vol2)
+        assert diff.abs().max().item() == 0
+
+
+def pytestcase_event_volume_equivalence_different_on_off_ths(dataset_dir):
+    """
+    Here we make sure that:
+    video -> event-volume == video -> aer -> event_volume
+    in the case we use different ON and OFF ths
+    """
+    # GIVEN
+    path = os.path.join(dataset_dir, "openeb", "core_ml", "mini_image_dataset")
+    batch_size = 1
+    height, width = 460, 480
+    threshold_mu = [0.1, 0.2]
     refractory_period = 10
     nbins = 4
     leak_rate = 0.0

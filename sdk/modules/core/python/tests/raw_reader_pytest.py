@@ -407,12 +407,9 @@ def pytestcase_rawreader_pyreader_equivalence_mixed(tmpdir, dataset_dir):
     # GIVEN
     filename = os.path.join(dataset_dir,
                             "openeb", "core", "event_io", "recording.raw")
-    video = RawReader(filename, do_time_shifting=False)
+    video = RawReader(filename, do_time_shifting=True)
     # WHEN
     dat_video = EventDatReader(filename.replace(".raw", "_td.dat"))
-
-    video.load_n_events(10)
-    dat_video.load_n_events(10)
 
     while not video.is_done():
         # THEN

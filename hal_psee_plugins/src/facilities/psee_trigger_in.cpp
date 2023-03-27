@@ -9,8 +9,8 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-#include "facilities/psee_trigger_in.h"
-#include "facilities/psee_device_control.h"
+#include "metavision/psee_hw_layer/facilities/psee_trigger_in.h"
+#include "metavision/psee_hw_layer/facilities/psee_device_control.h"
 #include "metavision/hal/utils/hal_exception.h"
 #include "utils/psee_hal_plugin_error_code.h"
 

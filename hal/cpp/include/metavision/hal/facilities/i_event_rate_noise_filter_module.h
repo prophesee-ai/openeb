@@ -29,7 +29,7 @@ class I_EventRateNoiseFilterModule : public I_RegistrableFacility<I_EventRateNoi
 public:
     /// @brief Enables/disables the noise filter
     /// @param enable_filter Whether to enable the noise filtering
-    virtual void enable(bool enable_filter) = 0;
+    virtual bool enable(bool enable_filter) = 0;
 
     /// @brief Sets the event rate threshold. Below this threshold, no events are streamed.
     /// @param threshold_Kev_s Event rate threshold in Kevt/s

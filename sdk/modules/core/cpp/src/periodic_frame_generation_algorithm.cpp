@@ -19,10 +19,13 @@ PeriodicFrameGenerationAlgorithm::PeriodicFrameGenerationAlgorithm(int sensor_wi
                                                                    const Metavision::ColorPalette &palette) :
     BaseFrameGenerationAlgorithm(sensor_width, sensor_height, palette),
     output_cb_([](auto, auto) {}),
+    reslicer_([&](EventBufferReslicerAlgorithm::ConditionStatus slicing_status, timestamp processing_ts,
+                  std::size_t n_processed_events) {
+        this->process_new_slice(slicing_status, processing_ts, n_processed_events);
+    }),
     force_next_frame_(false) {
     set_accumulation_time_us(accumulation_time_us);
     set_fps(fps);
-    set_processing_n_us(frame_period_us_);
     reset();
 }
 
@@ -30,9 +33,13 @@ void PeriodicFrameGenerationAlgorithm::set_output_callback(const OutputCb &outpu
     output_cb_ = output_cb;
 }
 
+void PeriodicFrameGenerationAlgorithm::notify_elapsed_time(timestamp ts) {
+    reslicer_.notify_elapsed_time(ts);
+}
+
 void PeriodicFrameGenerationAlgorithm::force_generate() {
     force_next_frame_ = true;
-    AsyncAlgorithm<PeriodicFrameGenerationAlgorithm>::flush();
+    reslicer_.flush();
     force_next_frame_ = false;
 }
 
@@ -47,7 +54,7 @@ void PeriodicFrameGenerationAlgorithm::set_fps(double fps) {
     else
         frame_period_us_ = static_cast<uint32_t>(std::round(1000000. / fps));
 
-    set_processing_n_us(frame_period_us_);
+    reslicer_.set_slicing_condition(EventBufferReslicerAlgorithm::Condition::make_n_us(frame_period_us_));
 }
 
 double PeriodicFrameGenerationAlgorithm::get_fps() {
@@ -67,8 +74,7 @@ uint32_t PeriodicFrameGenerationAlgorithm::get_accumulation_time_us() {
 }
 
 void PeriodicFrameGenerationAlgorithm::reset() {
-    force_generate();
-    AsyncAlgorithm<PeriodicFrameGenerationAlgorithm>::reset();
+    reslicer_.reset();
 
     reset_time_surface();
     next_frame_ts_us_ = 0;
@@ -76,7 +82,8 @@ void PeriodicFrameGenerationAlgorithm::reset() {
     min_event_ts_us_to_use_ = 0;
 }
 
-void PeriodicFrameGenerationAlgorithm::process_async(const timestamp processing_ts, const size_t n_processed_events) {
+void PeriodicFrameGenerationAlgorithm::process_new_slice(EventBufferReslicerAlgorithm::ConditionStatus slicing_status,
+                                                         timestamp processing_ts, size_t n_processed_events) {
     if (processing_ts < next_frame_ts_us_ && !force_next_frame_)
         return;
 

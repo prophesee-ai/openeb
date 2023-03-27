@@ -10,6 +10,7 @@
  **********************************************************************************************************************/
 
 #include <iostream>
+#include <fstream>
 #include <pybind11/pybind11.h>
 
 #include "metavision/sdk/base/utils/generic_header.h"
@@ -46,6 +47,11 @@ void export_generic_header(py::module &m) {
                  return header;
              }),
              "Args:\n dict (dictionary): a python dictionary holding key value pairs of string types.\n")
+        .def(py::init([](const std::string filename) {
+                 std::ifstream stream(filename, std::ios::binary);
+                 return new GenericHeader(stream);
+             }),
+             "Args:\n filename (str): name of the file to open")
         .def("set_field", &GenericHeader::set_field, py::arg("key"), py::arg("value"),
              pybind_doc_base["Metavision::GenericHeader::set_field"])
         .def("get_field", &GenericHeader::get_field, py::arg("key"),

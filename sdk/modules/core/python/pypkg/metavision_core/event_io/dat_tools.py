@@ -23,6 +23,7 @@ import numpy as np
 EV_TYPES = {
     0: [('t', 'u4'), ('_', 'i4')],
     12: [('t', 'u4'), ('_', 'i4')],
+    14: [("p", "i2"), ("t", "i8"), ("id", "i2")],
     40: [('t', 'u4'), ('_', 'i4'), ('vx', 'f4'), ('vy', 'f4'), ('center_x', 'f4'), ('center_y', 'f4'),
          ('id', 'u4')]
 }
@@ -32,6 +33,7 @@ DECODE_DTYPES = {
         'offsets': [0, 2, 4, 8], 'itemsize': 16},
     12: {'names': ['x', 'y', 'p', 't'], 'formats': ['<u2', '<u2', '<i2', '<i8'],
          'offsets': [0, 2, 4, 8], 'itemsize': 16},
+    14: {'names': ['p', 't', 'id'], 'formats': ['<i2', '<i8', '<i2'], 'offsets': [0, 8, 16], 'itemsize': 24},
     40: {'names': ['x', 'y', 'p', 't', 'vx', 'vy', 'center_x', 'center_y', 'id'],
          'formats': ['<u2', '<u2', '<i2', '<i8', 'f4', 'f4', 'f4', 'f4', 'u4'],
          'offsets': [0, 2, 4, 8, 16, 20, 24, 28, 32], 'itemsize': 36}}
@@ -39,6 +41,7 @@ DECODE_DTYPES = {
 EV_STRINGS = {
     0: 'Event2D',
     12: 'EventCD',
+    14: 'EventExtTrigger',
     40: 'EventOpticalFlow'
 }
 

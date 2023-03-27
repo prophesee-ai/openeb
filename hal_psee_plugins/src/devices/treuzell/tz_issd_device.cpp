@@ -10,9 +10,9 @@
  **********************************************************************************************************************/
 
 #include "devices/treuzell/tz_issd_device.h"
-#include "boards/treuzell/tz_libusb_board_command.h"
+#include "metavision/psee_hw_layer/boards/treuzell/tz_libusb_board_command.h"
 #include "devices/common/issd.h"
-#include "utils/register_map.h"
+#include "metavision/psee_hw_layer/utils/register_map.h"
 #include <thread>
 
 namespace Metavision {

@@ -21,7 +21,7 @@ class RegisterMap;
 
 class Evk2SystemControl {
 public:
-    Evk2SystemControl(const std::shared_ptr<RegisterMap> &regmap, const std::string &prefix);
+    Evk2SystemControl(const std::shared_ptr<RegisterMap> &regmap);
 
     bool apply_resets();
     void set_evt_format(uint32_t fmt);

@@ -61,7 +61,7 @@ def normalize_tiles(tensor, num_stds=6, num_dims=2, real_min_max=True):
     shape = tensor.shape[:-num_dims]
     trflat = tensor.view(*shape, -1)
 
-    mu, std = trflat.mean(dim=-1), trflat.std(dim=-1)[0] * num_stds
+    mu, std = trflat.mean(dim=-1), trflat.std(dim=-1) * num_stds
     mu = mu[(...,) + (None,) * num_dims]
     std = std[(...,) + (None,) * num_dims]
 

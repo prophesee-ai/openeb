@@ -34,10 +34,22 @@ DataTransfer::~DataTransfer() {
 
 void DataTransfer::start() {
     if (run_transfers_thread_.joinable()) {
-        return;
+        if (stop_) {
+            // if the transfer stopped by itself (e.g end of file reached)
+            // stop may never have been called so we have to join the thread first
+            run_transfers_thread_.join();
+        } else {
+            return;
+        }
     }
 
-    stop_ = false;
+    {
+        std::lock(suspend_mutex_, running_mutex_);
+        std::unique_lock<std::mutex> lock1(suspend_mutex_, std::adopt_lock);
+        std::unique_lock<std::mutex> lock2(running_mutex_, std::adopt_lock);
+        stop_    = false;
+        running_ = false;
+    }
     start_impl(get_buffer());
 
     run_transfers_thread_ = std::thread([this]() {
@@ -45,9 +57,40 @@ void DataTransfer::start() {
             cb.second(Status::Started);
         }
 
-        run_impl();
+        while (!stop_) {
+            {
+                std::unique_lock<std::mutex> lock(suspend_mutex_);
+                suspend_ = false;
+            }
+            {
+                std::unique_lock<std::mutex> lock(running_mutex_);
+                running_ = true;
+            }
+            run_impl();
 
-        stop_ = true;
+            if (!suspend_) {
+                break;
+            } else {
+                {
+                    std::unique_lock<std::mutex> lock(running_mutex_);
+                    running_ = false;
+                }
+                running_cond_.notify_all();
+
+                std::unique_lock<std::mutex> lock(suspend_mutex_);
+                suspend_cond_.wait(lock, [this] { return !suspend_ || stop_; });
+            }
+        }
+
+        {
+            std::lock(suspend_mutex_, running_mutex_);
+            std::unique_lock<std::mutex> lock1(suspend_mutex_, std::adopt_lock);
+            std::unique_lock<std::mutex> lock2(running_mutex_, std::adopt_lock);
+            stop_ = true;
+        }
+        suspend_cond_.notify_all();
+        running_cond_.notify_all();
+
         for (auto cb : status_change_cbs_) {
             cb.second(Status::Stopped);
         }
@@ -62,9 +105,34 @@ void DataTransfer::stop() {
     }
 
     stop_impl();
-    stop_ = true;
+    {
+        std::lock(suspend_mutex_, running_mutex_);
+        std::unique_lock<std::mutex> lock1(suspend_mutex_, std::adopt_lock);
+        std::unique_lock<std::mutex> lock2(running_mutex_, std::adopt_lock);
+        stop_ = true;
+    }
+    suspend_cond_.notify_all();
+    running_cond_.notify_all();
 
     run_transfers_thread_.join();
+}
+
+void DataTransfer::suspend() {
+    {
+        std::unique_lock<std::mutex> lock(suspend_mutex_);
+        suspend_ = true;
+    }
+
+    std::unique_lock<std::mutex> lock(running_mutex_);
+    running_cond_.wait(lock, [this] { return !running_ || stop_; });
+}
+
+void DataTransfer::resume() {
+    {
+        std::unique_lock<std::mutex> lock(suspend_mutex_);
+        suspend_ = false;
+    }
+    suspend_cond_.notify_all();
 }
 
 size_t DataTransfer::add_status_changed_callback(StatusChangeCallback_t cb) {
@@ -91,6 +159,10 @@ uint32_t DataTransfer::get_raw_event_size_bytes() const {
 }
 
 bool DataTransfer::should_stop() {
+    return stop_ || suspend_;
+}
+
+bool DataTransfer::stopped() const {
     return stop_;
 }
 

@@ -16,18 +16,21 @@ file(MAKE_DIRECTORY "${OUTPUT_DIR}")
 string(REPLACE " " ";" CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}")
 include(overridden_cmake_functions)
 
-set(HAL_OPEN_PLUGIN_FILES apps biasgen cmake CMakeLists.txt lib resources test)
-set(HAL_OPEN_INCLUDES boards decoders facilities geometries plugin utils devices/common devices/utils)
-set(HAL_OPEN_SOURCES boards CMakeLists.txt facilities plugin utils devices/common devices/utils devices/CMakeLists.txt)
-set(HAL_OPEN_DEVICES gen3 gen31 gen41 golden_fallbacks imx636 others treuzell)
+set(HAL_OPEN_PLUGIN_FILES apps biasgen cmake CMakeLists.txt lib resources samples test)
+set(HAL_OPEN_PLUGIN_INCLUDES boards utils geometries plugin devices/common devices/utils devices/others)
+set(HAL_OPEN_PLUGIN_HW_LAYER_INCLUDES boards facilities utils devices/common devices/utils devices/psee-video)
+set(HAL_OPEN_PLUGIN_SOURCES boards CMakeLists.txt facilities plugin utils devices/common devices/utils devices/psee-video devices/others devices/CMakeLists.txt)
+set(HAL_OPEN_PLUGIN_DEVICES gen31 gen41 imx636 treuzell)
 
-foreach (open_device ${HAL_OPEN_DEVICES})
-    list(APPEND HAL_OPEN_INCLUDES devices/${open_device})
-    list(APPEND HAL_OPEN_SOURCES devices/${open_device})
+foreach (open_device ${HAL_OPEN_PLUGIN_DEVICES})
+    list(APPEND HAL_OPEN_PLUGIN_INCLUDES devices/${open_device})
+    list(APPEND HAL_OPEN_PLUGIN_SOURCES devices/${open_device})
+    list(APPEND HAL_OPEN_PLUGIN_HW_LAYER_INCLUDES devices/${open_device})
 endforeach(open_device)
-list_transform_prepend (HAL_OPEN_INCLUDES include/)
-list_transform_prepend (HAL_OPEN_SOURCES src/)
-list(APPEND HAL_OPEN_PLUGIN_FILES ${HAL_OPEN_INCLUDES} ${HAL_OPEN_SOURCES})
+list_transform_prepend (HAL_OPEN_PLUGIN_INCLUDES include/)
+list_transform_prepend (HAL_OPEN_PLUGIN_SOURCES src/)
+list_transform_prepend (HAL_OPEN_PLUGIN_HW_LAYER_INCLUDES psee_hw_layer_headers/include/metavision/psee_hw_layer/)
+list(APPEND HAL_OPEN_PLUGIN_FILES ${HAL_OPEN_PLUGIN_INCLUDES} ${HAL_OPEN_PLUGIN_SOURCES} ${HAL_OPEN_PLUGIN_HW_LAYER_INCLUDES})
 list_transform_prepend (HAL_OPEN_PLUGIN_FILES hal_psee_plugins/)
 
 # Add the files and folders needed to compile open :
@@ -51,10 +54,6 @@ file(COPY "${PROJECT_SOURCE_DIR}/utils/github_actions/openeb/mergify.yml"
 file(REMOVE_RECURSE "${OUTPUT_DIR}/cmake/custom_targets_metavision_sdk")
 file(REMOVE "${OUTPUT_DIR}/cmake/custom_functions/create_addon_module_archive_folder.cmake")
 file(REMOVE "${OUTPUT_DIR}/cmake/custom_functions/documentation.cmake")
-# Remove unwanted plugins
-file(REMOVE "${OUTPUT_DIR}/hal_psee_plugins/src/plugin/psee_gen4_evk1.cpp")
-file(REMOVE "${OUTPUT_DIR}/hal_psee_plugins/src/plugin/psee_gen4_evk2.cpp")
-file(REMOVE_RECURSE "${OUTPUT_DIR}/hal_psee_plugins/src/plugin/raven")
 # Remove unwanted files
 file(REMOVE "${OUTPUT_DIR}/sdk/cmake/MetavisionSDKCPackConfig.cmake")
 file(REMOVE "${OUTPUT_DIR}/sdk/cmake/MetavisionStudioCPackConfig.cmake")
@@ -74,6 +73,9 @@ foreach (mod base core driver ui core_ml)
         endif(EXISTS "${subdirpath}")
     endforeach(subdir)
 endforeach(mod)
+
+# Remove hdf5_ecf submodule
+file(REMOVE_RECURSE "${OUTPUT_DIR}/sdk/modules/driver/cpp/3rdparty/hdf5_ecf")
 # Remove Metavision Studio :
 file(REMOVE_RECURSE "${OUTPUT_DIR}/sdk/modules/core/cpp/apps/metavision_studio")
 

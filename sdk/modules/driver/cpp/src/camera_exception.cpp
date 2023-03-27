@@ -118,7 +118,7 @@ std::string get_error_message(CameraErrorCodeType error_code, const std::string 
     case UnsupportedFeatureErrors::ExtTriggerUnavailable:
     case UnsupportedFeatureErrors::AntiFlickerModuleUnavailable:
     case UnsupportedFeatureErrors::ErcModuleUnavailable:
-    case UnsupportedFeatureErrors::NoiseFilterModuleUnavailable:
+    case UnsupportedFeatureErrors::EventTrailFilterModuleUnavailable:
         msg_to_ret = "Unsupported feature of the camera.";
         break;
 

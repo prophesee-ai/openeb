@@ -12,12 +12,13 @@
 #ifndef SRC_INC_SYSTEM_CONFIG_REGISTERMAP_H_
 #define SRC_INC_SYSTEM_CONFIG_REGISTERMAP_H_
 
-RegmapData SystemConfigRegisterMap[] = {
+static RegmapElement SystemConfigRegisterMap[] = {
+    // clang-format off
     {R, {{"ID", 0x0}}},          {F, {{"VALUE", 0, 8, 0x1c}}}, {R, {{"VERSION", 0x4}}},
     {F, {{"MICRO", 0, 8, 0x0}}}, {F, {{"MINOR", 8, 8, 0x0}}},  {F, {{"MAJOR", 16, 8, 0x0}}},
     {R, {{"BUILD_DATE", 0x8}}},  {F, {{"VALUE", 0, 32, 0x0}}}, {R, {{"VERSION_CONTROL_ID", 0xc}}},
     {F, {{"VALUE", 0, 32, 0x0}}}
-
+    // clang-format on
 };
-unsigned int SystemConfigRegisterMapSize = sizeof(SystemConfigRegisterMap) / sizeof(SystemConfigRegisterMap[0]);
+static uint32_t SystemConfigRegisterMapSize = sizeof(SystemConfigRegisterMap) / sizeof(SystemConfigRegisterMap[0]);
 #endif

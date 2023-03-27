@@ -9,7 +9,7 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-#include "facilities/psee_monitoring.h"
+#include "metavision/psee_hw_layer/facilities/psee_monitoring.h"
 #include "metavision/hal/facilities/i_hw_register.h"
 #include "metavision/hal/utils/hal_exception.h"
 #include "utils/psee_hal_plugin_error_code.h"

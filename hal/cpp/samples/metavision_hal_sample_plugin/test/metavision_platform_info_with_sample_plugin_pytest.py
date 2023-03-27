@@ -25,15 +25,18 @@ def pytestcase_test_metavision_platform_info_with_sample_plugin_system():
     assert error_code == 0
 
     # Check expected output
-    expected_output_contains = """# FOUND SampleIntegratorName GEN 1.0 600x500 #
+    expected_output_contains = """## SampleIntegratorName Gen1.0 600x500 ##
 
-Connection                    USB
-Integrator                    SampleIntegratorName
-Raw Formats                   SAMPLE-FORMAT-1.0
-Sensor Info                   1.0
-Serial                        000000
-System Version                0.0.1
-SystemID                      42
+# System information
+Available Data Encoding Formats                   SAMPLE-FORMAT-1.0
+Connection                                        USB
+Current Data Encoding Format                      SAMPLE-FORMAT-1.0
+Integrator                                        SampleIntegratorName
+Sensor Name                                       Gen1.0
+Serial                                            000000
+SystemID                                          42
+
+# Available device config options
 """
     output_strip = "\n".join([line.strip() for line in output.splitlines()])
     expected_output_strip = "\n".join([line.strip() for line in expected_output_contains.splitlines()])

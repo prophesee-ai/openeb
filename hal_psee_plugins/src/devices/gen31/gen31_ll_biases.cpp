@@ -9,13 +9,14 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
+#include <cassert>
 #include <math.h>
 #include <map>
 #include <sstream>
 #include <iostream>
 
 #include "metavision/hal/utils/hal_log.h"
-#include "devices/gen31/gen31_ll_biases.h"
+#include "metavision/psee_hw_layer/devices/gen31/gen31_ll_biases.h"
 #include "metavision/hal/facilities/i_hw_register.h"
 #include "metavision/hal/utils/hal_exception.h"
 #include "utils/psee_hal_plugin_error_code.h"
@@ -23,7 +24,7 @@
 
 // bias_diff, bias_diff_on, bias_diff_off, bias fo, bias_hpf, bias_refr, bias_pr
 namespace {
-class Gen31LLBias {
+class Gen31LLBias : public Metavision::LL_Bias_Info {
 public:
     enum class BiasType {
         PMOSThick = 0,
@@ -37,13 +38,12 @@ public:
         Voltage = 1,
     };
 
-    Gen31LLBias(long min_value, long max_value, Mode mode, bool modifiable, std::string register_name, BiasType btype) :
+    Gen31LLBias(long min_value, long max_value, Mode mode, bool modifiable, std::string register_name, BiasType btype,
+                const std::string &description, const std::string &category) :
+        LL_Bias_Info(0, 1800, min_value, max_value, description, modifiable, category),
         register_name_(register_name),
         mode_(mode),
-        btype_(btype),
-        modifiable_(modifiable),
-        min_value_(min_value),
-        max_value_(max_value) {}
+        btype_(btype) {}
 
     ~Gen31LLBias() {}
     Mode mode() const {
@@ -52,24 +52,14 @@ public:
     BiasType get_bias_type() const {
         return btype_;
     }
-    bool is_modifiable() const {
-        return modifiable_;
-    }
     const std::string &get_register_name() const {
         return register_name_;
-    }
-    bool is_in_range(long value) const {
-        return Metavision::is_expert_mode_enabled() || (min_value_ <= value && value <= max_value_);
     }
 
 private:
     std::string register_name_;
     Mode mode_ = Mode::Voltage;
     BiasType btype_;
-    bool modifiable_;
-
-    const long min_value_;
-    const long max_value_;
 };
 
 struct CCam3BiasEncoding {
@@ -133,21 +123,17 @@ union BiasEncodingCast {
 //         Bias::standard, false,  0, Gen31Bias::BiasType::PMOSThin,  false)},
 
 std::map<std::string, Gen31LLBias> &get_gen31_biases_map() {
+    // clang-format off
     static std::map<std::string, Gen31LLBias> biases_map{
-        {"bias_diff_off",
-         Gen31LLBias(0, 1800, Gen31LLBias::Mode::Voltage, true, "bgen_19", Gen31LLBias::BiasType::NMOSThin)},
-        {"bias_diff_on",
-         Gen31LLBias(0, 1800, Gen31LLBias::Mode::Voltage, true, "bgen_20", Gen31LLBias::BiasType::NMOSThin)},
-        {"bias_diff",
-         Gen31LLBias(200, 400, Gen31LLBias::Mode::Voltage, false, "bgen_21", Gen31LLBias::BiasType::NMOSThin)},
-        {"bias_fo", Gen31LLBias(1250, 1800, Gen31LLBias::Mode::Current, true, "bgen_22", Gen31LLBias::BiasType::RailP)},
-        {"bias_pr",
-         Gen31LLBias(975, 1800, Gen31LLBias::Mode::Current, true, "bgen_23", Gen31LLBias::BiasType::PMOSThick)},
-        {"bias_refr",
-         Gen31LLBias(1300, 1800, Gen31LLBias::Mode::Current, true, "bgen_24", Gen31LLBias::BiasType::NMOSThin)},
-        {"bias_hpf",
-         Gen31LLBias(900, 1800, Gen31LLBias::Mode::Current, true, "bgen_25", Gen31LLBias::BiasType::PMOSThick)},
+        {"bias_diff_off", Gen31LLBias(0, 1800, Gen31LLBias::Mode::Voltage, true, "bgen_19", Gen31LLBias::BiasType::NMOSThin, Metavision::get_bias_description("bias_diff_off"), Metavision::get_bias_category("bias_diff_off"))},
+        {"bias_diff_on", Gen31LLBias(0, 1800, Gen31LLBias::Mode::Voltage, true, "bgen_20", Gen31LLBias::BiasType::NMOSThin, Metavision::get_bias_description("bias_diff_on"), Metavision::get_bias_category("bias_diff_on"))},
+        {"bias_diff", Gen31LLBias(200, 400, Gen31LLBias::Mode::Voltage, true, "bgen_21", Gen31LLBias::BiasType::NMOSThin, Metavision::get_bias_description("bias_diff"), Metavision::get_bias_category("bias_diff"))},
+        {"bias_fo", Gen31LLBias(1250, 1800, Gen31LLBias::Mode::Current, true, "bgen_22", Gen31LLBias::BiasType::RailP, Metavision::get_bias_description("bias_fo"), Metavision::get_bias_category("bias_fo"))},
+        {"bias_pr", Gen31LLBias(975, 1800, Gen31LLBias::Mode::Current, true, "bgen_23", Gen31LLBias::BiasType::PMOSThick, Metavision::get_bias_description("bias_pr"), Metavision::get_bias_category("bias_pr"))},
+        {"bias_refr", Gen31LLBias(1300, 1800, Gen31LLBias::Mode::Current, true, "bgen_24", Gen31LLBias::BiasType::NMOSThin, Metavision::get_bias_description("bias_refr"), Metavision::get_bias_category("bias_refr"))},
+        {"bias_hpf", Gen31LLBias(900, 1800, Gen31LLBias::Mode::Current, true, "bgen_25", Gen31LLBias::BiasType::PMOSThick, Metavision::get_bias_description("bias_hpf"), Metavision::get_bias_category("bias_hpf"))},
     };
+    // clang-format on
     return biases_map;
 }
 
@@ -367,7 +353,7 @@ int get_inv_idac_values(CCam3BiasEncoding value,
     return it->second;
 }
 
-long get_ccam3_gen31_bias_encoding(const Gen31LLBias &bias, int bias_value) {
+long get_ccam3_gen31_bias_encoding(const Gen31LLBias &bias, int bias_value, bool saturate_value) {
     // if idacsisley an,d current mode we read the encode from a specific file
     init_map_idac();
     std::map<int, CodeGen31IDAC> *mvtocode = NULL;
@@ -396,7 +382,7 @@ long get_ccam3_gen31_bias_encoding(const Gen31LLBias &bias, int bias_value) {
 
     long calib_encoding = 0;
     int v               = bias_value;
-    if (!Metavision::is_expert_mode_enabled()) {
+    if (saturate_value) {
         if (v < 0)
             v = 0;
         if (v > 1800)
@@ -454,75 +440,72 @@ long get_ccam3_gen31_bias_encoding(const Gen31LLBias &bias, int bias_value) {
 
 namespace Metavision {
 
-Gen31_LL_Biases::Gen31_LL_Biases(const std::shared_ptr<I_HW_Register> &i_hw_register, const std::string &prefix) :
-    i_hw_register_(i_hw_register), base_name_(prefix) {
+Gen31_LL_Biases::Gen31_LL_Biases(const DeviceConfig &device_config, const std::shared_ptr<I_HW_Register> &i_hw_register,
+                                 const std::string &prefix) :
+    I_LL_Biases(device_config),
+    i_hw_register_(i_hw_register),
+    base_name_(prefix),
+    bypass_range_check_(device_config.biases_range_check_bypass()) {
     if (!i_hw_register_) {
         throw(HalException(PseeHalPluginErrorCode::HWRegisterNotFound, "HW Register facility is null."));
     }
 }
 
-bool Gen31_LL_Biases::set(const std::string &bias_name, int bias_value) {
-    auto it = get_gen31_biases_map().find(bias_name);
-    if (it == get_gen31_biases_map().end()) {
-        return false;
-    }
-    if (it->second.is_modifiable() == false) {
-        return false;
-    }
-    if (!it->second.is_in_range(bias_value)) {
-        MV_HAL_LOG_WARNING() << bias_value << "is not in acceptable range for" << bias_name;
-        return false;
-    }
-
-    if (bias_name == "bias_diff_on") {
-        auto bias_diff = get("bias_diff");
-        auto bias_fo   = get("bias_fo");
-        auto delta     = 75;
-        if (bias_fo < 1350) {
-            delta = 95;
-        }
-        if (bias_value < bias_diff + delta) {
-            bias_value = bias_diff + delta;
-            MV_HAL_LOG_WARNING() << "Current bias_diff_on minimal value is" << bias_value;
-            return false;
-        }
-    }
-    if (bias_name == "bias_diff_off") {
-        auto bias_diff = get("bias_diff");
-        auto bias_fo   = get("bias_fo");
-        auto delta     = 65;
-        if (bias_fo < 1350) {
-            delta = 85;
-        }
-        if (bias_value > bias_diff - delta) {
-            bias_value = bias_diff - delta;
-            MV_HAL_LOG_WARNING() << "Current bias_diff_off maximal value is" << bias_value;
-            return false;
-        }
-    }
-    if (bias_name == "bias_refr") {
-        auto bias_fo = get("bias_fo");
-        if (bias_fo < 1400) {
-            if (bias_value < 1350) {
-                bias_value = 1350;
-                MV_HAL_LOG_WARNING() << "Current bias_refr minimal value is" << bias_value;
+bool Gen31_LL_Biases::set_impl(const std::string &bias_name, int bias_value) {
+    if (!device_config_.biases_range_check_bypass()) {
+        if (bias_name == "bias_diff_on") {
+            auto bias_diff = get("bias_diff");
+            auto bias_fo   = get("bias_fo");
+            auto delta     = 75;
+            if (bias_fo < 1350) {
+                delta = 95;
+            }
+            int min_bias_diff_on_value = bias_diff + delta;
+            if (bias_value < min_bias_diff_on_value) {
+                MV_HAL_LOG_WARNING() << "Current bias_diff_on minimal value is" << min_bias_diff_on_value;
                 return false;
+            }
+        }
+        if (bias_name == "bias_diff_off") {
+            auto bias_diff = get("bias_diff");
+            auto bias_fo   = get("bias_fo");
+            auto delta     = 65;
+            if (bias_fo < 1350) {
+                delta = 85;
+            }
+            int max_bias_diff_off_value = bias_diff - delta;
+            if (bias_value > max_bias_diff_off_value) {
+                MV_HAL_LOG_WARNING() << "Current bias_diff_off maximal value is" << max_bias_diff_off_value;
+                return false;
+            }
+        }
+        if (bias_name == "bias_refr") {
+            auto bias_fo = get("bias_fo");
+            if (bias_fo < 1400) {
+                constexpr int min_bias_refr_value = 1350;
+                if (bias_value < min_bias_refr_value) {
+                    MV_HAL_LOG_WARNING() << "Current bias_refr minimal value is" << min_bias_refr_value;
+                    return false;
+                }
             }
         }
     }
 
-    long reg = get_ccam3_gen31_bias_encoding(it->second, bias_value);
-    get_hw_register()->write_register(base_name_ + it->second.get_register_name(), reg);
+    auto it = get_gen31_biases_map().find(bias_name);
+    assert(it != get_gen31_biases_map().end());
+    auto &bias_info = it->second;
+
+    long reg = get_ccam3_gen31_bias_encoding(bias_info, bias_value, !bypass_range_check_);
+    get_hw_register()->write_register(base_name_ + bias_info.get_register_name(), reg);
     return true;
 }
 
-int Gen31_LL_Biases::get(const std::string &bias_name) {
+int Gen31_LL_Biases::get_impl(const std::string &bias_name) {
     auto it = get_gen31_biases_map().find(bias_name);
-    if (it == get_gen31_biases_map().end()) {
-        return -1;
-    }
+    assert(it != get_gen31_biases_map().end());
+    auto &bias_info = it->second;
 
-    auto r = get_hw_register()->read_register(base_name_ + it->second.get_register_name());
+    auto r = get_hw_register()->read_register(base_name_ + bias_info.get_register_name());
     if (r == uint32_t(-1))
         return -1;
     BiasEncodingCast encoder;
@@ -531,7 +514,7 @@ int Gen31_LL_Biases::get(const std::string &bias_name) {
         return get_inv_vdac18_values(encoder.bias_encoding);
     } else {
         decltype(s_inv_p_thin_mvtocode) *inv_map = nullptr;
-        switch (it->second.get_bias_type()) {
+        switch (bias_info.get_bias_type()) {
         case Gen31LLBias::BiasType::PMOSThin:
             inv_map = &s_inv_p_thin_mvtocode;
             break;
@@ -554,6 +537,15 @@ int Gen31_LL_Biases::get(const std::string &bias_name) {
         return get_inv_idac_values(encoder.bias_encoding, *inv_map);
     }
     return -1;
+}
+
+bool Gen31_LL_Biases::get_bias_info_impl(const std::string &bias_name, LL_Bias_Info &bias_info) const {
+    auto it = get_gen31_biases_map().find(bias_name);
+    if (it == get_gen31_biases_map().end()) {
+        return false;
+    }
+    bias_info = it->second;
+    return true;
 }
 
 std::map<std::string, int> Gen31_LL_Biases::get_all_biases() {

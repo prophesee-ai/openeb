@@ -12,17 +12,18 @@
 #include <ctime>
 #include <sstream>
 
-#include "facilities/psee_device_control.h"
-#include "boards/treuzell/tz_hw_identification.h"
-#include "devices/treuzell/tz_device.h"
-#include "devices/treuzell/tz_main_device.h"
-#include "boards/rawfile/psee_raw_file_header.h"
+#include "metavision/psee_hw_layer/facilities/psee_device_control.h"
+#include "metavision/psee_hw_layer/boards/treuzell/tz_hw_identification.h"
+#include "metavision/psee_hw_layer/devices/treuzell/tz_device.h"
+#include "metavision/psee_hw_layer/devices/treuzell/tz_main_device.h"
+#include "metavision/psee_hw_layer/boards/rawfile/psee_raw_file_header.h"
 #include "devices/utils/device_system_id.h"
-#include "boards/treuzell/tz_libusb_board_command.h"
+#include "metavision/psee_hw_layer/boards/treuzell/tz_libusb_board_command.h"
 #include "metavision/hal/utils/hal_exception.h"
 #include "utils/psee_hal_plugin_error_code.h"
-#include "boards/treuzell/tz_control_frame.h"
+#include "metavision/psee_hw_layer/boards/treuzell/tz_control_frame.h"
 #include "boards/treuzell/treuzell_command_definition.h"
+#include "metavision/psee_hw_layer/utils/psee_format.h"
 #include "metavision/hal/utils/hal_log.h"
 
 namespace Metavision {
@@ -56,21 +57,19 @@ I_HW_Identification::SensorInfo TzHWIdentification::get_sensor_info() const {
     return sensor_info_;
 }
 
-long TzHWIdentification::get_system_version() const {
-    for (auto dev : devices_) {
-        if (auto main_dev = dynamic_cast<TzMainDevice *>(dev.get()))
-            return main_dev->get_system_version();
-    }
-    return 0;
-}
-
-std::vector<std::string> TzHWIdentification::get_available_raw_format() const {
+std::vector<std::string> TzHWIdentification::get_available_data_encoding_formats() const {
     std::vector<std::string> available_formats;
 
     if (!devices_.empty()) {
-        available_formats.push_back(devices_[0]->get_output_format().name);
+        for (auto &f : devices_[0]->get_supported_formats()) {
+            available_formats.push_back(f.name());
+        }
     }
     return available_formats;
+}
+
+std::string TzHWIdentification::get_current_data_encoding_format() const {
+    return devices_[0]->get_output_format().name();
 }
 
 std::string TzHWIdentification::get_integrator() const {
@@ -106,8 +105,18 @@ std::string TzHWIdentification::get_connection_type() const {
 
 RawFileHeader TzHWIdentification::get_header_impl() const {
     auto format = devices_[0]->get_output_format();
-    PseeRawFileHeader header(*this, *format.geometry);
+    PseeRawFileHeader header(*this, format);
     return header;
+}
+
+DeviceConfigOptionMap TzHWIdentification::get_device_config_options_impl() const {
+    DeviceConfigOptionMap res;
+
+    for (const auto &p : devices_[0]->get_device_config_options()) {
+        res[p.first] = p.second;
+    }
+
+    return res;
 }
 
 } // namespace Metavision

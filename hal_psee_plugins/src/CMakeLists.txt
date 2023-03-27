@@ -8,9 +8,7 @@
 # See the License for the specific language governing permissions and limitations under the License.
 
 add_subdirectory(boards)
-if (NOT ANDROID)
-    add_subdirectory(devices)
-    add_subdirectory(facilities)
-    add_subdirectory(utils)
-endif (NOT ANDROID)
+add_subdirectory(devices)
+add_subdirectory(facilities)
 add_subdirectory(plugin)
+add_subdirectory(utils)

@@ -129,7 +129,6 @@ def train(params: argparse.Namespace):
             gpus=0 if params.cpu else 1,
             precision=params.precision,
             accumulate_grad_batches=params.accumulate_grad_batches,
-            progress_bar_refresh_rate=1,
             max_epochs=params.epochs,
             resume_from_checkpoint=ckpt,
             log_every_n_steps=5,

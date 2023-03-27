@@ -7,9 +7,17 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
+# Set default build type to Release
+if(NOT CMAKE_BUILD_TYPE)
+    # We have to set the build type BEFORE `project()` is called. Otherwise, a custom toolchain may
+    # set the variable for us (as it is done on Windows)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING
+        "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
+endif(NOT CMAKE_BUILD_TYPE)
+
 cmake_minimum_required(VERSION 3.5)
 
-project(metavision VERSION 3.1.2)
+project(metavision VERSION 4.0.0)
 set(PROJECT_VERSION_SUFFIX "")
 
 if(PROJECT_VERSION_SUFFIX STREQUAL "")
@@ -25,7 +33,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin/ CACHE PATH "Output
 set(PYTHON3_OUTPUT_DIR ${PROJECT_BINARY_DIR}/py3/ CACHE PATH "Output directory of python 3 libraries.")
 
 # Set Platform Target name
-set(TARGET_PLATFORM "" CACHE STRING "Optional targeted plaform name for cross-compiling")
+set(TARGET_PLATFORM "" CACHE STRING "Optional targeted platform name for cross-compiling")
 
 # Set directory for Metavision and HAL plugins
 if (WIN32)
@@ -52,14 +60,6 @@ set(HAL_BUILD_PLUGIN_PATH "${PROJECT_BINARY_DIR}/${HAL_INSTALL_PLUGIN_RELATIVE_P
 # Set output directory for generated files
 set(GENERATE_FILES_DIRECTORY ${CMAKE_BINARY_DIR}/generated)
 file(MAKE_DIRECTORY ${GENERATE_FILES_DIRECTORY})
-
-# Set default build type to Release
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Release" CACHE STRING
-        "Choose the type of build, options are: Debug Release
-        RelWithDebInfo MinSizeRel."
-        FORCE)
-endif(NOT CMAKE_BUILD_TYPE)
 
 # Update CMAKE_MODULE_PATH
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules) # For find_packages()
@@ -95,7 +95,7 @@ endif (ANDROID)
 
 ###################################################
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF )
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -126,7 +126,7 @@ if (MSVC)
     # These warnings indicate loss of data by implicitly casting types (like 64-bit ints) to smaller types. We
     # know about this and expect that the affected code is nevertheless correct. So, disabling these will give
     # more readable compiler output under Visual Studio (prevents warnings flooding the output).
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /wd\\\"4244\\\" /wd\\\"4267\\\"")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /wd4244 /wd4267")
 
     # Export every symbol when building DLLs. This is similar to the behavior of GCC on Linux.
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
@@ -135,6 +135,13 @@ if (MSVC)
     # and to be able to include some "system files", like dirent.h
     find_path(VCPKG_INCLUDE_DIR dirent.h)
     include_directories(${VCPKG_INCLUDE_DIR})
+elseif (NOT ANDROID AND "${TARGET_PLATFORM}" STREQUAL "")
+    # Platforms with their own toolchains should define their own compile flags
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Werror=type-limits -Werror=sign-compare -Werror=implicit-fallthrough -Werror=unused-function -Werror=unused-but-set-variable -Werror=dangling-else -Werror=sequence-point -Werror=uninitialized")
+    else (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Werror=type-limits -Werror=sign-compare -Werror=implicit-fallthrough -Werror=unused-function -Werror=unused-but-set-variable -Werror=dangling-else -Werror=sequence-point -Werror=maybe-uninitialized")
+    endif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 if (WIN32)
@@ -155,6 +162,7 @@ endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/utils/platforms/CMakeLists.txt")
 
 if (NOT ANDROID)
     option(COMPILE_PYTHON3_BINDINGS "Compile python 3 bindings" ON)
+    option(COMPILE_3DVIEW "Compile 3dview module for Designer" ON)
     cmake_dependent_option(CODE_COVERAGE "Enable code coverage" ON "CMAKE_BUILD_TYPE_LOWER STREQUAL debug" OFF)
     string(TOLOWER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_LOWER)
     cmake_dependent_option(GENERATE_DOC "Generate Doxygen documentation" OFF "COMPILE_PYTHON3_BINDINGS" OFF)
@@ -164,31 +172,6 @@ else (NOT ANDROID)
 endif (NOT ANDROID)
 
 set(DATASET_DIR "" CACHE PATH "Folder with dataset for testing")
-
-################################################### Detect which SDK modules are available
-
-set(METAVISION_SDK_MODULES_OPEN base core driver CACHE STRING "SDK Open modules")
-if (COMPILE_PYTHON3_BINDINGS)
-    list(APPEND METAVISION_SDK_MODULES_OPEN core_ml)
-endif (COMPILE_PYTHON3_BINDINGS)
-set(METAVISION_SDK_MODULES_ADVANCED analytics calibration cv ml CACHE STRING "SDK Advanced modules")
-
-if (NOT ANDROID)
-    list(APPEND METAVISION_SDK_MODULES_OPEN ui)
-    list(APPEND METAVISION_SDK_MODULES_ADVANCED 3dview cv3d)
-endif (NOT ANDROID)
-
-set(METAVISION_SDK_MODULES_AVAILABLE)
-foreach(metavision_modules_set OPEN ADVANCED)
-    set(METAVISION_SDK_${metavision_modules_set}_MODULES_AVAILABLE)
-    message(STATUS "Building METAVISION_SDK_MODULES_${metavision_modules_set} modules : ${METAVISION_SDK_MODULES_${metavision_modules_set}}")
-    foreach(module_name IN LISTS METAVISION_SDK_MODULES_${metavision_modules_set})
-        if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/sdk/modules/${module_name}/CMakeLists.txt")
-            list(APPEND METAVISION_SDK_${metavision_modules_set}_MODULES_AVAILABLE "${module_name}")
-        endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/sdk/modules/${module_name}/CMakeLists.txt")
-    endforeach(module_name)
-    list(APPEND METAVISION_SDK_MODULES_AVAILABLE ${METAVISION_SDK_${metavision_modules_set}_MODULES_AVAILABLE})
-endforeach(metavision_modules_set)
 
 ################################################### Find needed packages and programs
 
@@ -217,6 +200,17 @@ endif ()
 # OpenCV
 find_package(OpenCV COMPONENTS core highgui imgproc videoio imgcodecs calib3d objdetect REQUIRED)
 
+# OpenSceneGraph
+find_package(OpenSceneGraph COMPONENTS osg osgViewer osgDB osgGA osgUtil osgText)
+
+# HDF5
+if (NOT ANDROID)
+    find_package(HDF5 1.10.2 COMPONENTS CXX)
+    if (HDF5_FOUND AND WIN32)
+        LIST(APPEND HDF5_DEFINITIONS H5_BUILT_AS_DYNAMIC_LIB)
+    endif ()
+endif ()
+
 # Doxygen documentation
 if (GENERATE_DOC)
     include(documentation)
@@ -226,14 +220,23 @@ endif (GENERATE_DOC)
 include(CTest)
 if (BUILD_TESTING)
     # Gtest
-    find_package(GTest REQUIRED)
+    find_package(GTest CONFIG)
+    if (NOT GTest_FOUND)
+        find_package(GTest REQUIRED)
+    endif (NOT GTest_FOUND)
+    if (NOT TARGET GTest::gmock) 
+        message(FATAL_ERROR
+            "GMock can't be found. Please install 'libgmock-dev' package. " 
+            "Otherwise make sure it's compiled and installed along with your GoogleTest suite."
+        )
+    endif()
 
     # Pytests
     if(NOT EXISTS "${PROJECT_SOURCE_DIR}/datasets" AND GIT_LFS_NOT_AVAILABLE)
         message("---------------------------------------------------------------------------------------------------------")
         message("|  Test data was not found. To run the tests, please download the test data adapted to your project:    |")
-        message("|  - OpenEB: https://dataset.prophesee.ai/index.php/s/hyCzGM4tpR8w5bx (500 Mb archive)                  |")
-        message("|  - Metavision SDK: https://dataset.prophesee.ai/index.php/s/TF6yotuIukg5dcB (3 Gb archive)            |")
+        message("|  - OpenEB: https://dataset.prophesee.ai/index.php/s/tiP0wl0r5aW5efL (1.2 Gb archive)                  |")
+        message("|  - Metavision SDK: https://dataset.prophesee.ai/index.php/s/l3RpHoC3NDL7OU6 (5 Gb archive)            |")
         message("---------------------------------------------------------------------------------------------------------\n")
     endif()
     
@@ -244,9 +247,25 @@ if (BUILD_TESTING)
     endif(CMAKE_CROSSCOMPILING)
 
     lfs_download(datasets/openeb/gen31_timer.raw)
+    lfs_download(datasets/openeb/gen31_timer.hdf5)
     lfs_download(datasets/openeb/gen31_timer_holes.raw)
+    lfs_download(datasets/openeb/gen31_timer_holes.hdf5)
     lfs_download(datasets/openeb/gen4_evt2_hand.raw)
+    lfs_download(datasets/openeb/gen4_evt2_hand.hdf5)
     lfs_download(datasets/openeb/gen4_evt3_hand.raw)
+    lfs_download(datasets/openeb/gen4_evt3_hand.hdf5)
+    lfs_download(datasets/openeb/blinking_gen4_with_ext_triggers.raw)
+    lfs_download(datasets/openeb/blinking_gen4_with_ext_triggers.hdf5)
+    lfs_download(datasets/openeb/claque_doigt_evt21.raw)
+    lfs_download(datasets/openeb/claque_doigt_evt21.hdf5)
+    lfs_download(datasets/openeb/standup_evt21-legacy.raw)
+    lfs_download(datasets/openeb/standup_evt21-legacy.hdf5)
+    lfs_download(datasets/openeb/diff3d.raw)
+    lfs_download(datasets/openeb/histo3d.raw)
+    lfs_download(datasets/openeb/histo3d_padding.raw)
+    lfs_download(datasets/openeb/test_start_after_0.dat)
+    lfs_download(datasets/openeb/aer_8bits.raw)
+    lfs_download(datasets/openeb/aer_4bits.raw)
     if(COMPILE_PYTHON3_BINDINGS)
         lfs_download(datasets/openeb/blinking_leds.raw)
         lfs_download(datasets/openeb/gen4_evt2_hand_cd.dat)
@@ -254,18 +273,24 @@ if (BUILD_TESTING)
     endif(COMPILE_PYTHON3_BINDINGS)
 
 
-    function(add_test_app app_name)
+    function(add_test_app)
+        cmake_parse_arguments(_TEST_APP_ARGS "" "SCRIPT_PATH" "ENV" ${ARGN})
+        set(app_name "${_TEST_APP_ARGS_UNPARSED_ARGUMENTS}")
         string(REPLACE "_" "-" test_name "${app_name}")
         string(APPEND test_name "-test")
 
         # If when calling the app you pass the python script to run, then use it. If not,
         # assume that the python script to run is called ${app_name}_pytest.py and is in
         # the directory from which you are calling the function
-        if(ARGV1)
-            set(pytest_file "${ARGV1}")
-        else()
+        if (_TEST_APP_ARGS_SCRIPT_PATH)
+            set(pytest_file "${_TEST_APP_ARGS_SCRIPT_PATH}")
+        else ()
             set(pytest_file "${CMAKE_CURRENT_LIST_DIR}/${app_name}_pytest.py")
-        endif(ARGV1)
+        endif (_TEST_APP_ARGS_SCRIPT_PATH)
+        set (pytest_env "")
+        if (_TEST_APP_ARGS_ENV)
+            set(pytest_env "${_TEST_APP_ARGS_ENV}")
+        endif (_TEST_APP_ARGS_ENV)
 
         # If the pytest file is not in a subdirectory of the source directory (which can happen if for example
         # the script is the result of a "configure_file" with destination outside the source tree, then we need to copy
@@ -281,7 +306,7 @@ if (BUILD_TESTING)
         endif(NOT EXISTS "${pytest_file}")
 
         # TODO : MV-167, put this in a foreach loop for each python versions
-        add_pytest(NAME ${test_name} PATH ${pytest_file} WORKING_DIRECTORY $<TARGET_FILE_DIR:${app_name}>)
+        add_pytest(NAME ${test_name} PATH ${pytest_file} WORKING_DIRECTORY $<TARGET_FILE_DIR:${app_name}> ENV ${pytest_env})
 
     endfunction(add_test_app)
 
@@ -304,6 +329,34 @@ if (CODE_COVERAGE)
     set(CODE_COVERAGE_OUTPUT_DIR ${GENERATE_FILES_DIRECTORY}/code_coverage)
     file(MAKE_DIRECTORY "${CODE_COVERAGE_OUTPUT_DIR}")
 endif(CODE_COVERAGE)
+
+################################################### Detect which SDK modules are available
+
+set(METAVISION_SDK_MODULES_OPEN base core driver CACHE STRING "SDK Open modules")
+if (COMPILE_PYTHON3_BINDINGS)
+    list(APPEND METAVISION_SDK_MODULES_OPEN core_ml)
+endif (COMPILE_PYTHON3_BINDINGS)
+set(METAVISION_SDK_MODULES_ADVANCED analytics calibration cv ml CACHE STRING "SDK Advanced modules")
+
+if (NOT ANDROID)
+    list(APPEND METAVISION_SDK_MODULES_OPEN ui)
+    list(APPEND METAVISION_SDK_MODULES_ADVANCED cv3d)
+    if(OpenSceneGraph_FOUND)
+        list(APPEND METAVISION_SDK_MODULES_ADVANCED 3dview)
+    endif(OpenSceneGraph_FOUND)
+endif (NOT ANDROID)
+
+set(METAVISION_SDK_MODULES_AVAILABLE)
+foreach(metavision_modules_set OPEN ADVANCED)
+    set(METAVISION_SDK_${metavision_modules_set}_MODULES_AVAILABLE)
+    message(STATUS "Building METAVISION_SDK_MODULES_${metavision_modules_set} modules : ${METAVISION_SDK_MODULES_${metavision_modules_set}}")
+    foreach(module_name IN LISTS METAVISION_SDK_MODULES_${metavision_modules_set})
+        if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/sdk/modules/${module_name}/CMakeLists.txt")
+            list(APPEND METAVISION_SDK_${metavision_modules_set}_MODULES_AVAILABLE "${module_name}")
+        endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/sdk/modules/${module_name}/CMakeLists.txt")
+    endforeach(module_name)
+    list(APPEND METAVISION_SDK_MODULES_AVAILABLE ${METAVISION_SDK_${metavision_modules_set}_MODULES_AVAILABLE})
+endforeach(metavision_modules_set)
 
 ################################################### COMPILATION
 
@@ -340,8 +393,8 @@ if (METAVISION_SDK_ADVANCED_MODULES_AVAILABLE)
         add_python_cpack_components(PUBLIC metavision-sdk)
     endif(COMPILE_PYTHON3_BINDINGS)
 
-    if(EXISTS "${PROJECT_SOURCE_DIR}/licensing/LICENSE_METAVISION_INTELLIGENCE")
-        install(FILES ${PROJECT_SOURCE_DIR}/licensing/LICENSE_METAVISION_INTELLIGENCE
+    if(EXISTS "${PROJECT_SOURCE_DIR}/licensing/LICENSE_METAVISION_SDK")
+        install(FILES ${PROJECT_SOURCE_DIR}/licensing/LICENSE_METAVISION_SDK
                 DESTINATION share/metavision/licensing
                 COMPONENT metavision-sdk-base-lib)
     endif()
@@ -398,6 +451,9 @@ if (GENERATE_DOC)
     add_subdirectory(doc)
 endif (GENERATE_DOC)
 
+# Add script generation at the end, once all other subdirs have been processed
+add_subdirectory(utils/scripts)
+
 ################################################### CPack for debian packages
 
 include(deb_packages)
@@ -418,3 +474,4 @@ foreach(comp ${cpack_all_components})
         )
     endif()
 endforeach()
+

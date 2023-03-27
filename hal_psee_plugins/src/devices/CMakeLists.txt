@@ -7,18 +7,20 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-add_subdirectory(golden_fallbacks)
 add_subdirectory(utils)
 add_subdirectory(common)
 add_subdirectory(treuzell)
-add_subdirectory(gen3)
 add_subdirectory(gen31)
-if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/gen4")
-    add_subdirectory(gen4)
-endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/gen4")
 add_subdirectory(gen41)
 add_subdirectory(imx636)
+
+if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/saphir")
+    add_subdirectory(saphir)
+endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/saphir")
+
+add_subdirectory(psee-video)
 add_subdirectory(others)
-if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/raven")
-    add_subdirectory(raven)
-endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/raven")
+
+if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/sensorlib")
+    add_subdirectory(sensorlib)
+endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/sensorlib")

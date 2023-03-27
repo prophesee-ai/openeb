@@ -99,10 +99,10 @@ TEST_F(CDFrameGenerator_GTest, generate_only_latest_frame) {
 
     // In this context, we must call the callback only twice. The first one holds event of full frame from
     // [6000000 - acc_time, 6000000 [, and the last one if due to the flush of the last events in
-    // [7000000 - acc_time, 7000000 - 500000 + 2 + 1 [
+    // [7000000 - acc_time, 7000000 - 500000 + 2 ]
     ASSERT_EQ(2, time_cb.size());
     ASSERT_EQ(6000000, time_cb[0]);
-    ASSERT_EQ(events.back().t + 1, time_cb[1]);
+    ASSERT_EQ(events.back().t, time_cb[1]);
     ASSERT_EQ(2, cd_frames.size());
 
     expected_cd_frames.push_back(cv::Mat(height, width, CV_8UC1, 128));
@@ -182,8 +182,8 @@ TEST_F(CDFrameGenerator_GTest, generate_all_frames) {
     }
 
     // the last frame corresponds the one generated during the flush caused when stopping the algorithm
-    // this last frame corresponds to the time slice [6 * 1000000, last event's timestamp + 1[
-    ASSERT_EQ(events.back().t + 1, time_cb.back());
+    // this last frame corresponds to the time slice [6 * 1000000, last event's timestamp ]
+    ASSERT_EQ(events.back().t, time_cb.back());
     ASSERT_TRUE(std::equal(expected_cd_frames.back().begin<uint8_t>(), expected_cd_frames.back().end<uint8_t>(),
                            cd_frames.back().begin<uint8_t>()));
 }

@@ -35,6 +35,8 @@ public:
     /// @brief Stops adding data to the recording queue through the @ref write methods.
     ///
     /// The recorder thread remains active until all data added in the queue have been dumped.
+    ///
+    /// @throw cv::Exception when an error occurs (e.g output file too big)
     void stop();
 
     /// @brief Pushes the input frame for writing.

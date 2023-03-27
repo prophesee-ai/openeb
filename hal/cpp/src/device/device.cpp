@@ -15,23 +15,10 @@
 
 namespace Metavision {
 
-Device::~Device() {
-    // TODO MV-166: remove this block of code
-    // keep a pointer to the I_EventsStream facility, it must be destroyed after all other facilities
-    // to make sure we keep the stream pointer alive for another potential Future::I_EventsStream facility using it
-    std::shared_ptr<I_Facility> facility;
-    for (auto &f : facilities_) {
-        if (dynamic_cast<I_EventsStream *>(f.second->facility().get())) {
-            facility = f.second->facility();
-            break;
-        }
-    }
-    facilities_.clear();
-}
-
 void Device::register_facility(std::unique_ptr<FacilityWrapper> p) {
-    auto h         = std::hash<std::string>{}(p->facility()->registration_info().name());
-    facilities_[h] = std::move(p);
+    for (const std::size_t info : p->facility()->registration_info()) {
+        facilities_[info] = std::make_unique<FacilityWrapper>(p->facility());
+    }
 }
 
 } // namespace Metavision

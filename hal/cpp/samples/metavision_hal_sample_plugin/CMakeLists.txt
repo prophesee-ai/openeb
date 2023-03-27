@@ -9,11 +9,11 @@
 
 # Add sample plugin object library
 add_library(hal_sample_plugin_obj OBJECT
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/sample_decoder.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/future/sample_decoder.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/sample_device_control.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/sample_camera_synchronization.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sample_camera_discovery.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sample_data_transfer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/sample_decoder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/sample_device_control.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sample_geometry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sample_file_discovery.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sample_hw_identification.cpp

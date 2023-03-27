@@ -13,10 +13,10 @@
 #include <iostream>
 
 #include "metavision/hal/utils/hal_log.h"
-#include "boards/utils/psee_libusb_board_command.h"
+#include "metavision/psee_hw_layer/boards/fx3/fx3_libusb_board_command.h"
 
-#include "devices/gen31/gen31_roi_command.h"
-#include "utils/register_map.h"
+#include "metavision/psee_hw_layer/devices/gen31/gen31_roi_command.h"
+#include "metavision/psee_hw_layer/utils/register_map.h"
 
 namespace Metavision {
 
@@ -75,7 +75,7 @@ void Gen31ROICommand::write_ROI(const std::vector<unsigned int> &vroiparams) {
     }
 }
 
-void Gen31ROICommand::enable(bool state) {
+bool Gen31ROICommand::enable(bool state) {
     if (!state) {
         reset_to_full_roi();
     } else {
@@ -85,6 +85,8 @@ void Gen31ROICommand::enable(bool state) {
     (*register_map_)[prefix_ + "roi_ctrl"]["roi_td_en"]             = true;
     (*register_map_)[prefix_ + "roi_ctrl"]["roi_td_shadow_trigger"] = true;
     (*register_map_)[prefix_ + "roi_ctrl"]["roi_td_shadow_trigger"] = false;
+
+    return true;
 }
 
 } // namespace Metavision

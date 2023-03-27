@@ -57,6 +57,9 @@ def build_video_metadata(folder):
     paths = grab_videos(folder, recursive=False)
     assert len(paths_images) == 0 or len(
         paths) == 0, f"Error {folder} contains both videos and images"
+    # If there are no videos in the folder, we don't dump the json file
+    if not len(paths):
+        return []
     info_json_path = os.path.join(folder, 'video_info.json')
     if os.path.exists(info_json_path):
         with open(info_json_path, 'r') as f:

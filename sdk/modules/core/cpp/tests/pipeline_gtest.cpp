@@ -586,7 +586,8 @@ TEST(PipelineTest, cancel_with_no_remaining_tasks_on_main_thread) {
     EXPECT_EQ(Pipeline::Status::Cancelled, p.status());
 }
 
-TEST(PipelineTest, consume_before_start) {
+TEST(PipelineTest, DISABLED_consume_before_start) { // TODO Intermittently fails on Jenkins - To be fixed with MV-980";
+
     ////////////////////////////////////////////////////////////////////////////////
     // PURPOSE
     // Checks that when a stage takes time to start, no data is lost, e.g. if the consuming
@@ -722,7 +723,7 @@ TEST(PipelineTest, on_setup_callback_is_called) {
         has_setup_cb_been_called = true;
 
         // We add this callback to detect potential deadlocks when setting callbacks from the setup one (if a deadlock
-        // occurs, the test will hang on bamboo and a timeout will expire making this test fail, and as a result, make
+        // occurs, the test will hang on and a timeout will expire making this test fail, and as a result, make
         // the deadlock detectable).
         stage_ref.pipeline().add_post_step_callback([&]() { has_pre_step_cb_been_called = true; });
     });

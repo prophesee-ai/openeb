@@ -9,7 +9,6 @@ queue_rules:
 pull_request_rules:
   - name: Automatic merge on approval & CI
     conditions:
-      - check-success=Ubuntu 18
       - check-success=Ubuntu 20
       - check-success=Windows
       - and: *ChecksQueue

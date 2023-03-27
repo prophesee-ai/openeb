@@ -12,9 +12,9 @@
 #ifndef METAVISION_HAL_GEN41_EVK3_REGISTERMAP_H
 #define METAVISION_HAL_GEN41_EVK3_REGISTERMAP_H
 
-#include "utils/regmap_data.h"
+#include "metavision/psee_hw_layer/utils/regmap_data.h"
 
-RegmapData Gen41Evk3RegisterMap[] = {
+static RegmapElement Gen41Evk3RegisterMap[] = {
     // clang-format off
 
     {R, {"GEN41/roi_ctrl", 0x0004}},
@@ -32,14 +32,20 @@ RegmapData Gen41Evk3RegisterMap[] = {
     {F, {"lifo_en", 0, 1, 0x0}},
     {F, {"lifo_out_en", 1, 1, 0x0}},
     {F, {"lifo_cnt_en", 2, 1, 0x0}},
-    {F, {"Reserved_31_15", 15, 17, 0x0}},
+    {F, {"Reserved_31_3", 3, 29, 0x0}},
 
     {R, {"GEN41/lifo_status", 0x0010}},
     {F, {"lifo_ton", 0, 29, 0x0}},
     {F, {"lifo_ton_valid", 29, 1, 0x0}},
+    {F, {"Reserved_30", 30, 1, 0x0}},
 
     {R, {"GEN41/Reserved_0014", 0x0014}},
     {F, {"Reserved_31_0", 0, 32, 0xA0301003}},
+
+    {R, {"GEN41/spare0", 0x0018}},
+    {F, {"Reserved_19_0", 0, 20, 0x0}},
+    {F, {"gcd_rstn", 20, 1, 0x0}},
+    {F, {"Reserved_31_21", 21, 11, 0x0}},
 
     {R, {"GEN41/refractory_ctrl", 0x0020}},
     {F, {"refr_counter", 0, 29, 0x0}},
@@ -83,7 +89,7 @@ RegmapData Gen41Evk3RegisterMap[] = {
     {F, {"Reserved_9_2", 2, 8, 0x4}},
     {F, {"adc_rng", 10, 2, 0x0}},
     {F, {"adc_temp", 12, 1, 0x0}},
-    {F, {"Reserved_13", 13, 1, 0x0}},
+    {F, {"Reserved_14_13", 13, 2, 0x0}},
 
     {R, {"GEN41/temp_ctrl", 0x005C}},
     {F, {"temp_buf_cal_en", 0, 1, 0x0}},
@@ -95,19 +101,37 @@ RegmapData Gen41Evk3RegisterMap[] = {
     {F, {"iph_mirr_amp_en", 1, 1, 0x0}},
     {F, {"Reserved_31_2", 2, 30, 0x0}},
 
+    {R, {"GEN41/gcd_ctrl1", 0x0078}},
+    {F, {"gcd_en", 0, 1, 0x0}},
+    {F, {"gcd_diffamp_en", 1, 1, 0x0}},
+    {F, {"gcd_lpf_en", 2, 1, 0x0}},
+    {F, {"Reserved_31_3", 3, 29, 0x80038E9}},
+
     {R, {"GEN41/reqy_qmon_ctrl", 0x0088}},
     {F, {"reqy_qmon_en", 0, 1, 0x0}},
     {F, {"reqy_qmon_rstn", 1, 1, 0x0}},
-    {F, {"Reserved_2", 2, 1, 0x0}},
-    {F, {"Reserved_3", 3, 1, 0x0}},
-    {F, {"Reserved_4", 4, 1, 0x0}},
-    {F, {"Reserved_9_5", 5, 5, 0x4}},
+    {F, {"Reserved_3_2", 2, 2, 0x0}},
+    {F, {"reqy_qmon_interrupt_en", 4, 1, 0x0}},
+    {F, {"reqy_qmon_trip_ctl", 10, 10, 0x0}},
+    {F, {"Reserved_31_16", 20, 12, 0x0}},
 
     {R, {"GEN41/reqy_qmon_status", 0x008C}},
-    {F, {"reqy_qmon_sum", 0, 10, 0x0}},
-    {F, {"reqy_qmon_trip", 10, 1, 0x0}},
-    {F, {"Reserved_25_16", 16, 10, 0x0}},
-    {F, {"Reserved_26", 26, 1, 0x0}},
+    {F, {"Reserved_15_0", 0, 16, 0x0}},
+    {F, {"reqy_qmon_sum_irq", 16, 10, 0x0}},
+    {F, {"reqy_qmon_trip_irq", 26, 1, 0x0}},
+
+    {R, {"GEN41/gcd_shadow_ctrl", 0x0090}},
+    {F, {"Reserved_0", 0, 1, 0x0}},
+    {F, {"gcd_irq_sw_override", 1, 1, 0x0}},
+    {F, {"gcd_reset_on_copy", 2, 1, 0x0}},
+
+    {R, {"GEN41/gcd_shadow_status", 0x0094}},
+    {F, {"gcd_shadow_valid", 0, 1, 0x0}},
+    {F, {"Reserved_31_1", 1, 31, 0x0}},
+
+    {R, {"GEN41/gcd_shadow_counter", 0x0098}},
+    {F, {"gcd_shadow_cnt_off", 0, 16, 0x0}},
+    {F, {"gcd_shadow_cnt_on", 16, 16, 0x0}},
 
     {R, {"GEN41/bias/bias_fo", 0x1004}},
     {F, {"idac_ctl", 0, 8, 0x30}},
@@ -141,7 +165,7 @@ RegmapData Gen41Evk3RegisterMap[] = {
 
     {R, {"GEN41/bias/bgen_ctrl", 0x1100}},
     {F, {"burst_transfer", 0, 1, 0x0}},
-    {F, {"Reserved_1", 1, 1, 0x0}},
+    {F, {"Reserved_2_1", 1, 2, 0x0}},
 
     {R, {"GEN41/roi/td_roi_x00", 0x2000}},
     {F, {"effective", 0, 32, 0x0}},
@@ -465,11 +489,7 @@ RegmapData Gen41Evk3RegisterMap[] = {
     {F, {"Reserved_23", 23, 1, 0x1}},
 
     {R, {"GEN41/erc/Reserved_6000", 0x6000}},
-    {F, {"Reserved_0", 0, 1, 0x0}},
-    {F, {"Reserved_1", 1, 1, 0x0}},
-    {F, {"Reserved_2", 2, 1, 0x0}},
-    {F, {"Reserved_3", 3, 1, 0x0}},
-    {F, {"Reserved_4", 4, 1, 0x0}},
+    {F, {"Reserved_1_0", 0, 2, 0x0}},
 
     {R, {"GEN41/erc/in_drop_rate_control", 0x6004}},
     {F, {"cfg_event_delay_fifo_en", 0, 1, 0x0}},
@@ -489,7 +509,6 @@ RegmapData Gen41Evk3RegisterMap[] = {
 
     {R, {"GEN41/erc/Reserved_602C", 0x602C}},
     {F, {"Reserved_0", 0, 1, 0x0}},
-    {F, {"Reserved_1", 1, 1, 0x0}},
 
     {R, {"GEN41/erc/t_dropping_control", 0x6050}},
     {F, {"t_dropping_en", 0, 1, 0x0}},
@@ -3010,12 +3029,22 @@ RegmapData Gen41Evk3RegisterMap[] = {
 
     {R, {"GEN41/edf/Reserved_7004", 0x7004}},
     {F, {"Reserved_10", 10, 1, 0x1}},
-    
+
+    {R, {"GEN41/eoi/Reserved_8000", 0x8000}},
+    {F, {"Reserved_7_6", 6, 2, 0x2}},
+
     {R, {"GEN41/ro/readout_ctrl", 0x9000}},
-    {F, {"Reserved_4_0", 0, 5, 0x0}},
+    {F, {"Reserved_0", 0, 1, 0x0}},
+    {F, {"ro_td_self_test_en", 1, 1, 0x0}},
+    {F, {"Reserved_3", 3, 1, 0x1}},
+    {F, {"Reserved_4", 4, 1, 0x0}},
     {F, {"ro_inv_pol_td", 5, 1, 0x0}},
     {F, {"Reserved_7_6", 6, 2, 0x0}},
     {F, {"Reserved_31_8", 8, 24, 0x0}},
+
+    {R, {"GEN41/ro/ro_fsm_ctrl", 0x9004}},
+    {F, {"readout_wait", 0, 16, 0x0}},
+    {F, {"Reserved_31_16", 16, 16, 0x0}},
 
     {R, {"GEN41/ro/time_base_ctrl", 0x9008}},
     {F, {"time_base_enable", 0, 1, 0x0}},
@@ -3026,7 +3055,8 @@ RegmapData Gen41Evk3RegisterMap[] = {
 
     {R, {"GEN41/ro/dig_ctrl", 0x900C}},
     {F, {"dig_crop_enable", 0, 3, 0x0}},
-    {F, {"Reserved_31_3", 3, 29, 0x0}},
+    {F, {"dig_crop_reset_orig", 4, 1, 0x0}},
+    {F, {"Reserved_31_5", 5, 27, 0x0}},
 
     {R, {"GEN41/ro/dig_start_pos", 0x9010}},
     {F, {"dig_crop_start_x", 0, 11, 0x0}},
@@ -3447,16 +3477,52 @@ RegmapData Gen41Evk3RegisterMap[] = {
     {R, {"GEN41/ro/area_cnt15", 0x923C}},
     {F, {"area_cnt_val_15", 0, 32, 0x0}},
 
-    {R, {"GEN41/afk/pipeline_control", 0xC000}},
-    {F, {"afk_en", 0, 3, 0x0}},
+    {R, {"GEN41/ro/evt_vector_cnt_val", 0x9244}},
+    {F, {"evt_vector_cnt_val", 0, 32, 0x0}},
 
-    {R, {"GEN41/afk/Reserved_C004", 0xC004}},
-    {F, {"Reserved_6", 6, 1, 0x0}},
+    {R, {"GEN41/mipi_csi/mipi_control", 0xB000}},
+    {F, {"mipi_csi_enable", 0, 1, 0x0}},
+    {F, {"Reserved_1", 1, 1, 0x0}},
+    {F, {"Reserved_2", 2, 1, 0x0}},
+    {F, {"mipi_data_lane1", 3, 1, 0x1}},
+    {F, {"mipi_data_lane2", 4, 1, 0x1}},
+    {F, {"mipi_packet_timeout_enable", 5, 1, 0x0}},
+    {F, {"line_blanking_clk_disable", 6, 1, 0x1}},
+    {F, {"Reserved_7", 7, 1, 0x0}},
+    {F, {"line_blanking_en", 8, 1, 0x1}},
+    {F, {"frame_blanking_en", 9, 1, 0x0}},
+    {F, {"Reserved_31_10", 10, 22, 0x0}},
+
+    {R, {"GEN41/mipi_csi/mipi_packet_size", 0xB020}},
+    {F, {"mipi_packet_size", 0, 15, 0x2000}},
+
+    {R, {"GEN41/mipi_csi/mipi_packet_timeout", 0xB024}},
+    {F, {"mipi_packet_timeout", 0, 16, 0x40}},
+
+    {R, {"GEN41/mipi_csi/mipi_frame_period", 0xB028}},
+    {F, {"mipi_frame_period", 4, 12, 0x7D}},
+
+    {R, {"GEN41/mipi_csi/mipi_line_blanking", 0xB02C}},
+    {F, {"mipi_line_blanking", 0, 8, 0xA}},
+
+    {R, {"GEN41/mipi_csi/mipi_frame_blanking", 0xB030}},
+    {F, {"mipi_frame_blanking", 0, 16, 0x0}},
+
+    {R, {"GEN41/afk/pipeline_control", 0xC000}},
+    {F, {"Reserved_0", 0, 1, 0x0}},
+    {F, {"Reserved_1", 1, 1, 0x0}},
+    {F, {"afk_bypass", 2, 1, 0x0}},
+
+    {R, {"GEN41/afk/param", 0xC004}},
+    {F, {"counter_low", 0, 3, 0x4}},
+    {F, {"counter_high", 3, 3, 0x6}},
+    {F, {"invert", 6, 1, 0x0}},
+    {F, {"drop_disable", 7, 1, 0x0}},
 
     {R, {"GEN41/afk/filter_period", 0xC008}},
     {F, {"min_cutoff_period", 0, 8, 0xF}},
     {F, {"max_cutoff_period", 8, 8, 0x9C}},
-    {F, {"Reserved_19_16", 16, 4, 0x8}},
+    {F, {"inverted_duty_cycle", 16, 4, 0x8}},
 
     {R, {"GEN41/afk/invalidation", 0xC0C0}},
     {F, {"dt_fifo_wait_time", 0, 12, 0x5A0}},
@@ -3469,8 +3535,31 @@ RegmapData Gen41Evk3RegisterMap[] = {
     {F, {"Reserved_1", 1, 1, 0x0}},
     {F, {"afk_flag_init_done", 2, 1, 0x0}},
 
+    {R, {"GEN41/afk/shadow_ctrl", 0xC0D4}},
+    {F, {"timer_en", 0, 1, 0x0}},
+    {F, {"Reserved_31_1", 1, 31, 0x2}},
+
+    {R, {"GEN41/afk/shadow_timer_threshold", 0xC0D8}},
+    {F, {"timer_threshold", 0, 32, 0x3E8}},
+
+    {R, {"GEN41/afk/shadow_status", 0xC0DC}},
+    {F, {"shadow_valid", 0, 1, 0x0}},
+    {F, {"shadow_overrun", 1, 1, 0x0}},
+    {F, {"Reserved_31_2", 2, 30, 0x0}},
+
+    {R, {"GEN41/afk/total_evt_count", 0xC0E0}},
+    {F, {"total_evt_count", 0, 32, 0x0}},
+
+    {R, {"GEN41/afk/flicker_evt_count", 0xC0E4}},
+    {F, {"flicker_evt_count", 0, 32, 0x0}},
+
+    {R, {"GEN41/afk/vector_evt_count", 0xC0E8}},
+    {F, {"vector_evt_count", 0, 32, 0x0}},
+
     {R, {"GEN41/stc/pipeline_control", 0xD000}},
-    {F, {"stc_trail_bypass", 0, 3, 0x0}},
+    {F, {"Reserved_0", 0, 1, 0x0}},
+    {F, {"Reserved_1", 1, 1, 0x0}},
+    {F, {"stc_trail_bypass", 2, 1, 0x0}},
 
     {R, {"GEN41/stc/stc_param", 0xD004}},
     {F, {"stc_enable", 0, 1, 0x0}},
@@ -3485,17 +3574,44 @@ RegmapData Gen41Evk3RegisterMap[] = {
     {F, {"multiplier", 5, 4, 0x1}},
     {F, {"Reserved_9", 9, 1, 0x1}},
 
-    {R, {"GEN41/stc/Reserved_D0C0", 0xD0C0}},
-    {F, {"Reserved_23_12", 12, 12, 0x118}},
+    {R, {"GEN41/stc/invalidation", 0xD0C0}},
+    {F, {"dt_fifo_wait_time", 0, 12, 0x4}},
+    {F, {"dt_fifo_timeout", 12, 12, 0x118}},
+    {F, {"Reserved_27_24", 24, 4, 0xA}},
+    {F, {"Reserved_28", 28, 1, 0x0}},
 
     {R, {"GEN41/stc/initialization", 0xD0C4}},
     {F, {"stc_req_init", 0, 1, 0x0}},
     {F, {"Reserved_1", 1, 1, 0x0}},
-    {F, {"stc_flag_init_done", 2, 1, 0x0}}
+    {F, {"stc_flag_init_done", 2, 1, 0x0}},
+
+    {R, {"GEN41/stc/shadow_ctrl", 0xD0D4}},
+    {F, {"timer_en", 0, 1, 0x0}},
+    {F, {"Reserved_31_1", 1, 31, 0x2}},
+
+    {R, {"GEN41/stc/shadow_timer_threshold", 0xD0D8}},
+    {F, {"timer_threshold", 0, 32, 0x3E8}},
+
+    {R, {"GEN41/stc/shadow_status", 0xD0DC}},
+    {F, {"shadow_valid", 0, 1, 0x0}},
+    {F, {"shadow_overrun", 1, 1, 0x0}},
+    {F, {"Reserved_31_2", 2, 30, 0x0}},
+
+    {R, {"GEN41/stc/total_evt_count", 0xD0E0}},
+    {F, {"total_evt_count", 0, 32, 0x0}},
+
+    {R, {"GEN41/stc/stc_evt_count", 0xD0E4}},
+    {F, {"stc_evt_count", 0, 32, 0x0}},
+
+    {R, {"GEN41/stc/trail_evt_count", 0xD0E8}},
+    {F, {"trail_evt_count", 0, 32, 0x0}},
+
+    {R, {"GEN41/stc/output_vector_count", 0xD0EC}},
+    {F, {"output_vector_count", 0, 32, 0x0}}
 
     // clang-format on
 };
 
-unsigned int Gen41Evk3RegisterMapSize = sizeof(Gen41Evk3RegisterMap)/sizeof(Gen41Evk3RegisterMap[0]);
+static uint32_t Gen41Evk3RegisterMapSize = sizeof(Gen41Evk3RegisterMap) / sizeof(Gen41Evk3RegisterMap[0]);
 
 #endif // METAVISION_HAL_GEN41_EVK3_REGISTERMAP_H

@@ -72,18 +72,21 @@ TEST_F(DeviceDiscovery_GTest, open_rawfile_success_with_dummy_test_plugin) {
     std::unique_ptr<Device> device;
 
     RawFileHeader header;
-    const std::string integrator_name("__DummyTest__");
+    const std::string plugin_integrator_name("__DummyTestPlugin__");
     const std::string plugin_name("hal_dummy_test_plugin");
+    const std::string camera_integrator_name("__DummyTestCamera__");
     long dummy_system_id = 0;
-    header.set_integrator_name(integrator_name);
+    header.set_plugin_integrator_name(plugin_integrator_name);
     header.set_plugin_name(plugin_name);
+    header.set_camera_integrator_name(camera_integrator_name);
     write_header(dummy_system_id, header);
     ASSERT_NO_THROW(device = DeviceDiscovery::open_raw_file(rawfile_to_log_path_));
 
     I_HW_Identification *hw_id = device->get_facility<I_HW_Identification>();
-    ASSERT_EQ(integrator_name, hw_id->get_integrator());
+    ASSERT_EQ(camera_integrator_name, hw_id->get_integrator());
 
     I_PluginSoftwareInfo *plugin_soft_info = device->get_facility<I_PluginSoftwareInfo>();
+    ASSERT_EQ(plugin_integrator_name, plugin_soft_info->get_plugin_integrator_name());
     ASSERT_EQ(plugin_name, plugin_soft_info->get_plugin_name());
 
 #ifdef _WIN32
@@ -91,6 +94,96 @@ TEST_F(DeviceDiscovery_GTest, open_rawfile_success_with_dummy_test_plugin) {
     _putenv(s.c_str());
 #else
     setenv("MV_HAL_PLUGIN_PATH", env ? env : "", 1);
+#endif
+}
+
+TEST_F(DeviceDiscovery_GTest, open_rawfile_success_with_dummy_test_plugin_and_default_search_mode) {
+    const std::string dummy_plugin_test_path(HAL_DUMMY_TEST_PLUGIN);
+    const char *env = getenv("MV_HAL_PLUGIN_PATH");
+
+#ifdef _WIN32
+    std::string s("MV_HAL_PLUGIN_PATH=");
+    s += std::string(env ? env : "") + ";" + dummy_plugin_test_path;
+    _putenv(s.c_str());
+    _putenv("MV_HAL_PLUGIN_SEARCH_MODE=DEFAULT");
+#else
+    std::string s(env ? env : "");
+    s += ":" + dummy_plugin_test_path;
+    setenv("MV_HAL_PLUGIN_PATH", s.c_str(), 1);
+    setenv("MV_HAL_PLUGIN_SEARCH_MODE", "DEFAULT", 1);
+#endif
+
+    std::unique_ptr<Device> device;
+
+    RawFileHeader header;
+    const std::string plugin_integrator_name("__DummyTestPlugin__");
+    const std::string plugin_name("hal_dummy_test_plugin");
+    const std::string camera_integrator_name("__DummyTestCamera__");
+    long dummy_system_id = 0;
+    header.set_plugin_integrator_name(plugin_integrator_name);
+    header.set_plugin_name(plugin_name);
+    header.set_camera_integrator_name(camera_integrator_name);
+    write_header(dummy_system_id, header);
+    ASSERT_NO_THROW(device = DeviceDiscovery::open_raw_file(rawfile_to_log_path_));
+    I_HW_Identification *hw_id = device->get_facility<I_HW_Identification>();
+    ASSERT_EQ(camera_integrator_name, hw_id->get_integrator());
+
+    I_PluginSoftwareInfo *plugin_soft_info = device->get_facility<I_PluginSoftwareInfo>();
+    ASSERT_EQ(plugin_integrator_name, plugin_soft_info->get_plugin_integrator_name());
+    ASSERT_EQ(plugin_name, plugin_soft_info->get_plugin_name());
+
+#ifdef _WIN32
+    s = "MV_HAL_PLUGIN_PATH=" + std::string(env ? env : "");
+    _putenv(s.c_str());
+    _putenv("MV_HAL_PLUGIN_SEARCH_MODE=");
+#else
+    setenv("MV_HAL_PLUGIN_PATH", env ? env : "", 1);
+    setenv("MV_HAL_PLUGIN_SEARCH_MODE", "", 1);
+#endif
+}
+
+TEST_F(DeviceDiscovery_GTest, open_rawfile_success_with_dummy_test_plugin_and_plugin_path_search_mode) {
+    const std::string dummy_plugin_test_path(HAL_DUMMY_TEST_PLUGIN);
+    const char *env = getenv("MV_HAL_PLUGIN_PATH");
+
+#ifdef _WIN32
+    std::string s("MV_HAL_PLUGIN_PATH=");
+    s += std::string(env ? env : "") + ";" + dummy_plugin_test_path;
+    _putenv(s.c_str());
+    _putenv("MV_HAL_PLUGIN_SEARCH_MODE=PLUGIN_PATH_ONLY");
+#else
+    std::string s(env ? env : "");
+    s += ":" + dummy_plugin_test_path;
+    setenv("MV_HAL_PLUGIN_PATH", s.c_str(), 1);
+    setenv("MV_HAL_PLUGIN_SEARCH_MODE", "PLUGIN_PATH_ONLY", 1);
+#endif
+
+    std::unique_ptr<Device> device;
+
+    RawFileHeader header;
+    const std::string plugin_integrator_name("__DummyTestPlugin__");
+    const std::string plugin_name("hal_dummy_test_plugin");
+    const std::string camera_integrator_name("__DummyTestCamera__");
+    long dummy_system_id = 0;
+    header.set_plugin_integrator_name(plugin_integrator_name);
+    header.set_plugin_name(plugin_name);
+    header.set_camera_integrator_name(camera_integrator_name);
+    write_header(dummy_system_id, header);
+    ASSERT_NO_THROW(device = DeviceDiscovery::open_raw_file(rawfile_to_log_path_));
+    I_HW_Identification *hw_id = device->get_facility<I_HW_Identification>();
+    ASSERT_EQ(camera_integrator_name, hw_id->get_integrator());
+
+    I_PluginSoftwareInfo *plugin_soft_info = device->get_facility<I_PluginSoftwareInfo>();
+    ASSERT_EQ(plugin_integrator_name, plugin_soft_info->get_plugin_integrator_name());
+    ASSERT_EQ(plugin_name, plugin_soft_info->get_plugin_name());
+
+#ifdef _WIN32
+    s = "MV_HAL_PLUGIN_PATH=" + std::string(env ? env : "");
+    _putenv(s.c_str());
+    _putenv("MV_HAL_PLUGIN_SEARCH_MODE=");
+#else
+    setenv("MV_HAL_PLUGIN_PATH", env ? env : "", 1);
+    setenv("MV_HAL_PLUGIN_SEARCH_MODE", "", 1);
 #endif
 }
 

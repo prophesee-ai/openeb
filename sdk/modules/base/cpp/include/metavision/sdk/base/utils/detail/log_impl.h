@@ -12,6 +12,7 @@
 #ifndef METAVISION_SDK_BASE_DETAIL_LOG_IMPL_H
 #define METAVISION_SDK_BASE_DETAIL_LOG_IMPL_H
 
+#include <algorithm>
 #include <ctime>
 #include <map>
 #include <cstring>
@@ -25,7 +26,7 @@ class LoggingOperation<LogLevel::Debug> {
 public:
     static constexpr LogLevel Level = LogLevel::Debug;
 
-    LoggingOperation(std::ostream & /**/ = std::cerr, const std::string & /**/ = std::string(),
+    LoggingOperation(const LogOptions & /**/ = LogOptions(), const std::string & /**/ = std::string(),
                      const std::string & /**/ = std::string(), int = 0, const std::string & /**/ = std::string()) {}
 
     const std::string &file() {
@@ -74,19 +75,19 @@ public:
 namespace detail {
 template<LogLevel Level>
 LoggingOperation<Level> log(const std::string &file, int line, const std::string &function) {
-    return LoggingOperation<Level>(getLogStream(), "", file, line, function);
+    return LoggingOperation<Level>(getLogOptions(), "", file, line, function);
 }
 
 template<LogLevel Level>
 LoggingOperation<Level> log(const std::string &file, int line, const std::string &function,
                             const std::string &prefixFmt) {
-    return LoggingOperation<Level>(getLogStream(), prefixFmt, file, line, function);
+    return LoggingOperation<Level>(getLogOptions(), prefixFmt, file, line, function);
 }
 
 template<LogLevel Level>
 LoggingOperation<Level> log(const std::string &file, int line, const std::string &function,
                             const char *const prefixFmt) {
-    return LoggingOperation<Level>(getLogStream(), std::string(prefixFmt), file, line, function);
+    return LoggingOperation<Level>(getLogOptions(), std::string(prefixFmt), file, line, function);
 }
 } // namespace detail
 } // namespace Metavision
@@ -101,40 +102,50 @@ LoggingOperation<Level> log(const std::string &file, int line, const std::string
     ([file = __FILE__, line = __LINE__, function = __PRETTY_FUNCTION__](auto &&...params) { \
         return fn<level>(file, line, function, params...);                                  \
     })
-#define MV_LOG_DEBUG MV_LOG_WRAP(Metavision::detail::log, Metavision::LogLevel::Debug)
-#define MV_LOG_TRACE MV_LOG_WRAP(Metavision::detail::log, Metavision::LogLevel::Trace)
-#define MV_LOG_INFO MV_LOG_WRAP(Metavision::detail::log, Metavision::LogLevel::Info)
-#define MV_LOG_WARNING MV_LOG_WRAP(Metavision::detail::log, Metavision::LogLevel::Warning)
-#define MV_LOG_ERROR MV_LOG_WRAP(Metavision::detail::log, Metavision::LogLevel::Error)
+
+#define MV_LOG_WRAP_LEVEL(level) MV_LOG_WRAP(Metavision::detail::log, (level))
+
+#define MV_LOG_DEBUG MV_LOG_WRAP_LEVEL(Metavision::LogLevel::Debug)
+#define MV_LOG_TRACE MV_LOG_WRAP_LEVEL(Metavision::LogLevel::Trace)
+#define MV_LOG_INFO MV_LOG_WRAP_LEVEL(Metavision::LogLevel::Info)
+#define MV_LOG_WARNING MV_LOG_WRAP_LEVEL(Metavision::LogLevel::Warning)
+#define MV_LOG_ERROR MV_LOG_WRAP_LEVEL(Metavision::LogLevel::Error)
 
 namespace Metavision {
 namespace detail {
 static char datetime_buffer[1024];
-static std::map<LogLevel, std::string> LabelsUpperCase{{LogLevel::Debug, "DEBUG"},
-                                                       {LogLevel::Trace, "TRACE"},
-                                                       {LogLevel::Info, "INFO"},
-                                                       {LogLevel::Warning, "WARNING"},
-                                                       {LogLevel::Error, "ERROR"}};
 
-static std::map<LogLevel, std::string> Labels{{LogLevel::Debug, "Debug"},
-                                              {LogLevel::Trace, "Trace"},
-                                              {LogLevel::Info, "Info"},
-                                              {LogLevel::Warning, "Warning"},
-                                              {LogLevel::Error, "Error"}};
+using LogLevelNameMap = std::map<LogLevel, std::string>;
+
+static LogLevelNameMap LabelsUpperCase{{LogLevel::Debug, "DEBUG"},
+                                       {LogLevel::Trace, "TRACE"},
+                                       {LogLevel::Info, "INFO"},
+                                       {LogLevel::Warning, "WARNING"},
+                                       {LogLevel::Error, "ERROR"}};
+
+static LogLevelNameMap Labels{{LogLevel::Debug, "Debug"},
+                              {LogLevel::Trace, "Trace"},
+                              {LogLevel::Info, "Info"},
+                              {LogLevel::Warning, "Warning"},
+                              {LogLevel::Error, "Error"}};
+
+LogLevelNameMap::const_iterator getLongestLogLevelName(const LogLevelNameMap &levelnames);
+std::string getPaddedLevelLabel(const LogLevel &level, const LogLevelNameMap &labels, char padding_char = ' ');
+std::string getLevelName(const LogLevel &level, const LogLevelNameMap &labels, bool level_prefix_padding);
 
 template<LogLevel Level>
-std::string getLogPrefixFormatString(const std::string &prefixFmt, const std::string &file, int line,
-                                     const std::string &function) {
+std::string getLogPrefixFormatString(bool level_prefix_padding, const std::string &prefixFmt, const std::string &file,
+                                     int line, const std::string &function) {
     size_t pos;
     std::string s = prefixFmt;
     std::string token;
     token = "<Level>";
     if ((pos = s.find(token)) != std::string::npos) {
-        s.replace(pos, token.size(), Labels[Level]);
+        s.replace(pos, token.size(), getLevelName(Level, Labels, level_prefix_padding));
     }
     token = "<LEVEL>";
     if ((pos = s.find(token)) != std::string::npos) {
-        s.replace(pos, token.size(), LabelsUpperCase[Level]);
+        s.replace(pos, token.size(), getLevelName(Level, LabelsUpperCase, level_prefix_padding));
     }
     token = "<FILE>";
     if ((pos = s.find(token)) != std::string::npos) {
@@ -207,14 +218,14 @@ template<LogLevel Level>
 constexpr LogLevel LoggingOperation<Level>::Level;
 
 template<LogLevel Level>
-LoggingOperation<Level>::LoggingOperation(std::ostream &stream, const std::string &prefixFmt, const std::string &file,
+LoggingOperation<Level>::LoggingOperation(const LogOptions &opts, const std::string &prefixFmt, const std::string &file,
                                           int line, const std::string &function) :
-    streambuf_(new detail::concurrent_ostreambuf(stream.rdbuf())),
+    streambuf_(new detail::concurrent_ostreambuf(opts.getStream().rdbuf())),
     stream_(new std::ostream(streambuf_.get())),
     addSpaceBetweenTokens_(true),
     addEndLine_(true),
-    should_output_(Level >= getLogLevel()),
-    prefix_(detail::getLogPrefixFormatString<Level>(prefixFmt, file, line, function)),
+    should_output_(Level >= opts.getLevel()),
+    prefix_(detail::getLogPrefixFormatString<Level>(opts.isLevelPrefixPadding(), prefixFmt, file, line, function)),
     file_(file),
     function_(function),
     line_(line) {

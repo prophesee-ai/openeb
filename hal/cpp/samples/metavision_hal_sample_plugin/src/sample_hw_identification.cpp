@@ -16,8 +16,8 @@
 
 constexpr const char *const SampleHWIdentification::SAMPLE_SERIAL;
 constexpr long SampleHWIdentification::SAMPLE_SYSTEM_ID;
-constexpr long SampleHWIdentification::SAMPLE_SYSTEM_VERSION;
 constexpr const char *const SampleHWIdentification::SAMPLE_INTEGRATOR;
+constexpr const char *const SampleHWIdentification::SAMPLE_FORMAT;
 
 SampleHWIdentification::SampleHWIdentification(const std::shared_ptr<Metavision::I_PluginSoftwareInfo> &plugin_sw_info,
                                                const std::string &connection_type) :
@@ -31,15 +31,15 @@ long SampleHWIdentification::get_system_id() const {
 }
 
 SampleHWIdentification::SensorInfo SampleHWIdentification::get_sensor_info() const {
-    return SensorInfo({1, 0});
+    return SensorInfo({1, 0, "Gen1.0"});
 }
 
-long SampleHWIdentification::get_system_version() const {
-    return SAMPLE_SYSTEM_VERSION;
+std::vector<std::string> SampleHWIdentification::get_available_data_encoding_formats() const {
+    return {SAMPLE_FORMAT};
 }
 
-std::vector<std::string> SampleHWIdentification::get_available_raw_format() const {
-    return {"SAMPLE-FORMAT-1.0"};
+std::string SampleHWIdentification::get_current_data_encoding_format() const {
+    return SAMPLE_FORMAT;
 }
 
 std::string SampleHWIdentification::get_integrator() const {
@@ -48,4 +48,8 @@ std::string SampleHWIdentification::get_integrator() const {
 
 std::string SampleHWIdentification::get_connection_type() const {
     return connection_type_;
+}
+
+Metavision::DeviceConfigOptionMap SampleHWIdentification::get_device_config_options_impl() const {
+    return {};
 }

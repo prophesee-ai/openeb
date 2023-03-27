@@ -18,7 +18,6 @@
 #include "metavision/sdk/base/utils/timestamp.h"
 
 namespace Metavision {
-class Camera;
 
 /// @brief Facility class to control offline streaming features
 class OfflineStreamingControl {
@@ -53,10 +52,7 @@ public:
     Private &get_pimpl();
 
 private:
-    template<typename CameraPrivate>
-    OfflineStreamingControl(CameraPrivate &priv);
-    friend class Camera;
-
+    OfflineStreamingControl(Private *pimpl);
     std::unique_ptr<Private> pimpl_;
 };
 

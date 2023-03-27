@@ -20,6 +20,14 @@
 
 namespace Metavision {
 
+I_HW_Identification::SensorInfo::SensorInfo(uint16_t major_version, uint16_t minor_version, const std::string& name) :
+    major_version_(major_version), minor_version_(minor_version), name_(name) {
+}
+
+I_HW_Identification::SensorInfo::SensorInfo(const std::string& name) :
+    major_version_(0), minor_version_(0), name_(name) {
+}
+
 I_HW_Identification::I_HW_Identification(const std::shared_ptr<I_PluginSoftwareInfo> &plugin_sw_info) :
     plugin_sw_info_(plugin_sw_info) {
     if (!plugin_sw_info_) {
@@ -32,17 +40,13 @@ I_HW_Identification::SystemInfo I_HW_Identification::get_system_info() const {
     infos.insert({"Serial", get_serial()});
     infos.insert({"SystemID", std::to_string(get_system_id())});
     infos.insert({"Integrator", get_integrator()});
-    infos.insert({"Sensor Info", get_sensor_info().as_string()});
-    long system_version = get_system_version();
-    std::string version = std::to_string((system_version >> 16) & 0xFF) + "." +
-                          std::to_string((system_version >> 8) & 0xFF) + "." +
-                          std::to_string((system_version >> 0) & 0xFF);
-    infos.insert({"System Version", version});
-    auto formats     = get_available_raw_format();
+    infos.insert({"Sensor Name", get_sensor_info().name_});
+    auto formats     = get_available_data_encoding_formats();
     auto str_formats = std::accumulate(
         formats.begin(), formats.end(), std::string(),
         [](const std::string &a, const std::string &b) -> std::string { return a + (a.length() > 0 ? "," : "") + b; });
-    infos.insert({"Raw Formats", str_formats});
+    infos.insert({"Available Data Encoding Formats", str_formats});
+    infos.insert({"Current Data Encoding Format", get_current_data_encoding_format()});
     infos.insert({"Connection", get_connection_type()});
 
     return infos;
@@ -51,19 +55,27 @@ I_HW_Identification::SystemInfo I_HW_Identification::get_system_info() const {
 RawFileHeader I_HW_Identification::get_header() const {
     RawFileHeader header = get_header_impl();
 
-    const auto integrator_name        = get_integrator();
-    const auto header_integrator_name = header.get_integrator_name();
-    if (!header_integrator_name.empty() && header_integrator_name != integrator_name) {
-        MV_HAL_LOG_WARNING() << "The integrator name found in the header:" << header_integrator_name
-                             << "is invalid. Replacing it with:" << integrator_name;
+    const auto camera_integrator_name        = get_integrator();
+    const auto header_camera_integrator_name = header.get_camera_integrator_name();
+    if (!header_camera_integrator_name.empty() && header_camera_integrator_name != camera_integrator_name) {
+        MV_HAL_LOG_TRACE() << "The integrator name found in the header:" << header_camera_integrator_name
+                           << "is invalid. Replacing it with:" << camera_integrator_name;
     }
-    header.set_integrator_name(integrator_name);
+    header.set_camera_integrator_name(camera_integrator_name);
+
+    const auto plugin_integrator_name        = plugin_sw_info_->get_plugin_integrator_name();
+    const auto header_plugin_integrator_name = header.get_plugin_integrator_name();
+    if (!header_plugin_integrator_name.empty() && header_plugin_integrator_name != plugin_integrator_name) {
+        MV_HAL_LOG_TRACE() << "The plugin integrator found in the header:" << header_plugin_integrator_name
+                           << "is invalid. Replacing it with:" << plugin_integrator_name;
+    }
+    header.set_plugin_integrator_name(plugin_integrator_name);
 
     const auto plugin_name        = plugin_sw_info_->get_plugin_name();
     const auto header_plugin_name = header.get_plugin_name();
     if (!header_plugin_name.empty() && header_plugin_name != plugin_name) {
-        MV_HAL_LOG_WARNING() << "The plugin name found in the header:" << header_plugin_name
-                             << "is invalid. Replacing it with:" << plugin_name;
+        MV_HAL_LOG_TRACE() << "The plugin name found in the header:" << header_plugin_name
+                           << "is invalid. Replacing it with:" << plugin_name;
     }
     header.set_plugin_name(plugin_name);
 
@@ -76,6 +88,20 @@ RawFileHeader I_HW_Identification::get_header_impl() const {
 
 const std::shared_ptr<I_PluginSoftwareInfo> &I_HW_Identification::get_plugin_software_info() const {
     return plugin_sw_info_;
+}
+
+DeviceConfigOptionMap I_HW_Identification::get_device_config_options() const {
+    DeviceConfigOptionMap res = hal_device_config_options_;
+
+    for (const auto &p : get_device_config_options_impl()) {
+        res[p.first] = p.second;
+    }
+
+    return res;
+}
+
+void I_HW_Identification::add_hal_device_config_option(const std::string &key, const DeviceConfigOption &option) {
+    hal_device_config_options_[key] = option;
 }
 
 } // namespace Metavision

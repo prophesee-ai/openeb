@@ -25,6 +25,7 @@ static const std::map<char, int> name_to_key = {
 
 namespace Metavision {
 namespace detail {
+
 GLuint LoadShaders() {
     const char *vertex_shader_str = "#version 330 core\n"
                                     "layout(location = 0) in vec3 vertexPosition_modelspace;\n"
@@ -103,73 +104,11 @@ GLuint LoadShaders() {
 
     return program_id;
 }
+
 } // namespace detail
 
-struct GLFWInitializer {
-    GLFWInitializer() {
-        glfwSetErrorCallback(GLFWInitializer::error_callback);
-
-        if (!glfwInit())
-            throw std::runtime_error("Impossible to initialize glfw.");
-
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#ifdef __APPLE__
-        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-
-        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-        auto window = glfwCreateWindow(10, 10, "init", nullptr, nullptr);
-        if (!window)
-            throw std::runtime_error("Impossible to create a glfw window");
-
-        glfwMakeContextCurrent(window);
-
-        if (glewInit() != GLEW_OK)
-            throw std::runtime_error("Impossible to initialize GL extensions");
-
-        glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
-        glfwMakeContextCurrent(nullptr);
-        glfwDestroyWindow(window);
-    }
-
-    ~GLFWInitializer() {
-        glfwTerminate();
-    }
-
-    static void error_callback(int error_code, const char *description) {
-        MV_SDK_LOG_ERROR() << description;
-    }
-};
-
-static bool is_glfw_initialized_ = false;
-static std::unique_ptr<GLFWInitializer> glfw_initializer_;
-
 BaseWindow::BaseWindow(const std::string &title, int width, int height, RenderMode mode) :
-    width_(width), height_(height), render_mode_(mode) {
-    glfwWindow_ = nullptr;
-
-    if (!is_glfw_initialized_) {
-        glfw_initializer_    = std::make_unique<GLFWInitializer>();
-        is_glfw_initialized_ = true;
-    }
-
-#ifdef __APPLE__
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#endif
-
-    glfwWindow_ = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
-    glfwDefaultWindowHints();
-
-    if (!glfwWindow_)
-        throw std::runtime_error("Impossible to create a glfw window");
-
-    glfwMakeContextCurrent(glfwWindow_);
-
+    BaseGLFWWindow(title, width, height), render_mode_(mode) {
     program_id_ = detail::LoadShaders();
     tex_id_     = detail::initialize_texture(width, height, (render_mode_ == RenderMode::GRAY));
 
@@ -202,21 +141,19 @@ BaseWindow::BaseWindow(const std::string &title, int width, int height, RenderMo
 
     glfwMakeContextCurrent(nullptr);
 
-    glfwSetWindowUserPointer(glfwWindow_, this);
-    glfwSetFramebufferSizeCallback(glfwWindow_, native_resize_callback);
-    glfwSetWindowAspectRatio(glfwWindow_, width, height);
-    glfwSetWindowSizeLimits(glfwWindow_, 200, 200 * height / width, GLFW_DONT_CARE, GLFW_DONT_CARE);
+    glfwSetWindowUserPointer(glfw_window_, this);
+    glfwSetFramebufferSizeCallback(glfw_window_, native_resize_callback);
+    glfwSetWindowAspectRatio(glfw_window_, width, height);
+    glfwSetWindowSizeLimits(glfw_window_, 200, 200 * height / width, GLFW_DONT_CARE, GLFW_DONT_CARE);
 }
 
 BaseWindow::~BaseWindow() {
-    if (glfwWindow_) {
-        glfwMakeContextCurrent(glfwWindow_);
+    if (glfw_window_) {
+        glfwMakeContextCurrent(glfw_window_);
         glDeleteBuffers(1, &vertex_buffer_);
         glDeleteVertexArrays(1, &vertex_array_id_);
         glDeleteTextures(1, &tex_id_);
         glDeleteProgram(program_id_);
-
-        glfwDestroyWindow(glfwWindow_);
     }
 }
 
@@ -229,34 +166,22 @@ BaseWindow::RenderMode BaseWindow::get_rendering_mode() const {
     return render_mode_;
 }
 
-bool BaseWindow::should_close() const {
-    if (glfwWindow_)
-        return glfwWindowShouldClose(glfwWindow_);
-
-    return true;
-}
-
-void BaseWindow::set_close_flag() {
-    if (glfwWindow_)
-        glfwSetWindowShouldClose(glfwWindow_, GLFW_TRUE);
-}
-
 void BaseWindow::set_keyboard_callback(const KeyCallback &cb) {
     on_key_cb_ = cb;
 
-    glfwSetKeyCallback(glfwWindow_, native_key_callback);
+    glfwSetKeyCallback(glfw_window_, native_key_callback);
 }
 
 void BaseWindow::set_mouse_callback(const MouseCallback &cb) {
     on_mouse_cb_ = cb;
 
-    glfwSetMouseButtonCallback(glfwWindow_, native_mouse_callback);
+    glfwSetMouseButtonCallback(glfw_window_, native_mouse_callback);
 }
 
 void BaseWindow::set_cursor_pos_callback(const CursorPosCallback &cb) {
     on_cursor_pos_cb_ = cb;
 
-    glfwSetCursorPosCallback(glfwWindow_, native_cursor_pos_callback);
+    glfwSetCursorPosCallback(glfw_window_, native_cursor_pos_callback);
 }
 
 void BaseWindow::poll_events() {
@@ -289,7 +214,7 @@ void BaseWindow::poll_events() {
 
 void BaseWindow::draw_background_texture() {
     int width, height;
-    glfwGetFramebufferSize(glfwWindow_, &width, &height);
+    glfwGetFramebufferSize(glfw_window_, &width, &height);
 
     glViewport(0, 0, width, height);
 
@@ -301,7 +226,7 @@ void BaseWindow::draw_background_texture() {
 
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
-    glfwSwapBuffers(glfwWindow_);
+    glfwSwapBuffers(glfw_window_);
 }
 
 void BaseWindow::native_key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {

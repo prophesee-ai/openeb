@@ -12,7 +12,8 @@
 #ifndef SRC_INC_MIPITX_REGISTERMAP_H_
 #define SRC_INC_MIPITX_REGISTERMAP_H_
 
-RegmapData MIPITXRegisterMap[] = {
+static RegmapElement MIPITXRegisterMap[] = {
+    // clang-format off
     {R, {{"CONTROL", 0x0}}},           {F, {{"ENABLE", 0, 1, 0x0}}},      {F, {{"ENABLE_PACKET_TIMEOUT", 1, 1, 0x0}}},
     {R, {{"DATA_IDENTIFIER", 0x4}}},   {F, {{"DATA_TYPE", 0, 6, 0x30}}},  {F, {{"VIRTUAL_CHANNEL", 6, 2, 0x0}}},
     {R, {{"FRAME_PERIOD", 0x8}}},      {F, {{"VALUE_US", 0, 16, 0x3f0}}}, {R, {{"PACKET_TIMEOUT", 0xc}}},
@@ -21,7 +22,7 @@ RegmapData MIPITXRegisterMap[] = {
     {F, {{"VALUE", 0, 16, 0x50}}},     {R, {{"END_FRAME_TIME", 0x1c}}},   {F, {{"VALUE", 0, 16, 0x50}}},
     {R, {{"INTER_FRAME_TIME", 0x20}}}, {F, {{"VALUE", 0, 16, 0x50}}},     {R, {{"INTER_PACKET_TIME", 0x24}}},
     {F, {{"VALUE", 0, 16, 0x50}}}
-
+    // clang-format on
 };
-unsigned int MIPITXRegisterMapSize = sizeof(MIPITXRegisterMap) / sizeof(MIPITXRegisterMap[0]);
+static uint32_t MIPITXRegisterMapSize = sizeof(MIPITXRegisterMap) / sizeof(MIPITXRegisterMap[0]);
 #endif

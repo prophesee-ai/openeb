@@ -9,9 +9,10 @@
 
 target_sources(metavision_hal_treuzell_protocol_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/tz_camera_discovery.cpp
+)
+
+target_sources(metavision_psee_hw_layer_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/tz_libusb_board_command.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/tz_board_data_transfer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/tz_hw_identification.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/tz_control_frame.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/tz_libusb.cpp
 )

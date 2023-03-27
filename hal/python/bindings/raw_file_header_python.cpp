@@ -37,10 +37,14 @@ static HALClassPythonBinder<RawFileHeader, PythonBases<GenericHeader>> bind(
                 }),
                 "Args:\n"
                 "    dict (dictionary): a python dictionary holding key value pairs of string types.\n")
-            .def("set_integrator_name", &RawFileHeader::set_integrator_name, py::arg("integrator_name"),
-                 pybind_doc_hal["Metavision::RawFileHeader::set_integrator_name"])
-            .def("get_integrator_name", &RawFileHeader::get_integrator_name,
-                 pybind_doc_hal["Metavision::RawFileHeader::get_integrator_name"])
+            .def("set_camera_integrator_name", &RawFileHeader::set_camera_integrator_name, py::arg("integrator_name"),
+                 pybind_doc_hal["Metavision::RawFileHeader::set_camera_integrator_name"])
+            .def("get_camera_integrator_name", &RawFileHeader::get_camera_integrator_name,
+                 pybind_doc_hal["Metavision::RawFileHeader::get_camera_integrator_name"])
+            .def("set_plugin_integrator_name", &RawFileHeader::set_plugin_integrator_name, py::arg("integrator_name"),
+                 pybind_doc_hal["Metavision::RawFileHeader::set_plugin_integrator_name"])
+            .def("get_plugin_integrator_name", &RawFileHeader::get_plugin_integrator_name,
+                 pybind_doc_hal["Metavision::RawFileHeader::get_plugin_integrator_name"])
             .def("set_plugin_name", &RawFileHeader::set_plugin_name, py::arg("plugin_name"),
                  pybind_doc_hal["Metavision::RawFileHeader::set_plugin_name"])
             .def("get_plugin_name", &RawFileHeader::get_plugin_name,

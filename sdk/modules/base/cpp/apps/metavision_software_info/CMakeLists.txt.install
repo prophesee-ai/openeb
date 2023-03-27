@@ -11,7 +11,7 @@ project(metavision_software_info)
 
 cmake_minimum_required(VERSION 3.5)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 find_package(MetavisionSDK COMPONENTS base REQUIRED)
 find_package(Boost COMPONENTS program_options REQUIRED)

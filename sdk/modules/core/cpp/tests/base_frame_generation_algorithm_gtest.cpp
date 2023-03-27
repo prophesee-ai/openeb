@@ -96,12 +96,11 @@ TEST(BaseFrameGenerationAlgorithm_GTest, static_frame_generation_with_accumulati
 
     // THEN we generate a frame that holds only the last 2 events as the first is not in the accumulation time interval
     cv::Mat expected_frame(sensor_height, sensor_width, CV_8UC1,
-                           BaseFrameGenerationAlgorithm::get_cv_color(Metavision::ColorPalette::Gray,
-                                                                      Metavision::ColorType::Background)[0]);
+                           get_bgr_color(Metavision::ColorPalette::Gray, Metavision::ColorType::Background)[0]);
     expected_frame.at<uint8_t>(8, 5) =
-        BaseFrameGenerationAlgorithm::get_cv_color(Metavision::ColorPalette::Gray, Metavision::ColorType::Positive)[0];
+        get_bgr_color(Metavision::ColorPalette::Gray, Metavision::ColorType::Positive)[0];
     expected_frame.at<uint8_t>(5, 5) =
-        BaseFrameGenerationAlgorithm::get_cv_color(Metavision::ColorPalette::Gray, Metavision::ColorType::Negative)[0];
+        get_bgr_color(Metavision::ColorPalette::Gray, Metavision::ColorType::Negative)[0];
 
     ASSERT_EQ(CV_8UC1, frame.type());
     ASSERT_EQ(expected_frame.size(), frame.size());

@@ -10,17 +10,19 @@
  **********************************************************************************************************************/
 
 #include <memory>
+
 #include <metavision/hal/device/device.h>
 #include <metavision/hal/facilities/i_events_stream.h>
 #include <metavision/hal/utils/data_transfer.h>
 #include <metavision/hal/utils/device_builder.h>
 
 #include "sample_camera_discovery.h"
-#include "sample_hw_identification.h"
-#include "sample_geometry.h"
-#include "sample_decoder.h"
+#include "sample_camera_synchronization.h"
 #include "sample_data_transfer.h"
+#include "sample_decoder.h"
 #include "sample_device_control.h"
+#include "sample_geometry.h"
+#include "sample_hw_identification.h"
 
 Metavision::CameraDiscovery::SerialList SampleCameraDiscovery::list() {
     SerialList ret;
@@ -50,13 +52,14 @@ bool SampleCameraDiscovery::discover(Metavision::DeviceBuilder &device_builder, 
     auto hw_identification = device_builder.add_facility(
         std::make_unique<SampleHWIdentification>(device_builder.get_plugin_software_info(), "USB"));
     device_builder.add_facility(std::make_unique<SampleGeometry>());
-    device_builder.add_facility(std::make_unique<SampleDeviceControl>());
+    device_builder.add_facility(std::make_unique<SampleCameraSynchronization>());
 
     auto cd_event_decoder =
         device_builder.add_facility(std::make_unique<Metavision::I_EventDecoder<Metavision::EventCD>>());
     auto decoder = device_builder.add_facility(std::make_unique<SampleDecoder>(false, cd_event_decoder));
     device_builder.add_facility(std::make_unique<Metavision::I_EventsStream>(
-        std::make_unique<SampleDataTransfer>(decoder->get_raw_event_size_bytes()), hw_identification));
+        std::make_unique<SampleDataTransfer>(decoder->get_raw_event_size_bytes()), hw_identification, decoder,
+        std::make_shared<SampleDeviceControl>()));
 
     return true;
 }

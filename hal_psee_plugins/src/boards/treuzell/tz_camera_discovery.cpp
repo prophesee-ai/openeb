@@ -16,7 +16,7 @@
 #include <memory>
 
 #include "boards/treuzell/tz_camera_discovery.h"
-#include "boards/treuzell/tz_libusb_board_command.h"
+#include "metavision/psee_hw_layer/boards/treuzell/tz_libusb_board_command.h"
 #include "metavision/hal/utils/hal_exception.h"
 #include "utils/psee_hal_plugin_error_code.h"
 #include "metavision/hal/utils/hal_log.h"
@@ -26,7 +26,7 @@ namespace Metavision {
 TzCameraDiscovery::TzCameraDiscovery() :
     libusb_ctx(std::make_shared<LibUSBContext>()), builder(std::make_unique<TzDeviceBuilder>()) {}
 
-std::vector<std::shared_ptr<TzLibUSBBoardCommand>> TzCameraDiscovery::list_boards() {
+std::vector<std::shared_ptr<TzLibUSBBoardCommand>> TzCameraDiscovery::list_boards() const {
     std::vector<std::shared_ptr<TzLibUSBBoardCommand>> boards;
     libusb_device **devs;
 
@@ -47,14 +47,17 @@ std::vector<std::shared_ptr<TzLibUSBBoardCommand>> TzCameraDiscovery::list_board
         }
 
         try {
-            MV_HAL_LOG_TRACE() << "Create board command for device " << std::hex << desc.idVendor << ":"
-                               << desc.idProduct << std::dec;
             std::shared_ptr<TzLibUSBBoardCommand> cmd =
-                std::make_shared<TzLibUSBBoardCommand>(libusb_ctx, devs[i], desc);
-            if (builder->can_build(cmd))
+                std::make_shared<TzLibUSBBoardCommand>(libusb_ctx, devs[i], desc, known_usb_ids);
+            MV_HAL_LOG_TRACE() << "Create board command for" << cmd->get_name() << cmd->get_serial() << "(" << std::hex
+                               << desc.idVendor << ":" << desc.idProduct << std::dec << ")";
+            if (builder->can_build(cmd)) {
                 boards.push_back(cmd);
+                MV_HAL_LOG_TRACE() << "Register board command for" << cmd->get_name() << cmd->get_serial() << "("
+                                   << std::hex << desc.idVendor << ":" << desc.idProduct << std::dec << ")";
+            }
         } catch (const HalException &e) {
-            MV_HAL_LOG_TRACE() << e.what();
+            // Don't trace the reason, it's way too verbose, and there is probably no Treuzell interface
             continue;
         }
     }
@@ -95,6 +98,10 @@ bool TzCameraDiscovery::discover(DeviceBuilder &device_builder, const std::strin
         return builder->build_devices(board, device_builder, config);
     }
     return false;
+}
+
+void TzCameraDiscovery::add_usb_id(uint16_t vid, uint16_t pid, uint8_t subclass) {
+    known_usb_ids.push_back({vid, pid, 0xFF, subclass});
 }
 
 } // namespace Metavision

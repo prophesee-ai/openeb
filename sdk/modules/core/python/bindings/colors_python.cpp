@@ -24,6 +24,7 @@ void export_colors(py::module &m) {
     py::enum_<ColorPalette>(m, "ColorPalette")
         .value("Light", ColorPalette::Light)
         .value("Dark", ColorPalette::Dark)
+        .value("CoolWarm", ColorPalette::CoolWarm)
         .value("Gray", ColorPalette::Gray)
         .export_values();
 
@@ -53,7 +54,7 @@ void export_colors(py::module &m) {
     m.def(
         "getColor",
         [](const ColorPalette &palette, const ColorType &type) {
-            const RGBColor rgb = Metavision::getColor(palette, type);
+            const RGBColor rgb = Metavision::get_color(palette, type);
             return py::make_tuple(rgb.r, rgb.g, rgb.b);
         },
         py::arg("palette"), py::arg("type"));

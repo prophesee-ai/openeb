@@ -60,6 +60,55 @@ install(FILES "${MetavisionSDK_config_version_file_to_install}"
         COMPONENT metavision-sdk-base-dev
 )
 
+####################################################################
+#
+#
+#
+#
+function(cmake_parse_arguments_only prefix parsedOptionalKeywords parsedSingleValueKeywords parsedMultiValueKeywords ignoredOptionalKeywords ignoredSingleValueKeywords ignoredMultiValueKeywords)
+
+    set(optionalKeywords "")
+    list(APPEND optionalKeywords "${parsedOptionalKeywords}")
+    list(APPEND optionalKeywords "${ignoredOptionalKeywords}")
+    set(singleValueKeywords "")
+    list(APPEND singleValueKeywords "${parsedSingleValueKeywords}")
+    list(APPEND singleValueKeywords "${ignoredSingleValueKeywords}")
+    set(multiValueKeywords "")
+    list(APPEND multiValueKeywords "${parsedMultiValueKeywords}")
+    list(APPEND multiValueKeywords "${ignoredMultiValueKeywords}")
+
+    cmake_parse_arguments(${prefix} "${optionalKeywords}" "${singleValueKeywords}" "${multiValueKeywords}" ${ARGN})
+
+    set(IGNORED_ARGUMENTS "")
+    foreach(kw IN LISTS ignoredOptionalKeywords)
+        if(${prefix}_${kw})
+            list(APPEND IGNORED_ARGUMENTS "${kw}")
+        endif(${prefix}_${kw})
+    endforeach()
+    foreach(kw IN LISTS ignoredSingleValueKeywords)
+        if(${prefix}_${kw})
+            list(APPEND IGNORED_ARGUMENTS "${kw}")
+            list(APPEND IGNORED_ARGUMENTS "${${prefix}_${kw}}")
+        endif(${prefix}_${kw})
+    endforeach()
+    foreach(kw IN LISTS ignoredMultiValueKeywords)
+        if(${prefix}_${kw})
+            list(APPEND IGNORED_ARGUMENTS "${kw}")
+            list(APPEND IGNORED_ARGUMENTS "${${prefix}_${kw}}")
+        endif(${prefix}_${kw})
+    endforeach()
+    set(${prefix}_IGNORED_ARGUMENTS "${IGNORED_ARGUMENTS}" PARENT_SCOPE)
+
+    set(parsedKeywords "")
+    list(APPEND parsedKeywords "${parsedOptionalKeywords}")
+    list(APPEND parsedKeywords "${parsedSingleValueKeywords}")
+    list(APPEND parsedKeywords "${parsedMultiValueKeywords}")
+    foreach(kw IN LISTS parsedKeywords)
+        set(${prefix}_${kw} "${${prefix}_${kw}}" PARENT_SCOPE)
+    endforeach()
+
+endfunction(cmake_parse_arguments_only)
+
 #####################################################################
 #
 # Creates Metavision SDK module library, installs it and adds a cmake component for package MetavisionSDK
@@ -273,6 +322,8 @@ function(MetavisionSDK_add_module module_name)
 
 
     # Install target :
+    set(COMPONENT_NAME_PREFIX "metavision-sdk-${module_name}")
+    string(REPLACE "_" "-" COMPONENT_NAME_PREFIX "${COMPONENT_NAME_PREFIX}")
     if(PARSED_ARGS_INTERFACE_LIBRARY)
         install(TARGETS metavision_sdk_${module_name}
                 EXPORT metavision_sdk_${module_name}Targets
@@ -282,13 +333,13 @@ function(MetavisionSDK_add_module module_name)
             EXPORT metavision_sdk_${module_name}Targets
             RUNTIME
                 DESTINATION ${RUNTIME_INSTALL_DEST}
-                COMPONENT metavision-sdk-${module_name}-lib
+                COMPONENT ${COMPONENT_NAME_PREFIX}-lib
             ARCHIVE
                 DESTINATION ${ARCHIVE_INSTALL_DEST}
-                COMPONENT metavision-sdk-${module_name}-lib
+                COMPONENT ${COMPONENT_NAME_PREFIX}-lib
             LIBRARY
                 DESTINATION ${LIBRARY_INSTALL_DEST}
-                COMPONENT metavision-sdk-${module_name}-lib
+                COMPONENT ${COMPONENT_NAME_PREFIX}-lib
                 NAMELINK_SKIP
             )
 
@@ -296,7 +347,7 @@ function(MetavisionSDK_add_module module_name)
                 EXPORT metavision_sdk_${module_name}Targets
                 LIBRARY
                     DESTINATION ${LIBRARY_INSTALL_DEST}
-                    COMPONENT metavision-sdk-${module_name}-dev
+                    COMPONENT ${COMPONENT_NAME_PREFIX}-dev
                     NAMELINK_ONLY
             )
     endif(PARSED_ARGS_INTERFACE_LIBRARY)
@@ -304,7 +355,7 @@ function(MetavisionSDK_add_module module_name)
     # Install public headers
     install(DIRECTORY ${module_include_folder_path}/
             DESTINATION ${HEADER_INSTALL_DEST}
-            COMPONENT metavision-sdk-${module_name}-dev
+            COMPONENT ${COMPONENT_NAME_PREFIX}-dev
             )
 
     # Create the configuration file
@@ -374,16 +425,17 @@ function(MetavisionSDK_add_module module_name)
             FILE MetavisionSDK_${module_name}Targets.cmake
             NAMESPACE MetavisionSDK::
             DESTINATION ${MVPackageModule_CMAKE_FILES_INSTALLATION_PATH_RELATIVE}
-            COMPONENT metavision-sdk-${module_name}-dev
+            COMPONENT ${COMPONENT_NAME_PREFIX}-dev
     )
 
 
     install(FILES ${files_to_install}
             DESTINATION ${MVPackageModule_CMAKE_FILES_INSTALLATION_PATH_RELATIVE}
-            COMPONENT metavision-sdk-${module_name}-dev
+            COMPONENT ${COMPONENT_NAME_PREFIX}-dev
     )
 
 endfunction(MetavisionSDK_add_module)
+
 
 #####################################################################
 #
@@ -394,8 +446,8 @@ function(MetavisionSDK_add_advanced_module module_name)
 
     MetavisionSDK_add_module(${module_name} ${ARGN})
 
-    if(EXISTS "${PROJECT_SOURCE_DIR}/licensing/LICENSE_METAVISION_INTELLIGENCE")
-        install(FILES ${PROJECT_SOURCE_DIR}/licensing/LICENSE_METAVISION_INTELLIGENCE
+    if(EXISTS "${PROJECT_SOURCE_DIR}/licensing/LICENSE_METAVISION_SDK")
+        install(FILES ${PROJECT_SOURCE_DIR}/licensing/LICENSE_METAVISION_SDK
                 DESTINATION share/metavision/licensing)
     endif()
 

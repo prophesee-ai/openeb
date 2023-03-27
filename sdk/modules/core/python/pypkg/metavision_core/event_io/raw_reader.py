@@ -99,17 +99,13 @@ class RawReaderBase(object):
         return cls("", device=device, ev_count=ev_count, delta_t=delta_t, initiate_device=False)
 
     def __del__(self):
-        if hasattr(self, "i_device_control") and self.i_device_control is not None:
-            self.i_device_control.stop()
         if hasattr(self, "i_events_stream") and self.i_events_stream is not None:
             self.i_events_stream.stop()
             self.i_events_stream.stop_log_raw_data()
         if hasattr(self, "i_events_stream"):
             del self.i_events_stream
-        if hasattr(self, "i_device_control"):
-            del self.i_device_control
-        if hasattr(self, "i_decoder"):
-            del self.i_decoder
+        if hasattr(self, "i_events_stream_decoder"):
+            del self.i_events_stream_decoder
         if hasattr(self, "i_event_cd_decoder"):
             del self.i_event_cd_decoder
         if hasattr(self, "i_eventdecoder_ext_trigger"):
@@ -147,7 +143,7 @@ class RawReaderBase(object):
             self.buffer_producer.flush()
             return False
         data = self.i_events_stream.get_latest_raw_data()
-        self.i_decoder.decode(data)
+        self.i_events_stream_decoder.decode(data)
 
         return True
 
@@ -203,10 +199,10 @@ class RawReaderBase(object):
         if self.i_events_stream is None:
             raise OSError("No I_EventsStream facility")
 
-        self.i_decoder = self.device.get_i_decoder()
+        self.i_events_stream_decoder = self.device.get_i_events_stream_decoder()
 
-        if self.i_decoder is None:
-            raise OSError("No I_Decoder facility")
+        if self.i_events_stream_decoder is None:
+            raise OSError("No I_Events_Stream_Decoder facility")
 
         self.i_event_cd_decoder = self.device.get_i_event_cd_decoder()
         if self.i_event_cd_decoder is None:
@@ -215,7 +211,7 @@ class RawReaderBase(object):
         self.buffer_producer = EventsBufferProducer(self._process_batch, event_count=self.ev_count,
                                                     time_slice_us=self.delta_t)
 
-        self.i_event_cd_decoder.set_add_decoded_native_vevent_callback(
+        self.i_event_cd_decoder.add_event_buffer_native_callback(
             self.buffer_producer.get_process_events_callback())
 
         self.i_eventdecoder_ext_trigger = self.device.get_i_event_ext_trigger_decoder()
@@ -223,11 +219,6 @@ class RawReaderBase(object):
             self.i_eventdecoder_ext_trigger.add_event_buffer_callback(self.process_batch_ext_trigger)
 
         self.i_events_stream.start()
-        self.i_device_control = self.device.get_i_device_control()
-
-        if self.i_device_control is not None:
-            self.i_device_control.start()
-            self.i_device_control.reset()
 
         self._reset_state_vars()
         self._reset_buffer()
@@ -324,9 +315,12 @@ class RawReaderBase(object):
         while not (self._decode_done or len(self._event_buffer)):
             self._run()
         # if enough events have been decoded, we take the first buffer in the queue.
-        current_ts, events = self._event_buffer.popleft()
-        # update variables describing the object state.
-        self._current_event_index += events.size
+        if len(self._event_buffer):
+            current_ts, events = self._event_buffer.popleft()
+            # update variables describing the object state.
+            self._current_event_index += events.size
+        else:
+            events = np.zeros(0, dtype=EventCD)
 
         increase_time_by_delta_t = self.delta_t != 0 and (not len(events) or len(events) != self.ev_count)
         if increase_time_by_delta_t:
@@ -430,6 +424,11 @@ class RawReader(RawReaderBase):
     # callbacks
     def _process_batch(self, ts, batch):
         length = len(batch)
+
+        # in case we received empty buffer
+        if (length == 0):
+            return
+
         # in case of fast forward incoming events are discarded
         if self._seek_time > batch[-1]['t']:
             self._current_event_index += (self._end_buffer - self._begin_buffer) + length
@@ -503,9 +502,10 @@ class RawReader(RawReaderBase):
             events = self._event_buffer[self._begin_buffer:self._begin_buffer + n_events]
             self._begin_buffer += n_events
         else:
+            ev_dtype = self._event_buffer[self._begin_buffer].dtype
             events = np.concatenate(
                 (self._event_buffer[self._begin_buffer:],
-                 self._event_buffer[:n_events - self._event_buffer.size + self._begin_buffer]))
+                 self._event_buffer[:n_events - self._event_buffer.size + self._begin_buffer])).astype(ev_dtype)
             self._begin_buffer = n_events - self._event_buffer.size + self._begin_buffer
         # update variables describing the Class state
         self._current_event_index += events.size
@@ -539,9 +539,10 @@ class RawReader(RawReaderBase):
             events = self._event_buffer[self._begin_buffer:self._begin_buffer + index]
             self._begin_buffer += index
         else:
+            ev_dtype = self._event_buffer[self._begin_buffer].dtype
             events = np.concatenate(
                 (self._event_buffer[self._begin_buffer:],
-                 self._event_buffer[:n_events - self._event_buffer.size + self._begin_buffer]))
+                 self._event_buffer[:n_events - self._event_buffer.size + self._begin_buffer])).astype(ev_dtype)
             index = np.searchsorted(events[:]['t'], final_time)
             if self._begin_buffer + index < self._event_buffer.size:
                 self._begin_buffer += index
@@ -595,8 +596,9 @@ class RawReader(RawReaderBase):
                     # we need the whole end of the actual buffer and some extra event from the beginning.
                     second_buffer_part = self._event_buffer[:n_events - self._event_buffer.size + self._begin_buffer]
                     index = np.searchsorted(second_buffer_part['t'], self.current_time + delta_t)
+                    ev_dtype = self._event_buffer[self._begin_buffer].dtype
                     events = np.concatenate(
-                        (self._event_buffer[self._begin_buffer:], self._event_buffer[:index]))
+                        (self._event_buffer[self._begin_buffer:], self._event_buffer[:index])).astype(ev_dtype)
                     self._begin_buffer = index
 
                 else:
@@ -606,9 +608,10 @@ class RawReader(RawReaderBase):
 
             else:
                 # we need the whole end of the actual buffer and some extra event from the beginning.
+                ev_dtype = self._event_buffer[self._begin_buffer].dtype
                 events = np.concatenate(
                     (self._event_buffer[self._begin_buffer:],
-                     self._event_buffer[:n_events - self._event_buffer.size + self._begin_buffer]))
+                     self._event_buffer[:n_events - self._event_buffer.size + self._begin_buffer])).astype(ev_dtype)
                 self._begin_buffer = n_events - self._event_buffer.size + self._begin_buffer
 
         # update variables describing the Class state
@@ -639,9 +642,10 @@ class RawReader(RawReaderBase):
             self._begin_buffer += np.searchsorted(
                 self._event_buffer[self._begin_buffer:self._begin_buffer + n_events]['t'], final_time)
         else:
+            ev_dtype = self._event_buffer[self._begin_buffer].dtype
             events = np.concatenate(
                 (self._event_buffer[self._begin_buffer:],
-                 self._event_buffer[:n_events - self._event_buffer.size + self._begin_buffer]))
+                 self._event_buffer[:n_events - self._event_buffer.size + self._begin_buffer])).astype(ev_dtype)
             index = np.searchsorted(events[:]['t'], final_time)
             if self._begin_buffer + index < self._event_buffer.size:
                 self._begin_buffer += index

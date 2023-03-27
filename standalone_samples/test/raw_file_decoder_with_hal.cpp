@@ -13,9 +13,9 @@
 #include <iostream>
 #include <fstream>
 #include <metavision/hal/utils/hal_exception.h>
-#include <metavision/hal/facilities/i_decoder.h>
 #include <metavision/hal/facilities/i_event_decoder.h>
 #include <metavision/hal/facilities/i_events_stream.h>
+#include <metavision/hal/facilities/i_events_stream_decoder.h>
 #include <metavision/hal/device/device.h>
 #include <metavision/hal/device/device_discovery.h>
 #include <metavision/hal/utils/raw_file_config.h>
@@ -85,7 +85,6 @@ int main(int argc, char *argv[]) {
             device->get_facility<Metavision::I_EventDecoder<Metavision::EventExtTrigger>>();
         i_trigger_events_decoder->add_event_buffer_callback(
             [&trigger_output_file](const Metavision::EventExtTrigger *begin, const Metavision::EventExtTrigger *end) {
-
                 std::string trigg_str = "";
                 for (auto ev = begin; ev != end; ++ev) {
                     trigg_str +=
@@ -96,7 +95,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Get the decoder and event stream
-    Metavision::I_Decoder *i_decoder           = device->get_facility<Metavision::I_Decoder>();
+    Metavision::I_Decoder *i_decoder           = device->get_facility<Metavision::I_EventsStreamDecoder>();
     Metavision::I_EventsStream *i_eventsstream = device->get_facility<Metavision::I_EventsStream>();
     i_eventsstream->start();
 

@@ -46,7 +46,7 @@ static HALFacilityPythonBinder<I_EventDecoder<EventCD>> bind_decoder(
             .def("remove_callback", &I_EventDecoder<EventCD>::remove_callback,
                  pybind_doc_hal["Metavision::I_EventDecoder::remove_callback"])
             .def(
-                "set_add_decoded_raw_vevent_callback",
+                "add_event_buffer_nocopy_callback",
                 +[](I_EventDecoder<EventCD> &self, py::object object) {
                     std::function<void(EventCDIterator_t begin, EventCDIterator_t end)> gil_cb =
                         [=](EventCDIterator_t begin, EventCDIterator_t end) {
@@ -59,7 +59,7 @@ static HALFacilityPythonBinder<I_EventDecoder<EventCD>> bind_decoder(
                     return self.add_event_buffer_callback(gil_cb);
                 })
             .def(
-                "set_add_decoded_native_vevent_callback",
+                "add_event_buffer_native_callback",
                 +[](I_EventDecoder<EventCD> &self, std::function<void(const EventCD *, const EventCD *)> fun) {
                     return self.add_event_buffer_callback(fun);
                 },

@@ -13,17 +13,17 @@
 
 #include "devices/common/evk2_system_control.h"
 #include "metavision/hal/utils/hal_log.h"
-#include "utils/register_map.h"
+#include "metavision/psee_hw_layer/utils/register_map.h"
 
 using vfield = std::map<std::string, uint32_t>;
 
 namespace Metavision {
 
-Evk2SystemControl::Evk2SystemControl(const std::shared_ptr<RegisterMap> &regmap, const std::string &prefix) :
+Evk2SystemControl::Evk2SystemControl(const std::shared_ptr<RegisterMap> &regmap) :
     register_map_(regmap),
-    sys_ctrl_regbank_(prefix + "SYSTEM_CONTROL/"),
-    sys_mon_regbank_(prefix + "SYSTEM_MONITOR/"),
-    ps_host_if_regbank_(prefix + "PS_HOST_IF/") {}
+    sys_ctrl_regbank_("SYSTEM_CONTROL/"),
+    sys_mon_regbank_("SYSTEM_MONITOR/"),
+    ps_host_if_regbank_("PS_HOST_IF/") {}
 
 bool Evk2SystemControl::apply_resets() {
     (*register_map_)[sys_ctrl_regbank_ + "CLK_CONTROL"].write_value(vfield{{"CORE_SOFT_RST", 1},

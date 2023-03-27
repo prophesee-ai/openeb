@@ -126,20 +126,20 @@ if (COMPILE_PYTHON3_BINDINGS)
 
     # this variable is used to create all python versions packages variables for cpack
     # but not all of them will be generated, only the one indicated by PYBIND11_PYTHON_VERSIONS
-    set (PYTHON3_ALL_VERSIONS "3.6;3.7;3.8")
+    set (PYTHON3_ALL_VERSIONS "3.7;3.8;3.9;3.10")
 
     # this variable is used to set the default version for package dependency, i.e this version
     # is always available for the current installation
     if (UNIX AND NOT APPLE AND (NOT DEFINED PYTHON3_DEFAULT_VERSION))
-        set (PYTHON3_DEFAULT_VERSION "3.6")
+        set (PYTHON3_DEFAULT_VERSION "3.8")
         find_program(_lsb_release_exec lsb_release)
         if (_lsb_release_exec)
             execute_process(COMMAND ${_lsb_release_exec} -cs
                 OUTPUT_VARIABLE _ubuntu_platform
                 OUTPUT_STRIP_TRAILING_WHITESPACE
             )
-            if ("${_ubuntu_platform}" STREQUAL "focal")
-                set (PYTHON3_DEFAULT_VERSION "3.8")
+            if ("${_ubuntu_platform}" STREQUAL "jammy")
+                set (PYTHON3_DEFAULT_VERSION "3.10")
             endif ()
         endif()
     else()
@@ -386,35 +386,37 @@ if (COMPILE_PYTHON3_BINDINGS)
     # SDK specific functions
     #############################
 
-    # function to install a directory for a specific python version with LOCAL and/or SYSTEM python component
+    # function to install a directory with LOCAL and/or SYSTEM python component
     function(install_sdk_python_module module directory)
-        cmake_parse_arguments(ARG "LOCAL;SYSTEM" "" "EXCLUDED_PATTERNS" ${ARGN})
+        foreach(_python_version ${PYBIND11_PYTHON_VERSIONS})
+            cmake_parse_arguments(ARG "LOCAL;SYSTEM" "" "EXCLUDED_PATTERNS" ${ARGN})
 
-        set(_excluded_patterns PATTERN "__pycache__" EXCLUDE)
-        if (ARG_EXCLUDED_PATTERNS)
-            foreach (_pattern ${ARG_EXCLUDED_PATTERNS})
-                list(APPEND _excluded_patterns PATTERN ${_pattern} EXCLUDE)
-            endforeach()
-        endif ()
+            set(_excluded_patterns PATTERN "__pycache__" EXCLUDE)
+            if (ARG_EXCLUDED_PATTERNS)
+                foreach (_pattern ${ARG_EXCLUDED_PATTERNS})
+                    list(APPEND _excluded_patterns PATTERN ${_pattern} EXCLUDE)
+                endforeach()
+            endif ()
 
-        set (component "metavision-sdk-${module}-python")
-        if (ARG_SYSTEM OR NOT ARG_LOCAL)
-            install(
-                DIRECTORY "${directory}"
-                DESTINATION "${PYTHON_${PYTHON3_DEFAULT_VERSION}_SYSTEM_SITE_PACKAGES}" 
-                COMPONENT "${component}" EXCLUDE_FROM_ALL
-                ${_excluded_patterns}
-            )
-        endif()
+            set (component "metavision-sdk-${module}-python")
+            if (ARG_SYSTEM OR NOT ARG_LOCAL)
+                install(
+                    DIRECTORY "${directory}"
+                    DESTINATION "${PYTHON_${_python_version}_SYSTEM_SITE_PACKAGES}" 
+                    COMPONENT "${component}" EXCLUDE_FROM_ALL
+                    ${_excluded_patterns}
+                )
+            endif()
 
-        if (ARG_LOCAL OR NOT ARG_SYSTEM)
-            install(
-                DIRECTORY "${directory}"
-                DESTINATION "${PYTHON_${PYTHON3_DEFAULT_VERSION}_LOCAL_SITE_PACKAGES}" 
-                COMPONENT "${component}-local-install"
-                ${_excluded_patterns}
-            )
-        endif()
+            if (ARG_LOCAL OR NOT ARG_SYSTEM)
+                install(
+                    DIRECTORY "${directory}"
+                    DESTINATION "${PYTHON_${_python_version}_LOCAL_SITE_PACKAGES}" 
+                    COMPONENT "${component}-local-install"
+                    ${_excluded_patterns}
+                )
+            endif()
+        endforeach(_python_version ${PYBIND11_PYTHON_VERSIONS})
     endfunction()
 
     # function to add a python bindings for a SDK module for all python versions
@@ -560,4 +562,21 @@ if (COMPILE_PYTHON3_BINDINGS)
         set_property(GLOBAL PROPERTY list_cpack_public_components "${components_to_install_public_tmp}")
 
     endfunction(add_python_cpack_components)
+
+    #####################################################################
+    #
+    # Return path to cpython libraries to be added to PYTHONPATH.
+    #
+    # usage :
+    #     get_pybind_pythonpath(PYBIND_PATH)
+    #     # Add ${PYBIND_PATH} to PYTHONPATH
+    #
+    function(get_pybind_pythonpath output_var) 
+        if(WIN32)
+            set(pythonpath_value "${PYTHON3_OUTPUT_DIR}/$<CONFIG>")
+        else()
+            set(pythonpath_value "${PYTHON3_OUTPUT_DIR}")
+        endif()
+        set(${output_var} "${pythonpath_value}" PARENT_SCOPE)
+    endfunction(get_pybind_pythonpath)
 endif()

@@ -82,7 +82,7 @@ TEST(PeriodicFrameGenerationAlgorithm_GTest, nominal_with_ts_0_for_initializatio
                            generated_frames.back().frame_.begin<cv::Vec3b>()));
 
     // WHEN we force_generate, we generate a last frame with remaining processed events information -> a frame that
-    // holds event in the time slice [2 * period_us - accumulation_time_us, 2 * period_us - accumulation_time_us + 50[
+    // holds event in the time slice [2 * period_us - accumulation_time_us, 2 * period_us - accumulation_time_us + 50]
     frame_generation.force_generate();
 
     expected_frame.setTo(bg_color);
@@ -90,7 +90,7 @@ TEST(PeriodicFrameGenerationAlgorithm_GTest, nominal_with_ts_0_for_initializatio
 
     ASSERT_EQ(size_t(2), generated_frames.size());
     ASSERT_EQ(CV_8UC3, generated_frames.back().frame_.type());
-    ASSERT_EQ(events.back().t + 1, generated_frames.back().ts_us_);
+    ASSERT_EQ(events.back().t, generated_frames.back().ts_us_);
     ASSERT_EQ(expected_frame.size(), generated_frames.back().frame_.size());
     ASSERT_TRUE(std::equal(expected_frame.begin<cv::Vec3b>(), expected_frame.end<cv::Vec3b>(),
                            generated_frames.back().frame_.begin<cv::Vec3b>()));
@@ -142,7 +142,7 @@ TEST(PeriodicFrameGenerationAlgorithm_GTest, nominal_with_offset_overflow) {
                            generated_frames.back().frame_.begin<cv::Vec3b>()));
 
     // WHEN we force_generate, we generate a last frame with remaining processed events information -> a frame that
-    // holds event in the time slice [2 * period_us - accumulation_time_us, 2 * period_us - accumulation_time_us + 50[
+    // holds event in the time slice [2 * period_us - accumulation_time_us, 2 * period_us - accumulation_time_us + 50]
     frame_generation.force_generate();
 
     expected_frame.setTo(bg_color);
@@ -150,7 +150,7 @@ TEST(PeriodicFrameGenerationAlgorithm_GTest, nominal_with_offset_overflow) {
 
     ASSERT_EQ(size_t(2), generated_frames.size());
     ASSERT_EQ(CV_8UC3, generated_frames.back().frame_.type());
-    ASSERT_EQ(events.back().t + 1, generated_frames.back().ts_us_);
+    ASSERT_EQ(events.back().t, generated_frames.back().ts_us_);
     ASSERT_EQ(expected_frame.size(), generated_frames.back().frame_.size());
     ASSERT_TRUE(std::equal(expected_frame.begin<cv::Vec3b>(), expected_frame.end<cv::Vec3b>(),
                            generated_frames.back().frame_.begin<cv::Vec3b>()));
@@ -311,7 +311,7 @@ TEST(PeriodicFrameGenerationAlgorithm_GTest, nominal_with_arbitrary_ts_for_initi
     frame_generation.force_generate();
 
     // THEN we generate a last frame with remaining processed events information -> a frame that holds events
-    // in the time slice [first_timeslice + 2 * period_us - accumulation_time_us, last event's timestamp + 1[, in other
+    // in the time slice [first_timeslice + 2 * period_us - accumulation_time_us, last event's timestamp ], in other
     // words in [1.390.000, 1.390.051[
 
     expected_frame.setTo(bg_color);
@@ -319,7 +319,7 @@ TEST(PeriodicFrameGenerationAlgorithm_GTest, nominal_with_arbitrary_ts_for_initi
 
     ASSERT_EQ(size_t(2), generated_frames.size());
     ASSERT_EQ(CV_8UC3, generated_frames.back().frame_.type());
-    ASSERT_EQ(events.back().t + 1, generated_frames.back().ts_us_);
+    ASSERT_EQ(events.back().t, generated_frames.back().ts_us_);
     ASSERT_EQ(expected_frame.size(), generated_frames.back().frame_.size());
     ASSERT_TRUE(std::equal(expected_frame.begin<cv::Vec3b>(), expected_frame.end<cv::Vec3b>(),
                            generated_frames.back().frame_.begin<cv::Vec3b>()));
@@ -329,18 +329,19 @@ TEST(PeriodicFrameGenerationAlgorithm_GTest, nominal_with_arbitrary_ts_for_initi
     // - the frame generation algorithm is reset
     const EventCD ev{1, 1, 1, expected_first_timeslice + 3 * period_us - accumulation_time_us}; // ts = 1.490.000
     frame_generation.process_events(&ev, &ev + 1);
+    frame_generation.force_generate();
     frame_generation.reset();
 
     // THEN Then process async is called and pending events are flushed.
     // The frame corresponds to the time slice
-    // [last event's timestamp + 1 - accumulation_time_us, last event's timestamp + 1[, in other words
+    // [last event's timestamp + 1 - accumulation_time_us, last event's timestamp ], in other words
     // [1.480.001, 1.490.001[, is generated
     expected_frame.setTo(bg_color);
     expected_frame.at<cv::Vec3b>(1, 1) = on_color;
 
     ASSERT_EQ(size_t(3), generated_frames.size());
     ASSERT_EQ(CV_8UC3, generated_frames.back().frame_.type());
-    ASSERT_EQ(ev.t + 1, generated_frames.back().ts_us_);
+    ASSERT_EQ(ev.t, generated_frames.back().ts_us_);
     ASSERT_EQ(expected_frame.size(), generated_frames.back().frame_.size());
     ASSERT_TRUE(std::equal(expected_frame.begin<cv::Vec3b>(), expected_frame.end<cv::Vec3b>(),
                            generated_frames.back().frame_.begin<cv::Vec3b>()));
@@ -367,10 +368,59 @@ TEST(PeriodicFrameGenerationAlgorithm_GTest, nominal_with_arbitrary_ts_for_initi
 
     ASSERT_EQ(size_t(5), generated_frames.size());
     ASSERT_EQ(CV_8UC3, generated_frames.back().frame_.type());
-    ASSERT_EQ(events.back().t + 1, generated_frames.back().ts_us_);
+    ASSERT_EQ(events.back().t, generated_frames.back().ts_us_);
     ASSERT_EQ(expected_frame.size(), generated_frames.back().frame_.size());
     ASSERT_TRUE(std::equal(expected_frame.begin<cv::Vec3b>(), expected_frame.end<cv::Vec3b>(),
                            generated_frames.back().frame_.begin<cv::Vec3b>()));
+}
+
+TEST(PeriodicFrameGenerationAlgorithm_GTest, reset_with_change_of_settings) {
+    const int sensor_width               = 10;
+    const int sensor_height              = 10;
+    const timestamp period_us            = 100000;
+    const double fps                     = 1.e6 / period_us;
+    const timestamp accumulation_time_us = 10000;
+    PeriodicFrameGenerationAlgorithm frame_generation(sensor_width, sensor_height);
+    std::vector<FrameData> generated_frames;
+    frame_generation.set_output_callback([&](timestamp ts, cv::Mat &frame) {
+        generated_frames.push_back({ts, frame.clone()});
+    });
+    frame_generation.set_color_palette(Metavision::ColorPalette::Dark);
+    frame_generation.set_accumulation_time_us(accumulation_time_us);
+    frame_generation.set_fps(fps);
+
+    // GIVEN the following events
+    // clang-format off
+    std::vector<EventCD> events{{
+         EventCD{5, 1, 0, 970},
+         EventCD{5, 5, 0, 1000},
+         EventCD{5, 8, 1, 1030},
+         EventCD{0, 0, 0, 1050}
+    }};
+    // clang-format on
+
+    // WHEN we process the events then flush
+    frame_generation.process_events(events.cbegin(), events.cend());
+    frame_generation.force_generate();
+
+    // WHEN we change the frame generation settings, reset and revert them
+    frame_generation.set_color_palette(Metavision::ColorPalette::Light);
+    frame_generation.set_accumulation_time_us(accumulation_time_us / 100);
+    frame_generation.set_fps(fps * 2);
+    frame_generation.set_color_palette(Metavision::ColorPalette::Dark);
+    frame_generation.set_accumulation_time_us(accumulation_time_us);
+    frame_generation.set_fps(fps);
+    frame_generation.reset();
+
+    // WHEN we process the same events again and flush
+    frame_generation.process_events(events.cbegin(), events.cend());
+    frame_generation.force_generate();
+
+    // THEN the two generated frames are the same
+    ASSERT_EQ(generated_frames.size(), 2);
+    ASSERT_EQ(generated_frames[0].ts_us_, generated_frames[1].ts_us_);
+    ASSERT_NEAR(cv::norm(generated_frames[0].frame_, generated_frames[1].frame_, cv::NORM_INF), 0.,
+                std::numeric_limits<double>::epsilon());
 }
 
 TEST(PeriodicFrameGenerationAlgorithm_GTest, change_display_acc) {
@@ -431,7 +481,7 @@ TEST(PeriodicFrameGenerationAlgorithm_GTest, change_display_acc) {
 
     ASSERT_EQ(size_t(2), generated_frames.size());
     ASSERT_EQ(CV_8UC3, generated_frames.back().frame_.type());
-    ASSERT_EQ(events.back().t + 1, generated_frames.back().ts_us_);
+    ASSERT_EQ(events.back().t, generated_frames.back().ts_us_);
     ASSERT_EQ(expected_frame.size(), generated_frames.back().frame_.size());
     ASSERT_TRUE(std::equal(expected_frame.begin<cv::Vec3b>(), expected_frame.end<cv::Vec3b>(),
                            generated_frames.back().frame_.begin<cv::Vec3b>()));
@@ -495,7 +545,7 @@ TEST(PeriodicFrameGenerationAlgorithm_GTest, colors) {
 
     ASSERT_EQ(size_t(2), generated_frames.size());
     ASSERT_EQ(CV_8UC1, generated_frames.back().frame_.type());
-    ASSERT_EQ(events.back().t + 1, generated_frames.back().ts_us_);
+    ASSERT_EQ(events.back().t, generated_frames.back().ts_us_);
     ASSERT_EQ(expected_frame.size(), generated_frames.back().frame_.size());
 
     ASSERT_TRUE(std::equal(expected_frame.begin<uint8_t>(), expected_frame.end<uint8_t>(),
@@ -543,7 +593,7 @@ TEST(PeriodicFrameGenerationAlgorithm_GTest, fps) {
     // WHEN we change the fps from 10 to 100 and process the other events
     frame_generation.set_fps(100);
 
-    // THEN data is flushed: we generate a frame that holds event data in the time slice [1200000, 1290030 + 1[
+    // THEN data is flushed: we generate a frame that holds event data in the time slice [1200000, 1290030 ]
     cv::Mat expected_frame(sensor_height, sensor_width, CV_8UC3, bg_color);
     expected_frame.at<cv::Vec3b>(1, 5) = off_color;
     expected_frame.at<cv::Vec3b>(5, 5) = off_color;
@@ -551,7 +601,7 @@ TEST(PeriodicFrameGenerationAlgorithm_GTest, fps) {
 
     ASSERT_EQ(size_t(1), generated_frames.size());
     ASSERT_EQ(CV_8UC3, generated_frames.back().frame_.type());
-    ASSERT_EQ(events[2].t + 1, generated_frames.back().ts_us_);
+    ASSERT_EQ(events[2].t, generated_frames.back().ts_us_);
     ASSERT_EQ(expected_frame.size(), generated_frames.back().frame_.size());
     ASSERT_TRUE(std::equal(expected_frame.begin<cv::Vec3b>(), expected_frame.end<cv::Vec3b>(),
                            generated_frames.back().frame_.begin<cv::Vec3b>()));
@@ -559,13 +609,14 @@ TEST(PeriodicFrameGenerationAlgorithm_GTest, fps) {
     // WHEN processing the remaining events
     frame_generation.process_events(events.cbegin() + 3, events.cend());
 
-    // THEN we generate 10 more frames in [1290031, 1390031 + 1[ (i.e one frame every 10000 us)
+    // THEN we generate 10 more frames in [1290030, 1390030 [ (i.e one frame every 10000 us)
     expected_frame.setTo(bg_color);
+    expected_frame.at<cv::Vec3b>(8, 5) = on_color;
     expected_frame.at<cv::Vec3b>(0, 4) = on_color;
 
     ASSERT_EQ(size_t(1 + 10), generated_frames.size());
     ASSERT_EQ(CV_8UC3, generated_frames[1].frame_.type());
-    ASSERT_EQ(events[2].t + 1 + next_period_us, generated_frames[1].ts_us_);
+    ASSERT_EQ(events[2].t + next_period_us, generated_frames[1].ts_us_);
     ASSERT_EQ(expected_frame.size(), generated_frames[1].frame_.size());
 
     ASSERT_TRUE(std::equal(expected_frame.begin<cv::Vec3b>(), expected_frame.end<cv::Vec3b>(),
@@ -574,7 +625,7 @@ TEST(PeriodicFrameGenerationAlgorithm_GTest, fps) {
     expected_frame.setTo(bg_color);
     for (int i = 2; i < 11; ++i) {
         ASSERT_EQ(CV_8UC3, generated_frames[i].frame_.type());
-        ASSERT_EQ(events[2].t + 1 + i * next_period_us, generated_frames[i].ts_us_);
+        ASSERT_EQ(events[2].t + i * next_period_us, generated_frames[i].ts_us_);
         ASSERT_EQ(expected_frame.size(), generated_frames[i].frame_.size());
 
         ASSERT_TRUE(std::equal(expected_frame.begin<cv::Vec3b>(), expected_frame.end<cv::Vec3b>(),
@@ -583,12 +634,12 @@ TEST(PeriodicFrameGenerationAlgorithm_GTest, fps) {
     // WHEN we force_generate
     frame_generation.force_generate();
 
-    // THEN generate one last frame that holds the event in the truncated last time slice [1390032, 1390051[
+    // THEN generate one last frame that holds the event in the truncated last time slice [1390031, 1390050]
     expected_frame.setTo(bg_color);
     expected_frame.at<cv::Vec3b>(0, 0) = off_color;
 
     ASSERT_EQ(CV_8UC3, generated_frames.back().frame_.type());
-    ASSERT_EQ(events.back().t + 1, generated_frames.back().ts_us_);
+    ASSERT_EQ(events.back().t, generated_frames.back().ts_us_);
     ASSERT_EQ(expected_frame.size(), generated_frames.back().frame_.size());
     ASSERT_TRUE(std::equal(expected_frame.begin<cv::Vec3b>(), expected_frame.end<cv::Vec3b>(),
                            generated_frames.back().frame_.begin<cv::Vec3b>()));
@@ -644,7 +695,7 @@ TEST(PeriodicFrameGenerationAlgorithm_GTest, skip_frames_to) {
 
     ASSERT_EQ(size_t(2), generated_frames.size());
     ASSERT_EQ(CV_8UC3, generated_frames.back().frame_.type());
-    ASSERT_EQ(events.back().back().t + 1, generated_frames.back().ts_us_);
+    ASSERT_EQ(events.back().back().t, generated_frames.back().ts_us_);
     ASSERT_EQ(expected_frame.size(), generated_frames.back().frame_.size());
     ASSERT_TRUE(std::equal(expected_frame.begin<cv::Vec3b>(), expected_frame.end<cv::Vec3b>(),
                            generated_frames.back().frame_.begin<cv::Vec3b>()));
@@ -709,7 +760,7 @@ TEST(PeriodicFrameGenerationAlgorithm_GTest, test_doc_example_output) {
         "(4,0) = [52, 37, 30]\n"
         "\n"
         "[All events processed. Flushing...]\n"
-        ">> Frame generated at timestamp t = 13001 microseconds.\n"
+        ">> Frame generated at timestamp t = 13000 microseconds.\n"
         "(0,0) = [52, 37, 30]\n"
         "(1,0) = [200, 126, 64]\n"
         "(2,0) = [255, 255, 255]\n"

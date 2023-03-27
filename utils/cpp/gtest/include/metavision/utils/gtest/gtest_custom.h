@@ -251,7 +251,7 @@ namespace testing {
 
 #define TEST_F_WITH_SPECIFIC_CAMERA(test_fixture, test_name, camera_param_vector)                                   \
     DECLARE_CUSTOM_TEST_IMPL_CLASS_F(test_fixture, test_name, test_fixture);                                        \
-    TEST_F(test_fixture, test_name) {                                                                               \
+    GTEST_TEST_(test_fixture, test_name, ::testing::Test, ::testing::internal::GetTypeId<test_fixture>()) {         \
         bool to_run(false);                                                                                         \
         std::vector<std::string> needed_options;                                                                    \
         if (Metavision::GtestsParameters::instance().run_test_with_camera) {                                        \
@@ -308,38 +308,38 @@ namespace testing {
 #define TEST_F_WITH_CAMERA(...) \
     EXPAND_ARG(GET_MACRO(__VA_ARGS__, TEST_F_WITH_SPECIFIC_CAMERA, TEST_F_WITH_ANY_CAMERA)(__VA_ARGS__))
 
-#define TEST_F_WITHOUT_CAMERA(test_fixture, test_name)                             \
-    DECLARE_CUSTOM_TEST_IMPL_CLASS_F(test_fixture, test_name, test_fixture);       \
-    TEST_F(test_fixture, test_name) {                                              \
-        if (Metavision::GtestsParameters::instance().run_test_without_camera) {    \
-            CUSTOM_TEST_IMPL_CLASS_NAME(test_fixture, test_name) test;             \
-            test.SetUp();                                                          \
-            test.TestBody();                                                       \
-            test.TearDown();                                                       \
-        } else {                                                                   \
-            std::cout << "\033[0;34mSkipping test requiring no connected camera, " \
-                         "to enable re-run with --without-camera.\033[m"           \
-                      << std::endl;                                                \
-        }                                                                          \
-        SUCCEED();                                                                 \
-    }                                                                              \
+#define TEST_F_WITHOUT_CAMERA(test_fixture, test_name)                                                      \
+    DECLARE_CUSTOM_TEST_IMPL_CLASS_F(test_fixture, test_name, test_fixture);                                \
+    GTEST_TEST_(test_fixture, test_name, ::testing::Test, ::testing::internal::GetTypeId<test_fixture>()) { \
+        if (Metavision::GtestsParameters::instance().run_test_without_camera) {                             \
+            CUSTOM_TEST_IMPL_CLASS_NAME(test_fixture, test_name) test;                                      \
+            test.SetUp();                                                                                   \
+            test.TestBody();                                                                                \
+            test.TearDown();                                                                                \
+        } else {                                                                                            \
+            std::cout << "\033[0;34mSkipping test requiring no connected camera, "                          \
+                         "to enable re-run with --without-camera.\033[m"                                    \
+                      << std::endl;                                                                         \
+        }                                                                                                   \
+        SUCCEED();                                                                                          \
+    }                                                                                                       \
     void CUSTOM_TEST_IMPL_CLASS_NAME(test_fixture, test_name)::TestBody()
 
-#define TEST_F_WITH_DATASET(test_fixture, test_name)                          \
-    DECLARE_CUSTOM_TEST_IMPL_CLASS_F(test_fixture, test_name, test_fixture);  \
-    TEST_F(test_fixture, test_name) {                                         \
-        if (!Metavision::GtestsParameters::instance().dataset_dir.empty()) {  \
-            CUSTOM_TEST_IMPL_CLASS_NAME(test_fixture, test_name) test;        \
-            test.SetUp();                                                     \
-            test.TestBody();                                                  \
-            test.TearDown();                                                  \
-        } else {                                                              \
-            std::cout << "\033[0;34mSkipping test requiring dataset, "        \
-                         "to enable re-run with --dataset-dir DATASET.\033[m" \
-                      << std::endl;                                           \
-        }                                                                     \
-        SUCCEED();                                                            \
-    }                                                                         \
+#define TEST_F_WITH_DATASET(test_fixture, test_name)                                                        \
+    DECLARE_CUSTOM_TEST_IMPL_CLASS_F(test_fixture, test_name, test_fixture);                                \
+    GTEST_TEST_(test_fixture, test_name, ::testing::Test, ::testing::internal::GetTypeId<test_fixture>()) { \
+        if (!Metavision::GtestsParameters::instance().dataset_dir.empty()) {                                \
+            CUSTOM_TEST_IMPL_CLASS_NAME(test_fixture, test_name) test;                                      \
+            test.SetUp();                                                                                   \
+            test.TestBody();                                                                                \
+            test.TearDown();                                                                                \
+        } else {                                                                                            \
+            std::cout << "\033[0;34mSkipping test requiring dataset, "                                      \
+                         "to enable re-run with --dataset-dir DATASET.\033[m"                               \
+                      << std::endl;                                                                         \
+        }                                                                                                   \
+        SUCCEED();                                                                                          \
+    }                                                                                                       \
     void CUSTOM_TEST_IMPL_CLASS_NAME(test_fixture, test_name)::TestBody()
 
 #define DECLARE_CUSTOM_TYPED_TEST_IMPL_CLASS(test_case_name, test_name)                                 \

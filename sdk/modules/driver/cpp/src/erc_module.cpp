@@ -15,12 +15,12 @@
 
 namespace Metavision {
 
-ErcModule::ErcModule(I_Erc *ierc) : pimpl_(ierc) {}
+ErcModule::ErcModule(I_ErcModule *erc) : pimpl_(erc) {}
 
 ErcModule::~ErcModule() {}
 
-void ErcModule::enable(bool b) {
-    pimpl_->enable(b);
+bool ErcModule::enable(bool b) {
+    return pimpl_->enable(b);
 }
 
 bool ErcModule::is_enabled() {
@@ -35,7 +35,7 @@ uint32_t ErcModule::get_cd_event_rate() {
     return (pimpl_->get_cd_event_rate());
 }
 
-I_Erc *ErcModule::get_facility() const {
+I_ErcModule *ErcModule::get_facility() const {
     return pimpl_;
 }
 

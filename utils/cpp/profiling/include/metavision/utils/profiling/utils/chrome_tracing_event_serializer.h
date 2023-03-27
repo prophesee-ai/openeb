@@ -14,10 +14,10 @@
 
 namespace Profiling {
 
-class EventBase;
-class CompleteEvent;
-class InstantEvent;
-class CounterEvent;
+struct EventBase;
+struct CompleteEvent;
+struct InstantEvent;
+struct CounterEvent;
 
 /// @brief Class that logs profile events into a text file in the format that the Chrome Tracing tool expects
 class ChromeTracingEventSerializer : boost::static_visitor<> {

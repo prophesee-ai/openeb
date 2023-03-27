@@ -12,9 +12,13 @@
 #ifndef METAVISION_HAL_UTILS_FX3_RAM_FLASH_H
 #define METAVISION_HAL_UTILS_FX3_RAM_FLASH_H
 
-#include <libusb.h>
 #include <vector>
 #include <string>
+
+#ifdef _MSC_VER
+#define NOMINMAX // libusb.h includes windows.h which defines min max macros that we don't want
+#endif
+#include <libusb.h>
 
 namespace LoadApplicativeFirmwareToFx3RAM {
 

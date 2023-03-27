@@ -33,11 +33,19 @@ public:
 
     /// @brief Gets the integrator name of the source used to generate the RAW file.
     /// @return Returns the integrator name if any, or an empty string otherwise
-    std::string get_integrator_name() const;
+    std::string get_camera_integrator_name() const;
 
     /// @brief Sets the name of the integrator of the source used to generate the RAW file
     /// @param integrator_name Name of the integrator
-    void set_integrator_name(const std::string &integrator_name);
+    void set_camera_integrator_name(const std::string &integrator_name);
+
+    /// @brief Gets the integrator name of the plugin used to generate the RAW file.
+    /// @return Returns the integrator name if any, or an empty string otherwise
+    std::string get_plugin_integrator_name() const;
+
+    /// @brief Sets the name of the integrator of the plugin used to generate the RAW file
+    /// @param integrator_name Name of the integrator
+    void set_plugin_integrator_name(const std::string &integrator_name);
 
     /// @brief Gets the name of the plugin to use to read the RAW file.
     /// @return Returns the name of the plugin if any, or an empty string otherwise

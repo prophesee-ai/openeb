@@ -15,12 +15,10 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "metavision/hal/utils/device_config.h"
-
 namespace Metavision {
 
 /// @brief RAW files configuration's options
-class RawFileConfig : public DeviceConfig {
+class RawFileConfig {
 public:
     /// Number of events_byte_size blocks to read.
     /// At each read, n_events_to_read_*sizeof(RAW_event) bytes are read.
@@ -35,6 +33,10 @@ public:
 
     /// Take the first timer high of the file as origin of time
     bool do_time_shifting_ = true;
+
+    /// True if indexing should be performed when opening the file
+    /// Alternatively, indexing can still be requested by calling I_EventsStream::index directly
+    bool build_index_ = true;
 };
 
 } // namespace Metavision

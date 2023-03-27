@@ -18,19 +18,30 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 #include <opencv2/core.hpp>
 
 // Metavision HAL Device class
 #include "metavision/hal/device/device.h"
-#include "metavision/hal/utils/raw_file_config.h"
-#include "metavision/hal/utils/future/raw_file_config.h"
+
+// Metavision SDK Driver File Config Hints class
+#include "metavision/sdk/driver/file_config_hints.h"
 
 // Metavision SDK Driver CD handler class
 #include "metavision/sdk/driver/cd.h"
 
+// Metavision SDK Driver ERCCounter handler class
+#include "metavision/sdk/driver/erc_counter.h"
+
 // Metavision SDK Driver External Trigger handler class
 #include "metavision/sdk/driver/ext_trigger.h"
+
+// Metavision SDK Driver FrameDiff handler class
+#include "metavision/sdk/driver/frame_diff.h"
+
+// Metavision SDK Driver FrameHisto handler class
+#include "metavision/sdk/driver/frame_histo.h"
 
 // Metavision SDK Driver Trigger Out handler class
 #include "metavision/sdk/driver/trigger_out.h"
@@ -68,8 +79,8 @@
 // Metavision SDK Driver ErcModule class
 #include "metavision/sdk/driver/erc_module.h"
 
-// Metavision SDK Driver NoiseFilterModule class
-#include "metavision/sdk/driver/noise_filter_module.h"
+// Metavision SDK Driver EventTrailFilterModule class
+#include "metavision/sdk/driver/event_trail_filter_module.h"
 
 namespace Metavision {
 
@@ -104,12 +115,16 @@ using RuntimeErrorCallback = std::function<void(const CameraException &)>;
 using StatusChangeCallback = std::function<void(const CameraStatus &)>;
 
 /// @brief Struct with the current camera configuration.
+///
+/// In case of an online source, the fields apply to the current online source.
+/// In case of an offline source, the fields correspond to the online source used to record the data.
 struct CameraConfiguration {
-    /// @brief Serial number of the camera
-    ///
-    /// In case of an online source, it is the serial number of the current online source.\n
-    /// In case of an offline source, it is the serial number of the online source used to record the data.
-    std::string serial_number = "";
+    std::string serial_number;
+    std::string system_ID;
+    std::string plugin_name;
+    std::string integrator;
+    std::string data_encoding_format;
+    std::string firmware_version;
 };
 
 /// @brief Main class for the camera interface
@@ -156,18 +171,18 @@ public:
     ///
     /// Open the first available camera following at first EMBEDDED and then USB order.\n
     /// Please note that remote cameras will not be opened with this function. To do that,
-    /// please specify the @ref OnlineSourceType and use the @ref Camera::from_source function,
-    /// or else specify the serial number and use the @ref Camera::from_serial function.\n
-    /// Serial numbers and types of available sources can be found with @ref Camera::list_online_sources function.
+    /// please specify the @ref OnlineSourceType and use the @ref from_source function,
+    /// or else specify the serial number and use the @ref from_serial function.\n
+    /// Serial numbers and types of available sources can be found with @ref list_online_sources function.
     ///
     /// @throw CameraException in case of initialization failure.
     static Camera from_first_available();
 
     /// @brief Initializes a camera instance from an @ref OnlineSourceType and a source index
     ///
-    /// Open the source_index camera of online input_source_type if available from @ref list_online_sources\.\n
+    /// Open the source_index camera of online input_source_type if available from @ref list_online_sources"".\n
     /// By default, it opens the first available camera listed by @ref list_online_sources of type input_source_type.\n
-    /// Serial numbers and types of available sources can be found with @ref Camera::list_online_sources function.
+    /// Serial numbers and types of available sources can be found with @ref list_online_sources function.
     /// @throw CameraException if the camera corresponding to the input source type and the source index has not been
     /// found.
     ///
@@ -178,7 +193,7 @@ public:
 
     /// @brief Initializes a camera instance from a 'serial' number
     ///
-    /// Serial numbers of available sources can be found by with @ref Camera::list_online_sources function.\n
+    /// Serial numbers of available sources can be found by with @ref list_online_sources function.\n
     /// If 'serial' is an empty string, the function works as the main constructor.
     ///
     /// @throw CameraException if the camera with the input serial number has not been found.
@@ -186,38 +201,20 @@ public:
     /// @return @ref Camera instance initialized from the serial number
     static Camera from_serial(const std::string &serial);
 
-    /// @brief Initializes a camera instance from a RAW file
-    /// @throw CameraException in case of initialization failure.
-    /// @param rawfile Path to the RAW file
-    /// @param realtime_playback_speed If true, the RAW file will be read at the same speed as was sent by the camera
-    ///                                  when the file was recorded, and the events will be available after the same
-    ///                                  amount of time it took for them to be received when recording the RAW file. If
-    ///                                  false, the file will be read as fast as possible and the events will be
-    ///                                  available as soon as possible as well. The max_event_lifespan will only be
-    ///                                  taken into account when reproducing the camera behavior.
-    /// @param file_config Configuration describing how to read the file (see @ref RawFileConfig)
-    /// @note Since 2.1.0, the @p realtime_playback_speed is only taken into account if at least one event callback
-    ///       is registered (CD or ExtTrigger), it will have no effect if only a RawData callback is registered.
-    /// @return @ref Camera instance initialized from the input RAW file
-    /// @return @ref Camera instance initialized from the input RAW file
-    static Camera from_file(const std::string &rawfile, bool realtime_playback_speed = true,
-                            const RawFileConfig &file_config = RawFileConfig());
+    /// @brief Initializes a camera instance from a 'serial' number
+    /// @throw CameraException if the camera with the input serial number has not been found.
+    /// @param serial Serial number of the camera
+    /// @param config Configuration used to open the camera
+    /// @return @ref Camera instance initialized from the serial number
+    /// @overload
+    static Camera from_serial(const std::string &serial, DeviceConfig &config);
 
-    /// @brief Initializes a camera instance from a RAW file
+    /// @brief Initializes a camera instance from a file
     /// @throw CameraException in case of initialization failure.
-    /// @param rawfile Path to the RAW file
-    /// @param realtime_playback_speed If true, the RAW file will be read at the same speed as was sent by the camera
-    ///                                  when the file was recorded, and the events will be available after the same
-    ///                                  amount of time it took for them to be received when recording the RAW file. If
-    ///                                  false, the file will be read as fast as possible and the events will be
-    ///                                  available as soon as possible as well. The max_event_lifespan will only be
-    ///                                  taken into account when reproducing the camera behavior.
-    /// @param file_config Configuration describing how to read the file (see @ref Future::RawFileConfig)
-    /// @note Since 2.1.0, the @p realtime_playback_speed is only taken into account if at least one event callback
-    ///       is registered (CD or ExtTrigger), it will have no effect if only a RawData callback is registered.
-    /// @return @ref Camera instance initialized from the input RAW file
-    static Camera from_file(const std::string &rawfile, bool realtime_playback_speed,
-                            const Future::RawFileConfig &file_config);
+    /// @param file_path Path to the file
+    /// @param hints Hints expressing how the file should be read, for more details see @ref FileConfigHints
+    /// @return @ref Camera instance initialized from the input file
+    static Camera from_file(const std::string &file_path, const FileConfigHints &hints = FileConfigHints());
 
     /// @brief Gets class to handle RAW data from the camera
     /// @throw CameraException if the camera has not been initialized.
@@ -236,6 +233,18 @@ public:
     /// @throw CameraException in case of failure (for example if camera runs from an offline source).
     TriggerOut &trigger_out();
 
+    /// @brief Gets class to handle ERCCounter events
+    /// @throw CameraException if the camera has not been initialized.
+    ERCCounter &erc_counter();
+
+    /// @brief Gets class to handle RawEventFrameHisto
+    /// @throw CameraException if the camera has not been initialized.
+    FrameHisto &frame_histo();
+
+    /// @brief Gets class to handle RawEventFrameDiff
+    /// @throw CameraException if the camera has not been initialized.
+    FrameDiff &frame_diff();
+
     /// @brief Gets class to handle Roi on the sensor
     /// @throw CameraException in case of failure (for instance if the camera is not initialized or the camera is
     /// running from an offline source).
@@ -251,10 +260,10 @@ public:
     /// running from an offline source).
     ErcModule &erc_module();
 
-    /// @brief Gets class to handle STC or TRAIL Noise Filter Module on the hardware side
+    /// @brief Gets class to handle STC or TRAIL Event Trail Filter Module on the hardware side
     /// @throw CameraException in case of failure (for instance if the camera is not initialized or the camera is
     /// running from an offline source).
-    NoiseFilterModule &noise_filter_module();
+    EventTrailFilterModule &event_trail_filter_module();
 
     /// @brief Registers a callback that will be called when a runtime error occurs
     ///
@@ -264,7 +273,7 @@ public:
     /// @throw CameraException if the camera has not been initialized.
     /// @param error_callback The error callback to call
     /// @return ID of the added callback
-    /// @warning It is forbidden to call the @ref Camera::stop from a runtime error callback.
+    /// @warning It is forbidden to call the @ref stop from a runtime error callback.
     /// @sa @ref RuntimeErrorCallback
     CallbackId add_runtime_error_callback(RuntimeErrorCallback error_callback);
 
@@ -278,12 +287,12 @@ public:
     /// @brief Registers a callback that will be called when the camera status changes.
     ///
     /// The callback will be called with the new status of the @ref Camera as a parameter,
-    /// when the camera is started or stopped (by a call to @ref Camera::stop or
+    /// when the camera is started or stopped (by a call to @ref stop or
     /// when no more events are available in a recording).
     ///
     /// @param status_change_callback The status change callback to call
     /// @return ID of the added callback
-    /// @warning It is forbidden to call the @ref Camera::stop from the status callback.
+    /// @warning It is forbidden to call the @ref stop from the status callback.
     /// @sa @ref StatusChangeCallback
     CallbackId add_status_change_callback(StatusChangeCallback status_change_callback);
 
@@ -338,27 +347,47 @@ public:
     /// running, this function returns false.
     bool stop();
 
-    /// @brief Records data from camera to a file with .raw extension
+    /// @brief Records data from camera to a file at the specified path
     ///
-    /// The call to this function stops ongoing recording.\n
-    /// The function creates a new file at the given path or overwrites the already existing file.\n
-    /// In case of an offline input source, the function can be used to split the RAW file.
-    /// In case of not having rights to write at the provided path, the function will not record anything.
+    /// The function creates a new file at the given @p file_path or overwrites the already existing file.\n
+    /// In case of an offline input source, the function can be used to split the file and record only a portion of it.
     /// @throw CameraException if the camera has not been initialized.
-    /// @param rawfile_path Path to the RAW file used for data recording.
-    void start_recording(const std::string &rawfile_path);
+    /// @warning Calling this function will overwrite the file at the path @p file_path if it already exists.\n
+    /// @note This functions is the recommended way to save recording with SDK driver.
+    /// It uses a separate thread to write the file for efficiency, so it will not slow down the decoding thread
+    /// as opposed to \ref I_EventsStream::log_raw_data and \ref I_EventsStream::stop_log_raw_data
+    /// It also enables writing to supported formats other than RAW file, altough the writing speed will probably
+    /// decrease for those formats
+    /// It can also be called several times with different paths to record the stream to multiple files at the same time
+    /// @note For more control over the way the data is recorded and to select with precision which events
+    /// will be recorded, you may directly use the API provided by \ref EventFileWriter and its inherited classes
+    /// For more information, refer to the metavision_file_cutter sample
+    /// @param file_path Path to the file containing the recorded data
+    /// @return true if recording could be started, false otherwise
+    bool start_recording(const std::string &file_path);
 
-    /// @brief Stops an ongoing recording
+    /// @brief Stops recording data from camera to the specified path
+    ///
+    /// This function stops recording data to the file at the given @p file_path.\n
+    /// If the @p file_path is empty, all recordings of the currenct camera stream are stopped.\n
+    /// @param file_path Path to the file containing the recorded data. If empty, all ongoing recordings are stopped.
     /// @throw CameraException if the camera has not been initialized.
-    void stop_recording();
+    /// @return true if recording could be stopped, false otherwise
+    bool stop_recording(const std::string &file_path = std::string());
 
-    /// @brief Returns @ref CameraConfiguration of the camera that holds the camera properties (dimensions, camera
-    /// biases, ...)
+    /// @brief Returns @ref CameraConfiguration of the camera that holds the available camera properties (serial,
+    /// systemID, format of events, etc.)
     ///
     /// Read-only structure.
     ///
     /// @sa @ref CameraConfiguration
-    const CameraConfiguration &get_camera_configuration();
+    const CameraConfiguration &get_camera_configuration() const;
+
+    /// @brief Returns a dictionary of the camera metadata if available (e.g from a file which contains manually added
+    /// comments)
+    ///
+    /// Read-only structure.
+    const std::unordered_map<std::string, std::string> &get_metadata_map() const;
 
     /// @brief Gets the last decoded timestamp
     /// @return timestamp Last decoded timestamp
@@ -373,6 +402,15 @@ public:
     ///
     /// @return The @ref Device used internally by the class Camera
     Device &get_device();
+
+    /// @brief Gets corresponding @ref Device in HAL library
+    ///
+    /// This Device retrieved can then be used to call the different facilities of the camera.
+    /// for example: camera.get_device()->get_facility<Metavision::I_TriggerIn>()->enable(channel_id)
+    /// or: camera.get_device()->get_facility<Metavision::I_Monitoring>()->get_temperature())
+    ///
+    /// @return The @ref Device used internally by the class Camera
+    const Device &get_device() const;
 
     /// @brief For internal use
     class Private;

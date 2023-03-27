@@ -21,8 +21,10 @@
 #include <thread>
 
 #include "metavision/hal/device/device_discovery.h"
+#include "metavision/hal/facilities/i_events_stream_decoder.h"
 #include "metavision/hal/utils/raw_file_header.h"
 #include "metavision/sdk/base/utils/timestamp.h"
+#include "metavision/sdk/driver/camera_error_code.h"
 #include "metavision/utils/gtest/gtest_with_tmp_dir.h"
 #include "metavision/utils/gtest/gtest_custom.h"
 #include "metavision/sdk/core/utils/callback_manager.h"
@@ -62,7 +64,8 @@ protected:
     RawFileHeader get_default_header(bool evt2 = true) {
         RawFileHeader header_to_write;
         header_to_write.set_plugin_name(evt2 ? "hal_plugin_gen31_fx3" : "hal_plugin_gen4_fx3");
-        header_to_write.set_integrator_name("Prophesee");
+        header_to_write.set_plugin_integrator_name("Prophesee");
+        header_to_write.set_camera_integrator_name("Prophesee");
         header_to_write.set_field("serial_number", dummy_serial_);
 
         // Prophesee header only. Duplicated what PropheseeRawHeader does to be able to encode then read test RAW
@@ -138,6 +141,31 @@ protected:
         return data;
     }
 
+    enum class DatasetFileType { RAW = 1 << 0, HDF5 = 1 << 1, ALL = 1 << 0 | 1 << 1 };
+
+    std::vector<std::string> get_datasets_paths(DatasetFileType type) {
+        std::vector<std::string> datasets;
+        if (static_cast<int>(type) & static_cast<int>(DatasetFileType::RAW)) {
+            for (const auto &p :
+                 {"gen31_timer.raw", "gen4_evt2_hand.raw", "gen4_evt3_hand.raw", "blinking_gen4_with_ext_triggers.raw",
+                  "claque_doigt_evt21.raw", "standup_evt21-legacy.raw"}) {
+                datasets.push_back(
+                    (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / p).string());
+            }
+        }
+#ifdef HAS_HDF5
+        if (static_cast<int>(type) & static_cast<int>(DatasetFileType::HDF5)) {
+            for (const auto &p :
+                 {"gen31_timer.hdf5", "gen4_evt2_hand.hdf5", "gen4_evt3_hand.hdf5",
+                  "blinking_gen4_with_ext_triggers.hdf5", "claque_doigt_evt21.hdf5", "standup_evt21-legacy.hdf5"}) {
+                datasets.push_back(
+                    (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / p).string());
+            }
+        }
+#endif
+        return datasets;
+    }
+
     std::string tmp_file_;
     std::unique_ptr<std::ofstream> log_raw_data_;
     size_t bytes_written_{0};
@@ -190,136 +218,35 @@ TEST_F(Camera_Gtest, basic_exceptions) {
         FAIL();
     } catch (CameraException &e) { ASSERT_EQ(e.code().value(), CameraErrorCode::CameraNotInitialized); }
 
-    pimpl.is_init_ = true; // says the camera is initialized.
-
-    try {
-        pimpl.check_camera_device_instance();
-        FAIL();
-    } catch (CameraException &e) { ASSERT_EQ(e.code().value(), CameraErrorCode::CameraNotFound); }
-
-    try {
-        pimpl.check_biases_instance();
-        std::cout << "Should have thrown exception..." << std::endl;
-        FAIL();
-    } catch (CameraException &e) {
-        // internal errors should appear to the user as the main category error
-        ASSERT_NE(InternalInitializationErrors::ILLBiasesNotFound, e.code().value());
-        ASSERT_EQ(CameraErrorCode::InternalInitializationError, e.code().value());
-
-        // but the real error code must appear in the camera exception message
-        ASSERT_TRUE(error_message_found_in_exception(InternalInitializationErrors::ILLBiasesNotFound, e));
-    }
-
-    try {
-        pimpl.check_decoder_device_instance();
-        std::cout << "Should have thrown exception..." << std::endl;
-        FAIL();
-    } catch (CameraException &e) {
-        // internal errors should appear to the user as the main category error
-        ASSERT_NE(InternalInitializationErrors::IDecoderNotFound, e.code().value());
-        ASSERT_EQ(CameraErrorCode::InternalInitializationError, e.code().value());
-
-        // but the real error code must appear in the camera exception message
-        ASSERT_TRUE(error_message_found_in_exception(InternalInitializationErrors::IDecoderNotFound, e));
-    }
-
-    try {
-        pimpl.check_events_stream_instance();
-        std::cout << "Should have thrown exception..." << std::endl;
-        FAIL();
-    } catch (CameraException &e) {
-        // internal errors should appear to the user as the main category error
-        ASSERT_NE(InternalInitializationErrors::IEventsStreamNotFound, e.code().value());
-        ASSERT_EQ(CameraErrorCode::InternalInitializationError, e.code().value());
-
-        // but the real error code must appear in the camera exception message
-        ASSERT_TRUE(error_message_found_in_exception(InternalInitializationErrors::IEventsStreamNotFound, e));
-    }
-
-    try {
-        pimpl.check_ccam_instance();
-        std::cout << "Should have thrown exception..." << std::endl;
-        FAIL();
-    } catch (CameraException &e) {
-        // internal errors should appear to the user as the main category error
-        ASSERT_NE(InternalInitializationErrors::IDeviceControlNotFound, e.code().value());
-        ASSERT_EQ(CameraErrorCode::InternalInitializationError, e.code().value());
-
-        // but the real error code must appear in the camera exception message
-        ASSERT_TRUE(error_message_found_in_exception(InternalInitializationErrors::IDeviceControlNotFound, e));
-    }
-
-    try {
-        pimpl.check_decoder_device_instance();
-        std::cout << "Should have thrown exception..." << std::endl;
-        FAIL();
-    } catch (CameraException &e) {
-        // internal errors should appear to the user as the main category error
-        ASSERT_NE(InternalInitializationErrors::IDecoderNotFound, e.code().value());
-        ASSERT_EQ(CameraErrorCode::InternalInitializationError, e.code().value());
-
-        // but the real error code must appear in the camera exception message
-        ASSERT_TRUE(error_message_found_in_exception(InternalInitializationErrors::IDecoderNotFound, e));
-    }
-
     try {
         camera.biases().set_from_file(tmpdir_handler_->get_tmpdir_path() + ".bias");
         std::cout << "Should have thrown exception..." << std::endl;
         FAIL();
-    } catch (CameraException &e) {
-        // internal errors should appear to the user as the main category error
-        ASSERT_NE(InternalInitializationErrors::ILLBiasesNotFound, e.code().value());
-        ASSERT_EQ(CameraErrorCode::InternalInitializationError, e.code().value());
-
-        // but the real error code must appear in the camera exception message
-        ASSERT_TRUE(error_message_found_in_exception(InternalInitializationErrors::ILLBiasesNotFound, e));
-    }
+    } catch (CameraException &e) { ASSERT_EQ(e.code().value(), CameraErrorCode::CameraNotInitialized); }
 
     try {
         camera.raw_data().add_callback([](const uint8_t *data, size_t size) {});
         std::cout << "Should have thrown exception..." << std::endl;
         FAIL();
-    } catch (CameraException &e) { ASSERT_EQ(e.code().value(), CameraErrorCode::CameraNotFound); }
+    } catch (CameraException &e) { ASSERT_EQ(e.code().value(), CameraErrorCode::CameraNotInitialized); }
 
     try {
         camera.cd().add_callback([](const EventCD *, const EventCD *) {});
         std::cout << "Should have thrown exception..." << std::endl;
         FAIL();
-    } catch (CameraException &e) { ASSERT_EQ(e.code().value(), CameraErrorCode::CameraNotFound); }
+    } catch (CameraException &e) { ASSERT_EQ(e.code().value(), CameraErrorCode::CameraNotInitialized); }
 
     try {
         camera.ext_trigger().add_callback([](const EventExtTrigger *, const EventExtTrigger *) {});
         std::cout << "Should have thrown exception..." << std::endl;
         FAIL();
-    } catch (CameraException &e) { ASSERT_EQ(e.code().value(), CameraErrorCode::CameraNotFound); }
+    } catch (CameraException &e) { ASSERT_EQ(e.code().value(), CameraErrorCode::CameraNotInitialized); }
 
     try {
         camera.stop_recording();
         std::cout << "Should have thrown exception..." << std::endl;
         FAIL();
-    } catch (CameraException &e) {
-        // internal errors should appear to the user as the main category error
-        ASSERT_NE(InternalInitializationErrors::IEventsStreamNotFound, e.code().value());
-        ASSERT_EQ(CameraErrorCode::InternalInitializationError, e.code().value());
-
-        // but the real error code must appear in the camera exception message
-        ASSERT_TRUE(error_message_found_in_exception(InternalInitializationErrors::IEventsStreamNotFound, e));
-    }
-
-    auto device_builder = make_device_builder();
-    pimpl.device_       = device_builder();
-    try {
-        camera.geometry();
-        std::cout << "Should have thrown exception..." << std::endl;
-        FAIL();
-    } catch (CameraException &e) {
-        // internal errors should appear to the user as the main category error
-        ASSERT_NE(InternalInitializationErrors::IGeometryNotFound, e.code().value());
-        ASSERT_EQ(CameraErrorCode::InternalInitializationError, e.code().value());
-
-        // but the real error code must appear in the camera exception message
-        ASSERT_TRUE(error_message_found_in_exception(InternalInitializationErrors::IGeometryNotFound, e));
-    }
+    } catch (CameraException &e) { ASSERT_EQ(e.code().value(), CameraErrorCode::CameraNotInitialized); }
 }
 
 TEST_F(Camera_Gtest, basic_exceptions_with_additional_info) {
@@ -474,14 +401,8 @@ TYPED_TEST_WITH_CAMERA(Camera_GtestT, camera_file_logger_n_events,
     camera.stop();
     ASSERT_TRUE(boost::filesystem::exists(file));
 
-    ASSERT_NO_THROW(camera = Camera::from_file(file));
-    Camera::Private &priv                          = camera.get_pimpl();
-    priv.is_init_                                  = true;
-    priv.raw_file_stream_config_.do_time_shifting_ = TypeParam::do_time_shifting_;
-    priv.device_                                   = DeviceDiscovery::open_raw_file(file, priv.raw_file_stream_config_);
-    ASSERT_NE(nullptr, priv.device_.get());
-    priv.from_file_ = true;
-    priv.init_common_interfaces();
+    Metavision::FileConfigHints hints = Metavision::FileConfigHints().time_shift(TypeParam::do_time_shifting_);
+    ASSERT_NO_THROW(camera = Camera::from_file(file, hints));
 
     size_t check_num_events = size_t(0);
     camera.cd().add_callback([&check_num_events](const EventCD *begin, const EventCD *end) {
@@ -531,33 +452,16 @@ TEST_F(Camera_Gtest, raw_default_constructor) {
 
     try {
         Camera camera = Camera::from_file(tmp_file_);
-        auto &pimpl   = camera.get_pimpl();
-        pimpl.check_biases_instance();
+        camera.biases();
         std::cout << "Should have thrown exception..." << std::endl;
         FAIL();
     } catch (CameraException &e) {
-        // should not find biases since initialization from a file.
-        ASSERT_NE(InternalInitializationErrors::ILLBiasesNotFound, e.code().value());
-        ASSERT_EQ(CameraErrorCode::InternalInitializationError, e.code().value());
-
-        // but the real error code must appear in the camera exception message
-        ASSERT_TRUE(error_message_found_in_exception(InternalInitializationErrors::ILLBiasesNotFound, e));
-    }
-
-    try {
-        Camera camera = Camera::from_file(tmp_file_);
-        auto &pimpl   = camera.get_pimpl();
-        pimpl.check_ccam_instance();
-        std::cout << "Should have thrown exception..." << std::endl;
-        FAIL();
-    } catch (CameraException &e) {
-        // should not find biases since initialization from a file.
         // internal errors should appear to the user as the main category error
-        ASSERT_NE(InternalInitializationErrors::IDeviceControlNotFound, e.code().value());
-        ASSERT_EQ(CameraErrorCode::InternalInitializationError, e.code().value());
+        ASSERT_NE(UnsupportedFeatureErrors::BiasesUnavailable, e.code().value());
+        ASSERT_EQ(CameraErrorCode::UnsupportedFeature, e.code().value());
 
         // but the real error code must appear in the camera exception message
-        ASSERT_TRUE(error_message_found_in_exception(InternalInitializationErrors::IDeviceControlNotFound, e));
+        ASSERT_TRUE(error_message_found_in_exception(UnsupportedFeatureErrors::BiasesUnavailable, e));
     }
 }
 
@@ -745,11 +649,8 @@ TEST_F_WITH_CAMERA(Camera_Gtest, camera_succession_of_open_start_stop) {
 TEST_F(Camera_Gtest, robust_start_stop) {
     auto buffer = write_evt2_raw_data();
 
-    Camera camera                                   = Camera::from_file(tmp_file_);
-    auto &pimpl                                     = camera.get_pimpl();
-    pimpl.raw_file_stream_config_.n_events_to_read_ = 1;
-    pimpl.device_ = DeviceDiscovery::open_raw_file(tmp_file_, pimpl.raw_file_stream_config_);
-    pimpl.init_common_interfaces();
+    Metavision::FileConfigHints hints = Metavision::FileConfigHints().max_read_per_op(1 * 32);
+    Camera camera                     = Camera::from_file(tmp_file_, hints);
 
     std::atomic<bool> wait(true);
     std::atomic<uint32_t> n_events_read(0);
@@ -830,15 +731,10 @@ TEST_F(Camera_Gtest, raw_events_callbacks_decoding_check) {
     const auto expected_events = write_evt2_raw_data();
 
     std::vector<EventCD> received_events;
-    Camera camera;
-    try {
-        camera = Camera::from_file(tmp_file_);
-    } catch (CameraException &e) { FAIL(); }
-
-    Future::I_Decoder *i_decoder                 = camera.get_pimpl().i_future_decoder_;
-    I_EventDecoder<EventCD> *i_cd_events_decoder = camera.get_pimpl().device_->get_facility<I_EventDecoder<EventCD>>();
+    auto device                                    = DeviceDiscovery::open_raw_file(tmp_file_);
+    I_EventsStreamDecoder *i_events_stream_decoder = device->get_facility<I_EventsStreamDecoder>();
+    I_EventDecoder<EventCD> *i_cd_events_decoder   = device->get_facility<I_EventDecoder<EventCD>>();
     ASSERT_TRUE(i_cd_events_decoder);
-
     i_cd_events_decoder->add_event_buffer_callback(
         [&received_events](const EventCD *begin, const Metavision::EventCD *end) {
             for (const EventCD *ev = begin; ev != end; ++ev) {
@@ -846,10 +742,15 @@ TEST_F(Camera_Gtest, raw_events_callbacks_decoding_check) {
             }
         });
 
-    camera.raw_data().add_callback([i_decoder](const uint8_t *data, size_t size) {
+    Camera camera;
+    try {
+        camera = Camera::from_file(tmp_file_);
+    } catch (CameraException &e) { FAIL(); }
+
+    camera.raw_data().add_callback([i_events_stream_decoder](const uint8_t *data, size_t size) {
         auto raw_data_begin = const_cast<uint8_t *>(data);
         auto raw_data_end   = const_cast<uint8_t *>(data + size);
-        i_decoder->decode(raw_data_begin, raw_data_end);
+        i_events_stream_decoder->decode(raw_data_begin, raw_data_end);
     });
 
     camera.start();
@@ -859,7 +760,7 @@ TEST_F(Camera_Gtest, raw_events_callbacks_decoding_check) {
     }
 
     timestamp ts_shift;
-    ASSERT_TRUE(i_decoder->get_timestamp_shift(ts_shift));
+    ASSERT_TRUE(i_events_stream_decoder->get_timestamp_shift(ts_shift));
 
     ASSERT_EQ(expected_events.size(), received_events.size());
 
@@ -1226,7 +1127,7 @@ TEST_F(Camera_Gtest, test_afk_unsupported_on_rawfile) {
     write_evt2_raw_data();
     Camera camera = Camera::from_file(tmp_file_);
     ASSERT_THROW(camera.antiflicker_module(), CameraException);
-    ASSERT_THROW(camera.noise_filter_module(), CameraException);
+    ASSERT_THROW(camera.event_trail_filter_module(), CameraException);
 }
 
 TEST_F(Camera_Gtest, decode_evt2_data) {
@@ -1234,7 +1135,7 @@ TEST_F(Camera_Gtest, decode_evt2_data) {
     std::vector<EventCD> received_events;
     Camera camera;
     try {
-        camera = Camera::from_file(tmp_file_, false);
+        camera = Camera::from_file(tmp_file_, FileConfigHints().real_time_playback(false));
     } catch (CameraException &e) { FAIL(); }
 
     camera.cd().add_callback(
@@ -1264,15 +1165,21 @@ TEST_F(Camera_Gtest, decode_evt2_data) {
 
 TEST_F_WITH_DATASET(Camera_Gtest, decode_evt3_data) {
     // Read the dataset provided
-    std::string dataset_file_path =
-        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen4_evt3_hand.raw").string();
+    std::string dataset_file_path = (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" /
+                                     "blinking_gen4_with_ext_triggers.raw")
+                                        .string();
 
-    Camera camera = Camera::from_file(dataset_file_path, false);
+    Camera camera = Camera::from_file(dataset_file_path, FileConfigHints().real_time_playback(false));
 
     // Read the file
     uint32_t n_cd_decoded = 0;
     camera.cd().add_callback(
         [&n_cd_decoded](const EventCD *ev_begin, const EventCD *ev_end) { n_cd_decoded += ev_end - ev_begin; });
+    uint32_t n_ext_triggers_decoded = 0;
+    camera.ext_trigger().add_callback(
+        [&n_ext_triggers_decoded](const EventExtTrigger *ev_begin, const EventExtTrigger *ev_end) {
+            n_ext_triggers_decoded += ev_end - ev_begin;
+        });
     uint32_t n_raw = 0;
     camera.raw_data().add_callback([&n_raw](const uint8_t *, size_t size) { n_raw += size; });
 
@@ -1283,22 +1190,83 @@ TEST_F_WITH_DATASET(Camera_Gtest, decode_evt3_data) {
     }
 
     camera.stop();
-    ASSERT_EQ(18094969, n_cd_decoded);
-    ASSERT_EQ(96786804, n_raw);
+    ASSERT_EQ(2003016, n_cd_decoded);
+    ASSERT_EQ(82, n_ext_triggers_decoded);
+    ASSERT_EQ(11924600, n_raw);
+}
+
+#ifdef HAS_HDF5
+TEST_F_WITH_DATASET(Camera_Gtest, decode_hdf5_data) {
+    // Read the dataset provided
+    std::string dataset_file_path = (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" /
+                                     "blinking_gen4_with_ext_triggers.hdf5")
+                                        .string();
+
+    Camera camera = Camera::from_file(dataset_file_path, FileConfigHints().real_time_playback(false));
+
+    // Read the file
+    uint32_t n_cd_decoded = 0;
+    camera.cd().add_callback(
+        [&n_cd_decoded](const EventCD *ev_begin, const EventCD *ev_end) { n_cd_decoded += ev_end - ev_begin; });
+    uint32_t n_ext_triggers_decoded = 0;
+    camera.ext_trigger().add_callback(
+        [&n_ext_triggers_decoded](const EventExtTrigger *ev_begin, const EventExtTrigger *ev_end) {
+            n_ext_triggers_decoded += ev_end - ev_begin;
+        });
+    ASSERT_THROW(camera.raw_data().add_callback([](const uint8_t *, size_t) {}), CameraException);
+
+    camera.start();
+
+    while (camera.is_running()) {
+        std::this_thread::sleep_for(std::chrono::microseconds(1000));
+    }
+
+    camera.stop();
+    ASSERT_EQ(2003016, n_cd_decoded);
+    ASSERT_EQ(82, n_ext_triggers_decoded);
+}
+#endif
+
+TEST_F_WITH_DATASET(Camera_Gtest, decode_evt3_erccounter_data) {
+    // Read the dataset provided
+    std::string dataset_file_path =
+        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen4_evt3_hand.raw").string();
+
+    Camera camera = Camera::from_file(dataset_file_path, FileConfigHints().real_time_playback(false));
+
+    // Read the file
+    uint32_t count_in_total  = 0;
+    uint32_t count_out_total = 0;
+    camera.erc_counter().add_callback(
+        [&count_in_total, &count_out_total](const EventERCCounter *ev_begin, const EventERCCounter *ev_end) {
+            ASSERT_EQ(1, std::distance(ev_begin, ev_end));
+            if (ev_begin->is_output)
+                count_out_total += ev_begin->event_count;
+            else
+                count_in_total += ev_begin->event_count;
+        });
+    camera.start();
+
+    while (camera.is_running()) {
+        std::this_thread::sleep_for(std::chrono::microseconds(1000));
+    }
+
+    camera.stop();
+    ASSERT_EQ(18158913, count_in_total);
+    ASSERT_EQ(18095375, count_out_total);
 }
 
 TEST_F_WITH_DATASET(Camera_Gtest, offline_streaming_control_not_ready) {
-    std::vector<std::string> datasets = {
-        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen31_timer.raw").string(),
-        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen4_evt2_hand.raw").string(),
-        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen4_evt3_hand.raw").string()};
+    std::vector<std::string> datasets = get_datasets_paths(DatasetFileType::RAW);
 
     for (const auto &dataset : datasets) {
         boost::filesystem::remove(dataset + "_index");
         ASSERT_FALSE(boost::filesystem::exists(dataset + "_index"));
 
         // With this function, index building is not requested, so OSC is never ready
-        Camera camera = Camera::from_file(dataset);
+        Metavision::FileConfigHints hints;
+        hints.set("index", false);
+        Camera camera = Camera::from_file(dataset, hints);
 
         ASSERT_NO_THROW(camera.offline_streaming_control());
 
@@ -1308,18 +1276,15 @@ TEST_F_WITH_DATASET(Camera_Gtest, offline_streaming_control_not_ready) {
     }
 }
 
-TEST_F_WITH_DATASET(Camera_Gtest, offline_streaming_control_ready) {
-    std::vector<std::string> datasets = {
-        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen31_timer.raw").string(),
-        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen4_evt2_hand.raw").string(),
-        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen4_evt3_hand.raw").string()};
+TEST_F_WITH_DATASET(Camera_Gtest, offline_streaming_control_ready_raw_files) {
+    std::vector<std::string> datasets = get_datasets_paths(DatasetFileType::RAW);
 
     for (const auto &dataset : datasets) {
         boost::filesystem::remove(dataset + "_index");
         ASSERT_FALSE(boost::filesystem::exists(dataset + "_index"));
 
         // With this function, index building is requested, so OSC should be ready
-        Camera camera = Camera::from_file(dataset, false, Metavision::Future::RawFileConfig());
+        Camera camera = Camera::from_file(dataset);
 
         ASSERT_NO_THROW(camera.offline_streaming_control());
 
@@ -1336,18 +1301,32 @@ TEST_F_WITH_DATASET(Camera_Gtest, offline_streaming_control_ready) {
     }
 }
 
+TEST_F_WITH_DATASET(Camera_Gtest, offline_streaming_control_ready_hdf5_files) {
+    std::vector<std::string> datasets = get_datasets_paths(DatasetFileType::HDF5);
+
+    for (const auto &dataset : datasets) {
+        Metavision::FileConfigHints hints = Metavision::FileConfigHints().real_time_playback(false);
+        Camera camera                     = Camera::from_file(dataset, hints);
+        ASSERT_NO_THROW(camera.offline_streaming_control());
+        ASSERT_TRUE(camera.offline_streaming_control().is_ready());
+    }
+}
+
 TEST_F_WITH_DATASET(Camera_Gtest, offline_streaming_control_seek_range) {
-    std::vector<std::string> datasets = {
-        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen31_timer.raw").string(),
-        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen4_evt2_hand.raw").string(),
-        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen4_evt3_hand.raw").string()};
+    std::vector<std::string> datasets = get_datasets_paths(DatasetFileType::ALL);
 
-    std::vector<std::pair<Metavision::timestamp, Metavision::timestamp>> ranges = {
-        {16, 13042000}, {49, 10442000}, {5714, 15441920}};
-
+    std::vector<std::pair<Metavision::timestamp, Metavision::timestamp>> ranges;
+    // RAW
+    ranges.insert(ranges.end(),
+                  {{16, 13042000}, {49, 10442000}, {5714, 15441920}, {19, 4194001}, {33, 2782000}, {5, 5834034}});
+    // HDF5
+    ranges.insert(ranges.end(),
+                  {{16, 13042000}, {49, 10442000}, {5714, 15000000}, {19, 4194001}, {33, 2782000}, {5, 5834034}});
     size_t i = 0;
     for (const auto &dataset : datasets) {
-        Camera camera = Camera::from_file(dataset, false, Metavision::Future::RawFileConfig());
+        // With this function, index building is requested, so OSC should be ready
+        Metavision::FileConfigHints hints = Metavision::FileConfigHints().real_time_playback(false);
+        Camera camera                     = Camera::from_file(dataset, hints);
 
         int max_trials = 1000;
         for (int i = 0; i < max_trials; ++i) {
@@ -1364,17 +1343,19 @@ TEST_F_WITH_DATASET(Camera_Gtest, offline_streaming_control_seek_range) {
 }
 
 TEST_F_WITH_DATASET(Camera_Gtest, offline_streaming_control_seeks) {
-    std::vector<std::string> datasets = {
-        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen31_timer.raw").string(),
-        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen4_evt2_hand.raw").string(),
-        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen4_evt3_hand.raw").string()};
+    std::vector<std::string> datasets = get_datasets_paths(DatasetFileType::ALL);
 
-    std::vector<std::pair<Metavision::timestamp, Metavision::timestamp>> ranges = {
-        {16, 13042000}, {49, 10442000}, {5714, 15441920}};
-
+    std::vector<std::pair<Metavision::timestamp, Metavision::timestamp>> ranges;
+    // RAW
+    ranges.insert(ranges.end(),
+                  {{16, 13042000}, {49, 10442000}, {5714, 15441920}, {19, 4194001}, {33, 2782000}, {5, 5834034}});
+    // HDF5
+    ranges.insert(ranges.end(),
+                  {{16, 13042000}, {49, 10442000}, {5714, 15000000}, {19, 4194001}, {33, 2782000}, {5, 5834034}});
     size_t i = 0;
     for (const auto &dataset : datasets) {
-        Camera camera = Camera::from_file(dataset, false, Metavision::Future::RawFileConfig());
+        Metavision::FileConfigHints hints = Metavision::FileConfigHints().real_time_playback(false);
+        Camera camera                     = Camera::from_file(dataset, hints);
 
         std::atomic<bool> decoded{false};
         Metavision::timestamp ts, last_ts = 0;
@@ -1423,13 +1404,15 @@ TEST_F_WITH_DATASET(Camera_Gtest, offline_streaming_control_seeks) {
             auto target = j % 2 ? targets[targets.size() - j] : targets[j];
             decoded     = false;
 
-            // some seek will have the camera stopped when reaching near the end of file
-            // make sure we start the camera before seeking
+            ASSERT_TRUE(camera.offline_streaming_control().seek(target));
+
+            // some seek will reach the end of file
+            // make sure we restart the camera before seeking
             if (!camera.is_running()) {
+                camera.stop();
                 camera.start();
             }
 
-            ASSERT_TRUE(camera.offline_streaming_control().seek(target));
             while (!decoded) {}
             ASSERT_GE(target, ts);
         }

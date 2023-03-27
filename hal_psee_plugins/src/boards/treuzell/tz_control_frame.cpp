@@ -9,7 +9,7 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-#include "boards/treuzell/tz_control_frame.h"
+#include "metavision/psee_hw_layer/boards/treuzell/tz_control_frame.h"
 #include "boards/treuzell/treuzell_command_definition.h"
 #include <stdexcept>
 #include <cstring>
@@ -57,9 +57,8 @@ void TzCtrlFrame::swap_and_check_answer(std::vector<uint8_t> &x) {
 
     vect.swap(x);
     frame = reinterpret_cast<ctrlFrameHeader *>(vect.data());
-    // Most devices are currently broken, rely on USB for size
-    //    if (frame->size != (vect.size() - sizeof(ctrlFrameHeader)))
-    //        throw std::system_error(TZ_SIZE_MISMATCH, TzError());
+    if (frame->size != (vect.size() - sizeof(ctrlFrameHeader)))
+        throw std::system_error(TZ_SIZE_MISMATCH, TzError());
     if (frame->property == TZ_UNKNOWN_CMD)
         throw std::system_error(TZ_NOT_IMPLEMENTED, TzError());
     if (frame->property == (req_property | TZ_FAILURE_FLAG))
@@ -158,6 +157,12 @@ std::vector<std::string> TzDeviceStringsCtrlFrame::get_strings() {
     }
 
     return res;
+}
+
+void TzDeviceStringsCtrlFrame::push_back(const std::string &str) {
+    auto size = vect.size();
+    vect.resize(vect.size() + str.size() + 1);
+    memcpy(vect.data() + size, str.c_str(), str.size() + 1);
 }
 
 } // namespace Metavision

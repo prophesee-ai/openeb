@@ -251,6 +251,30 @@ TEST(GenericHeader_GTest, add_date) {
     ASSERT_NE(-1, date.tm_sec);
 }
 
+TEST(GenericHeader_GTest, stream_with_end) {
+    // GIVEN a valid istream with a header containing an explicit end marker
+    std::stringstream ss;
+    ss << "% Key1 Value1" << std::endl;
+    ss << "% Key2 Value2" << std::endl;
+    ss << "% Key3 Value3" << std::endl;
+    ss << "% Key3 Value3" << std::endl;
+    ss << "% end" << std::endl;
+    ss << "% Key4 Value4" << std::endl;
+
+    // WHEN building a generic header from it
+    Metavision::GenericHeader header(ss);
+
+    // THEN header map is not empty
+    ASSERT_FALSE(header.empty());
+
+    // AND THEN then values for Key1-3 can be retrieved but not Key4
+    ASSERT_EQ("Value1", header.get_field("Key1"));
+    ASSERT_EQ("Value2", header.get_field("Key2"));
+    ASSERT_EQ("Value3", header.get_field("Key3"));
+    ASSERT_EQ("", header.get_field("end"));
+    ASSERT_EQ("", header.get_field("Key4"));
+}
+
 class GenericHeaderWithFile_GTest : public Metavision::GTestWithTmpDir {
 protected:
     virtual void SetUp() override {

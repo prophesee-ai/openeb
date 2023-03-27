@@ -7,9 +7,11 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-target_sources(metavision_hal_libusb_utils_obj PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/psee_camera_discovery.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/psee_libusb_data_transfer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/psee_libusb_board_command.cpp
+target_sources(metavision_hal_fx3_protocol_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/utils_fx3_ram_flash.cpp
+)
+
+target_sources(metavision_psee_hw_layer_obj PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/psee_libusb.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/psee_libusb_data_transfer.cpp
 )

@@ -10,9 +10,11 @@
  **********************************************************************************************************************/
 
 #include "devices/treuzell/tz_streamer.h"
-#include "boards/treuzell/tz_libusb_board_command.h"
-#include "boards/treuzell/tz_control_frame.h"
+#include "devices/treuzell/tz_device_builder.h"
+#include "metavision/psee_hw_layer/boards/treuzell/tz_libusb_board_command.h"
+#include "metavision/psee_hw_layer/boards/treuzell/tz_control_frame.h"
 #include "boards/treuzell/treuzell_command_definition.h"
+#include "metavision/psee_hw_layer/utils/psee_format.h"
 
 namespace Metavision {
 
@@ -30,7 +32,7 @@ std::shared_ptr<TzDevice> TzStreamer::build(std::shared_ptr<TzLibUSBBoardCommand
 }
 static TzRegisterBuildMethod method("treuzell,streamer", TzStreamer::build);
 
-void TzStreamer::spawn_facilities(DeviceBuilder &device_builder) {}
+void TzStreamer::spawn_facilities(DeviceBuilder &device_builder, const DeviceConfig &device_config) {}
 
 TzStreamer::~TzStreamer() {}
 
@@ -48,12 +50,29 @@ void TzStreamer::stop() {
     cmd->transfer_tz_frame(streamoff);
 }
 
-TzDevice::StreamFormat TzStreamer::get_output_format() {
+std::list<StreamFormat> TzStreamer::get_supported_formats() const {
+    auto c = child.lock();
+    if (c) {
+        return c->get_supported_formats();
+    }
+    return std::list<StreamFormat>();
+}
+
+StreamFormat TzStreamer::set_output_format(const std::string &format_name) {
+    auto c = child.lock();
+    if (c) {
+        return c->set_output_format(format_name);
+    }
+
+    return StreamFormat("NONE");
+}
+
+StreamFormat TzStreamer::get_output_format() const {
     auto input = child.lock();
     if (input)
         return input->get_output_format();
     else
-        return {std::string("NONE"), nullptr};
+        return StreamFormat("NONE");
 }
 
 } // namespace Metavision

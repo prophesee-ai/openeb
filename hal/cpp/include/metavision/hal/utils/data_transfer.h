@@ -72,6 +72,18 @@ public:
     /// @brief Stops the transfers
     void stop();
 
+    /// @brief Suspends the transfers
+    /// @note This function can be used to temporarily suspend transfers, while keeping the
+    /// transfer thread alive. To resume the transfers, call @ref resume.
+    void suspend();
+
+    /// @brief Resumes the transfers
+    void resume();
+
+    /// @brief Check if the transfers are stopped
+    /// @return True if the transfers are stopped, false otherwise
+    bool stopped() const;
+
     /// @brief Adds a callback called when the data transfer starts or stops transferring data
     /// @warning This method is not thread safe. You should add/remove the various callback before starting the
     /// transfers
@@ -122,16 +134,19 @@ protected:
     /// @return A std::pair with first the next buffer from the pool and second a boolean defining if the input
     /// buffer as been dropped
     template<typename... Args>
-    DataTransfer::BufferPtr transfer_data(BufferPtr &buffer, Args &&...args) {
+    std::pair<DataTransfer::BufferPtr, bool> transfer_data(BufferPtr &buffer, Args &&...args) {
+        bool is_buffer_dropped = false;
         if (allow_buffer_drop_ && !has_available_buffer()) {
             // No storage left and we don't want to wait on a buffer to be freed.
             // We drop the buffer, back to the pool !
             buffer.reset();
+            is_buffer_dropped = true;
         } else {
             fire_callbacks(buffer);
         }
 
-        return get_buffer(std::forward<Args>(args)...);
+        auto new_buffer = get_buffer(std::forward<Args>(args)...);
+        return std::make_pair(new_buffer, is_buffer_dropped);
     }
 
     /// @brief Requests a new buffer from the pool
@@ -197,6 +212,10 @@ private:
     std::atomic<bool> stop_{false};
     uint32_t cb_index_{0};
     const bool allow_buffer_drop_{false};
+
+    std::mutex suspend_mutex_, running_mutex_;
+    std::condition_variable suspend_cond_, running_cond_;
+    std::atomic<bool> suspend_{false}, running_{false};
 };
 
 } // namespace Metavision

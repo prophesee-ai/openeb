@@ -12,7 +12,7 @@
 #ifndef METAVISION_HAL_TZ_STREAMER_H
 #define METAVISION_HAL_TZ_STREAMER_H
 
-#include "devices/treuzell/tz_device.h"
+#include "metavision/psee_hw_layer/devices/treuzell/tz_device.h"
 
 namespace Metavision {
 
@@ -29,10 +29,12 @@ public:
 
     virtual void start();
     virtual void stop();
-    virtual StreamFormat get_output_format();
+    virtual std::list<StreamFormat> get_supported_formats() const override;
+    StreamFormat set_output_format(const std::string &format_name) override;
+    StreamFormat get_output_format() const override;
 
 protected:
-    virtual void spawn_facilities(DeviceBuilder &device_builder);
+    virtual void spawn_facilities(DeviceBuilder &device_builder, const DeviceConfig &device_config);
 };
 
 } // namespace Metavision

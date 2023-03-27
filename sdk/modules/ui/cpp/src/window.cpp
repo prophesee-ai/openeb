@@ -27,7 +27,7 @@ void Window::show(const cv::Mat &image, bool auto_poll) {
 
     auto *prev_context = glfwGetCurrentContext();
 
-    glfwMakeContextCurrent(glfwWindow_);
+    glfwMakeContextCurrent(glfw_window_);
 
     detail::upload_texture(image, tex_id_);
 

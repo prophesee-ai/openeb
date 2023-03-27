@@ -40,6 +40,7 @@ def _{runtime}_kernel_{func_name}(
                     {on_start}
 
                     for tt in range(start_f, end_f):
+
                         if first_time and tt == start_f:
                             log_state_at_xy = log_sequence[y, x, start_f]
                             continue
@@ -73,6 +74,7 @@ def _{runtime}_kernel_{func_name}(
                         #         ratio = dt_since_last_image / delta_t
                         #         prev_ref_val = it * (1-ratio) + itdt * ratio
                         #         it = prev_ref_val
+
                         #         last_image_ts = time_end_refractory_period
 
                         if abs(itdt - prev_ref_val) > C:
@@ -82,7 +84,7 @@ def _{runtime}_kernel_{func_name}(
                                 current_ref_val += polC
 
                                 if (pol > 0 and current_ref_val > it and current_ref_val <= itdt) \
-                                        or (pol < 0 and current_ref_val < it and current_ref_val >= itdt):
+                                        or  (pol < 0 and current_ref_val < it and current_ref_val >= itdt):
                                     edt = (current_ref_val - it) * delta_t / (itdt - it)
                                     ts = int(last_image_ts + edt)
                                     dt = ts - last_timestamp_at_xy
@@ -103,8 +105,8 @@ def _{runtime}_kernel_{func_name}(
                             intensity = math.exp(itdt)
                             shot_noise_factor = (shot_noise_micro_hz / 2) * delta_t / (1 + num_events)
                             shot_noise_factor *= (-0.75 * intensity + 1)
-                            shot_on_prob = shot_noise_factor * threshold_mu / thresholds[1, b, y, x]
-                            shot_off_prob = shot_noise_factor * threshold_mu / thresholds[0, b, y, x]
+                            shot_on_prob = shot_noise_factor * threshold_mu[1] / thresholds[1, b, y, x]
+                            shot_off_prob = shot_noise_factor * threshold_mu[0] / thresholds[0, b, y, x]
                             rand_on = rng_states[b, y, x] * (math.sin(curr_image_ts) + 1) / 2
                             rand_off = rng_states[b, y, x] * (math.cos(curr_image_ts) + 1) / 2
                             if rand_on > (1 - shot_on_prob):
@@ -172,17 +174,22 @@ def format_kernel_strings(func_name="", params="", default_params="", runtimes=(
     return "\n".join(format_kernel_string(func_name=func_name, params=params, default_params=default_params,
                                           runtime=runtime, on_event_write=on_event_write,
                                           documentation=documentation, on_start=on_start) for runtime in runtimes)
+#######################################################################################################################
 
 
 exec(format_kernel_strings(func_name="count_events", params="counts", on_event_write="counts[b, y, x] += 1",
                            documentation="Counts num_events / pixel "))
 
+#######################################################################################################################
 
 exec(format_kernel_strings(
     func_name="fill_events", params="events, offsets", on_start="index = offsets[b, y, x]",
     on_event_write="events[index, 0] = int(b); events[index, 1] = int(x); events[index, 2] = int(y);"
                    " events[index, 3] = pol; events[index, 4] = ts; index += 1",
     documentation="Fills an event-buffer "))
+
+
+#######################################################################################################################
 
 
 def fill_voxel_sequence(b, ts, x, y, pol, nbins, target_times, bin_index, voxel_grid, bilinear, split):

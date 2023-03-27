@@ -17,7 +17,7 @@
 #include "utils/psee_pattern_generator.h"
 
 namespace Metavision {
-class PseeLibUSBBoardCommand;
+class Fx3LibUSBBoardCommand;
 class RegisterMap;
 
 class Gen31PatternGenerator : public PseePatternGenerator {

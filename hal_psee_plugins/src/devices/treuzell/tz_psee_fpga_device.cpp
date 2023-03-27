@@ -9,10 +9,11 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-#include "devices/treuzell/tz_psee_fpga_device.h"
-#include "boards/treuzell/tz_libusb_board_command.h"
+#include "metavision/psee_hw_layer/devices/treuzell/tz_psee_fpga_device.h"
+#include "metavision/psee_hw_layer/boards/treuzell/tz_libusb_board_command.h"
 #include <thread>
 #include <sstream>
+#include "metavision/hal/utils/hal_log.h"
 
 #define STEREO_SYSTEM_CONFIG_ID_ADDR 0x00000800
 #define STEREO_SYSTEM_CONFIG_VERSION_ADDR 0x00000804
@@ -47,19 +48,39 @@ void TzPseeFpgaDevice::get_device_info(I_HW_Identification::SystemInfo &infos, s
 }
 
 uint32_t TzPseeFpgaDevice::get_system_id() const {
-    return cmd->read_device_register(tzID, STEREO_SYSTEM_CONFIG_ID_ADDR)[0];
+    try {
+        return cmd->read_device_register(tzID, STEREO_SYSTEM_CONFIG_ID_ADDR)[0];
+    } catch (const std::system_error &e) {
+        MV_HAL_LOG_WARNING() << "Could not fetch" << name << "system_id" << e.what();
+        return 0;
+    }
 }
 
 uint32_t TzPseeFpgaDevice::get_system_version() const {
-    return cmd->read_device_register(tzID, STEREO_SYSTEM_CONFIG_VERSION_ADDR)[0];
+    try {
+        return cmd->read_device_register(tzID, STEREO_SYSTEM_CONFIG_VERSION_ADDR)[0];
+    } catch (const std::system_error &e) {
+        MV_HAL_LOG_WARNING() << "Could not fetch" << name << "system_version" << e.what();
+        return 0;
+    }
 }
 
 uint32_t TzPseeFpgaDevice::get_system_build_date() const {
-    return cmd->read_device_register(tzID, STEREO_SYSTEM_CONFIG_BUILD_DATE_ADDR)[0];
+    try {
+        return cmd->read_device_register(tzID, STEREO_SYSTEM_CONFIG_BUILD_DATE_ADDR)[0];
+    } catch (const std::system_error &e) {
+        MV_HAL_LOG_WARNING() << "Could not fetch" << name << "system_build_date" << e.what();
+        return 0;
+    }
 }
 
 uint32_t TzPseeFpgaDevice::get_system_version_control_id() const {
-    return cmd->read_device_register(tzID, STEREO_SYSTEM_CONFIG_VERSION_CONTROL_ID_ADDR)[0];
+    try {
+        return cmd->read_device_register(tzID, STEREO_SYSTEM_CONFIG_VERSION_CONTROL_ID_ADDR)[0];
+    } catch (const std::system_error &e) {
+        MV_HAL_LOG_WARNING() << "Could not fetch" << name << "system_version_control_id" << e.what();
+        return 0;
+    }
 }
 
 } // namespace Metavision

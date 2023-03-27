@@ -9,6 +9,7 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
+#include <iostream>
 #include <stdexcept>
 #include <fstream>
 #include <boost/filesystem.hpp>
@@ -19,7 +20,7 @@ namespace Metavision {
 
 CvVideoRecorder::CvVideoRecorder(const std::string &output_video_file, const int fourcc, const uint32_t fps,
                                  const cv::Size &size, bool colored) :
-    writer_(output_video_file, fourcc, fps, size, colored) {
+    writer_(output_video_file, fourcc, fps, size, colored), data_to_write_pool_(DataPool::make_bounded()) {
     if (!writer_.isOpened()) {
         std::string message = "'" + output_video_file + "' is not writable. ";
         auto p              = boost::filesystem::path(output_video_file);
@@ -34,7 +35,10 @@ CvVideoRecorder::CvVideoRecorder(const std::string &output_video_file, const int
 }
 
 CvVideoRecorder::~CvVideoRecorder() {
-    stop();
+    try {
+        // VideoWriter can throw when released during stop()
+        stop();
+    } catch (...) {}
 }
 
 bool CvVideoRecorder::start() {
@@ -43,6 +47,7 @@ bool CvVideoRecorder::start() {
 
 void CvVideoRecorder::stop() {
     recorder_thread_.stop();
+    writer_.release();
 }
 
 void CvVideoRecorder::write(cv::Mat &data) {

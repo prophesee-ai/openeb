@@ -41,12 +41,12 @@ def main():
     device = initiate_device(path=args.input_path)
 
     # then we use the facility i_device_control to set mode master/slave
-    if device.get_i_device_control():
+    if device.get_i_camera_synchronization():
         if args.cam_mode == 'master':
-            device.get_i_device_control().set_mode_master()
+            device.get_i_camera_synchronization().set_mode_master()
             print('Set mode master successful. Make sure to start slave camera first')
         else:
-            device.get_i_device_control().set_mode_slave()
+            device.get_i_camera_synchronization().set_mode_slave()
             print('Set mode slave successful. Start master camera to launch streaming ')
 
     # Events iterator on the device

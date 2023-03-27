@@ -73,12 +73,13 @@ class TimedVideoStream(object):
 
         ts_path = os.path.splitext(video_filename)[0] + '_ts.npy'
         if os.path.exists(ts_path):
-            self.timestamps_us = np.load(ts_path) * 1e6
+            assert not override_fps, "Parameter override_fps should not be given if _ts.npy file is provided"
+            self.timestamps_us = (np.load(ts_path) * 1e6).round()
         else:
             timestamps_s, step = np.linspace(0, self.num_frames / self.freq, self.num_frames,
                                              endpoint=False, retstep=True)
             assert abs(step - 1 / self.freq) < 1e-6
-            self.timestamps_us = timestamps_s * 1e6
+            self.timestamps_us = (timestamps_s * 1e6).round()
 
         self.timestamps_us = self.timestamps_us[self.start_frame:self.end_frame]
 

@@ -10,6 +10,9 @@
 # Add bindings
 add_subdirectory(bindings)
 
+# Tests
+add_subdirectory(tests)
+
 # Documentations
 if (GENERATE_DOC_PYTHON_BINDINGS)
     add_subdirectory(doc)

@@ -12,6 +12,7 @@
 #ifndef METAVISION_HAL_DECODER_PROTOCOL_VIOLATION_H
 #define METAVISION_HAL_DECODER_PROTOCOL_VIOLATION_H
 
+#include <string>
 #include <unordered_map>
 
 #include "metavision/hal/utils/hal_error_code.h"

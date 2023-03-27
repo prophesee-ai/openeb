@@ -18,8 +18,9 @@
 #include "metavision/hal/utils/hal_error_code.h"
 #include "metavision/hal/utils/hal_exception.h"
 #include "devices/utils/device_system_id.h"
-#include "boards/rawfile/file_hw_identification.h"
+#include "metavision/psee_hw_layer/boards/rawfile/file_hw_identification.h"
 #include "metavision/hal/facilities/i_hw_identification.h"
+#include "metavision/psee_hw_layer/utils/psee_format.h"
 
 namespace Metavision {
 
@@ -39,16 +40,16 @@ I_HW_Identification::SensorInfo FileHWIdentification::get_sensor_info() const {
     return raw_header_.get_sensor_info();
 }
 
-long FileHWIdentification::get_system_version() const {
-    return raw_header_.get_system_version();
+std::vector<std::string> FileHWIdentification::get_available_data_encoding_formats() const {
+    return {raw_header_.get_format().name()};
 }
 
-std::vector<std::string> FileHWIdentification::get_available_raw_format() const {
-    return {raw_header_.get_format()};
+std::string FileHWIdentification::get_current_data_encoding_format() const {
+    return raw_header_.get_format().name();
 }
 
 std::string FileHWIdentification::get_integrator() const {
-    return raw_header_.get_integrator_name();
+    return raw_header_.get_camera_integrator_name();
 }
 
 std::string FileHWIdentification::get_connection_type() const {
@@ -58,4 +59,9 @@ std::string FileHWIdentification::get_connection_type() const {
 RawFileHeader FileHWIdentification::get_header_impl() const {
     return raw_header_;
 }
+
+DeviceConfigOptionMap FileHWIdentification::get_device_config_options_impl() const {
+    return {};
+}
+
 } // namespace Metavision

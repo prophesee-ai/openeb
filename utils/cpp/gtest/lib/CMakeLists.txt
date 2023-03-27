@@ -14,10 +14,16 @@ target_include_directories(metavision_utils_gtest
     INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
 )
+
+set(gtest_link_libraries 
+      GTest::gtest
+      GTest::gtest_main
+      GTest::gmock
+)
+
 target_link_libraries(metavision_utils_gtest
   INTERFACE
-      GTest::GTest
-      GTest::Main
+      ${gtest_link_libraries}
       Boost::filesystem
       Boost::program_options
 )

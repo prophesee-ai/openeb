@@ -9,8 +9,8 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-#include "devices/gen41/gen41_tz_trigger_event.h"
-#include "utils/register_map.h"
+#include "metavision/psee_hw_layer/devices/gen41/gen41_tz_trigger_event.h"
+#include "metavision/psee_hw_layer/utils/register_map.h"
 
 using vfield = std::map<std::string, uint32_t>;
 
@@ -18,50 +18,43 @@ namespace Metavision {
 
 Gen41TzTriggerEvent::Gen41TzTriggerEvent(const std::shared_ptr<RegisterMap> &register_map, const std::string &prefix,
                                          const std::shared_ptr<TzDevice> tzDev) :
-    register_map_(register_map), prefix_(prefix), tzDev_(tzDev) {
-    for (const auto &id : chan_ids_) {
-        disable(static_cast<int>(id));
-    }
+    register_map_(register_map), prefix_(prefix), tzDev_(tzDev), chan_map_({{Channel::Main, 0}}) {
+    disable(Channel::Main);
 }
 
-bool Gen41TzTriggerEvent::is_valid_id(uint32_t channel) {
-    for (const auto &id : chan_ids_) {
-        if (static_cast<uint32_t>(id) == channel) {
-            return true;
-        }
+bool Gen41TzTriggerEvent::enable(const Channel &channel) {
+    auto it = chan_map_.find(channel);
+    if (it == chan_map_.end()) {
+        return false;
     }
-    return false;
+    (*register_map_)[prefix_ + "dig_pad2_ctrl"]["Reserved_15_12"].write_value(0b1111);
+    (*register_map_)[prefix_ + "edf/Reserved_7004"]["Reserved_10"].write_value(1);
+    return true;
 }
 
-bool Gen41TzTriggerEvent::enable(uint32_t channel) {
-    bool valid = is_valid_id(channel);
-
-    if (valid) {
-        (*register_map_)[prefix_ + "dig_pad2_ctrl"]["Reserved_15_12"].write_value(0b1111);
-        (*register_map_)[prefix_ + "edf/Reserved_7004"]["Reserved_10"].write_value(1);
+bool Gen41TzTriggerEvent::disable(const Channel &channel) {
+    auto it = chan_map_.find(channel);
+    if (it == chan_map_.end()) {
+        return false;
     }
-    return valid;
+    (*register_map_)[prefix_ + "edf/Reserved_7004"]["Reserved_10"].write_value(0);
+    return true;
 }
 
-bool Gen41TzTriggerEvent::disable(uint32_t channel) {
-    bool valid = is_valid_id(channel);
-
-    if (valid) {
-        (*register_map_)[prefix_ + "edf/Reserved_7004"]["Reserved_10"].write_value(0);
+bool Gen41TzTriggerEvent::is_enabled(const Channel &channel) const {
+    auto it = chan_map_.find(channel);
+    if (it == chan_map_.end()) {
+        return false;
     }
-    return valid;
-}
 
-bool Gen41TzTriggerEvent::is_enabled(uint32_t channel) {
-    bool valid  = is_valid_id(channel);
     long value  = 0;
     long value2 = 0;
-
-    if (valid) {
-        value  = (*register_map_)[prefix_ + "dig_pad2_ctrl"]["Reserved_15_12"].read_value();
-        value2 = (*register_map_)[prefix_ + "edf/Reserved_7004"]["Reserved_10"].read_value();
-    }
-    return valid && (value == 0xF) && (value2 == 1);
+    value       = (*register_map_)[prefix_ + "dig_pad2_ctrl"]["Reserved_15_12"].read_value();
+    value2      = (*register_map_)[prefix_ + "edf/Reserved_7004"]["Reserved_10"].read_value();
+    return (value == 0xF) && (value2 == 1);
 }
 
+std::map<I_TriggerIn::Channel, short> Gen41TzTriggerEvent::get_available_channels() const {
+    return chan_map_;
+}
 } // namespace Metavision

@@ -61,13 +61,14 @@ void Error(LPTSTR lpszFunction) {
 // are plugins for HAL, for MSVC, it will happen to be required DLLs that we shouldn't
 // try to load, or at least we should not consider it an error when loading those.
 inline void showErrorMsg(const std::string &error_msg) {
-    MV_HAL_LOG_WARNING() << error_msg;
-#ifdef _WIN32
     char *p = getenv("MV_HAL_DEBUG_PLUGIN");
+
     if (p) {
+        MV_HAL_LOG_WARNING() << error_msg;
+#ifdef _WIN32
         Error((LPTSTR)error_msg.c_str());
-    }
 #endif
+    }
 }
 
 // Gets a plugin name
@@ -148,10 +149,44 @@ struct PluginLoader::Library {
 
 #ifdef _WIN32
     void *load_library(const char *name) {
+        char abs_path[MAX_PATH];
+        GetFullPathName(name, MAX_PATH, abs_path, nullptr);
+        name = abs_path;
+
+        std::string dir   = abs_path;
+        LPSTR old_dll_dir = nullptr;
+        auto dir_sep_pos  = dir.rfind("\\");
+        if (dir_sep_pos != std::string::npos) {
+            dir = dir.substr(0, dir_sep_pos);
+            if (dir != "") {
+                // Save old dll directory
+                DWORD size = GetDllDirectoryA(0, old_dll_dir);
+                if (size > 0) {
+                    old_dll_dir = new char[size + 1];
+                    GetDllDirectoryA(size + 1, old_dll_dir);
+                    if (std::string(old_dll_dir) == "") {
+                        delete[] old_dll_dir;
+                        old_dll_dir = nullptr;
+                    }
+                }
+                SetDllDirectoryA(dir.c_str());
+            }
+        }
+
         void *handler = (void *)LoadLibraryA(name);
         if (handler == nullptr) {
             showErrorMsg("LoadLibraryA");
         }
+
+        if (dir != "" && dir_sep_pos != std::string::npos) {
+            // Restore dll directory
+            SetDllDirectoryA(old_dll_dir);
+        }
+
+        if (old_dll_dir) {
+            delete[] old_dll_dir;
+        }
+
         return handler;
     }
 

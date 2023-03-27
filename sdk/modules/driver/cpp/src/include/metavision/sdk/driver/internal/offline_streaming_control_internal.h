@@ -15,26 +15,23 @@
 #include "metavision/sdk/driver/camera.h"
 
 namespace Metavision {
-namespace Future {
-class I_EventsStream;
-class I_Decoder;
-} // namespace Future
+
+class EventFileReader;
 
 class OfflineStreamingControl::Private {
 public:
-    Private(Camera::Private &ptr);
+    static OfflineStreamingControl *build(EventFileReader &reader);
 
-    bool is_valid() const;
     bool is_ready() const;
     bool seek(timestamp);
     timestamp get_seek_start_time() const;
     timestamp get_seek_end_time() const;
     timestamp get_duration() const;
 
-    Camera::Private &camera_priv_;
-    Future::I_EventsStream *i_events_stream_;
-    Future::I_Decoder *i_decoder_;
-    mutable timestamp start_ts_, end_ts_, duration_;
+private:
+    Private(EventFileReader &reader);
+
+    EventFileReader &reader_;
 };
 
 } // namespace Metavision

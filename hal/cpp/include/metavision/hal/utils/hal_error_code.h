@@ -34,14 +34,23 @@ enum Enum : HalErrorCodeType {
 
     /// Errors related to invalid arguments
     InvalidArgument = CameraError | 0x02000,
-    /// Wrong AFK arguments given
-    InvalidAFKValue = InvalidArgument | 0x1,
+    /// Value given out of supported range
+    ValueOutOfRange = InvalidArgument | 0x1,
+    /// Requested value does not exist
+    NonExistingValue = InvalidArgument | 0x2,
+    /// Requested operation cannot be performed on given argument
+    OperationNotPermitted = InvalidArgument | 0x3,
+    /// Value for requested setting is not supported
+    UnsupportedValue = InvalidArgument | 0x4,
 
     /// Errors related to calling deprecated function that have no equivalent in current API
     DeprecatedFunctionCalled = CameraError | 0x03000,
 
     /// Operation is not implemented
     OperationNotImplemented = CameraError | 0x04000,
+
+    /// Operation reached maximum retries limit
+    MaximumRetriesExeeded = CameraError | 0x05000,
 };
 }
 

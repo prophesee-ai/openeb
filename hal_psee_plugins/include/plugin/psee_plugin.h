@@ -19,6 +19,7 @@ namespace Metavision {
 const std::string &get_psee_plugin_integrator_name();
 
 class Plugin;
+void initialize_psee_plugin(Plugin &plugin, std::string integrator_name);
 void initialize_psee_plugin(Plugin &plugin);
 
 } // namespace Metavision

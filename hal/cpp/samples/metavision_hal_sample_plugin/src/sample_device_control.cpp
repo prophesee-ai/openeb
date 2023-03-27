@@ -16,19 +16,3 @@ void SampleDeviceControl::reset() {}
 void SampleDeviceControl::start() {}
 
 void SampleDeviceControl::stop() {}
-
-bool SampleDeviceControl::set_mode_standalone() {
-    return true;
-}
-
-bool SampleDeviceControl::set_mode_master() {
-    return false;
-}
-
-bool SampleDeviceControl::set_mode_slave() {
-    return false;
-}
-
-SampleDeviceControl::SyncMode SampleDeviceControl::get_mode() {
-    return SyncMode::STANDALONE;
-}

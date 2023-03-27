@@ -7,22 +7,26 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-target_sources(metavision_hal_treuzell_protocol_obj PRIVATE
+target_sources(metavision_psee_hw_layer_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/tz_device.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/tz_streamer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/tz_device_control.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/tz_regmap_device.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/tz_issd_device.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/tz_psee_fpga_device.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/tz_regmap_device.cpp
 )
 
-target_sources(metavision_hal_psee_video_obj PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/tz_psee_video.cpp
+target_sources(metavision_hal_treuzell_protocol_obj PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/tz_device_builder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/tz_streamer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/tz_issd_device.cpp
 )
-target_sources(metavision_hal_psee_video_build_obj PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/tz_psee_video_build.cpp
+
+target_sources(metavision_hal_treuzell_unknown_obj PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/tz_unknown.cpp
 )
 
 target_sources(metavision_hal_ti_tmp103_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/ti_tmp103.cpp
+)
+
+target_sources(metavision_hal_psee_lab_obj PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/psee_sensor.cpp
 )

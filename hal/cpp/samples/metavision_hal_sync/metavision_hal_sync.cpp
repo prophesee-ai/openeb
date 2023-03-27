@@ -19,14 +19,14 @@
 #include <mutex>
 
 #include <metavision/hal/utils/hal_exception.h>
+#include <metavision/hal/facilities/i_camera_synchronization.h>
 #include <metavision/hal/facilities/i_trigger_in.h>
 #include <metavision/hal/facilities/i_trigger_out.h>
 #include <metavision/hal/facilities/i_ll_biases.h>
 #include <metavision/hal/facilities/i_monitoring.h>
 #include <metavision/hal/facilities/i_event_rate_noise_filter_module.h>
-#include <metavision/hal/facilities/i_device_control.h>
 #include <metavision/hal/facilities/i_geometry.h>
-#include <metavision/hal/facilities/i_decoder.h>
+#include <metavision/hal/facilities/i_events_stream_decoder.h>
 #include <metavision/hal/facilities/i_event_decoder.h>
 #include <metavision/hal/device/device.h>
 #include <metavision/hal/device/device_discovery.h>
@@ -160,10 +160,11 @@ int main(int argc, char *argv[]) {
     }
 
     // set master/slave mode
-    Metavision::I_DeviceControl *i_device_control = device->get_facility<Metavision::I_DeviceControl>();
+    Metavision::I_CameraSynchronization *i_camera_synchronization =
+        device->get_facility<Metavision::I_CameraSynchronization>();
 
     if (mode_master) {
-        if (i_device_control->set_mode_master()) {
+        if (i_camera_synchronization->set_mode_master()) {
             std::cout << "Set mode Master successful. Remember to start the slave first." << std::endl;
         } else {
             std::cerr << "Could not set Master mode. Master/slave might not be supported by your camera" << std::endl;
@@ -172,7 +173,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (mode_slave) {
-        if (i_device_control->set_mode_slave()) {
+        if (i_camera_synchronization->set_mode_slave()) {
             std::cout << "Set mode Slave successful." << std::endl;
         } else {
             std::cerr << "Could not set Slave mode. Master/slave might not be supported by your camera" << std::endl;
@@ -205,12 +206,10 @@ int main(int argc, char *argv[]) {
             });
     }
 
-    // start camera
-    i_device_control->start();
     std::cout << "Camera started." << std::endl;
 
     // Get the decoder of events & start decoding thread
-    Metavision::I_Decoder *i_decoder = device->get_facility<Metavision::I_Decoder>();
+    Metavision::I_Decoder *i_decoder = device->get_facility<Metavision::I_EventsStreamDecoder>();
     bool stop_decoding               = false;
     bool stop_application            = false;
     std::thread decoding_loop([&]() {

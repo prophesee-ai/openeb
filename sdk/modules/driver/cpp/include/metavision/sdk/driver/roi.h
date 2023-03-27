@@ -21,10 +21,10 @@ namespace Metavision {
 /// @brief Facility class to handle a Region Of Interest (ROI)
 class Roi {
 public:
-    /// @brief Basic struct used to set a hardware region of interest (ROI) - a rectangle - on the sensor
+    /// @brief Basic struct used to set a hardware region of interest (ROI) - a window - on the sensor
     ///
     /// This struct defines an ROI of with*height pixels going from [x, y] to [x + width -1, y + height -1]
-    struct Rectangle {
+    struct Window {
         /// ROI top left column coordinate of the ROI
         int x = 0;
 
@@ -51,35 +51,26 @@ public:
     /// Setting an ROI will unset any previously set ROI.
     ///
     /// @param roi The ROI to set on the sensor
-    void set(Rectangle roi);
+    void set(Window roi);
 
-    /// @brief Sets several rectangular hardware ROI from binary maps of lines and columns
+    /// @brief Sets multiple ROIs from row and column binary maps
     ///
-    /// The binary map arguments must have the sensor's dimension.
-    /// Throws a @ref CameraException if input doesn't have the correct size.
+    /// The binary maps (std::vector<bool>) arguments must have the sensor's dimension
     ///
-    /// @param cols_to_enable vector of boolean of size sensor's width representing the binary map of the columns
-    ///        to disable (0) or to enable (1)
-    /// @param rows_to_enable vector of boolean of size sensor's height representing the binary map of the rows
-    ///        to disable (0) or to enable (1)
-    void set(const std::vector<bool> &cols_to_enable, const std::vector<bool> &rows_to_enable);
+    /// @param cols Vector of boolean of size sensor's width representing the binary map of the columns to
+    /// enable
+    /// @param rows Vector of boolean of size sensor's height representing the binary map of the rows to
+    /// enable
+    /// @throw an exception if the size of either @p cols or @p rows arguments do not match the sensor
+    ///        geometry
+    /// @warning For a pixel to be enabled, it must be enabled on both its row and column
+    void set(const std::vector<bool> &cols, const std::vector<bool> &rows);
 
-    /// @brief Sets several rectangular hardware ROI from @ref Roi::Rectangle vector
-    ///
-    /// Any line or column enabled by a single ROI is also enabled for all the other.
-    /// Example: Input vector is composed with 2 rois (0, 0, 50, 50), (100, 100, 50, 50).
-    /// In the sensor, it will result in 4 regions:
-    ///     - (0, 0, 50, 50)
-    ///     - (0, 100, 50, 50)
-    ///     - (100, 0, 50, 50)
-    ///     - (100, 100, 50, 50)
-    /// Indeed, rows and columns from 0 to 50 and 100 to 150 are enabled.
-    ///
-    /// Example: Input vector is composed with 2 ROIs: (0, 0, 50, 50), (25, 25, 50, 50).
-    /// In the sensor, it will result in a single region: (0, 0, 75, 75)
-    ///
-    /// @param to_set a vector of @ref Roi::Rectangle
-    void set(const std::vector<Rectangle> &to_set);
+    /// @brief Sets multiple hardware ROI from @ref Roi::Window vector
+    /// @param windows A vector of ROIs to set
+    /// @throw an exception if the size of the vector is higher than the maximum supported number
+    ///        of windows (see @ref I_ROI::get_max_supported_windows_count)
+    void set(const std::vector<Window> &windows);
 
     /// @brief Unsets any set ROI on the sensor
     void unset();

@@ -61,12 +61,12 @@ void export_periodic_frame_generation_algorithm(py::module &m) {
 
                     if (frame->channels() == 1) {
                         pybind11::array::StridesContainer strides(
-                            {static_cast<ssize_t>(frame->step1()), static_cast<ssize_t>(frame->elemSize1())});
+                            {static_cast<ssize_t>(frame->step), static_cast<ssize_t>(frame->elemSize1())});
                         pybind11::array::ShapeContainer shape({frame->rows, frame->cols});
                         py::array py_array(py::dtype::of<uint8_t>(), shape, strides, frame->data, capsule);
                         object(ts, py_array);
                     } else if (frame->channels() == 3) {
-                        pybind11::array::StridesContainer strides({static_cast<ssize_t>(frame->step1()),
+                        pybind11::array::StridesContainer strides({static_cast<ssize_t>(frame->step),
                                                                    static_cast<ssize_t>(frame->channels()),
                                                                    static_cast<ssize_t>(frame->elemSize1())});
                         pybind11::array::ShapeContainer shape({frame->rows, frame->cols, 3});

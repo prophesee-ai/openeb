@@ -230,6 +230,7 @@ int main(int argc, char *argv[]) {
     output_raw_file << "% integrator_name Prophesee" << std::endl;
     output_raw_file << "% plugin_name hal_plugin_gen41_evk3" << std::endl;
     output_raw_file << "% system_ID 48" << std::endl;
+    output_raw_file << "% end" << std::endl;
 
     // Initialize encoders
     Metavision::Evt2::EventCDEncoder CD_events_encoder;

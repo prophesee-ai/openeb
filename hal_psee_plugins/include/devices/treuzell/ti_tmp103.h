@@ -12,8 +12,8 @@
 #ifndef METAVISION_HAL_TI_TMP103_H
 #define METAVISION_HAL_TI_TMP103_H
 
-#include "devices/treuzell/tz_device.h"
-#include "facilities/tz_monitoring.h"
+#include "metavision/psee_hw_layer/devices/treuzell/tz_device.h"
+#include "metavision/psee_hw_layer/facilities/tz_monitoring.h"
 
 namespace Metavision {
 
@@ -30,11 +30,10 @@ public:
 
     virtual void start();
     virtual void stop();
-    virtual StreamFormat get_output_format();
     virtual int get_temperature();
 
 protected:
-    virtual void spawn_facilities(DeviceBuilder &device_builder);
+    virtual void spawn_facilities(DeviceBuilder &device_builder, const DeviceConfig &device_config);
 };
 
 } // namespace Metavision

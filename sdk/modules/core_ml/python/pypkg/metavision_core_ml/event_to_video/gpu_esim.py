@@ -133,8 +133,6 @@ class GPUEBSIM(object):
             inputs = self.simulator.event_volume_sequence(
                 log_images, video_len, timestamps, all_times, first_times, self.event_volume_depth)
 
-            inputs *= self.simulator.threshold_mus[None, :, None, None, None]
-
             reset = 1 - first_times[:, None, None, None]
             out_batch = {'inputs': inputs,
                          'images': target_images,

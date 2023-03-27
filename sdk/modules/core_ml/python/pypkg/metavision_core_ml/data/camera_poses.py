@@ -33,11 +33,13 @@ def interpolate_times_tvecs(tvecs, key_times, inter_tvecs, inter_times, nums):
     Interpolates between key times times & translation vectors
 
     Args:
-        tvecs (np.array): key translation vectors
-        key_times (np.array): key times
-        inter_tvecs (np.array): interpolated translations
-        inter_times (np.array): interpolated times
-        nums (np.array): number of interpolation point between key points
+        tvecs (np.array): key translation vectors  (N, 3)
+        key_times (np.array): key times (N, )
+        inter_tvecs (np.array): interpolated translations (nums.sum(), 3)
+        inter_times (np.array): interpolated times (nums.sum(),)
+        nums (np.array): number of interpolation point between key points (N-1,)
+                         nums[i] is the number of points between key_times[i] (included) and key_times[i+1] (excluded)
+                         minimum is 1, which corresponds to key_times[i]
     """
     n = 0
     for i in range(nums.shape[0]):
@@ -184,31 +186,32 @@ def interpolate_poses(rvecs, tvecs, nt, depth, K, Kinv, height, width, opt_flow_
         height (int): height of image
         width (int): width of image
         opt_flow_threshold (float): maximum flow threshold
-        max_frames_per_bin (int): maximum number of pose interpolation
+        max_frames_per_bin (int): maximum number of pose interpolations between two consecutive poses
+                                  of the original list of poses
     """
     max_frames = len(rvecs)
-    key_times = np.linspace(0, max_frames - 1, max_frames, dtype=np.float32)
+    key_times = np.linspace(0, max_frames - 1, max_frames, dtype=np.float32)  # (N,)
 
     rotations = R.from_rotvec(rvecs)
 
     # all homographies
-    h_0_2 = generate_homographies_from_rotation_matrices(rotations.as_matrix(), tvecs, nt, depth)
-    hs = generate_image_homographies_from_homographies(h_0_2, K, Kinv)
+    h_0_2 = generate_homographies_from_rotation_matrices(rotations.as_matrix(), tvecs, nt, depth)  # (N, 3, 3)
+    hs = generate_image_homographies_from_homographies(h_0_2, K, Kinv)  # (N, 3, 3)
 
-    h_0_1 = hs[:-1]
-    h_0_2 = hs[1:]
-    h_0_1 = np.einsum('ijk,ikc->ijc', h_0_2, np.linalg.inv(h_0_1))
+    h_0_1 = hs[:-1]  # (N-1, 3, 3)
+    h_0_2 = hs[1:]  # (N-1, 3, 3)
+    h_0_1 = np.einsum('ijk,ikc->ijc', h_0_2, np.linalg.inv(h_0_1))  # (N-1, 3, 3)
 
     # 4 corners
-    uv1 = np.array([[0, 0, 1], [0, height - 1, 1], [width - 1, 0, 1], [width - 1, height - 1, 1]])
+    uv1 = np.array([[0, 0, 1], [0, height - 1, 1], [width - 1, 0, 1], [width - 1, height - 1, 1]])  # (4, 3)
 
     # maximum flows / image
-    xyz = np.einsum('jk,lck->ljc', uv1, h_0_1)  # equivalent to uv1.dot(h_0_1.T) for each 3x3 in h_0_1
+    xyz = np.einsum('jk,lck->ljc', uv1, h_0_1)  # equivalent to uv1.dot(h_0_1.T) for each 3x3 in h_0_1   (N-1, 4, 3)
 
-    uv2 = xyz / xyz[..., 2:3]
-    flows = uv2[..., :2] - uv1[..., :2]
-    flow_mags = np.sqrt(flows[..., 0]**2 + flows[..., 1]**2)
-    max_flows = flow_mags.max(axis=1)
+    uv2 = xyz / xyz[..., 2:3]  # (N-1, 4, 3)
+    flows = uv2[..., :2] - uv1[..., :2]  # (N-1, 4, 2)
+    flow_mags = np.sqrt(flows[..., 0]**2 + flows[..., 1]**2)  # (N-1, 4)
+    max_flows = flow_mags.max(axis=1)  # (N-1,)
 
     # interpolate
     nums = 1 + np.ceil(max_flows / opt_flow_threshold)
@@ -222,7 +225,7 @@ def interpolate_poses(rvecs, tvecs, nt, depth, K, Kinv, height, width, opt_flow_
     interpolate_times_tvecs(tvecs, key_times, interp_tvecs, times, nums)
 
     slerp = Slerp(key_times, rotations)
-    interp_rvecs = slerp(times).as_rotvec()
+    interp_rvecs = slerp(times).as_rotvec()  # (nums.sum(), 3)
 
     return interp_rvecs, interp_tvecs, times, max_flows.max()
 
@@ -334,9 +337,13 @@ class CameraPoseGenerator(object):
         height (int): height of image
         width (int): width of image
         max_frames (int): maximum number of poses
+        pause_probability (float): probability that the sequence contains a pause
+        max_optical_flow_threshold (float): maximum optical flow between two consecutive frames
+        max_interp_consecutive_frames (int): maximum number of interpolated frames between two consecutive frames
     """
 
-    def __init__(self, height, width, max_frames=300, pause_probability=0.5):
+    def __init__(self, height, width, max_frames=300, pause_probability=0.5,
+                 max_optical_flow_threshold=2., max_interp_consecutive_frames=20):
         self.K = np.array(
             [[width / 2, 0, width / 2], [0, height / 2, height / 2], [0, 0, 1]],
             dtype=DTYPE,
@@ -353,7 +360,9 @@ class CameraPoseGenerator(object):
 
         self.depth = np.random.uniform(1.0, 2.0)
         self.rvecs, self.tvecs, self.times, max_flow = interpolate_poses(
-            rvecs, tvecs, self.nt, self.depth, self.K, self.Kinv, height, width)
+            rvecs, tvecs, self.nt, self.depth, self.K, self.Kinv, height, width,
+            opt_flow_threshold=max_optical_flow_threshold,
+            max_frames_per_bin=max_interp_consecutive_frames)
 
         self.time = 0
         self.max_frames = max_frames

@@ -16,8 +16,12 @@
 #include <iterator>
 #include <gtest/gtest.h>
 #include <type_traits>
+#ifdef __ANDROID__
+#include <sys/system_properties.h>
+#endif
 
 #include "metavision/sdk/base/utils/log.h"
+#include "metavision/sdk/base/utils/sdk_log.h"
 #include "metavision/utils/gtest/gtest_with_tmp_dir.h"
 
 using namespace Metavision;
@@ -108,10 +112,8 @@ TEST(Log_GTest, MV_LOG_TRACE_level) {
 
 TEST(TLog_GTest, MV_LOG_TRACE_file_prefix) {
     setLogLevel(LogLevel::Trace);
-    auto buff = std::cerr.rdbuf();
     std::ostringstream oss;
-    // redirect std::cerr
-    std::cerr.rdbuf(oss.rdbuf());
+    setLogStream(oss);
 
     std::string prefixFmt("<FILE>");
     std::string fileStr("log_gtest.cpp");
@@ -121,15 +123,13 @@ TEST(TLog_GTest, MV_LOG_TRACE_file_prefix) {
     EXPECT_EQ(fileStr, output);
 
     // restore std::cerr
-    std::cerr.rdbuf(buff);
+    setLogStream(std::cerr);
 }
 
 TEST(TLog_GTest, MV_LOG_TRACE_line_prefix) {
     setLogLevel(LogLevel::Debug);
-    auto buff = std::cerr.rdbuf();
     std::ostringstream oss;
-    // redirect std::cerr
-    std::cerr.rdbuf(oss.rdbuf());
+    setLogStream(oss);
 
     std::string prefixFmt("<LINE>");
     std::string fileStr(std::to_string(__LINE__ + 1));
@@ -139,15 +139,13 @@ TEST(TLog_GTest, MV_LOG_TRACE_line_prefix) {
     EXPECT_EQ(fileStr, output);
 
     // restore std::cerr
-    std::cerr.rdbuf(buff);
+    setLogStream(std::cerr);
 }
 
 TEST(TLog_GTest, MV_LOG_TRACE_function_prefix) {
     setLogLevel(LogLevel::Debug);
-    auto buff = std::cerr.rdbuf();
     std::ostringstream oss;
-    // redirect std::cerr
-    std::cerr.rdbuf(oss.rdbuf());
+    setLogStream(oss);
 
     std::string prefixFmt("<FUNCTION>");
     std::string fileStr(__PRETTY_FUNCTION__);
@@ -157,7 +155,7 @@ TEST(TLog_GTest, MV_LOG_TRACE_function_prefix) {
     EXPECT_EQ(fileStr, output);
 
     // restore std::cerr
-    std::cerr.rdbuf(buff);
+    setLogStream(std::cerr);
 }
 
 TEST(Log_GTest, MV_LOG_INFO_level) {
@@ -168,10 +166,8 @@ TEST(Log_GTest, MV_LOG_INFO_level) {
 
 TEST(TLog_GTest, MV_LOG_INFO_file_prefix) {
     setLogLevel(LogLevel::Info);
-    auto buff = std::cerr.rdbuf();
     std::ostringstream oss;
-    // redirect std::cerr
-    std::cerr.rdbuf(oss.rdbuf());
+    setLogStream(oss);
 
     std::string prefixFmt("<FILE>");
     std::string fileStr("log_gtest.cpp");
@@ -181,15 +177,13 @@ TEST(TLog_GTest, MV_LOG_INFO_file_prefix) {
     EXPECT_EQ(fileStr, output);
 
     // restore std::cerr
-    std::cerr.rdbuf(buff);
+    setLogStream(std::cerr);
 }
 
 TEST(TLog_GTest, MV_LOG_INFO_line_prefix) {
     setLogLevel(LogLevel::Debug);
-    auto buff = std::cerr.rdbuf();
     std::ostringstream oss;
-    // redirect std::cerr
-    std::cerr.rdbuf(oss.rdbuf());
+    setLogStream(oss);
 
     std::string prefixFmt("<LINE>");
     std::string fileStr(std::to_string(__LINE__ + 1));
@@ -199,15 +193,13 @@ TEST(TLog_GTest, MV_LOG_INFO_line_prefix) {
     EXPECT_EQ(fileStr, output);
 
     // restore std::cerr
-    std::cerr.rdbuf(buff);
+    setLogStream(std::cerr);
 }
 
 TEST(TLog_GTest, MV_LOG_INFO_function_prefix) {
     setLogLevel(LogLevel::Debug);
-    auto buff = std::cerr.rdbuf();
     std::ostringstream oss;
-    // redirect std::cerr
-    std::cerr.rdbuf(oss.rdbuf());
+    setLogStream(oss);
 
     std::string prefixFmt("<FUNCTION>");
     std::string fileStr(__PRETTY_FUNCTION__);
@@ -217,7 +209,7 @@ TEST(TLog_GTest, MV_LOG_INFO_function_prefix) {
     EXPECT_EQ(fileStr, output);
 
     // restore std::cerr
-    std::cerr.rdbuf(buff);
+    setLogStream(std::cerr);
 }
 
 TEST(Log_GTest, MV_LOG_WARNING_level) {
@@ -228,10 +220,8 @@ TEST(Log_GTest, MV_LOG_WARNING_level) {
 
 TEST(TLog_GTest, MV_LOG_WARNING_file_prefix) {
     setLogLevel(LogLevel::Warning);
-    auto buff = std::cerr.rdbuf();
     std::ostringstream oss;
-    // redirect std::cerr
-    std::cerr.rdbuf(oss.rdbuf());
+    setLogStream(oss);
 
     std::string prefixFmt("<FILE>");
     std::string fileStr("log_gtest.cpp");
@@ -241,15 +231,13 @@ TEST(TLog_GTest, MV_LOG_WARNING_file_prefix) {
     EXPECT_EQ(fileStr, output);
 
     // restore std::cerr
-    std::cerr.rdbuf(buff);
+    setLogStream(std::cerr);
 }
 
 TEST(TLog_GTest, MV_LOG_WARNING_line_prefix) {
     setLogLevel(LogLevel::Debug);
-    auto buff = std::cerr.rdbuf();
     std::ostringstream oss;
-    // redirect std::cerr
-    std::cerr.rdbuf(oss.rdbuf());
+    setLogStream(oss);
 
     std::string prefixFmt("<LINE>");
     std::string fileStr(std::to_string(__LINE__ + 1));
@@ -259,15 +247,13 @@ TEST(TLog_GTest, MV_LOG_WARNING_line_prefix) {
     EXPECT_EQ(fileStr, output);
 
     // restore std::cerr
-    std::cerr.rdbuf(buff);
+    setLogStream(std::cerr);
 }
 
 TEST(TLog_GTest, MV_LOG_WARNING_function_prefix) {
     setLogLevel(LogLevel::Debug);
-    auto buff = std::cerr.rdbuf();
     std::ostringstream oss;
-    // redirect std::cerr
-    std::cerr.rdbuf(oss.rdbuf());
+    setLogStream(oss);
 
     std::string prefixFmt("<FUNCTION>");
     std::string fileStr(__PRETTY_FUNCTION__);
@@ -277,7 +263,7 @@ TEST(TLog_GTest, MV_LOG_WARNING_function_prefix) {
     EXPECT_EQ(fileStr, output);
 
     // restore std::cerr
-    std::cerr.rdbuf(buff);
+    setLogStream(std::cerr);
 }
 
 TEST(Log_GTest, MV_LOG_ERROR_level) {
@@ -288,10 +274,8 @@ TEST(Log_GTest, MV_LOG_ERROR_level) {
 
 TEST(TLog_GTest, MV_LOG_ERROR_file_prefix) {
     setLogLevel(LogLevel::Error);
-    auto buff = std::cerr.rdbuf();
     std::ostringstream oss;
-    // redirect std::cerr
-    std::cerr.rdbuf(oss.rdbuf());
+    setLogStream(oss);
 
     std::string prefixFmt("<FILE>");
     std::string fileStr("log_gtest.cpp");
@@ -301,15 +285,13 @@ TEST(TLog_GTest, MV_LOG_ERROR_file_prefix) {
     EXPECT_EQ(fileStr, output);
 
     // restore std::cerr
-    std::cerr.rdbuf(buff);
+    setLogStream(std::cerr);
 }
 
 TEST(TLog_GTest, MV_LOG_ERROR_line_prefix) {
     setLogLevel(LogLevel::Debug);
-    auto buff = std::cerr.rdbuf();
     std::ostringstream oss;
-    // redirect std::cerr
-    std::cerr.rdbuf(oss.rdbuf());
+    setLogStream(oss);
 
     std::string prefixFmt("<LINE>");
     std::string fileStr(std::to_string(__LINE__ + 1));
@@ -319,15 +301,13 @@ TEST(TLog_GTest, MV_LOG_ERROR_line_prefix) {
     EXPECT_EQ(fileStr, output);
 
     // restore std::cerr
-    std::cerr.rdbuf(buff);
+    setLogStream(std::cerr);
 }
 
 TEST(TLog_GTest, MV_LOG_ERROR_function_prefix) {
     setLogLevel(LogLevel::Debug);
-    auto buff = std::cerr.rdbuf();
     std::ostringstream oss;
-    // redirect std::cerr
-    std::cerr.rdbuf(oss.rdbuf());
+    setLogStream(oss);
 
     std::string prefixFmt("<FUNCTION>");
     std::string fileStr(__PRETTY_FUNCTION__);
@@ -337,7 +317,7 @@ TEST(TLog_GTest, MV_LOG_ERROR_function_prefix) {
     EXPECT_EQ(fileStr, output);
 
     // restore std::cerr
-    std::cerr.rdbuf(buff);
+    setLogStream(std::cerr);
 }
 
 struct LogWithTmpDir_GTest : public GTestWithTmpDir {
@@ -434,14 +414,18 @@ namespace {
 
 template<LogLevel Level>
 LoggingOperation<Level> streamLog(const std::string &file, int line, const std::string &function, std::ostream &stream,
-                                  const std::string &prefixFmt) {
-    return LoggingOperation<Level>(stream, prefixFmt, file, line, function);
+                                  const std::string &prefixFmt, bool levelPrefixPadding = false) {
+    auto opts = getLogOptions().setStream(stream).setLevelPrefixPadding(levelPrefixPadding);
+
+    return LoggingOperation<Level>(opts, prefixFmt, file, line, function);
 }
 
 template<LogLevel Level>
 LoggingOperation<Level> streamLog(const std::string &file, int line, const std::string &function, std::ostream &stream,
-                                  const char *const prefixFmt) {
-    return LoggingOperation<Level>(stream, prefixFmt, file, line, function);
+                                  const char *const prefixFmt, bool levelPrefixPadding = false) {
+    auto opts = getLogOptions().setStream(stream).setLevelPrefixPadding(levelPrefixPadding);
+
+    return LoggingOperation<Level>(opts, prefixFmt, file, line, function);
 }
 
 #define streamLogCall(T, ...) streamLog<T>(__FILE__, __LINE__, __PRETTY_FUNCTION__, ##__VA_ARGS__)
@@ -722,6 +706,9 @@ TYPED_TEST(TLog_GTest, levels_with_env_reset) {
 #ifdef _WIN32
     std::string s("MV_LOG_LEVEL=TRACE");
     _putenv(s.c_str());
+#elif ANDROID
+    __system_property_set("debug.metavision.log.level", "TRACE");
+    __system_property_set("persist.metavision.log.level", "TRACE");
 #else
     setenv("MV_LOG_LEVEL", "TRACE", 1);
 #endif
@@ -729,6 +716,9 @@ TYPED_TEST(TLog_GTest, levels_with_env_reset) {
 
 #ifdef _WIN32
     _putenv("MV_LOG_LEVEL=");
+#elif ANDROID
+    __system_property_set("debug.metavision.log.level", "");
+    __system_property_set("persist.metavision.log.level", "");
 #else
     unsetenv("MV_LOG_LEVEL");
 #endif
@@ -755,6 +745,9 @@ TYPED_TEST(TLog_GTest, levels_with_env) {
         std::string s("MV_LOG_LEVEL=");
         s += p.second;
         _putenv(s.c_str());
+#elif ANDROID
+        __system_property_set("debug.metavision.log.level", p.second.c_str());
+        __system_property_set("persist.metavision.log.level", p.second.c_str());
 #else
         setenv("MV_LOG_LEVEL", p.second.c_str(), 1);
 #endif
@@ -771,7 +764,141 @@ TYPED_TEST(TLog_GTest, levels_with_env) {
     }
 #ifdef _WIN32
     _putenv("MV_LOG_LEVEL=");
+#elif ANDROID
+    __system_property_set("debug.metavision.log.level", "");
+    __system_property_set("persist.metavision.log.level", "");
 #else
     unsetenv("MV_LOG_LEVEL");
 #endif
+}
+
+TYPED_TEST(TLog_GTest, should_padd_level_prefix_when_enabled) {
+    static constexpr LogLevel Level = TypeParam::value;
+
+    std::ostringstream oss;
+    setLogStream(oss);
+    setLogLevel(LogLevel::Debug);
+
+    streamLogCall(Level, oss, "[<LEVEL>]", true) << Metavision::Log::no_endline << Metavision::Log::no_space;
+
+    // clang-format off
+    std::map<LogLevel, std::string> expected_output = {
+        {LogLevel::Debug,   "[  DEBUG]"},
+        {LogLevel::Trace,   "[  TRACE]"},
+        {LogLevel::Info,    "[   INFO]"},
+        {LogLevel::Warning, "[WARNING]"},
+        {LogLevel::Error,   "[  ERROR]"}};
+    // clang-format om
+
+    if (!CompiledInDebug && Level == LogLevel::Debug) {
+        EXPECT_EQ(oss.str(), "");
+    } else {
+        EXPECT_EQ(oss.str(), expected_output[Level]);
+    }
+}
+
+TEST(LogImpl_GTest, should_return_bigger_level_label) {
+    detail::LogLevelNameMap test_names{
+        {LogLevel::Debug, "1"},
+        {LogLevel::Error, "22"},
+        {LogLevel::Warning, "55555"},
+        {LogLevel::Info, "333"},
+    };
+    auto max = detail::getLongestLogLevelName(test_names);
+    EXPECT_EQ(max->second, "55555");
+}
+
+TEST(LogImpl_GTest, global_setLogStream_sould_work_with_LogOptions) {
+    std::ostringstream my_stream;
+    setLogStream(my_stream);
+
+    EXPECT_EQ(&getLogStream(), &getLogOptions().getStream());
+}
+
+TEST(LogImpl_GTest, global_setLogLevel_sould_work_with_LogOptions) {
+    setLogLevel(LogLevel::Debug);
+    EXPECT_EQ(getLogLevel(), getLogOptions().getLevel());
+    
+    setLogLevel(LogLevel::Info);
+    EXPECT_EQ(getLogLevel(), getLogOptions().getLevel());
+}
+
+TEST(LogImpl_GTest, should_level_prefix_setter_match_getter_or_default_to_false) {
+    LogOptions opts;
+    EXPECT_FALSE(opts.isLevelPrefixPadding());
+    opts.setLevelPrefixPadding(true);
+    EXPECT_TRUE(opts.isLevelPrefixPadding());
+}
+
+
+class Sdk_log_GTest : public ::testing::Test {
+public:
+    std::ostringstream oss;
+    void SetUp() override {
+        resetLogLevelFromEnv();
+        resetLogStreamFromEnv();
+        resetLogOptions();
+        setLogOptions(LogOptions(LogLevel::Debug, oss));
+    }
+};
+
+TEST_F(Sdk_log_GTest, should_have_default_logging_prefix_by_default) {
+    MV_SDK_LOG_ERROR() << "message";
+    MV_SDK_LOG_WARNING() << "message";
+    MV_SDK_LOG_INFO() << "message";
+    MV_SDK_LOG_TRACE() << "message";
+    MV_SDK_LOG_DEBUG() << "message";
+
+    std::string expected_output = "[SDK][ERROR] message \n"
+                                  "[SDK][WARNING] message \n"
+                                  "[SDK][INFO] message \n"
+                                  "[SDK][TRACE] message \n";
+
+    if (CompiledInDebug) {
+        expected_output += "[SDK][DEBUG] message \n";
+    }
+
+    EXPECT_EQ(oss.str(), expected_output);
+}
+
+TEST_F(Sdk_log_GTest, should_have_padding_when_enabled) {
+    setLogOptions(getLogOptions().setLevelPrefixPadding(true));
+
+    MV_SDK_LOG_ERROR() << "message";
+    MV_SDK_LOG_WARNING() << "message";
+    MV_SDK_LOG_INFO() << "message";
+    MV_SDK_LOG_TRACE() << "message";
+    MV_SDK_LOG_DEBUG() << "message";
+
+    std::string expected_output = "[SDK][  ERROR] message \n"
+                                  "[SDK][WARNING] message \n"
+                                  "[SDK][   INFO] message \n"
+                                  "[SDK][  TRACE] message \n";
+
+    if (CompiledInDebug) {
+        expected_output += "[SDK][  DEBUG] message \n";
+    }
+
+    EXPECT_EQ(oss.str(), expected_output);
+}
+
+TEST_F(Sdk_log_GTest, should_have_no_padding_when_disabled) {
+    setLogOptions(getLogOptions().setLevelPrefixPadding(false));
+
+    MV_SDK_LOG_ERROR() << "message";
+    MV_SDK_LOG_WARNING() << "message";
+    MV_SDK_LOG_INFO() << "message";
+    MV_SDK_LOG_TRACE() << "message";
+    MV_SDK_LOG_DEBUG() << "message";
+
+    std::string expected_output = "[SDK][ERROR] message \n"
+                                  "[SDK][WARNING] message \n"
+                                  "[SDK][INFO] message \n"
+                                  "[SDK][TRACE] message \n";
+
+    if (CompiledInDebug) {
+        expected_output += "[SDK][DEBUG] message \n";
+    }
+
+    EXPECT_EQ(oss.str(), expected_output);
 }

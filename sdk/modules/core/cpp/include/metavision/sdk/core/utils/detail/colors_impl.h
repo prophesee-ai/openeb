@@ -128,6 +128,12 @@ static std::unordered_map<std::string, RGBColor> DarkColorPaletteMap{
     {"negative", RGBColor{0.25f, 0.4921875f, 0.78515625f}},
     {"auxiliary", RGBColor{1.0f, 0.5607843f, 0.4235294f}},
 };
+static std::unordered_map<std::string, RGBColor> CoolWarmColorPaletteMap{
+    {"background", RGBColor{0.8509804f, 0.8784314f, 0.9294118f}},
+    {"positive", RGBColor{1.f, 0.4431373f, 0.4588235f}},
+    {"negative", RGBColor{0.3411765f, 0.4823529f, 0.7764706f}},
+    {"auxiliary", RGBColor{0.1372549f, 0.1411765f, 0.1764706f}},
+};
 static std::unordered_map<std::string, RGBColor> GrayColorPaletteMap{
     {"background", RGBColor{0.5f, 0.5f, 0.5f}},
     {"positive", RGBColor{1.0f, 1.0f, 1.0f}},
@@ -148,7 +154,7 @@ inline const std::string &colorTypeToName(const ColorType &type) {
 }
 } // namespace detail
 
-inline const RGBColor &getColor(const ColorPalette &palette, const ColorType &type) {
+inline const RGBColor &get_color(const ColorPalette &palette, const ColorType &type) {
     switch (palette) {
     case ColorPalette::Light: {
         auto it = detail::LightColorPaletteMap.find(detail::colorTypeToName(type));
@@ -156,6 +162,10 @@ inline const RGBColor &getColor(const ColorPalette &palette, const ColorType &ty
     }
     case ColorPalette::Dark: {
         auto it = detail::DarkColorPaletteMap.find(detail::colorTypeToName(type));
+        return it->second;
+    }
+    case ColorPalette::CoolWarm: {
+        auto it = detail::CoolWarmColorPaletteMap.find(detail::colorTypeToName(type));
         return it->second;
     }
     case ColorPalette::Gray: {
@@ -168,7 +178,7 @@ inline const RGBColor &getColor(const ColorPalette &palette, const ColorType &ty
     throw std::runtime_error("Unknown color palette " + std::to_string(static_cast<int>(palette)));
 }
 
-inline const RGBColor &getColor(const ColorPalette &palette, const std::string &name) {
+inline const RGBColor &get_color(const ColorPalette &palette, const std::string &name) {
     switch (palette) {
     case ColorPalette::Light: {
         auto it = detail::LightColorPaletteMap.find(name);
@@ -184,6 +194,13 @@ inline const RGBColor &getColor(const ColorPalette &palette, const std::string &
         }
         return it->second;
     }
+    case ColorPalette::CoolWarm: {
+        auto it = detail::CoolWarmColorPaletteMap.find(name);
+        if (it == detail::CoolWarmColorPaletteMap.end()) {
+            throw std::runtime_error("Unknown color name " + name);
+        }
+        return it->second;
+    }
     case ColorPalette::Gray: {
         auto it = detail::GrayColorPaletteMap.find(name);
         if (it == detail::GrayColorPaletteMap.end()) {
@@ -195,6 +212,24 @@ inline const RGBColor &getColor(const ColorPalette &palette, const std::string &
         break;
     }
     throw std::runtime_error("Unknown color palette " + std::to_string(static_cast<int>(palette)));
+}
+
+inline cv::Vec3b get_bgr_color(const RGBColor &c) {
+    return cv::Vec3b(static_cast<uchar>(c.b * 255 + 0.5), static_cast<uchar>(c.g * 255 + 0.5),
+                     static_cast<uchar>(c.r * 255 + 0.5));
+}
+
+inline cv::Vec3b get_bgr_color(const ColorPalette &palette, const ColorType &type) {
+    return get_bgr_color(get_color(palette, type));
+}
+
+inline cv::Vec4b get_bgra_color(const RGBColor &c) {
+    return cv::Vec4b(static_cast<uchar>(c.b * 255 + 0.5), static_cast<uchar>(c.g * 255 + 0.5),
+                     static_cast<uchar>(c.r * 255 + 0.5), 255);
+}
+
+inline cv::Vec4b get_bgra_color(const ColorPalette &palette, const ColorType &type) {
+    return get_bgra_color(get_color(palette, type));
 }
 
 } // namespace Metavision

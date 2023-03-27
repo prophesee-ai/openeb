@@ -7,16 +7,14 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-target_sources(metavision_hal_libusb_utils_obj PRIVATE
+target_sources(metavision_psee_hw_layer_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/psee_device_control.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/psee_hw_register.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/psee_monitoring.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/psee_roi.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/psee_trigger_in.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/psee_trigger_out.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/tz_camera_synchronization.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/tz_monitoring.cpp
-
-    # Experimental facilities
-    ${CMAKE_CURRENT_SOURCE_DIR}/experimental/psee_afk_registers_api_v0.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/experimental/psee_stc_registers_api_v0.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/tz_hw_register.cpp
 )

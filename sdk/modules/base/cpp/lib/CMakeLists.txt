@@ -13,4 +13,9 @@ target_include_directories(metavision_sdk_base
     PRIVATE
         ${GENERATE_FILES_DIRECTORY}/include # For software_info.cpp
 )
+
+if(ANDROID)
+    target_link_libraries(metavision_sdk_base PUBLIC log)
+endif(ANDROID)
+
 add_dependencies(metavision_sdk_base generate_metavision_sdk_version_header)

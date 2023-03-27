@@ -13,9 +13,10 @@
 #include <sstream>
 #include <iomanip>
 
-#include "devices/gen41/gen41_erc.h"
-#include "utils/register_map.h"
+#include "metavision/psee_hw_layer/devices/gen41/gen41_erc.h"
+#include "metavision/psee_hw_layer/utils/register_map.h"
 #include "metavision/hal/utils/hal_log.h"
+#include "metavision/hal/utils/hal_exception.h"
 
 using vfield = std::map<std::string, uint32_t>;
 
@@ -52,26 +53,26 @@ Gen41Erc::Gen41Erc(const std::shared_ptr<RegisterMap> &register_map, const std::
     }
 }
 
-void Gen41Erc::enable(bool en) {
+bool Gen41Erc::enable(bool en) {
     (*register_map_)[prefix_ + "t_dropping_control"].write_value({"t_dropping_en", en});
 
     if (en) {
         set_cd_event_count(cd_event_count_shadow_);
     }
+
+    return true;
 }
 
 bool Gen41Erc::is_enabled() {
-    bool res_1         = (*register_map_)[prefix_ + "Reserved_6000"]["Reserved_1"].read_value();
-    bool res_0         = (*register_map_)[prefix_ + "Reserved_6000"]["Reserved_0"].read_value();
+    bool res           = ((*register_map_)[prefix_ + "Reserved_6000"]["Reserved_1_0"].read_value() == 1) ? true : false;
     bool t_dropping_en = (*register_map_)[prefix_ + "t_dropping_control"]["t_dropping_en"].read_value();
-    return t_dropping_en && res_0 && !res_1;
+    return t_dropping_en && res;
 }
 
 void Gen41Erc::initialize() {
     MV_HAL_LOG_TRACE() << "Gen41 ERC Init";
 
-    (*register_map_)[prefix_ + "Reserved_6000"].write_value(
-        vfield{{"Reserved_0", 0}, {"Reserved_1", 0}, {"Reserved_2", 0}, {"Reserved_3", 0}, {"Reserved_4", 0}});
+    (*register_map_)[prefix_ + "Reserved_6000"]["Reserved_1_0"].write_value(0);
 
     char *config = getenv("ERC_CONFIGURATION_PATH");
 
@@ -116,7 +117,7 @@ void Gen41Erc::initialize() {
     (*register_map_)[prefix_ + "h_dropping_control"].write_value({"h_dropping_en", 0});
     (*register_map_)[prefix_ + "v_dropping_control"].write_value({"v_dropping_en", 0});
 
-    (*register_map_)[prefix_ + "Reserved_6000"].write_value({{"Reserved_0", 1}, {"Reserved_1", 0}});
+    (*register_map_)[prefix_ + "Reserved_6000"]["Reserved_1_0"].write_value(1);
 }
 
 void Gen41Erc::erc_from_file(const std::string &file_path) {
@@ -140,14 +141,25 @@ uint32_t Gen41Erc::get_count_period() const {
     return (*register_map_)[prefix_ + "reference_period"].read_value();
 }
 
-void Gen41Erc::set_cd_event_count(uint32_t count) {
+bool Gen41Erc::set_cd_event_count(uint32_t count) {
     if (count > CD_EVENT_COUNT_MAX) {
-        MV_HAL_LOG_WARNING() << "Could not set CD count to" << count << ": setting it to maximum allowed value"
-                             << CD_EVENT_COUNT_MAX;
-        count = CD_EVENT_COUNT_MAX;
+        std::stringstream ss;
+        ss << "Cannot set CD event count to :" << count << ". Value should be in the range [0, " << CD_EVENT_COUNT_MAX
+           << "]";
+        throw HalException(HalErrorCode::ValueOutOfRange, ss.str());
     }
     (*register_map_)[prefix_ + "td_target_event_rate"].write_value(count);
     cd_event_count_shadow_ = count;
+
+    return true;
+}
+
+uint32_t Gen41Erc::get_min_supported_cd_event_count() const {
+    return 0;
+}
+
+uint32_t Gen41Erc::get_max_supported_cd_event_count() const {
+    return CD_EVENT_COUNT_MAX;
 }
 
 uint32_t Gen41Erc::get_cd_event_count() {

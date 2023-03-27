@@ -35,26 +35,58 @@ def event_cd_to_torch(events):
     return event_th
 
 
-def tensor_to_cd_events(events, sort=True):
+def events_cd_list_to_torch(list_of_events_np_arrays):
+    """
+    Converts a list of Events CD numpy arrays into torch format (N,5) :
+    batch_index, x, y, polarity_timestamp (micro-seconds)
+    Note that Polarities are mapped from {0;1} to {-1;1}
+
+    Args:
+        list_of_events_np_arrays (list of np.array): list of structured arrays of EventCD
+
+    Returns:
+        (Tensor) N,5: value of batch_index corresponds to the position of the event array in the input list
+    """
+    nb_total_events = sum([ev.size for ev in list_of_events_np_arrays])
+    event_th = torch.zeros((nb_total_events, 5), dtype=torch.int32)
+    B = len(list_of_events_np_arrays)
+    start_idx = 0
+    for i in range(B):
+        events = list_of_events_np_arrays[i]
+        end_idx = start_idx + events.size
+        event_th[start_idx:end_idx, 0] = i
+        # To save memory, probably we can set up the types as below
+        event_th[start_idx:end_idx, 1] = torch.from_numpy(events['x'].astype(np.int16))
+        event_th[start_idx:end_idx, 2] = torch.from_numpy(events['y'].astype(np.int16))
+        event_th[start_idx:end_idx, 3] = torch.from_numpy(2 * events['p'].astype(np.int8) - 1)
+        event_th[start_idx:end_idx, 4] = torch.from_numpy(events['t'].astype(np.int64))
+        start_idx = end_idx
+    return event_th
+
+
+def tensor_to_cd_events(events, batch_size, sort=True):
     """
     Convert the event produced by the GPU to our format for later reuse.
 
     Args:
-        events: N,5 in batch_index, x, y, polarity, timestamp (micro-seconds)
+        events (np.array): (N,5) in batch_index, x, y, polarity, timestamp (micro-seconds)
+        batch_size (int): size of the batch
         sort (boolean): whether to sort event chronologically. You might want to avoid doing it if the
-            algorithm you are using doesn't rely on them.
+                        algorithm you are using doesn't rely on them.
 
     Returns:
-        list of EventCD arrays
+        list of EventCD arrays, of lenght batch_size
     """
     events = events.cpu().numpy()
     res = []
-    indices = np.searchsorted(events[:, 0], np.arange(events[-1, 0] + 2))
+    if events.size > 0:
+        assert events[-1, 0] < batch_size
+    indices = np.searchsorted(events[:, 0], np.arange(batch_size + 1))
     for i, ind in enumerate(indices[:-1]):
         slice = events[ind:indices[i + 1]]
         slicenp = np.zeros(len(slice), dtype=EventCD)
         if sort:
-            sorting_indices = np.argsort(slice[:, 4])
+            sorting_indices = np.argsort(slice[:, 4], kind='stable')
             slice = slice[sorting_indices]
         slicenp["x"] = slice[:, 1]
         slicenp["y"] = slice[:, 2]
@@ -108,7 +140,7 @@ def event_volume(events, batch_size, height, width, start_times, durations, nbin
     durations = durations[bs]
     ti_star = (ts - start_times) * nbins / durations - 0.5
     lbin = torch.floor(ti_star)
-    lbin = torch.clamp(lbin, min=0, max=nbins-1)
+    lbin = torch.clamp(lbin, min=0, max=nbins - 1)
     if vol is None:
         vol = torch.zeros((batch_size, nbins, height, width), dtype=torch.float32, device=events.device)
     if mode == 'bilinear':

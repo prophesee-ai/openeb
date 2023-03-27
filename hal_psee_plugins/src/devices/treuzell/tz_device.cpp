@@ -9,36 +9,57 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-#ifdef _MSC_VER
-#define NOMINMAX
-#endif
-
-#include "devices/treuzell/tz_device.h"
-#include "boards/treuzell/tz_libusb_board_command.h"
-#include "boards/treuzell/tz_control_frame.h"
-#include "boards/treuzell/treuzell_command_definition.h"
-#include "metavision/hal/utils/hal_log.h"
-
-// For system build
-#include "metavision/hal/utils/device_builder.h"
-#include "metavision/hal/utils/device_config.h"
 #include <functional>
 
-// For board-wide facilities
-#include "boards/treuzell/tz_hw_identification.h"
-#include "decoders/evt2/evt2_decoder.h"
-#include "decoders/evt3/evt3_decoder.h"
-#include "metavision/hal/facilities/i_events_stream.h"
-#include "boards/treuzell/tz_board_data_transfer.h"
-#include "devices/treuzell/tz_device_control.h"
-#include "facilities/tz_monitoring.h"
+#include "metavision/psee_hw_layer/devices/treuzell/tz_device.h"
+#include "metavision/psee_hw_layer/boards/treuzell/tz_libusb_board_command.h"
+#include "metavision/psee_hw_layer/boards/treuzell/tz_control_frame.h"
+#include "boards/treuzell/treuzell_command_definition.h"
+#include "metavision/psee_hw_layer/utils/psee_format.h"
+#include "metavision/hal/utils/hal_log.h"
 
 namespace Metavision {
 
 TzDevice::TzDevice(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent) :
-    cmd(cmd), tzID(dev_id), parent(parent) {}
+    cmd(cmd), tzID(dev_id), parent(parent) {
+    try {
+        name = get_name();
+        MV_HAL_LOG_TRACE() << "Dev" << tzID << "name:" << name;
+    } catch (const std::system_error &e) {
+        MV_HAL_LOG_TRACE() << "Dev" << tzID << "got no name string:" << e.what();
+        name = "Dev" + std::to_string(tzID);
+    }
+}
 
 TzDevice::~TzDevice() {}
+
+void TzDevice::initialize() {
+    TzGenericCtrlFrame enable(TZ_PROP_DEVICE_ENABLE | TZ_WRITE_FLAG);
+    enable.push_back32(tzID);
+    enable.push_back32(1);
+    cmd->transfer_tz_frame(enable);
+}
+
+void TzDevice::destroy() {
+    TzGenericCtrlFrame disable(TZ_PROP_DEVICE_ENABLE | TZ_WRITE_FLAG);
+    disable.push_back32(tzID);
+    disable.push_back32(0);
+    cmd->transfer_tz_frame(disable);
+}
+
+void TzDevice::start() {
+    TzGenericCtrlFrame start(TZ_PROP_DEVICE_STREAM | TZ_WRITE_FLAG);
+    start.push_back32(tzID);
+    start.push_back32(1);
+    cmd->transfer_tz_frame(start);
+}
+
+void TzDevice::stop() {
+    TzGenericCtrlFrame stop(TZ_PROP_DEVICE_STREAM | TZ_WRITE_FLAG);
+    stop.push_back32(tzID);
+    stop.push_back32(0);
+    cmd->transfer_tz_frame(stop);
+}
 
 std::string TzDevice::get_name() {
     TzDeviceStringsCtrlFrame name(TZ_PROP_DEVICE_NAME, tzID);
@@ -52,155 +73,65 @@ std::vector<std::string> TzDevice::get_compatible() {
     return compat.get_strings();
 }
 
-void TzDevice::get_device_info(I_HW_Identification::SystemInfo &infos, std::string prefix) {
+DeviceConfigOptionMap TzDevice::get_device_config_options() const {
+    const auto formats = get_supported_formats();
+    if (formats.size() > 1) {
+        std::vector<std::string> values;
+        for (auto &fmt : formats) {
+            values.push_back(fmt.name());
+        }
+        return {{"format", DeviceConfigOption(values, values[0])}};
+    }
+    return {};
+}
+
+std::list<StreamFormat> TzDevice::get_supported_formats() const {
+    std::list<StreamFormat> formats;
+    TzDeviceStringsCtrlFrame format(TZ_PROP_DEVICE_OUTPUT_FORMAT, tzID);
+    try {
+        cmd->transfer_tz_frame(format);
+        formats.push_back(StreamFormat(format.get_strings()[0]));
+    } catch (const std::system_error &e) {
+        MV_HAL_LOG_TRACE() << name << "did not advertise output format:" << e.what();
+    }
+    return formats;
+}
+
+StreamFormat TzDevice::get_output_format() const {
+    TzDeviceStringsCtrlFrame format(TZ_PROP_DEVICE_OUTPUT_FORMAT, tzID);
+    try {
+        cmd->transfer_tz_frame(format);
+        return StreamFormat(format.get_strings()[0]);
+    } catch (const std::system_error &e) {
+        MV_HAL_LOG_TRACE() << name << "did not advertise output format:" << e.what();
+    }
+    return StreamFormat("None");
+}
+
+StreamFormat TzDevice::set_output_format(const std::string &format_name) {
+    TzDeviceStringsCtrlFrame format(TZ_PROP_DEVICE_OUTPUT_FORMAT | TZ_WRITE_FLAG, tzID);
+    format.push_back(format_name);
+    try {
+        cmd->transfer_tz_frame(format);
+        return StreamFormat(format.get_strings()[0]);
+    } catch (const std::system_error &e) { MV_HAL_LOG_TRACE() << name << "did not set output format:" << e.what(); }
+    /* spare the implementation of set_output_format when supporting only one format */
+    return get_output_format();
+}
+
+void TzDevice::get_device_info(Metavision::I_HW_Identification::SystemInfo &infos, std::string prefix) {
     try {
         infos.insert({prefix + std::to_string(tzID) + " name", get_name()});
-    } catch (const std::system_error &e) { MV_HAL_LOG_TRACE() << "Dev" << tzID << "got no name string:" << e.what(); }
+    } catch (const std::system_error &e) { MV_HAL_LOG_TRACE() << name << "got no name string:" << e.what(); }
 
     try {
         for (auto str : get_compatible())
             infos.insert({prefix + std::to_string(tzID) + " compatible", str});
-    } catch (const std::system_error &e) { MV_HAL_LOG_TRACE() << "Dev" << tzID << "got no compat string:" << e.what(); }
+    } catch (const std::system_error &e) { MV_HAL_LOG_TRACE() << name << "got no compat string:" << e.what(); }
 }
 
-bool TzDeviceBuilder::can_build(std::shared_ptr<TzLibUSBBoardCommand> cmd) {
-    try {
-        auto device_count = cmd->get_device_count();
-
-        for (uint32_t i = 0; i < device_count; i++)
-            if (!can_build_device(cmd, i))
-                return false;
-        return true;
-    } catch (const std::system_error &e) {
-        MV_HAL_LOG_WARNING() << "Could not enumerate devices on board" << cmd->get_name() << e.what();
-        return false;
-    }
-}
-
-bool TzDeviceBuilder::can_build_device(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id) {
-    std::vector<std::string> compat_str;
-    try {
-        TzDeviceStringsCtrlFrame compat(TZ_PROP_DEVICE_COMPATIBLE, dev_id);
-        cmd->transfer_tz_frame(compat);
-        compat_str = compat.get_strings();
-    } catch (const std::system_error &e) {
-        // On some old devices (treuzell-kernel 1.4.0, cx3 3.0.0), a compatibility string was used as name
-        try {
-            TzDeviceStringsCtrlFrame name(TZ_PROP_DEVICE_NAME, dev_id);
-            cmd->transfer_tz_frame(name);
-            compat_str = name.get_strings();
-        } catch (const std::system_error &e2) {
-            MV_HAL_LOG_WARNING() << "Failed to get compatibility string from treuzell device" << dev_id << e.what();
-            return false;
-        }
-    }
-
-    for (auto str : compat_str) {
-        auto build = map.find(str);
-        if (build != map.end()) {
-            // if the device has a specific can_build method in the <Build_Fun,Check_Fun> pair, call it
-            if (!build->second.second || build->second.second(cmd, dev_id))
-                return true;
-        }
-    }
-    return false;
-}
-
-bool TzDeviceBuilder::build_devices(std::shared_ptr<TzLibUSBBoardCommand> cmd, DeviceBuilder &device_builder,
-                                    const DeviceConfig &config) {
-    auto device_count = cmd->get_device_count();
-    std::vector<std::shared_ptr<TzDevice>> devices;
-    std::shared_ptr<TzDevice> dev;
-
-    for (uint32_t i = 0; i < device_count; i++) {
-        std::vector<std::string> compat_str;
-        std::string name;
-        std::shared_ptr<TzDevice> next;
-
-        try {
-            TzDeviceStringsCtrlFrame name_frame(TZ_PROP_DEVICE_NAME, i);
-            cmd->transfer_tz_frame(name_frame);
-            name = name_frame.get_strings()[0];
-        } catch (const std::system_error &e) {
-            MV_HAL_LOG_INFO() << "Could not get name for treuzell device" << i << e.what();
-        }
-
-        try {
-            TzDeviceStringsCtrlFrame compat(TZ_PROP_DEVICE_COMPATIBLE, i);
-            cmd->transfer_tz_frame(compat);
-            compat_str = compat.get_strings();
-        } catch (const std::system_error &e) {
-            // On some old devices (treuzell-kernel 1.4.0, cx3 3.0.0), a compatibility string was used as name
-            compat_str.push_back(name);
-        }
-
-        for (auto str : compat_str) {
-            MV_HAL_LOG_TRACE() << "Checking str" << str;
-            auto build = map.find(str);
-            if (build != map.end()) {
-                // Call the first member of the pair <Build_Fun,Check_Fun>
-                next = build->second.first(cmd, i, dev);
-                if (next) {
-                    devices.push_back(next);
-                    if (dev)
-                        dev->child = next;
-                    dev = next;
-                    dev->spawn_facilities(device_builder);
-                    break;
-                }
-            } else {
-                MV_HAL_LOG_TRACE() << "Found no build method for " << str;
-            }
-        }
-    }
-    if (devices.empty())
-        return false;
-    auto hw_identification = device_builder.add_facility(
-        std::make_unique<TzHWIdentification>(device_builder.get_plugin_software_info(), cmd, devices));
-    auto format = devices[0]->get_output_format();
-    std::shared_ptr<I_Geometry> geometry;
-    if (format.geometry)
-        geometry = device_builder.add_facility(std::move(format.geometry));
-    auto cd_event_decoder          = device_builder.add_facility(std::make_unique<I_EventDecoder<EventCD>>());
-    auto ext_trigger_event_decoder = device_builder.add_facility(std::make_unique<I_EventDecoder<EventExtTrigger>>());
-    std::shared_ptr<I_Decoder> decoder;
-    if (format.name == "EVT3" && geometry) {
-        MV_HAL_LOG_TRACE() << "Adding EVT3 decoder";
-        decoder = device_builder.add_facility(make_evt3_decoder(false, geometry->get_height(), geometry->get_width(),
-                                                                cd_event_decoder, ext_trigger_event_decoder));
-    } else if (format.name == "EVT2") {
-        MV_HAL_LOG_TRACE() << "Adding EVT2 decoder";
-        decoder = device_builder.add_facility(
-            std::make_unique<EVT2Decoder>(false, cd_event_decoder, ext_trigger_event_decoder));
-    } else {
-        MV_HAL_LOG_WARNING() << "System is streaming unknown format" << format.name;
-    }
-    if (decoder)
-        device_builder.add_facility(std::make_unique<I_EventsStream>(
-            std::make_unique<TzBoardDataTransfer>(cmd, decoder->get_raw_event_size_bytes()), hw_identification));
-
-    std::shared_ptr<TemperatureProvider> temp;
-    std::shared_ptr<IlluminationProvider> illu;
-    for (auto device : devices) {
-        auto tdev = std::dynamic_pointer_cast<TemperatureProvider>(device);
-        if (tdev)
-            temp = tdev;
-    }
-    for (auto device : devices) {
-        auto idev = std::dynamic_pointer_cast<IlluminationProvider>(device);
-        if (idev)
-            illu = idev;
-    }
-    if (temp || illu)
-        device_builder.add_facility(std::make_unique<TzMonitoring>(temp, illu));
-
-    device_builder.add_facility(std::make_unique<TzDeviceControl>(devices));
-    return true;
-}
-
-TzDeviceBuilder::Build_Map &TzDeviceBuilder::generic_map() {
-    static Build_Map static_map;
-    return static_map;
+void TzDevice::set_child(std::shared_ptr<TzDevice> dev) {
+    child = dev;
 }
 
 } // namespace Metavision

@@ -15,6 +15,7 @@
 #include <iomanip>
 #include <boost/filesystem.hpp>
 
+#include "metavision/hal/utils/hal_exception.h"
 #include "metavision/sdk/driver/biases.h"
 #include "metavision/sdk/driver/camera_exception.h"
 #include "metavision/sdk/driver/camera_error_code.h"
@@ -50,7 +51,6 @@ void Biases::set_from_file(const std::string &biases_filename) {
 
     // Get available biases :
     std::map<std::string, int> available_biases = pimpl_->get_all_biases();
-    auto it_available_biases_end                = available_biases.end();
 
     // Parse the file to get the list of the biases that the user wants to set
     std::map<std::string, int> biases_to_set;
@@ -74,11 +74,18 @@ void Biases::set_from_file(const std::string &biases_filename) {
             value = std::stol(value_str);
         }
 
-        // Check if the bias that we want to set is compatible
-        auto it_available = available_biases.find(bias_name);
-        if (it_available == it_available_biases_end) {
+        // Check if the bias that we want to set is compatible and not read only
+        LL_Bias_Info bias_info;
+        bool ret = true;
+        try {
+            ret = pimpl_->get_bias_info(bias_name, bias_info);
+        } catch (Metavision::HalException &) { ret = false; }
+        if (!ret) {
             throw CameraException(BiasesErrors::UnsupportedBias,
                                   "Bias '" + bias_name + "' is not compatible with the device.");
+        }
+        if (!bias_info.is_modifiable()) {
+            continue;
         }
 
         auto it = biases_to_set.find(bias_name);

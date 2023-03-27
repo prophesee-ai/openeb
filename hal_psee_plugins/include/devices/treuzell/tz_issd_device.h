@@ -12,7 +12,7 @@
 #ifndef METAVISION_HAL_TZ_ISSD_DEVICE_H
 #define METAVISION_HAL_TZ_ISSD_DEVICE_H
 
-#include "devices/treuzell/tz_regmap_device.h"
+#include "metavision/psee_hw_layer/devices/treuzell/tz_regmap_device.h"
 
 namespace Metavision {
 
@@ -24,12 +24,14 @@ public:
     TzIssdDevice(const Issd &issd);
     virtual ~TzIssdDevice();
 
-    virtual void start();
-    virtual void stop();
+    virtual void start() override;
+    virtual void stop() override;
+
+protected:
+    virtual void initialize() override;
+    virtual void destroy() override;
 
 private:
-    void initialize();
-    void destroy();
     void ApplyRegisterOperationSequence(const std::vector<RegisterOperation> sequence);
     void ApplyRegisterOperation(const RegisterOperation operation);
     const Issd &issd;

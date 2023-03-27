@@ -18,17 +18,27 @@
 
 namespace Metavision {
 
-template<typename SelfType>
-struct I_RegistrableFacility : public I_Facility, public std::enable_shared_from_this<I_RegistrableFacility<SelfType>> {
-    const std::type_info &registration_info() const override final {
-        return typeid(SelfType);
-    }
+/// @brief Class serving as base for facility types that can be registered in a @ref Device
+/// @tparam SelfType the actual type of the registrable facility
+/// @tparam BaseType optional I_RegistrableFacility derived type that SelfType extends
+template<typename SelfType, typename BaseType = void>
+struct I_RegistrableFacility : public BaseType,
+                               /** @cond */ public I_RegistrableFacility<SelfType> /** @endcond */ {
+    virtual std::unordered_set<std::size_t> registration_info() const override;
+};
 
-    static const std::type_info &class_registration_info() {
-        return typeid(SelfType);
-    }
+template<typename SelfType>
+struct I_RegistrableFacility<SelfType, void>
+    : virtual public I_Facility, public std::enable_shared_from_this<I_RegistrableFacility<SelfType, void>> {
+    virtual std::unordered_set<std::size_t> registration_info() const override;
+
+    /// @brief Returns information used to lookup the facility in a @ref Device
+    /// @returns The facility class' hash used for lookup
+    static std::size_t class_registration_info();
 };
 
 } // namespace Metavision
+
+#include "detail/i_registrable_facility_impl.h"
 
 #endif // METAVISION_HAL_I_REGISTRABLE_FACILITY_H

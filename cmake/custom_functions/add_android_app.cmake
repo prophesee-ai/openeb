@@ -11,7 +11,7 @@
 # Function to easily wrap Android gradle commands
 function(add_android_app app)
     set(options)
-    set(multiValueArgs DEPENDS)
+    set(multiValueArgs DEPENDS EXCLUDE_GRADLE_TASKS)
     cmake_parse_arguments(PARSED_ARGS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     if(PARSED_ARGS_DEPENDS)
@@ -29,8 +29,14 @@ function(add_android_app app)
     )
 
     set(ANDROID_GRADLE_CACHE_EXTRACT_DIR ${GENERATE_FILES_DIRECTORY}/android)
-    set(ANDROID_GRADLE_CACHE_DIR ${ANDROID_GRADLE_CACHE_EXTRACT_DIR}/.gradle)
+    set(ANDROID_GRADLE_CACHE_DIR ${ANDROID_GRADLE_CACHE_EXTRACT_DIR}/.gradle2)
     set(gradle_options "--project-cache-dir;${CMAKE_CURRENT_BINARY_DIR}/.gradle;-g;${ANDROID_GRADLE_CACHE_DIR};")
+    list(APPEND gradle_options "--console=plain" "--info")
+
+    if(PARSED_ARGS_EXCLUDE_GRADLE_TASKS)
+        list(APPEND gradle_options "-x" ${PARSED_ARGS_EXCLUDE_GRADLE_TASKS})
+    endif(PARSED_ARGS_EXCLUDE_GRADLE_TASKS)
+
     if (GRADLE_OFFLINE_MODE)
         # Unpack gradle cache for faster and consistent builds
         set(ANDROID_GRADLE_CACHE_ARCHIVE utils/android/gradle-cache.tar.gz)
@@ -47,14 +53,11 @@ function(add_android_app app)
     endif (GRADLE_OFFLINE_MODE)
 
     add_custom_target(${app} ALL
-        COMMAND ./gradlew ${gradle_options} assemble${CMAKE_BUILD_TYPE}
+        COMMAND ./gradlew ${gradle_options} build
+        COMMAND ./gradlew ${gradle_options} assembleAndroidTest
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         VERBATIM
     )
-
-    if(PARSED_ARGS_DEPENDS)
-        add_dependencies(${app} ${_depends})
-    endif(PARSED_ARGS_DEPENDS)
 
     set (target deploy_${app})
     add_custom_target(${target}
@@ -69,4 +72,15 @@ function(add_android_app app)
             COMMAND ./gradlew ${gradle_options} clean
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
+    set (target test_${app})
+    add_custom_target(${target}
+            COMMAND ./gradlew ${gradle_options} "-i" connectedAndroidTest
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+
+    if(PARSED_ARGS_DEPENDS)
+        add_dependencies(${app} ${_depends})
+        add_dependencies(${target} ${_depends})
+    endif(PARSED_ARGS_DEPENDS)
+
 endfunction(add_android_app app)

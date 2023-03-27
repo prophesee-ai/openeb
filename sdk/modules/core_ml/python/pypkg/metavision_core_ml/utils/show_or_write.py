@@ -11,6 +11,7 @@ This wrapper shows and/or writes a video
 """
 import cv2
 from skvideo.io import FFmpegWriter
+import os
 
 
 class ShowWrite(object):
@@ -29,6 +30,9 @@ class ShowWrite(object):
         if window_name:
             self.window = cv2.namedWindow(window_name)
         if video_path:
+            dirname = os.path.dirname(video_path)
+            if dirname and not os.path.isdir(dirname):
+                os.makedirs(dirname)
             self.video_out = FFmpegWriter(video_path, outputdict={
                 '-vcodec': 'libx264',  # use the h.264 codec
                 '-crf': str(crf),  # set the constant rate factor to 0, which is lossless

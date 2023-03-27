@@ -24,26 +24,32 @@ namespace {
 
 class Mock_LL_Biases : public Metavision::I_LL_Biases {
 public:
-    Mock_LL_Biases(const std::map<std::string, int> &biases_map) : biases_map_(biases_map) {}
+    Mock_LL_Biases(const Metavision::DeviceConfig &device_config, const std::map<std::string, int> &biases_map) :
+        Metavision::I_LL_Biases(device_config), biases_map_(biases_map) {}
 
-    virtual ~Mock_LL_Biases() {}
+    ~Mock_LL_Biases() override {}
 
-    virtual bool set(const std::string &bias_name, int bias_value) override {
+    bool set_impl(const std::string &bias_name, int bias_value) override {
+        biases_map_[bias_name] = bias_value;
+        return true;
+    }
+
+    int get_impl(const std::string &bias_name) override {
+        return biases_map_[bias_name];
+    }
+
+    std::map<std::string, int> get_all_biases() override {
+        return biases_map_;
+    }
+
+    bool get_bias_info_impl(const std::string &bias_name, Metavision::LL_Bias_Info &bias_info) const override {
         auto it = biases_map_.find(bias_name);
         if (it == biases_map_.end()) {
             return false;
         }
-        it->second = bias_value;
+        bias_info =
+            Metavision::LL_Bias_Info(std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), "", true, "");
         return true;
-    }
-
-    virtual int get(const std::string &bias_name) override {
-        auto it = biases_map_.find(bias_name);
-        return it == biases_map_.end() ? -1 : it->second;
-    }
-
-    virtual std::map<std::string, int> get_all_biases() override {
-        return biases_map_;
     }
 
     void set_biases_map(const std::map<std::string, int> &biases_map) {
@@ -80,7 +86,7 @@ protected:
         std::map<std::string, int> biases_map = {{"bias_diff", -1}, {"bias_diff_off", -1}, {"bias_diff_on", -1},
                                                  {"bias_fo", -1},   {"bias_hpf", -1},      {"bias_pr", -1},
                                                  {"bias_refr", -1}};
-        i_ll_biases_                          = std::make_unique<Mock_LL_Biases>(biases_map);
+        i_ll_biases_ = std::make_unique<Mock_LL_Biases>(Metavision::DeviceConfig(), biases_map);
         biases_.reset(new Metavision::Biases(i_ll_biases_.get()));
     }
 
@@ -264,7 +270,7 @@ TEST_F(Biases_GTest, save_to_file) {
     std::map<std::string, int> biases_map = {{"bias_diff", 299}, {"bias_diff_off", 228}, {"bias_diff_on", 370},
                                              {"bias_fo", 1507},  {"bias_hpf", 1499},     {"bias_pr", 1250},
                                              {"bias_refr", 1500}};
-    auto mock_biases                      = std::make_unique<Mock_LL_Biases>(biases_map);
+    auto mock_biases                      = std::make_unique<Mock_LL_Biases>(Metavision::DeviceConfig(), biases_map);
     Metavision::Biases biases(mock_biases.get());
 
     // WHEN saving the biases to a file

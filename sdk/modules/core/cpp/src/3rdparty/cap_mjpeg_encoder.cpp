@@ -400,11 +400,11 @@ public:
         open(filename, fps, size, iscolor);
         nstripes = -1;
     }
-    ~MotionJpegWriter() { close(); }
+    ~MotionJpegWriter() { try { close(); } catch (...) { /* container can throw when closing.. */ } }
 
     virtual int getCaptureDomain() const CV_OVERRIDE { return cv::CAP_OPENCV_MJPEG; }
 
-    void close()
+    void close() CV_OVERRIDE
     {
         if( !container.isOpenedStream() )
             return;

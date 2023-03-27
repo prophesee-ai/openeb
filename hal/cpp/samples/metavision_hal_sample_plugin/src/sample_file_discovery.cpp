@@ -12,20 +12,26 @@
 #include <memory>
 #include <metavision/hal/device/device.h>
 #include <metavision/hal/facilities/i_events_stream.h>
-#include <metavision/hal/facilities/future/i_events_stream.h>
+#include <metavision/hal/facilities/i_plugin_software_info.h>
 #include <metavision/hal/utils/device_builder.h>
 #include <metavision/hal/utils/file_data_transfer.h>
-#include <metavision/hal/utils/future/file_data_transfer.h>
 
 #include "sample_file_discovery.h"
 #include "sample_hw_identification.h"
 #include "sample_geometry.h"
 #include "sample_decoder.h"
-#include "future/sample_decoder.h"
 
 bool SampleFileDiscovery::discover(Metavision::DeviceBuilder &device_builder, std::unique_ptr<std::istream> &stream,
                                    const Metavision::RawFileHeader &header,
                                    const Metavision::RawFileConfig &stream_config) {
+    // Reject files that can't be handled (any file not written by this plugin)
+    std::shared_ptr<Metavision::I_PluginSoftwareInfo> plugin = device_builder.get_plugin_software_info();
+    if (header.get_plugin_name() != plugin->get_plugin_name()) {
+        return false;
+    }
+    if (header.get_plugin_integrator_name() != SampleHWIdentification::SAMPLE_INTEGRATOR) {
+        return false;
+    }
     // Add facilities to the device
     auto hw_identification = device_builder.add_facility(
         std::make_unique<SampleHWIdentification>(device_builder.get_plugin_software_info(), "File"));
@@ -34,35 +40,14 @@ bool SampleFileDiscovery::discover(Metavision::DeviceBuilder &device_builder, st
     auto cd_event_decoder =
         device_builder.add_facility(std::make_unique<Metavision::I_EventDecoder<Metavision::EventCD>>());
 
-    // The new Future::I_EventsStream and Future::I_Decoder facilities are preview versions of the facilities
-    // as they will be available in the next major release of Metavision.
-    // Those facilities provide new features for offline recording such as seeking at a random position in the stream.
-    // They must be instantiated in the plugin to be useable by an application.
-    //
-    // However, to keep compatibility with previous version of Metavision software, it is mandatory to also
-    // instantiate the current version of the I_EventsStream and I_Decoder.
-    // When the future facilities are made available in the next major release, it will not be necessary
-    // to instantiate both versions of the decoding and streaming facilities.
-    {
-        auto decoder = device_builder.add_facility(
-            std::make_unique<Future::SampleDecoder>(stream_config.do_time_shifting_, cd_event_decoder));
-        // Note that the future streaming facility does not take ownership of the stream instance
-        // This is ok as we specifically make sure the stream lifetime outlasts the facility's.
-        device_builder.add_facility(std::make_unique<Metavision::Future::I_EventsStream>(
-            std::make_unique<Metavision::Future::FileDataTransfer>(stream.get(), decoder->get_raw_event_size_bytes(),
-                                                                   stream_config),
-            hw_identification, decoder));
-    }
-    {
-        auto decoder = device_builder.add_facility(
-            std::make_unique<SampleDecoder>(stream_config.do_time_shifting_, cd_event_decoder));
-        // Note that the current facility must take ownership of the stream instance (as it was the case in previous
-        // versions).
-        device_builder.add_facility(std::make_unique<Metavision::I_EventsStream>(
-            std::make_unique<Metavision::FileDataTransfer>(std::move(stream), decoder->get_raw_event_size_bytes(),
-                                                           stream_config),
-            hw_identification));
-    }
+    auto decoder =
+        device_builder.add_facility(std::make_unique<SampleDecoder>(stream_config.do_time_shifting_, cd_event_decoder));
+    // Note that the current facility must take ownership of the stream instance (as it was the case in previous
+    // versions).
+    device_builder.add_facility(std::make_unique<Metavision::I_EventsStream>(
+        std::make_unique<Metavision::FileDataTransfer>(std::move(stream), decoder->get_raw_event_size_bytes(),
+                                                       stream_config),
+        hw_identification, decoder));
 
     return true;
 }

@@ -19,8 +19,9 @@ static HALClassPythonBinder<DeviceConfig> bind(
     [](auto &module, auto &class_binding) {
         class_binding.def(py::init())
             .def(py::init<const DeviceConfig &>())
-            .def_readwrite("event_format", &DeviceConfig::event_format_,
-                           pybind_doc_hal["Metavision::DeviceConfig::event_format_"]);
+            .def("get", &DeviceConfig::get<std::string>)
+            .def("set",
+                 static_cast<void (DeviceConfig::*)(const std::string &, const std::string &)>(&DeviceConfig::set));
 
         ;
     },

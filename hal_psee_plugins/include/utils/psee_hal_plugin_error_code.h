@@ -35,6 +35,10 @@ enum : HalErrorCodeType {
     CCam5NotBooted        = HalErrorCode::InternalInitializationError | 0x21,
     SensorInitError       = HalErrorCode::InternalInitializationError | 0x22,
     UnknownFormat         = HalErrorCode::InternalInitializationError | 0x23,
+    UnsupportedFirmware   = HalErrorCode::InternalInitializationError | 0x24,
+
+    // Invalid argument errors
+    InvalidAFKValue = HalErrorCode::InvalidArgument | 0xC0,
 };
 }
 
