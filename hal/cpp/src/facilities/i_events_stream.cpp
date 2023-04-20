@@ -429,7 +429,9 @@ I_EventsStream::Index build_index(Device &device, const std::string &raw_file_na
 
         if (!build_and_try_writing_bookmarks(device, index, raw_file_name, index_file_header, raw_file_index_name,
                                              abort)) {
-            MV_HAL_LOG_ERROR() << "Failed to build index for input RAW file" << raw_file_name;
+            if (!abort) {
+                MV_HAL_LOG_WARNING() << "Failed to build index for input RAW file" << raw_file_name;
+            }
             index.status_ = I_EventsStream::IndexStatus::Bad;
             return index;
         }

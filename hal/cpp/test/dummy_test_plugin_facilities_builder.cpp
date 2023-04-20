@@ -17,6 +17,7 @@
 #include "metavision/hal/facilities/i_digital_event_mask.h"
 #include "metavision/hal/facilities/i_hw_identification.h"
 #include "metavision/hal/facilities/i_monitoring.h"
+#include "metavision/hal/facilities/i_trigger_in.h"
 #include "metavision/hal/plugin/plugin.h"
 #include "metavision/hal/plugin/plugin_entrypoint.h"
 #include "metavision/hal/utils/device_builder.h"
@@ -148,6 +149,41 @@ public:
     }
 };
 
+class DummyTriggerIn : public I_TriggerIn {
+private:
+    std::map<Channel, short> channel_map_{{Channel::Main, 0}, {Channel::Aux, 1}, {Channel::Loopback, 2}};
+    std::map<Channel, bool> status_map_{{Channel::Main, false}, {Channel::Aux, false}, {Channel::Loopback, false}};
+
+public:
+    bool enable(const Channel &channel) override {
+        if (status_map_.find(channel) == status_map_.end()) {
+            return false;
+        }
+        status_map_[channel] = true;
+        return true;
+    }
+
+    bool disable(const Channel &channel) override {
+        if (status_map_.find(channel) == status_map_.end()) {
+            return false;
+        }
+        status_map_[channel] = false;
+        return true;
+    }
+
+    bool is_enabled(const Channel &channel) const override {
+        auto it = status_map_.find(channel);
+        if (it == status_map_.end()) {
+            return false;
+        }
+        return it->second;
+    }
+
+    std::map<Channel, short> get_available_channels() const override {
+        return channel_map_;
+    }
+};
+
 struct DummyCameraDiscovery : public CameraDiscovery {
     SerialList list() override final {
         return SerialList{"__DummyTest__"};
@@ -160,6 +196,7 @@ struct DummyCameraDiscovery : public CameraDiscovery {
         device_builder.add_facility(std::make_unique<DummyDigitalEvenMask>());
         device_builder.add_facility(std::make_unique<DummyMonitoring>());
         device_builder.add_facility(std::make_unique<DummyFacilityV3>());
+        device_builder.add_facility(std::make_unique<DummyTriggerIn>());
         return true;
     }
 

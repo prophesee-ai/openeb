@@ -32,6 +32,10 @@ bool set_trail_filter_wrapper(I_EventTrailFilterModule &self) {
 }
 } // namespace
 
+// TODO : remove before next major release
+// Add depreciation message for get_i_eventrail_fiter_module typo -> get_i_event_trail_filter_module
+static DeprecatedDeviceFacilityGetter<I_EventTrailFilterModule> getter_("get_i_eventrailfilter_module",
+                                                                        "get_i_event_trail_filter_module", "4.0.1");
 static DeviceFacilityGetter<I_EventTrailFilterModule> getter("get_i_event_trail_filter_module");
 
 static HALFacilityPythonBinder<I_EventTrailFilterModule> bind(

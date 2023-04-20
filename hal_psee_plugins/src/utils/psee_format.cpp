@@ -81,7 +81,7 @@ std::unique_ptr<I_Geometry> StreamFormat::geometry() const {
         // Here we catch throws on map::at
         throw std::invalid_argument("Format has no geometry");
     }
-    return std::make_unique<Geometry>(width, height);
+    return std::make_unique<PseeGeometry>(width, height);
 }
 
 } // namespace Metavision

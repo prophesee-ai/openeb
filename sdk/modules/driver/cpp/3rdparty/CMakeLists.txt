@@ -14,7 +14,7 @@ if(HDF5_FOUND)
     foreach (comp all public)
         set(PACKAGES_CONFIG_FILE ${CMAKE_CURRENT_BINARY_DIR}/hdf5_ecf/${comp}_deb/CPackConfig.cmake)
         file(COPY ${CMAKE_BINARY_DIR}/CPackConfig.cmake DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/hdf5_ecf/${comp}_deb)
-        file(APPEND ${PACKAGES_CONFIG_FILE} "SET(CPACK_COMPONENTS_ALL hdf5-ecf-codec-lib hdf5-ecf-codec-dev hdf5-plugin-ecf)\n")
+        file(APPEND ${PACKAGES_CONFIG_FILE} "SET(CPACK_COMPONENTS_ALL hdf5-ecf-codec-lib hdf5-ecf-codec-dev hdf5-plugin-ecf hdf5-plugin-ecf-dev)\n")
         file(APPEND ${PACKAGES_CONFIG_FILE} "SET(CPACK_OUTPUT_FILE_PREFIX ${CMAKE_BINARY_DIR}/packages/${comp})\n")
         file(APPEND ${PACKAGES_CONFIG_FILE} "SET(CPACK_DEBIAN_PACKAGE_VERSION ${HDF5_ECF_PROJECT_VERSION})\n")
 

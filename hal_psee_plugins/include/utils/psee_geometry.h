@@ -16,13 +16,13 @@
 
 namespace Metavision {
 
-class Geometry : public Metavision::I_Geometry {
+class PseeGeometry : public Metavision::I_Geometry {
 private:
     int width_;
     int height_;
 
 public:
-    Geometry(const int width, const int height) : width_(width), height_(height) {}
+    PseeGeometry(const int width, const int height) : width_(width), height_(height) {}
     int get_width() const override final {
         return width_;
     }

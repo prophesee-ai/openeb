@@ -28,9 +28,9 @@ public:
     /// @brief Default constructor
     EventExtTrigger() = default;
 
-    /// @param p Polarity of the event
-    /// @param t Timestamp of the event (in us)
-    /// @param id ID of the external trigger
+    /// @param p Polarity of the external trigger event
+    /// @param t Timestamp of the external trigger event (in us)
+    /// @param id Channel ID of the external trigger event
     inline EventExtTrigger(short p, timestamp t, short id) : p(p), t(t), id(id) {}
 
     /// Writes EventExtTrigger in buffer

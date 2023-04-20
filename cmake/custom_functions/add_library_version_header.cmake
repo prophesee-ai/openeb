@@ -7,9 +7,9 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-set(GIT_BRANCH "HEAD")
-set(GIT_COMMIT_ID "dc13230743cffb95508a3ed8f101869a8d97607f")
-set(GIT_COMMIT_DATE "2023-03-27 15:26:33 +0200")
+set(GIT_BRANCH "main")
+set(GIT_COMMIT_ID "7b1f92e06fe2ecc12cfd99297d2b171d673eab48")
+set(GIT_COMMIT_DATE "2023-04-20 13:39:06 +0200")
 
 find_program(GIT_SCM git DOC "Git version control" HINTS "C:\\Program Files\\Git\\bin\\")
 

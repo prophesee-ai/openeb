@@ -108,7 +108,7 @@ GLuint LoadShaders() {
 } // namespace detail
 
 BaseWindow::BaseWindow(const std::string &title, int width, int height, RenderMode mode) :
-    BaseGLFWWindow(title, width, height), render_mode_(mode) {
+    BaseGLFWWindow(title, width, height), width_(width), height_(height), render_mode_(mode) {
     program_id_ = detail::LoadShaders();
     tex_id_     = detail::initialize_texture(width, height, (render_mode_ == RenderMode::GRAY));
 

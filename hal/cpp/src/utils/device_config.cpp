@@ -197,7 +197,7 @@ std::ostream &operator<<(std::ostream &os, const DeviceConfigOption &opt) {
 }
 
 std::string DeviceConfig::get_evt_format_key() {
-    return "evt_format";
+    return "format";
 }
 
 std::string DeviceConfig::evt_format() const {

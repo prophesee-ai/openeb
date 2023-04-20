@@ -24,13 +24,11 @@ if (CMAKE_CUDA_COMPILER)
     set_property(TARGET ${sample} PROPERTY CUDA_SEPARABLE_COMPILATION ON)
     set_property(TARGET ${sample} PROPERTY CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 
-    target_include_directories(${sample} PRIVATE ${CUDA_TOOLKIT_INCLUDE})
+    target_include_directories(${sample} PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
     target_link_libraries(${sample}
         PRIVATE
           Boost::filesystem
           Boost::program_options
-          "${CUDA_CUDART_LIBRARY}"
-          "${CUDA_CUDA_LIBRARY}"
           "${OpenCV_LIBS}"
           MetavisionSDK::base
           MetavisionSDK::core

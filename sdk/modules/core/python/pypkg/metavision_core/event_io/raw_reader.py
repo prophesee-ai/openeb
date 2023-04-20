@@ -37,8 +37,8 @@ def initiate_device(path, do_time_shifting=True, use_external_triggers=[]):
         path (str): either path do a RAW file (having a .raw or .RAW extension) or a camera serial number. leave blank to take
             the first available camera.
         do_time_shifting (bool): in case of a file, makes the timestamps start close to 0mus.
-        use_external_triggers (int List): list of integer values corresponding to the channels of external trigger
-            to be activated (only relevant for a live camera).
+        use_external_triggers (Channel List): list of channels of external trigger to be activated (only relevant for a live camera).
+            On most systems, only one (MAIN) channel can be enabled.
     Returns:
         device: a HAL Device.
 

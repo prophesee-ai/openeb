@@ -47,6 +47,23 @@ struct DeviceFacilityGetter {
     }
 };
 
+template<typename Facility>
+struct DeprecatedDeviceFacilityGetter {
+    DeprecatedDeviceFacilityGetter(const std::string &old_getter_name, const std::string &new_getter_name,
+                                   const std::string &version) {
+        detail::get_device_facility_getters_cbs().push_back(
+            [old_getter_name, new_getter_name, version](auto &module, auto &device_python) {
+                auto cb = [old_getter_name, new_getter_name, version](Device *device) -> Facility * {
+                    auto warnings = pybind11::module::import("warnings");
+                    warnings.attr("warn")(old_getter_name + "() is deprecated since v" + version + ", use " +
+                                          new_getter_name + "() instead.");
+                    return device->get_facility<Facility>();
+                };
+                device_python.def(&old_getter_name[0], cb, py::return_value_policy::reference);
+            });
+    }
+};
+
 } // namespace Metavision
 
 #endif // METAVISION_HAL_PYTHON_BINDER_H

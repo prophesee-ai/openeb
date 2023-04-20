@@ -131,50 +131,62 @@ python3 -m pip install "numba==0.56.3" "profilehooks==1.12.0" "pytorch_lightning
 
 ### Compilation
 
- 1. Retrieve the code `git clone https://github.com/prophesee-ai/openeb.git`
+ 1. Retrieve the code `git clone https://github.com/prophesee-ai/openeb.git --branch 4.0.1`.
+    (If you choose to download an archive of OpenEB from GitHub rather than cloning the repository,
+    you need to ensure that you select a ``Full.Source.Code.*`` archive instead of using
+    the automatically generated ``Source.Code.*`` archives. This is because the latter do not include
+    a necessary submodule.)
  2. Create and open the build directory in the `openeb` folder (absolute path to this directory is called `OPENEB_SRC_DIR` in next sections): `cd openeb; mkdir build && cd build`
- 3. Generate the makefiles using CMake: `cmake .. -DBUILD_TESTING=OFF`
+ 3. Generate the makefiles using CMake: `cmake .. -DBUILD_TESTING=OFF`.
+    If you want to specify to cmake which version of Python to consider, you should use the option ``-DPython3_EXECUTABLE=<path_to_python_to_use>``.
+    This is useful, for example, when you have a more recent version of Python than the ones we support installed on your system.
+    In that case, cmake would select it and compilation might fail.
  4. Compile: `cmake --build . --config Release -- -j 4`
- 
-To use OpenEB directly from the build folder, update your environment variables using this script
-(which you may add to your ~/.bashrc to make it permanent):
 
-```bash
-source <OPENEB_SRC_DIR>/build/utils/scripts/setup_env.sh
-```
+Once the compilation is finished, you have two options: you can choose to work directly from the `build` folder
+or you can deploy the OpenEB files in the system path (`/usr/local/lib`, `/usr/local/include`...).
 
-Optionally, you can deploy the OpenEB files in the system paths to use them as 3rd party dependency in some other code
-with the following command: `sudo cmake --build . --target install`.
+* Option 1 - working from `build` folder
 
-In that case, you will also need to update:
+  * To use OpenEB directly from the `build` folder, you need to update some environment variables using this script
+    (which you may add to your `~/.bashrc` to make it permanent):
 
-  * `LD_LIBRARY_PATH` with `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib`
-  * `HDF5_PLUGIN_PATH` with `export HDF5_PLUGIN_PATH=$HDF5_PLUGIN_PATH:/usr/local/hdf5/lib/plugin` (this may be required if you want to use our HDF5 recordings with the system HDF5 tools or the `h5py` python package)
+    ```bash
+    source utils/scripts/setup_env.sh
+    ```
 
-If you want those settings to be permanent, you should add the previous commands in your ~/.bashrc.
+  * Prophesee camera plugins are included in OpenEB, but you still need to copy the udev rules files in the system path
+    and reload them so that your camera is detected with this command:
 
-You can also deploy the OpenEB files (applications, samples, libraries etc.) in a directory of your choice by using 
-the `CMAKE_INSTALL_PREFIX` variable (`-DCMAKE_INSTALL_PREFIX=<OPENEB_INSTALL_DIR>`) when generating the makefiles
-in step 3. Similarly, you can configure the directory where the Python packages will be deployed using the
-`PYTHON3_SITE_PACKAGES` variable (`-DPYTHON3_SITE_PACKAGES=<PYTHON3_PACKAGES_INSTALL_DIR>`).
+    ```bash
+    sudo cp <OPENEB_SRC_DIR>/hal_psee_plugins/resources/rules/*.rules /etc/udev/rules.d
+    sudo udevadm control --reload-rules
+    sudo udevadm trigger
+    ```
 
-If you want to specify to cmake which version of Python to consider, you should use
-the option `-DPython3_EXECUTABLE=<path_to_python_to_use>` when generating the makefiles.
-This is useful, for example, when you have a more recent version of Python than the ones we support installed
-on your system. In that case, cmake will select it and compilation might fail.
+* Option 2 - deploying in the system path
 
-Since OpenEB 3.0.0, Prophesee camera plugins are included in OpenEB. If you did not perform the optional deployment step
-(`sudo cmake --build . --target install`) and instead used “setup_env.sh”, then you need to copy the udev rules files 
-used by Prophesee cameras in the system path and reload them so that your camera is detected with this command:
+  * To deploy OpenEB, launch the following command:
 
-```bash
-sudo cp <OPENEB_SRC_DIR>/hal_psee_plugins/resources/rules/*.rules /etc/udev/rules.d
-sudo udevadm control --reload-rules
-sudo udevadm trigger
-```
+    ```bash
+    sudo cmake --build . --target install
+    ```
 
-If you are using a third-party camera, you need to install the plugin provided by the camera vendor and specify
-the location of the plugin using the `MV_HAL_PLUGIN_PATH` environment variable.
+    Note that you ou can also deploy the OpenEB files (applications, samples, libraries etc.) in a directory of your choice by using
+    the `CMAKE_INSTALL_PREFIX` variable (`-DCMAKE_INSTALL_PREFIX=<OPENEB_INSTALL_DIR>`) when generating the makefiles
+    in step 3. Similarly, you can configure the directory where the Python packages will be deployed using the
+    `PYTHON3_SITE_PACKAGES` variable (`-DPYTHON3_SITE_PACKAGES=<PYTHON3_PACKAGES_INSTALL_DIR>`).
+
+  * you also need to update `LD_LIBRARY_PATH` and `HDF5_PLUGIN_PATH`
+    (which you may add to your `~/.bashrc` to make it permanent):
+
+    ```bash
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+    export HDF5_PLUGIN_PATH=$HDF5_PLUGIN_PATH:/usr/local/hdf5/lib/plugin
+    ```
+
+Note that if you are using a third-party camera, you need to install the plugin provided
+by the camera vendor and specify the location of the plugin using the `MV_HAL_PLUGIN_PATH` environment variable.
 
 To get started with OpenEB, you can download some [sample recordings](https://docs.prophesee.ai/stable/datasets.html) 
 and visualize them with [metavision_viewer](https://docs.prophesee.ai/stable/metavision_sdk/modules/driver/samples/viewer.html)
@@ -310,8 +322,14 @@ python -m pip install "numba==0.56.3" "profilehooks==1.12.0" "pytorch_lightning=
 First, retrieve the codebase:
 
 ```bash
-git clone https://github.com/prophesee-ai/openeb.git
+git clone https://github.com/prophesee-ai/openeb.git --branch 4.0.1
 ```
+
+Note that if you choose to download an archive of OpenEB from GitHub rather than cloning the repository,
+you need to ensure that you select a ``Full.Source.Code.*`` archive instead of using
+the automatically generated ``Source.Code.*`` archives. This is because the latter do not include
+a necessary submodule.
+
 
 #### Compilation using CMake
 
@@ -322,32 +340,44 @@ Open a command prompt inside the `openeb` folder (absolute path to this director
     Note that the value passed to the parameter `-DCMAKE_TOOLCHAIN_FILE` must be an absolute path, not a relative one. 
  3. Compile: `cmake --build . --config Release --parallel 4`
  
-To use OpenEB directly from the build folder, update your environment variables using this script:
+Once the compilation is done, you have two options: you can choose to work directly from the `build` folder
+or you can deploy the OpenEB files (applications, samples, libraries etc.) in a directory of your choice.
 
-```bash
-<OPENEB_SRC_DIR>\build\utils\scripts\setup_env.bat
-```
+* Option 1 - working from `build` folder
 
-Optionally, you can deploy the OpenEB files (applications, samples, libraries etc.) in a directory of your choice.
-To do so, configure the target folder (`OPENEB_INSTALL_DIR`) with `CMAKE_INSTALL_PREFIX` variable 
-(default value is `C:\Program Files\Prophesee`) when generating the makefiles in step 2:
+  * To use OpenEB directly from the `build` folder,
+  you need to update some environment variables using this script:
 
-```bash
-cmake .. -A x64 -DCMAKE_TOOLCHAIN_FILE=<OPENEB_SRC_DIR>\cmake\toolchains\vcpkg.cmake -DVCPKG_DIRECTORY=<VCPKG_SRC_DIR> -DCMAKE_INSTALL_PREFIX=<OPENEB_INSTALL_DIR> -DBUILD_TESTING=OFF
-```
+    ```bash
+    utils\scripts\setup_env.bat
+    ```
+    
+* Option 2 - deploying in a directory of your choice
 
-You can also configure the directory where the Python packages will be deployed using the `PYTHON3_SITE_PACKAGES` variable
-(note that in that case, you will also need to edit your environment variable `PYTHONPATH` and append the `<PYTHON3_PACKAGES_INSTALL_DIR>` path):
+  * To deploy OpenEB, configure the target folder (`OPENEB_INSTALL_DIR`) with `CMAKE_INSTALL_PREFIX` variable
+    and the directory where the Python packages will be deployed (`PYTHON3_PACKAGES_INSTALL_DIR`) using the `PYTHON3_SITE_PACKAGES` variable
+    when generating the solution in step 2:
 
-```bash
-cmake .. -A x64 -DCMAKE_TOOLCHAIN_FILE=<OPENEB_SRC_DIR>\cmake\toolchains\vcpkg.cmake -DVCPKG_DIRECTORY=<VCPKG_SRC_DIR> -DCMAKE_INSTALL_PREFIX=<OPENEB_INSTALL_DIR> -DPYTHON3_SITE_PACKAGES=<PYTHON3_PACKAGES_INSTALL_DIR> -DBUILD_TESTING=OFF
-```
+    ```bash
+    cmake -A x64 -DCMAKE_TOOLCHAIN_FILE=<OPENEB_SRC_DIR>\cmake\toolchains\vcpkg.cmake -DVCPKG_DIRECTORY=<VCPKG_SRC_DIR> -DCMAKE_INSTALL_PREFIX=<OPENEB_INSTALL_DIR> -DPYTHON3_SITE_PACKAGES=<PYTHON3_PACKAGES_INSTALL_DIR> -DBUILD_TESTING=OFF ..
+    ```
+    
+  *  You can now launch the actual compilation and installation of the OpenEB files (your console should be launched as an administrator) :
 
-Once you performed this configuration, you can launch the actual installation of the OpenEB files:
+    ```bash
+    cmake --build . --config Release --parallel 4
+    cmake --build . --config Release --target install
+    ```
+    
+  * You also need to edit the `PATH`, `HDF5_PLUGIN_PATH` and `PYTHONPATH` environment variables:
 
-```bash
-cmake --build . --config Release --target install
-```
+    * append `<OPENEB_INSTALL_DIR>\bin` to the `PATH`
+    * append `<OPENEB_INSTALL_DIR>\lib\hdf5\plugin` to the `HDF5_PLUGIN_PATH`
+    * append `<PYTHON3_PACKAGES_INSTALL_DIR>` to the `PYTHONPATH`
+
+  * If you did not customize the install folders when generating the solution, the `PYTHONPATH` environment variable needs
+    not be modified and the `OPENEB_INSTALL_DIR` can be replaced by `C:\Program Files\Prophesee` in the previous instructions.
+
 
 #### Compilation using MS Visual Studio
 
