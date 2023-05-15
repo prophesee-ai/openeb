@@ -63,10 +63,6 @@ bool PseeROI::set_windows_impl(const std::vector<Window> &windows) {
     return set_ROIs_from_bitword(create_ROIs(windows), true);
 }
 
-std::vector<uint32_t> PseeROI::create_ROIs(const std::vector<Window> &windows) {
-    return create_ROIs(windows, device_width_, device_height_, roi_x_flipped(), get_word_size());
-}
-
 bool PseeROI::set_ROIs_from_bitword(const std::vector<uint32_t> &vroiparams, bool is_enabled) {
     program_ROI_Helper(vroiparams, is_enabled);
     return true;
@@ -106,7 +102,7 @@ std::vector<uint32_t> PseeROI::create_ROIs(const std::vector<Window> &windows, i
 }
 
 std::vector<uint32_t> PseeROI::create_ROIs(const std::vector<bool> &cols_to_enable,
-                                           const std::vector<bool> &rows_to_enable) {
+                                           const std::vector<bool> &rows_to_enable, int x_offset, int y_offset) {
     auto windows = std::vector<Window>();
     auto vxroi   = std::vector<std::pair<int, int>>();
     auto vyroi   = std::vector<std::pair<int, int>>();
@@ -171,7 +167,11 @@ std::vector<uint32_t> PseeROI::create_ROIs(const std::vector<bool> &cols_to_enab
         }
     }
 
-    return create_ROIs(windows);
+    return create_ROIs(windows, device_width_, device_height_, roi_x_flipped(), get_word_size(), x_offset, y_offset);
+}
+
+std::vector<uint32_t> PseeROI::create_ROIs(const std::vector<Window> &windows) {
+    return create_ROIs(windows, device_width_, device_height_, roi_x_flipped(), get_word_size());
 }
 
 bool PseeROI::roi_x_flipped() const {

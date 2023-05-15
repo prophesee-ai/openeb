@@ -14,6 +14,8 @@
 
 #include <string>
 
+#include "metavision/sdk/version.h"
+
 namespace Metavision {
 
 /// @brief Stores information about the version of the software
@@ -80,7 +82,19 @@ private:
     std::string vcs_date_;
 };
 
-/// @brief return Metavision software information
+/// @brief Returns software information about the Metavision SDK used at build time
+static inline SoftwareInfo &get_build_software_info() {
+    static Metavision::SoftwareInfo build_sdk_info(METAVISION_SDK_VERSION_MAJOR, METAVISION_SDK_VERSION_MINOR,
+                                                   METAVISION_SDK_VERSION_PATCH, METAVISION_SDK_VERSION_SUFFIX,
+                                                   METAVISION_SDK_GIT_BRANCH_RAW, METAVISION_SDK_GIT_HASH_RAW,
+                                                   METAVISION_SDK_GIT_COMMIT_DATE);
+    return build_sdk_info;
+}
+
+/// @brief Returns software information about the Metavision SDK used at run time.
+/// @note The information values will differ from what get_build_software_info returns if the user
+/// software was built using a different version of Metavision SDK than the one available on the system running
+/// the software.
 SoftwareInfo &get_metavision_software_info();
 
 } // namespace Metavision

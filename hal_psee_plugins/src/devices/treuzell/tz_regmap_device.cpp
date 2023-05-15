@@ -94,4 +94,8 @@ bool TzDeviceWithRegmap::has_register(Register_Addr regist) {
     return it != mregister_state.end();
 }
 
+RegisterMap &TzDeviceWithRegmap::regmap() {
+    return *register_map;
+}
+
 } // namespace Metavision

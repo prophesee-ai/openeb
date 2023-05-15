@@ -22,15 +22,15 @@
 #include "metavision/psee_hw_layer/devices/treuzell/tz_device.h"
 #include "devices/common/issd.h"
 #include "devices/gen41/gen41_evk3_issd.h"
-#include "metavision/psee_hw_layer/devices/gen41/gen41_antiflicker_module.h"
+#include "metavision/psee_hw_layer/devices/common/antiflicker_filter.h"
+#include "metavision/psee_hw_layer/devices/common/event_trail_filter.h"
 #include "metavision/psee_hw_layer/devices/gen41/gen41_digital_event_mask.h"
 #include "metavision/psee_hw_layer/devices/gen41/gen41_digital_crop.h"
 #include "metavision/psee_hw_layer/devices/gen41/gen41_erc.h"
 #include "metavision/psee_hw_layer/devices/gen41/gen41_ll_biases.h"
-#include "metavision/psee_hw_layer/devices/gen41/gen41_event_trail_filter_module.h"
 #include "metavision/psee_hw_layer/devices/gen41/gen41_roi_command.h"
-#include "devices/gen41/register_maps/gen41_evk3_registermap.h"
 #include "metavision/psee_hw_layer/devices/gen41/gen41_tz_trigger_event.h"
+#include "devices/gen41/register_maps/gen41_registermap.h"
 #include "metavision/psee_hw_layer/facilities/psee_hw_register.h"
 #include "geometries/hd_geometry.h"
 #include "metavision/psee_hw_layer/utils/psee_format.h"
@@ -43,14 +43,14 @@ using vfield = std::map<std::string, uint32_t>;
 
 namespace Metavision {
 namespace {
-std::string ROOT_PREFIX   = "PSEE/";
-std::string SENSOR_PREFIX = "GEN41/";
+std::string ROOT_PREFIX   = "PSEE/GEN41/";
+std::string SENSOR_PREFIX = "";
 } // namespace
 
 TzGen41::TzGen41(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent) :
     TzDevice(cmd, dev_id, parent),
     TzIssdDevice(gen41_evk3_issd),
-    TzDeviceWithRegmap(Gen41Evk3RegisterMap, Gen41Evk3RegisterMapSize, ROOT_PREFIX) {
+    TzDeviceWithRegmap(Gen41RegisterMap, Gen41RegisterMapSize, ROOT_PREFIX) {
     sync_mode_ = I_CameraSynchronization::SyncMode::STANDALONE;
     iph_mirror_control(true);
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -73,8 +73,10 @@ bool TzGen41::can_build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_
 }
 
 void TzGen41::spawn_facilities(DeviceBuilder &device_builder, const DeviceConfig &device_config) {
-    device_builder.add_facility(std::make_unique<Gen41EventTrailFilterModule>(register_map, SENSOR_PREFIX));
-    device_builder.add_facility(std::make_unique<Gen41AntiFlickerModule>(register_map, SENSOR_PREFIX));
+    device_builder.add_facility(std::make_unique<EventTrailFilter>(
+        std::dynamic_pointer_cast<TzDeviceWithRegmap>(shared_from_this()), get_sensor_info(), SENSOR_PREFIX));
+    device_builder.add_facility(std::make_unique<AntiFlickerFilter>(
+        std::dynamic_pointer_cast<TzDeviceWithRegmap>(shared_from_this()), get_sensor_info(), SENSOR_PREFIX));
 
     auto erc = device_builder.add_facility(
         std::make_unique<Gen41Erc>(register_map, SENSOR_PREFIX + "erc/", shared_from_this()));

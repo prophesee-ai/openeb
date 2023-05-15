@@ -11,7 +11,6 @@
 
 #include <stdexcept>
 #include "metavision/sdk/base/utils/software_info.h"
-#include "metavision/sdk/version.h"
 
 namespace Metavision {
 
@@ -84,10 +83,6 @@ std::string SoftwareInfo::get_vcs_date() const {
 }
 
 SoftwareInfo &get_metavision_software_info() {
-    static Metavision::SoftwareInfo metavision_sdk_info(METAVISION_SDK_VERSION_MAJOR, METAVISION_SDK_VERSION_MINOR,
-                                                        METAVISION_SDK_VERSION_PATCH, METAVISION_SDK_VERSION_SUFFIX,
-                                                        METAVISION_SDK_GIT_BRANCH_RAW, METAVISION_SDK_GIT_HASH_RAW,
-                                                        METAVISION_SDK_GIT_COMMIT_DATE);
-    return metavision_sdk_info;
+    return get_build_software_info();
 }
 } // namespace Metavision

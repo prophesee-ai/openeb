@@ -76,7 +76,8 @@ protected:
     /// @param cols_to_enable Vector of boolean representing the binary map of the columns to disable (0) or to enable
     /// (1)
     /// @param rows_to_enable Vector of boolean representing the binary map of the rows to disable (0) or to enable (1)
-    std::vector<uint32_t> create_ROIs(const std::vector<bool> &cols_to_enable, const std::vector<bool> &rows_to_enable);
+    std::vector<uint32_t> create_ROIs(const std::vector<bool> &cols_to_enable, const std::vector<bool> &rows_to_enable,
+                                      int x_offset = 0, int y_offset = 0);
 
     /// Returns if x axis is flipped for coding the ROI
     virtual bool roi_x_flipped() const;

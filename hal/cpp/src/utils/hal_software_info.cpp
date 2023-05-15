@@ -12,17 +12,12 @@
 #include <string.h>
 
 #include "metavision/hal/utils/hal_software_info.h"
-#include "metavision/hal/version.h"
+#include "metavision/sdk/version.h"
 
 namespace Metavision {
 
 Metavision::SoftwareInfo &get_hal_software_info() {
-    static Metavision::SoftwareInfo hal_info(METAVISION_HAL_VERSION_MAJOR, METAVISION_HAL_VERSION_MINOR,
-                                             METAVISION_HAL_VERSION_PATCH, METAVISION_HAL_VERSION_SUFFIX,
-                                             METAVISION_HAL_GIT_BRANCH_RAW, METAVISION_HAL_GIT_HASH_RAW,
-                                             METAVISION_HAL_GIT_COMMIT_DATE);
-
-    return hal_info;
+    return get_build_software_info();
 }
 
 } // namespace Metavision

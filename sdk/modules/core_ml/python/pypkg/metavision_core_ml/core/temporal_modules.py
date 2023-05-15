@@ -178,9 +178,8 @@ class ConvLSTMCell(RNNCell):
                                   padding=1,
                                   bias=True)
 
-        self.prev_h = torch.zeros((1, self.hidden_dim, 0, 0), dtype=torch.float32)
-        self.prev_c = torch.zeros((1, self.hidden_dim, 0, 0), dtype=torch.float32)
-
+        self.register_buffer("prev_h", torch.zeros((1, self.hidden_dim, 0, 0)), persistent=False)
+        self.register_buffer("prev_c", torch.zeros((1, self.hidden_dim, 0, 0)), persistent=False)
     @torch.jit.export
     def get_dims_NCHW(self):
         return self.prev_h.size()
@@ -199,9 +198,8 @@ class ConvLSTMCell(RNNCell):
 
         if hidden_N != input_N or hidden_H != input_H or hidden_W != input_W:
             device = x.device
-            self.prev_h = torch.zeros((input_N, self.hidden_dim, input_H, input_W), dtype=torch.float32).to(device)
-            self.prev_c = torch.zeros((input_N, self.hidden_dim, input_H, input_W), dtype=torch.float32).to(device)
-
+            self.prev_h = torch.zeros((input_N, self.hidden_dim, input_H, input_W)).type_as(x)
+            self.prev_c = torch.zeros((input_N, self.hidden_dim, input_H, input_W)).type_as(x)
         self.prev_h.detach_()
         self.prev_c.detach_()
 
@@ -248,7 +246,7 @@ class ConvLSTMCell(RNNCell):
     @torch.jit.export
     def reset_all(self):
         """Resets memory for all sequences in one batch."""
-        self.reset(torch.zeros((len(self.prev_h), 1, 1, 1), dtype=torch.float32, device=self.prev_h.device))
+        self.reset(torch.zeros((len(self.prev_h), 1, 1, 1)).type_as(self.prev_h))
 
 
 class ConvGRUCell(RNNCell):
@@ -278,8 +276,7 @@ class ConvGRUCell(RNNCell):
                                  kernel_size=kernel_size, padding=1)
         self.conv_f = conv_func(in_channels=self.in_channels + self.out_channels, out_channels=self.out_channels,
                                 kernel_size=kernel_size, padding=padding, stride=stride, dilation=dilation)
-        self.prev_h = torch.zeros((1, self.out_channels, 0, 0), dtype=torch.float32)
-
+        self.register_buffer("prev_h", torch.zeros((1, self.out_channels, 0, 0)), persistent=False)
     def forward(self, xt):
         """
         xt size: (T, B,C,H,W)
@@ -288,9 +285,7 @@ class ConvGRUCell(RNNCell):
         hidden_N, hidden_C, hidden_H, hidden_W = self.prev_h.size()
         input_N, input_C, input_H, input_W = xt[0].size()
         if hidden_N != input_N or hidden_H != input_H or hidden_W != input_W:
-            device = xt.device
-            self.prev_h = torch.zeros((input_N, self.out_channels, input_H, input_W), dtype=torch.float32,
-                                      device=device)
+            self.prev_h = torch.zeros((input_N, self.out_channels, input_H, input_W)).type_as(xt)
 
         self.prev_h.detach_()
 

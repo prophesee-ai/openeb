@@ -14,6 +14,10 @@ add_subdirectory(gen31)
 add_subdirectory(gen41)
 add_subdirectory(imx636)
 
+if(NOT ANDROID)
+    add_subdirectory(genx320)
+endif(NOT ANDROID)
+
 if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/saphir")
     add_subdirectory(saphir)
 endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/saphir")

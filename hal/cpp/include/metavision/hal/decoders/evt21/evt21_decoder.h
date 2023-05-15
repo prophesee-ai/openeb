@@ -15,6 +15,7 @@
 #include "metavision/sdk/base/events/event_cd.h"
 #include "metavision/sdk/base/events/event_ext_trigger.h"
 #include "metavision/sdk/base/events/event_erc_counter.h"
+#include "metavision/sdk/base/utils/detail/bitinstructions.h"
 #include "metavision/hal/facilities/i_event_decoder.h"
 #include "metavision/hal/facilities/i_events_stream_decoder.h"
 #include "metavision/hal/decoders/base/event_base.h"
@@ -115,20 +116,12 @@ private:
                 uint32_t valid     = ev_td->valid;
                 const RawEvent *ev = reinterpret_cast<const RawEvent *>(cur_ev);
                 bool pol           = ev->type == static_cast<EventTypesUnderlying_t>(Evt21EventTypes_4bits::EVT_POS);
-#if defined(__x86_64__) || defined(__aarch64__)
-                uint16_t off = 0;
+                uint16_t off       = 0;
                 while (valid) {
-                    off = __builtin_ctz(valid);
+                    off = ctz_not_zero(valid);
                     valid &= ~(1 << off);
                     cd_forwarder.forward(last_x + off, y, static_cast<short>(pol), last_timestamp<DO_TIMESHIFT>());
                 }
-#else
-                for (uint16_t i = last_x; i != last_x + 32; ++i) {
-                    if (valid & 0x1)
-                        cd_forwarder.forward(i, y, static_cast<short>(pol), last_timestamp<DO_TIMESHIFT>());
-                    valid >>= 1;
-                }
-#endif
                 ++cur_ev;
             } else if (type == static_cast<EventTypesUnderlying_t>(Evt21EventTypes_4bits::EVT_TIME_HIGH)) {
                 const Event_TIME_HIGH *ev_timehigh = reinterpret_cast<const Event_TIME_HIGH *>(cur_ev);

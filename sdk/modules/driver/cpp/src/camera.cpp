@@ -484,16 +484,24 @@ Camera Camera::from_first_available() {
     return Camera(new detail::LivePrivate());
 }
 
+Camera Camera::from_first_available(DeviceConfig &config) {
+    return Camera(new detail::LivePrivate(&config));
+}
+
 Camera Camera::from_source(OnlineSourceType input_source_type, uint32_t source_index) {
     return Camera(new detail::LivePrivate(input_source_type, source_index));
 }
 
+Camera Camera::from_source(OnlineSourceType input_source_type, DeviceConfig &config, uint32_t source_index) {
+    return Camera(new detail::LivePrivate(input_source_type, source_index, &config));
+}
+
 Camera Camera::from_serial(const std::string &serial) {
-    return Camera(new detail::LivePrivate(Private::Serial(serial)));
+    return Camera(new detail::LivePrivate(serial));
 }
 
 Camera Camera::from_serial(const std::string &serial, DeviceConfig &config) {
-    return Camera(new detail::LivePrivate(Private::Serial(serial, config)));
+    return Camera(new detail::LivePrivate(serial, &config));
 }
 
 Camera Camera::from_file(const std::string &file_path, const FileConfigHints &hints) {

@@ -10,8 +10,9 @@
 MetavisionSDK_add_module(base)
 
 target_include_directories(metavision_sdk_base
-    PRIVATE
-        ${GENERATE_FILES_DIRECTORY}/include # For software_info.cpp
+    PUBLIC
+        $<BUILD_INTERFACE:${GENERATE_FILES_DIRECTORY}/include>
+        $<INSTALL_INTERFACE:include>
 )
 
 if(ANDROID)

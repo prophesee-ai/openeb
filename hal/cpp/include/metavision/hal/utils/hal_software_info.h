@@ -18,7 +18,7 @@
 
 namespace Metavision {
 
-/// @brief Returns various software information such as the version
+/// @brief Returns various software information, such as the version, about the Metavision HAL used at run time
 /// @return Software information
 Metavision::SoftwareInfo &get_hal_software_info();
 

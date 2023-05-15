@@ -23,8 +23,6 @@ namespace Metavision {
 /// This sensor level noise filter is based on the event rate only. If enabled, the sensor will transfer data if and
 /// only if the event rate is above a given event rate. It avoids streaming background noise information without
 /// relevant activity information.
-///
-/// @note This feature is available only on Gen3.1 sensors
 class I_EventRateNoiseFilterModule : public I_RegistrableFacility<I_EventRateNoiseFilterModule> {
 public:
     /// @brief Enables/disables the noise filter

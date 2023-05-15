@@ -33,28 +33,31 @@
 namespace Metavision {
 namespace detail {
 
-LivePrivate::LivePrivate() : Private(detail::Config()) {
+DeviceConfig dummy_config;
+
+LivePrivate::LivePrivate(DeviceConfig *dev_config_ptr) : Private(detail::Config()) {
     AvailableSourcesList available_systems = Camera::list_online_sources();
     AvailableSourcesList::iterator it;
     if ((it = available_systems.find(OnlineSourceType::EMBEDDED)) != available_systems.end()) {
         if (!it->second.empty()) {
-            device_ = DeviceDiscovery::open(it->second[0]);
+            device_ = DeviceDiscovery::open(it->second[0], dev_config_ptr ? *dev_config_ptr : dummy_config);
         }
     } else if ((it = available_systems.find(OnlineSourceType::USB)) != available_systems.end()) {
         if (!it->second.empty()) {
-            device_ = DeviceDiscovery::open(it->second[0]);
+            device_ = DeviceDiscovery::open(it->second[0], dev_config_ptr ? *dev_config_ptr : dummy_config);
         }
     }
 
     init();
 }
 
-LivePrivate::LivePrivate(OnlineSourceType input_source_type, uint32_t source_index) : Private(detail::Config()) {
+LivePrivate::LivePrivate(OnlineSourceType input_source_type, uint32_t source_index, DeviceConfig *dev_config_ptr) :
+    Private(detail::Config()) {
     AvailableSourcesList available_systems = Camera::list_online_sources();
     AvailableSourcesList::iterator it;
     if ((it = available_systems.find(input_source_type)) != available_systems.end()) {
         if (it->second.size() > source_index) {
-            device_ = DeviceDiscovery::open(it->second[source_index]);
+            device_ = DeviceDiscovery::open(it->second[source_index], dev_config_ptr ? *dev_config_ptr : dummy_config);
         } else {
             throw CameraException(CameraErrorCode::CameraNotFound,
                                   "Camera " + std::to_string(source_index) + "not found. Check that at least " +
@@ -65,11 +68,10 @@ LivePrivate::LivePrivate(OnlineSourceType input_source_type, uint32_t source_ind
     init();
 }
 
-LivePrivate::LivePrivate(const Serial &serial) : Private(detail::Config()) {
-    device_ = DeviceDiscovery::open(serial.serial_, *serial.config_);
+LivePrivate::LivePrivate(const std::string &serial, DeviceConfig *dev_config_ptr) : Private(detail::Config()) {
+    device_ = DeviceDiscovery::open(serial, dev_config_ptr ? *dev_config_ptr : dummy_config);
     if (!device_) {
-        throw CameraException(CameraErrorCode::CameraNotFound,
-                              "Camera with serial " + serial.serial_ + " has not been found.");
+        throw CameraException(CameraErrorCode::CameraNotFound, "Camera with serial " + serial + " has not been found.");
     }
 
     init();

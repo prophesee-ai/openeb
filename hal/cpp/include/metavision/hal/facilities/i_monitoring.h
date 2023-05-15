@@ -30,7 +30,6 @@ public:
     /// @brief Gets Pixel Dead Time (aka. "refractory period").
     /// This is the minimum time latency between the generation of 2 events by a pixel
     /// @return Estimated dead time (in us) throw on Error
-    /// @note This feature is available on Gen4 sensors and newer
     virtual int get_pixel_dead_time() = 0;
 };
 

@@ -20,7 +20,6 @@
 namespace Metavision {
 
 /// @brief Noise filter module
-/// @note This feature is available only on Gen4.1 sensors and newer
 class I_EventTrailFilterModule : public I_RegistrableFacility<I_EventTrailFilterModule> {
 public:
     /// @brief Type of implemented filter

@@ -57,6 +57,7 @@ enum SystemId : long {
     SYSTEM_EVK3_IMX636                 = 0x31,
     SYSTEM_EVK2_IMX636                 = 0x32,
     SYSTEM_EVK2_SAPHIR                 = 0x37,
+    SYSTEM_EVK3_GENX320                = 0x40,
     SYSTEM_FX3_UNKNOWN                 = static_cast<long>(0xFFFFFFF0),
     SYSTEM_INVALID_NO_FPGA             = static_cast<long>(0xFFFFFFFF)
 };
@@ -113,6 +114,7 @@ static const std::map<SystemId, const std::string> SYSTEMS_NAME = {
       { SYSTEM_EVK3_GEN41, "GEN 4.1 HD EVK3"},
       { SYSTEM_EVK2_IMX636, "IMX636 HD EVK2"},
       { SYSTEM_EVK3_IMX636, "IMX636 HD EVK3"},
+      { SYSTEM_EVK3_GENX320, "GenX320 ES EVK3"},
       { SYSTEM_FX3_UNKNOWN, "FX3 EMPTY DEVICE"}
 };
 // clang-format on
@@ -151,6 +153,7 @@ static const std::map<SystemId, const DataTransferProtocol> SYSTEMS_DATA_TRANSFE
       { SYSTEM_EVK3_GEN41, DataTransferProtocol::USB},
       { SYSTEM_EVK2_IMX636, DataTransferProtocol::USB},
       { SYSTEM_EVK3_IMX636, DataTransferProtocol::USB},
+      { SYSTEM_EVK3_GENX320, DataTransferProtocol::USB},
       { SYSTEM_FX3_UNKNOWN, DataTransferProtocol::USB}
 };
 // clang-format on
@@ -213,6 +216,10 @@ inline bool systemid2version(long system_id, uint16_t &major_version, uint16_t &
     case SystemId::SYSTEM_EVK3_IMX636:
         major_version = 4;
         minor_version = 2;
+        break;
+    case SystemId::SYSTEM_EVK3_GENX320:
+        major_version = 320;
+        minor_version = 0;
         break;
     default:
         major_version = -1;

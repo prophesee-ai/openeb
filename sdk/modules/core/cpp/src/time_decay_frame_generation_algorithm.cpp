@@ -13,34 +13,12 @@
 #include <vector>
 #include <opencv2/imgproc/imgproc.hpp>
 
+#include "metavision/sdk/core/utils/fast_math_functions.h"
 #include "metavision/sdk/core/algorithms/time_decay_frame_generation_algorithm.h"
 
 namespace Metavision {
 
 namespace detail {
-
-std::vector<float> init_exp_decay_lut(std::size_t N) {
-    std::vector<float> lut(N);
-    for (std::size_t i = 0; i < N; ++i) {
-        lut[i] = -std::log((N - i) / static_cast<float>(N));
-    }
-    return lut;
-}
-
-float fast_exp_decay(const std::vector<float> &lut, float v) {
-    assert(v >= 0);
-    if (v <= 0.f)
-        return 1.f;
-    auto it_lut = std::upper_bound(lut.cbegin(), lut.cend(), v);
-    if (it_lut == lut.cend())
-        return 0.f;
-    const std::size_t N   = lut.size();
-    const float d0v       = *std::prev(it_lut) - v;
-    const float d01       = *std::prev(it_lut) - *it_lut;
-    const float intercept = (N + 1 - std::distance(lut.cbegin(), it_lut)) / static_cast<float>(N);
-    const float slope     = -1 / (d01 * static_cast<float>(N));
-    return intercept + slope * d0v;
-}
 
 void init_colormap(Metavision::ColorPalette palette, std::vector<cv::Vec3b> &colormap) {
     const RGBColor rgb_bkg       = get_color(palette, ColorType::Background);
@@ -90,7 +68,7 @@ uchar apply_colormap_grayscale(float v) {
 TimeDecayFrameGenerationAlgorithm::TimeDecayFrameGenerationAlgorithm(int width, int height,
                                                                      timestamp exponential_decay_time_us,
                                                                      Metavision::ColorPalette palette) :
-    exp_decay_lut_(detail::init_exp_decay_lut(32)), time_surface_(height, width, 2) {
+    exp_decay_lut_(Math::init_exp_decay_lut(32)), time_surface_(height, width, 2) {
     set_color_palette(palette);
     set_exponential_decay_time_us(exponential_decay_time_us);
     reset();
@@ -123,7 +101,7 @@ void TimeDecayFrameGenerationAlgorithm::generate(cv::Mat &frame, bool allocate) 
                 const bool is_positive = (dt_n > dt_p);
                 const float f =
                     (is_positive ? 1 : -1) *
-                    detail::fast_exp_decay(exp_decay_lut_, dt / static_cast<float>(exponential_decay_time_us_));
+                    Math::fast_exp_decay(exp_decay_lut_, dt / static_cast<float>(exponential_decay_time_us_));
                 frame.at<cv::Vec3b>(y, x) = detail::apply_colormap(colormap_, f);
             }
         }
@@ -135,7 +113,7 @@ void TimeDecayFrameGenerationAlgorithm::generate(cv::Mat &frame, bool allocate) 
                 const bool is_positive = (dt_n > dt_p);
                 const float f =
                     (is_positive ? 1 : -1) *
-                    detail::fast_exp_decay(exp_decay_lut_, dt / static_cast<float>(exponential_decay_time_us_));
+                    Math::fast_exp_decay(exp_decay_lut_, dt / static_cast<float>(exponential_decay_time_us_));
                 frame.at<uchar>(y, x) = detail::apply_colormap_grayscale(f);
             }
         }

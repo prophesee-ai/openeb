@@ -32,10 +32,6 @@ file(GENERATE
 # This header is used by file hal/src/utils/software_info.cpp.
 set(VERSION_FILE_RELATIVE_PATH include/metavision/hal/version.h)
 set(VERSION_FILE_OUTPUT_PATH ${GENERATE_FILES_DIRECTORY}/${VERSION_FILE_RELATIVE_PATH})
-add_library_version_header(generate_metavision_hal_version_header
-                           ${VERSION_FILE_OUTPUT_PATH}
-                           metavision_hal
-)
 
 # Add libraries (hal and hal_discovery)
 set(metavision_hal_include_dir "${CMAKE_CURRENT_SOURCE_DIR}/include")

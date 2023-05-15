@@ -56,7 +56,7 @@ public:
     virtual bool discover(DeviceBuilder &device_builder, const std::string &serial, const DeviceConfig &config) = 0;
 
     /// @brief Tells if this CameraDiscovery detect camera locally plugged (USB/MIPI/...) as opposed to remote
-    /// camera shared over a network
+    /// camera running on another system
     virtual bool is_for_local_camera() const;
 };
 

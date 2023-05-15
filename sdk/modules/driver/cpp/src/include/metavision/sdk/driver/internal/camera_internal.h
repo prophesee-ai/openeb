@@ -34,13 +34,6 @@ struct Config {
 
 class Camera::Private {
 public:
-    struct Serial {
-        Serial(const std::string &serial) : serial_(serial), config_(&dummy_config_) {}
-        Serial(const std::string &serial, DeviceConfig &config) : serial_(serial), config_(&config) {}
-        std::string serial_;
-        DeviceConfig *config_, dummy_config_;
-    };
-
     Private();
     Private(const detail::Config &config);
     virtual ~Private();

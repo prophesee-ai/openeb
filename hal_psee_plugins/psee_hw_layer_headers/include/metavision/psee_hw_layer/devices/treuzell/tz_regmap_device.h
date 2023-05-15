@@ -45,6 +45,8 @@ public:
     uint32_t read_register_bit(Register_Addr register_addr, int idx);
     void init_register(Register_Addr regist, uint32_t value);
 
+    RegisterMap &regmap();
+
 protected:
     TzDeviceWithRegmap(RegmapElement *, uint32_t size, std::string root);
     TzDeviceWithRegmap(RegmapData, std::string root);

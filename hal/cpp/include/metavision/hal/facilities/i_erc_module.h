@@ -20,7 +20,6 @@
 namespace Metavision {
 
 /// @brief Interface for Event Rate Controller (ERC) commands
-/// @note This feature is available on Gen4 sensors and newer
 class I_ErcModule : public I_RegistrableFacility<I_ErcModule> {
 public:
     /// @brief Toggles ERC activation

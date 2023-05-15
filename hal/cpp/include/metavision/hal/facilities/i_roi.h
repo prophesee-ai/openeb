@@ -81,6 +81,9 @@ public:
     /// @brief Sets multiple windows
     ///
     /// The windows will be applied according to the current mode (ROI or RONI)
+    /// In ROI mode, enabled pixels are those inside the provided rectangles.
+    /// In RONI mode, enabled pixels are those where row OR column are covered by the provided rectangle.
+    ///
     /// @param windows A vector of windows to set
     /// @return true on success
     /// @throw an exception if the size of @p windows is higher than the maximum supported number
@@ -89,15 +92,17 @@ public:
 
     /// @brief Sets multiple lines and columns from row and column binary maps
     ///
-    /// The binary maps (std::vector<bool>) arguments must have the sensor's dimension
-    /// The lines and columns will be applied according to the current mode (ROI or RONI)
+    /// The binary maps (std::vector<bool>) arguments must have the sensor's dimension.
+    /// The lines and columns will be applied according to the current mode (ROI or RONI).
+    /// In ROI mode, enabled pixels are those where row AND column are set to true.
+    /// In RONI mode, disabled pixels are those where row AND column are set to false.
+    /// This means that conversely, enabled pixels are those where row OR column are set to true.
     ///
     /// @param cols Vector of boolean of size sensor's width representing the binary map of the columns to
     /// enable
     /// @param rows Vector of boolean of size sensor's height representing the binary map of the rows to
     /// enable
     /// @return true if input have the correct dimension and the ROI is set correctly, false otherwise
-    /// @warning For a pixel to be enabled, it must be enabled on both its row and column
     virtual bool set_lines(const std::vector<bool> &cols, const std::vector<bool> &rows) = 0;
 
 private:

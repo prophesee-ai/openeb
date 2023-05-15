@@ -18,6 +18,7 @@ set(CPACK_COMPONENT_METAVISION-HAL-PROPHESEE-HW-LAYER-LIB_DESCRIPTION "Prophesee
 #########################################
 
 set(CPACK_COMPONENT_METAVISION-HAL-PROPHESEE-HW-LAYER-DEV_DESCRIPTION "Prophesee HW Layer headers for Metavision HAL Plugins.\n${PACKAGE_LICENSE}")
+set(CPACK_COMPONENT_METAVISION-HAL-PROPHESEE-HW-LAYER-DEV_DEPENDS metavision-hal-prophesee-hw-layer-lib)
 
 ####################################
 # metavision-hal-prophesee-plugins #
