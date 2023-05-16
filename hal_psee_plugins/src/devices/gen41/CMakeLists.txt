@@ -10,8 +10,6 @@
 target_sources(metavision_psee_hw_layer_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/gen41_ll_biases.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gen41_roi_command.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/gen41_antiflicker_module.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/gen41_event_trail_filter_module.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gen41_erc.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gen41_tz_trigger_event.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gen41_digital_event_mask.cpp

@@ -18,7 +18,6 @@ namespace Metavision {
 
 /// @brief Digital Crop feature
 /// All pixels outside of the cropping region will be dropped by the sensor
-/// @note This feature is available from Gen4.1
 class I_DigitalCrop : public I_RegistrableFacility<I_DigitalCrop> {
 public:
     ///  @brief Structure that defines a Region with 4 values :

@@ -11,11 +11,15 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#include <shlobj.h>
 #else
 #include <dirent.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #endif
+#include <filesystem>
 
+#include "metavision/hal/utils/hal_exception.h"
 #include "metavision/hal/utils/resources_folder.h"
 #include "metavision_hal_install_path.h"
 
@@ -57,6 +61,38 @@ bool exists(const std::string &name) {
 } /* anonymous namespace */
 
 namespace Metavision {
+
+#ifndef __ANDROID__
+std::filesystem::path ResourcesFolder::get_user_path() {
+    std::filesystem::path p;
+#ifdef _WIN32
+    wchar_t *widePath;
+    if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, NULL, &widePath))) {
+        p = std::filesystem::path(widePath) / "Metavision";
+        CoTaskMemFree(widePath);
+    }
+#elif __linux__
+    const char *homeDir = std::getenv("HOME");
+    if (homeDir) {
+        p = std::filesystem::path(homeDir) / ".local" / "share" / "metavision";
+    }
+#elif __APPLE__
+    const char *homeDir = std::getenv("HOME");
+    if (homeDir) {
+        p = std::filesystem::path(homeDir) / "Library" / "Application Support" / "Metavision";
+    }
+#endif
+    if (p.empty()) {
+        throw std::runtime_error("Unable to get user path");
+    }
+    p = p / "hal";
+
+    if (!std::filesystem::exists(p)) {
+        std::filesystem::create_directories(p);
+    }
+    return p;
+}
+#endif
 
 std::string ResourcesFolder::get_install_path() {
     char *p = getenv("MV_HAL_INSTALL_PATH");

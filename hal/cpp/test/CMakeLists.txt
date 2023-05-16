@@ -42,12 +42,9 @@ register_gtest(TEST hal-unit-tests TARGET gtest_metavision_hal)
 
 add_library(hal_dummy_test_plugin
     SHARED
-        $<TARGET_OBJECTS:metavision_hal_info_obj>
         ${CMAKE_CURRENT_SOURCE_DIR}/dummy_test_plugin_facilities_builder.cpp
 )
 target_link_libraries(hal_dummy_test_plugin
-    PRIVATE
-        metavision_hal_info_obj
     PUBLIC
         metavision_hal
 )

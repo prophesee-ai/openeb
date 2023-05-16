@@ -20,7 +20,6 @@
 namespace Metavision {
 
 /// @brief Interface for Digital Event Mask commands.
-/// @note This feature is available on Gen41 and newer
 class I_DigitalEventMask : public I_RegistrableFacility<I_DigitalEventMask> {
 public:
     /// @brief Interface for Digital Pixel Mask commands.

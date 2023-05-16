@@ -178,6 +178,19 @@ public:
     /// @throw CameraException in case of initialization failure.
     static Camera from_first_available();
 
+    /// @brief Initializes a camera instance from the first available camera plugged on the system
+    ///
+    /// Open the first available camera following at first EMBEDDED and then USB order.\n
+    /// Please note that remote cameras will not be opened with this function. To do that,
+    /// please specify the @ref OnlineSourceType and use the @ref from_source function,
+    /// or else specify the serial number and use the @ref from_serial function.\n
+    /// Serial numbers and types of available sources can be found with @ref list_online_sources function.
+    ///
+    /// @throw CameraException in case of initialization failure.
+    /// @param config Configuration used to open the camera
+    /// @overload
+    static Camera from_first_available(DeviceConfig &config);
+
     /// @brief Initializes a camera instance from an @ref OnlineSourceType and a source index
     ///
     /// Open the source_index camera of online input_source_type if available from @ref list_online_sources"".\n
@@ -190,6 +203,21 @@ public:
     /// @param source_index Index of the source in the list of available online sources
     /// @return @ref Camera instance initialized from the source
     static Camera from_source(OnlineSourceType input_source_type, uint32_t source_index = 0);
+
+    /// @brief Initializes a camera instance from an @ref OnlineSourceType and a source index
+    ///
+    /// Open the source_index camera of online input_source_type if available from @ref list_online_sources"".\n
+    /// By default, it opens the first available camera listed by @ref list_online_sources of type input_source_type.\n
+    /// Serial numbers and types of available sources can be found with @ref list_online_sources function.
+    /// @throw CameraException if the camera corresponding to the input source type and the source index has not been
+    /// found.
+    ///
+    /// @param input_source_type @ref OnlineSourceType
+    /// @param config Configuration used to open the camera
+    /// @param source_index Index of the source in the list of available online sources
+    /// @return @ref Camera instance initialized from the source
+    /// @overload
+    static Camera from_source(OnlineSourceType input_source_type, DeviceConfig &config, uint32_t source_index = 0);
 
     /// @brief Initializes a camera instance from a 'serial' number
     ///

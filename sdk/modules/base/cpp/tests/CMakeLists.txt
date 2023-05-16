@@ -8,6 +8,7 @@
 # See the License for the specific language governing permissions and limitations under the License.
 
 set(metavision_sdk_base_tests_srcs
+    ${CMAKE_CURRENT_SOURCE_DIR}/bit_instructions_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generic_header_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/log_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/object_pool_gtest.cpp

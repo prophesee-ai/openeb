@@ -20,15 +20,15 @@
 #include "devices/common/issd.h"
 #include "devices/imx636/imx636_evk3_issd.h"
 #include "devices/treuzell/tz_device_builder.h"
-#include "metavision/psee_hw_layer/devices/imx636/imx636_ll_biases.h"
-#include "metavision/psee_hw_layer/devices/gen41/gen41_antiflicker_module.h"
+#include "metavision/psee_hw_layer/devices/common/antiflicker_filter.h"
+#include "metavision/psee_hw_layer/devices/common/event_trail_filter.h"
 #include "metavision/psee_hw_layer/devices/gen41/gen41_erc.h"
-#include "metavision/psee_hw_layer/devices/imx636/imx636_event_trail_filter_module.h"
 #include "metavision/psee_hw_layer/devices/gen41/gen41_roi_command.h"
 #include "metavision/psee_hw_layer/devices/gen41/gen41_digital_event_mask.h"
 #include "metavision/psee_hw_layer/devices/gen41/gen41_digital_crop.h"
-#include "devices/imx636/register_maps/imx636_evk3_registermap.h"
+#include "metavision/psee_hw_layer/devices/imx636/imx636_ll_biases.h"
 #include "metavision/psee_hw_layer/devices/imx636/imx636_tz_trigger_event.h"
+#include "devices/imx636/register_maps/imx636_registermap.h"
 #include "metavision/psee_hw_layer/facilities/psee_hw_register.h"
 #include "metavision/psee_hw_layer/utils/psee_format.h"
 #include "geometries/hd_geometry.h"
@@ -41,14 +41,14 @@ using vfield = std::map<std::string, uint32_t>;
 
 namespace Metavision {
 namespace {
-std::string ROOT_PREFIX   = "PSEE/";
-std::string SENSOR_PREFIX = "IMX636/";
+std::string ROOT_PREFIX   = "PSEE/IMX636/";
+std::string SENSOR_PREFIX = "";
 } // namespace
 
 TzImx636::TzImx636(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent) :
     TzDevice(cmd, dev_id, parent),
     TzIssdDevice(issd_evk3_imx636_sequence),
-    TzDeviceWithRegmap(Imx636Evk3RegisterMap, Imx636Evk3RegisterMapSize, ROOT_PREFIX) {
+    TzDeviceWithRegmap(Imx636RegisterMap, Imx636RegisterMapSize, ROOT_PREFIX) {
     sync_mode_ = I_CameraSynchronization::SyncMode::STANDALONE;
     temperature_init();
     iph_mirror_control(true);
@@ -74,8 +74,10 @@ bool TzImx636::can_build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev
 }
 
 void TzImx636::spawn_facilities(DeviceBuilder &device_builder, const DeviceConfig &device_config) {
-    device_builder.add_facility(std::make_unique<Imx636EventTrailFilterModule>(register_map, SENSOR_PREFIX));
-    device_builder.add_facility(std::make_unique<Gen41AntiFlickerModule>(register_map, SENSOR_PREFIX));
+    device_builder.add_facility(std::make_unique<EventTrailFilter>(
+        std::dynamic_pointer_cast<TzDeviceWithRegmap>(shared_from_this()), get_sensor_info(), SENSOR_PREFIX));
+    device_builder.add_facility(std::make_unique<AntiFlickerFilter>(
+        std::dynamic_pointer_cast<TzDeviceWithRegmap>(shared_from_this()), get_sensor_info(), SENSOR_PREFIX));
 
     auto erc = device_builder.add_facility(
         std::make_unique<Gen41Erc>(register_map, SENSOR_PREFIX + "erc/", shared_from_this()));

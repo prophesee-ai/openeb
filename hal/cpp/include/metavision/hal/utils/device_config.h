@@ -93,13 +93,13 @@ using DeviceConfigOptionMap = std::map<std::string, DeviceConfigOption>;
 /// @sa @ref DeviceDiscovery::open
 class DeviceConfig {
 public:
-    static std::string get_evt_format_key();
+    static std::string get_format_key();
 
     /// @brief Gets the event format
     /// @return string representing current event format setting
-    std::string evt_format() const;
+    std::string format() const;
 
-    void set_evt_format(const std::string &format);
+    void set_format(const std::string &format);
 
     static std::string get_biases_range_check_bypass_key();
 
@@ -147,6 +147,14 @@ public:
     /// @return Value of the config
     /// @overload
     std::string get(const std::string &key, const std::string &def = std::string()) const;
+
+    [[deprecated(
+        "This function is deprecated since version 4.1.0. Please use get_format_key() instead.")]] static std::string
+        get_evt_format_key();
+    [[deprecated("This function is deprecated since version 4.1.0. Please use format() instead.")]] std::string
+        evt_format() const;
+    [[deprecated("formatThis function is deprecated since version 4.1.0. Please use set_format() instead.")]] void
+        set_evt_format(const std::string &);
 
 private:
     // private get<T> helper, to avoid template specialization errors on GCC

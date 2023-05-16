@@ -14,3 +14,7 @@ add_subdirectory(metavision_viewer)
 if (HDF5_FOUND)
     add_subdirectory(metavision_file_to_hdf5)
 endif ()
+if (NOT ANDROID)
+    # need support for std::filesystem in NDK
+    add_subdirectory(metavision_active_pixel_detection)
+endif (NOT ANDROID)

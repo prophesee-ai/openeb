@@ -37,7 +37,6 @@ set(metavision_sdk_core_tests_srcs
     ${CMAKE_CURRENT_SOURCE_DIR}/time_decay_frame_generation_algorithm_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/time_surface_producer_algorithm_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/timing_profiler_gtest.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/bit_instructions_gtest.cpp
 )
 
 add_executable(gtest_metavision_sdk_core ${metavision_sdk_core_tests_srcs})

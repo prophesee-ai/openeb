@@ -196,16 +196,31 @@ std::ostream &operator<<(std::ostream &os, const DeviceConfigOption &opt) {
     return os;
 }
 
-std::string DeviceConfig::get_evt_format_key() {
+std::string DeviceConfig::get_format_key() {
     return "format";
 }
 
-std::string DeviceConfig::evt_format() const {
-    return get<std::string>(get_evt_format_key());
+std::string DeviceConfig::format() const {
+    return get<std::string>(get_format_key());
 }
 
+void DeviceConfig::set_format(const std::string &format) {
+    set(get_format_key(), format);
+}
+
+// deprecated : forward call
+std::string DeviceConfig::get_evt_format_key() {
+    return get_format_key();
+}
+
+// deprecated : forward call
+std::string DeviceConfig::evt_format() const {
+    return format();
+}
+
+// deprecated : forward call
 void DeviceConfig::set_evt_format(const std::string &format) {
-    set(get_evt_format_key(), format);
+    set_format(format);
 }
 
 std::string DeviceConfig::get_biases_range_check_bypass_key() {

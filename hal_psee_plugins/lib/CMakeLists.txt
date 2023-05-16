@@ -43,7 +43,6 @@ add_library(metavision_psee_hw_layer SHARED)
 target_sources(metavision_psee_hw_layer
     PRIVATE
         $<TARGET_OBJECTS:metavision_psee_hw_layer_obj>
-        $<TARGET_OBJECTS:metavision_hal_info_obj>
 )
 
 target_include_directories(metavision_psee_hw_layer
@@ -55,7 +54,6 @@ target_include_directories(metavision_psee_hw_layer
 target_link_libraries(metavision_psee_hw_layer
     PRIVATE
         metavision_psee_hw_layer_obj
-        metavision_hal_info_obj
     PUBLIC
         metavision_hal
 )
@@ -150,11 +148,17 @@ set(lib_camera_obj_list
         metavision_hal_psee_lab_obj
 )
 
+if(NOT ANDROID)
+    # need support for std::filesystem in NDK used GenX320 LowLevel ROI
+    list(APPEND lib_camera_obj_list
+        metavision_hal_genx320_cx3_system_obj
+    )
+endif(NOT ANDROID)
+
 if(HAL_SAPHIR_SUPPORT)
     list(APPEND lib_camera_obj_list
         metavision_hal_saphir_camera_obj
         metavision_hal_saphir_evk2_system_obj
-        metavision_hal_saphir_cx3_system_obj
      )
 endif(HAL_SAPHIR_SUPPORT)
 
@@ -217,6 +221,12 @@ set(plugin_list
     hal_plugin_imx636_evk4
     hal_plugin_prophesee
 )
+if(NOT ANDROID)
+    list(APPEND plugin_list
+        hal_plugin_genx320es_evk3
+    )
+endif(NOT ANDROID)
+
 if(HAL_SENSORLIB_SUPPORT)
     list(APPEND plugin_list
         hal_plugin_sensorlib_tz
@@ -237,14 +247,12 @@ foreach(plugin ${plugin_list})
     target_sources(${plugin}
         PRIVATE
             $<TARGET_OBJECTS:metavision_hal_psee_plugin_obj>
-            $<TARGET_OBJECTS:metavision_hal_info_obj>
     )
 
     target_link_libraries(${plugin}
         PRIVATE
             metavision_psee_hw_layer
             metavision_hal_psee_plugin_obj
-            metavision_hal_info_obj
         PUBLIC
             metavision_hal
     )
@@ -436,6 +444,21 @@ target_link_libraries(hal_plugin_imx636_evk4
         metavision_hal_ti_tmp103_obj
         metavision_hal_imx636_evk3_system_obj
 )
+
+if(NOT ANDROID)
+# Linkage with generic hal plugin object
+target_sources(hal_plugin_genx320es_evk3
+    PRIVATE
+        $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
+        $<TARGET_OBJECTS:metavision_hal_genx320_cx3_system_obj>
+)
+
+target_link_libraries(hal_plugin_genx320es_evk3
+    PRIVATE
+        metavision_hal_treuzell_protocol_obj
+        metavision_hal_genx320_cx3_system_obj
+)
+endif(NOT ANDROID)
 
 foreach(object ${lib_camera_obj_list})
     # Linkage with generic hal plugin object

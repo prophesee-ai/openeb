@@ -21,7 +21,8 @@
 namespace Metavision {
 
 /// @brief Class representing a simple displayer
-class SimpleDisplayer {
+class [[deprecated("'SimpleDisplayer' class is deprecated since v4.1.0 and will be removed in future releases, "
+                   "please use 'Window' or 'MTWindow' instead.")]] SimpleDisplayer {
 public:
     using OnKeyPressedCb = std::function<void(int)>;
 
@@ -38,7 +39,7 @@ public:
 
     /// @brief Updates the current frame by swap
     /// @param frame Frame to swap
-    void swap_frame(cv::Mat &frame);
+    void swap_frame(cv::Mat & frame);
 
     /// @brief Updates the current frame by copy
     /// @param frame Frame to copy

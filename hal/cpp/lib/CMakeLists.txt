@@ -7,31 +7,8 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-#### Create obj library with software info
-add_library(metavision_hal_info_obj OBJECT)
-# The following line is needed becase when linking a shared library to an object one,
-# the object library needs to be compiled with -fPIC
-# cf https://stackoverflow.com/questions/50600708/combining-cmake-object-libraries-with-shared-libraries
-set_target_properties(metavision_hal_info_obj
-    PROPERTIES
-        POSITION_INDEPENDENT_CODE ON
-)
-
-target_include_directories(metavision_hal_info_obj
-    PUBLIC
-        ${metavision_hal_include_dir}
-    PRIVATE
-        ${GENERATE_FILES_DIRECTORY}/include # For software_info.cpp
-)
-target_link_libraries(metavision_hal_info_obj
-    PUBLIC
-        MetavisionSDK::base
-)
-add_dependencies(metavision_hal_info_obj generate_metavision_hal_version_header)
-
 #### metavision_hal
 add_library(metavision_hal SHARED)
-target_sources(metavision_hal PRIVATE $<TARGET_OBJECTS:metavision_hal_info_obj>)
 target_include_directories(metavision_hal
     PUBLIC
         $<BUILD_INTERFACE:${metavision_hal_include_dir}>
@@ -44,8 +21,6 @@ target_link_libraries(metavision_hal
     PUBLIC
         MetavisionSDK::base
         Threads::Threads
-    PRIVATE
-        metavision_hal_info_obj
 )
 
 include(GenerateExportHeader)
@@ -87,7 +62,6 @@ target_link_libraries(metavision_hal_discovery
     PUBLIC
         metavision_hal
     PRIVATE
-        metavision_hal_info_obj
         ${CMAKE_DL_LIBS}
 )
 

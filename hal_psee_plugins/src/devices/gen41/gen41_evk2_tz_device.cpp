@@ -19,11 +19,11 @@
 #include "devices/common/issd.h"
 #include "devices/gen41/gen41_evk2_issd.h"
 #include "devices/treuzell/tz_device_builder.h"
-#include "metavision/psee_hw_layer/devices/gen41/gen41_antiflicker_module.h"
+#include "metavision/psee_hw_layer/devices/common/antiflicker_filter.h"
 #include "metavision/psee_hw_layer/devices/gen41/gen41_digital_event_mask.h"
 #include "metavision/psee_hw_layer/devices/gen41/gen41_erc.h"
 #include "metavision/psee_hw_layer/devices/gen41/gen41_ll_biases.h"
-#include "metavision/psee_hw_layer/devices/gen41/gen41_event_trail_filter_module.h"
+#include "metavision/psee_hw_layer/devices/common/event_trail_filter.h"
 #include "metavision/psee_hw_layer/devices/gen41/gen41_roi_command.h"
 #include "devices/gen41/register_maps/gen41_evk2_registermap.h"
 #include "metavision/psee_hw_layer/devices/common/evk2_tz_trigger_event.h"
@@ -69,8 +69,10 @@ bool TzEvk2Gen41::can_build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t 
 static TzRegisterBuildMethod method("psee,video_gen4.1", TzEvk2Gen41::build, TzEvk2Gen41::can_build);
 
 void TzEvk2Gen41::spawn_facilities(DeviceBuilder &device_builder, const DeviceConfig &device_config) {
-    device_builder.add_facility(std::make_unique<Gen41EventTrailFilterModule>(register_map, SENSOR_PREFIX));
-    device_builder.add_facility(std::make_unique<Gen41AntiFlickerModule>(register_map, SENSOR_PREFIX));
+    device_builder.add_facility(std::make_unique<EventTrailFilter>(
+        std::dynamic_pointer_cast<TzDeviceWithRegmap>(shared_from_this()), get_sensor_info(), SENSOR_PREFIX));
+    device_builder.add_facility(std::make_unique<AntiFlickerFilter>(
+        std::dynamic_pointer_cast<TzDeviceWithRegmap>(shared_from_this()), get_sensor_info(), SENSOR_PREFIX));
 
     auto erc = device_builder.add_facility(std::make_unique<Gen41Erc>(register_map, SENSOR_PREFIX + "erc/"));
     erc->initialize();

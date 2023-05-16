@@ -11,6 +11,7 @@
 
 #include "metavision/hal/plugin/plugin.h"
 #include "metavision/hal/utils/hal_software_info.h"
+#include "metavision/sdk/base/utils/software_info.h"
 #include "plugin/psee_plugin.h"
 
 namespace Metavision {
@@ -22,13 +23,13 @@ const std::string &get_psee_plugin_integrator_name() {
 
 void initialize_psee_plugin(Plugin &plugin, std::string integrator_name) {
     plugin.set_integrator_name(integrator_name);
-    plugin.set_plugin_info(get_hal_software_info());
+    plugin.set_plugin_info(get_build_software_info());
     plugin.set_hal_info(get_hal_software_info());
 }
 
 void initialize_psee_plugin(Plugin &plugin) {
     plugin.set_integrator_name(get_psee_plugin_integrator_name());
-    plugin.set_plugin_info(get_hal_software_info());
+    plugin.set_plugin_info(get_build_software_info());
     plugin.set_hal_info(get_hal_software_info());
 }
 

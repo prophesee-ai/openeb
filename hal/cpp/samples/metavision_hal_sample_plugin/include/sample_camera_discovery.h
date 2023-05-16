@@ -42,7 +42,7 @@ public:
                   const Metavision::DeviceConfig &config) override;
 
     /// @brief Tells if this CameraDiscovery detects camera locally plugged (USB/MIPI/...) as opposed to remote
-    ///
+    /// camera running on another system
     /// @return true if this camera discovery connect local devices
     bool is_for_local_camera() const override final;
 };

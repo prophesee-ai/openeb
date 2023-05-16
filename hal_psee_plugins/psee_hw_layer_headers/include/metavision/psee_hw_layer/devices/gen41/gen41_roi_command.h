@@ -25,6 +25,7 @@ public:
     Gen41ROICommand(int width, int height, const std::shared_ptr<RegisterMap> &regmap,
                     const std::string &sensor_prefix);
 
+    virtual bool set_mode(const Mode &mode) override;
     virtual bool enable(bool state) override;
     virtual void write_ROI(const std::vector<unsigned int> &vroiparams) override;
 
@@ -35,6 +36,7 @@ private:
     std::shared_ptr<RegisterMap> register_map_;
     std::vector<uint32_t> roi_save_;
     std::string sensor_prefix_;
+    I_ROI::Mode mode_;
 };
 
 } // namespace Metavision

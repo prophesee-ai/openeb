@@ -19,21 +19,15 @@
 #include "devices/common/issd.h"
 #include "devices/imx636/imx636_evk2_issd.h"
 #include "devices/treuzell/tz_device_builder.h"
-#include "metavision/psee_hw_layer/devices/gen41/gen41_antiflicker_module.h"
-#include "metavision/psee_hw_layer/devices/gen41/gen41_erc.h"
-#include "metavision/psee_hw_layer/devices/gen41/gen41_digital_event_mask.h"
-#include "metavision/psee_hw_layer/devices/imx636/imx636_ll_biases.h"
-#include "metavision/psee_hw_layer/devices/imx636/imx636_event_trail_filter_module.h"
-#include "metavision/psee_hw_layer/devices/gen41/gen41_roi_command.h"
-#include "metavision/psee_hw_layer/devices/gen41/gen41_antiflicker_module.h"
-#include "metavision/psee_hw_layer/devices/gen41/gen41_erc.h"
-#include "metavision/psee_hw_layer/devices/gen41/gen41_digital_event_mask.h"
-#include "metavision/psee_hw_layer/devices/imx636/imx636_ll_biases.h"
-#include "metavision/psee_hw_layer/devices/imx636/imx636_event_trail_filter_module.h"
-#include "metavision/psee_hw_layer/devices/gen41/gen41_roi_command.h"
-#include "devices/imx636/register_maps/imx636_evk2_registermap.h"
+#include "metavision/psee_hw_layer/devices/common/antiflicker_filter.h"
+#include "metavision/psee_hw_layer/devices/common/event_trail_filter.h"
 #include "metavision/psee_hw_layer/devices/common/evk2_tz_trigger_event.h"
 #include "metavision/psee_hw_layer/devices/common/evk2_tz_trigger_out.h"
+#include "metavision/psee_hw_layer/devices/gen41/gen41_erc.h"
+#include "metavision/psee_hw_layer/devices/gen41/gen41_digital_event_mask.h"
+#include "metavision/psee_hw_layer/devices/gen41/gen41_roi_command.h"
+#include "metavision/psee_hw_layer/devices/imx636/imx636_ll_biases.h"
+#include "devices/imx636/register_maps/imx636_evk2_registermap.h"
 #include "metavision/psee_hw_layer/facilities/psee_hw_register.h"
 #include "geometries/hd_geometry.h"
 #include "metavision/psee_hw_layer/utils/psee_format.h"
@@ -76,8 +70,10 @@ bool TzEvk2Imx636::can_build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t
 static TzRegisterBuildMethod method("psee,video_imx636", TzEvk2Imx636::build, TzEvk2Imx636::can_build);
 
 void TzEvk2Imx636::spawn_facilities(DeviceBuilder &device_builder, const DeviceConfig &device_config) {
-    device_builder.add_facility(std::make_unique<Imx636EventTrailFilterModule>(register_map, SENSOR_PREFIX));
-    device_builder.add_facility(std::make_unique<Gen41AntiFlickerModule>(register_map, SENSOR_PREFIX));
+    device_builder.add_facility(std::make_unique<EventTrailFilter>(
+        std::dynamic_pointer_cast<TzDeviceWithRegmap>(shared_from_this()), get_sensor_info(), SENSOR_PREFIX));
+    device_builder.add_facility(std::make_unique<AntiFlickerFilter>(
+        std::dynamic_pointer_cast<TzDeviceWithRegmap>(shared_from_this()), get_sensor_info(), SENSOR_PREFIX));
 
     auto erc = device_builder.add_facility(std::make_unique<Gen41Erc>(register_map, SENSOR_PREFIX + "erc/"));
     erc->initialize();

@@ -20,7 +20,7 @@ set(HAL_OPEN_PLUGIN_FILES apps biasgen cmake CMakeLists.txt lib resources sample
 set(HAL_OPEN_PLUGIN_INCLUDES boards utils geometries plugin devices/common devices/utils devices/others)
 set(HAL_OPEN_PLUGIN_HW_LAYER_INCLUDES boards facilities utils devices/common devices/utils devices/psee-video)
 set(HAL_OPEN_PLUGIN_SOURCES boards CMakeLists.txt facilities plugin utils devices/common devices/utils devices/psee-video devices/others devices/CMakeLists.txt)
-set(HAL_OPEN_PLUGIN_DEVICES gen31 gen41 imx636 treuzell)
+set(HAL_OPEN_PLUGIN_DEVICES gen31 gen41 imx636 genx320 treuzell)
 
 foreach (open_device ${HAL_OPEN_PLUGIN_DEVICES})
     list(APPEND HAL_OPEN_PLUGIN_INCLUDES devices/${open_device})

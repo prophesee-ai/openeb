@@ -38,6 +38,7 @@ string(REPLACE ";" ", " CPACK_DEBIAN_METAVISION-SDK-DRIVER-DEV_PACKAGE_DEPENDS "
 # Samples
 set(CPACK_COMPONENT_METAVISION-SDK-DRIVER-SAMPLES_DESCRIPTION "Samples for Metavision SDK Driver library.\n${OPEN_PACKAGE_LICENSE}")
 set(CPACK_COMPONENT_METAVISION-SDK-DRIVER-SAMPLES_DEPENDS
+    metavision-hal-prophesee-hw-layer-dev
     metavision-sdk-base-dev
     metavision-sdk-core-dev
     metavision-sdk-driver-dev

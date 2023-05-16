@@ -18,6 +18,7 @@
 
 #include "metavision/sdk/base/events/event_cd.h"
 #include "metavision/sdk/base/events/event_erc_counter.h"
+#include "metavision/sdk/base/utils/detail/bitinstructions.h"
 #include "metavision/hal/facilities/i_event_decoder.h"
 #include "metavision/hal/decoders/base/event_base.h"
 #include "metavision/hal/facilities/i_geometry.h"
@@ -188,26 +189,14 @@ private:
                     uint32_t valid = m.valid;
 
                     uint16_t last_x = state[(int)EventTypesEnum::VECT_BASE_X] & NOT_POLARITY_MASK;
-#if defined(__x86_64__) || defined(__aarch64__)
-                    uint16_t off = 0;
+                    uint16_t off    = 0;
                     while (valid) {
-                        off = __builtin_ctz(valid);
+                        off = ctz_not_zero(valid);
                         valid &= ~(1 << off);
                         cd_forwarder.forward_unsafe(last_x + off, state[(int)EventTypesEnum::EVT_ADDR_Y],
                                                     (bool)(state[(int)EventTypesEnum::VECT_BASE_X] & POLARITY_MASK),
                                                     last_timestamp<DO_TIMESHIFT>());
                     }
-#else
-                    uint16_t end = last_x + nb_bits;
-                    for (uint16_t i = last_x; i != end; ++i) {
-                        if (valid & 0x1) {
-                            cd_forwarder.forward_unsafe(i, state[(int)EventTypesEnum::EVT_ADDR_Y],
-                                                        (bool)(state[(int)EventTypesEnum::VECT_BASE_X] & POLARITY_MASK),
-                                                        last_timestamp<DO_TIMESHIFT>());
-                        }
-                        valid >>= 1;
-                    }
-#endif
                 }
                 if (validator.has_valid_vect_base()) {
                     state[(int)EventTypesEnum::VECT_BASE_X] += nb_bits;

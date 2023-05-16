@@ -11,7 +11,9 @@
 
 #include <gtest/gtest.h>
 
-#include "metavision/sdk/core/utils/detail/bitinstructions.h"
+#include "metavision/sdk/base/utils/detail/bitinstructions.h"
+
+using namespace Metavision;
 
 TEST(BitInstructions_Gtest, should_clz_with_32b_input) {
     EXPECT_EQ(clz(uint32_t(0xFFFFFFFF)), 0);

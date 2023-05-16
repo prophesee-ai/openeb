@@ -11,11 +11,12 @@
 
 // Example of using Metavision SDK Driver API for visualizing events stream.
 
-#include <boost/program_options.hpp>
-#include <thread>
 #include <atomic>
 #include <chrono>
 #include <iomanip>
+#include <signal.h>
+#include <thread>
+#include <boost/program_options.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #if CV_MAJOR_VERSION >= 4
 #include <opencv2/highgui/highgui_c.h>
@@ -23,6 +24,7 @@
 #include <opencv2/imgproc.hpp>
 #include <metavision/sdk/base/utils/log.h>
 #include <metavision/sdk/core/utils/cd_frame_generator.h>
+#include <metavision/sdk/core/utils/misc.h>
 #include <metavision/sdk/core/utils/rate_estimator.h>
 #include <metavision/sdk/driver/camera.h>
 #include <metavision/hal/facilities/i_plugin_software_info.h>
@@ -32,51 +34,7 @@ static const int SPACE  = 32;
 
 namespace po = boost::program_options;
 
-std::string human_readable_rate(double rate) {
-    std::ostringstream oss;
-    if (rate < 1000) {
-        oss << std::setprecision(0) << std::fixed << rate << " ev/s";
-    } else if (rate < 1000 * 1000) {
-        oss << std::setprecision(1) << std::fixed << (rate / 1000) << " Kev/s";
-    } else if (rate < 1000 * 1000 * 1000) {
-        oss << std::setprecision(1) << std::fixed << (rate / (1000 * 1000)) << " Mev/s";
-    } else {
-        oss << std::setprecision(1) << std::fixed << (rate / (1000 * 1000 * 1000)) << " Gev/s";
-    }
-    return oss.str();
-}
-
-std::string human_readable_time(Metavision::timestamp t) {
-    std::ostringstream oss;
-    std::array<std::string, 4> ls{":", ":", ".", ""};
-    std::array<std::string, 4> vs;
-    std::array<int, 4> ts;
-    ts[3] = t % 1000000;
-    vs[3] = cv::format("%06d", int(ts[3]));
-    t /= 1000000; // s
-    ts[2] = t % 60;
-    vs[2] = cv::format("%02d", int(ts[2]));
-    t /= 60; // m
-    ts[1] = t % 60;
-    vs[1] = cv::format("%02d", int(ts[1]));
-    t /= 60; // h
-    ts[0] = t;
-    vs[0] = cv::format("%02d", int(ts[0]));
-
-    size_t i = 0;
-    // skip hour and minutes if t is not high enough, but keep s and us
-    for (; i < 2; ++i) {
-        if (ts[i] != 0) {
-            break;
-        }
-    }
-    for (; i < 4; ++i) {
-        oss << vs[i] << ls[i];
-    }
-    return oss.str();
-}
-
-int process_ui_for(int delay_ms) {
+int processUI(int delay_ms) {
     auto then = std::chrono::high_resolution_clock::now();
     int key   = cv::waitKey(delay_ms);
     auto now  = std::chrono::high_resolution_clock::now();
@@ -90,13 +48,15 @@ int process_ui_for(int delay_ms) {
 namespace {
 std::atomic<bool> signal_caught{false};
 
-[[maybe_unused]] void sig_handler(int s) {
+[[maybe_unused]] void signalHandler(int s) {
     MV_LOG_TRACE() << "Interrupt signal received." << std::endl;
     signal_caught = true;
 }
 } // anonymous namespace
 
 int main(int argc, char *argv[]) {
+    signal(SIGINT, signalHandler);
+
     std::string serial;
     std::string biases_file;
     std::string in_file_path;
@@ -181,7 +141,7 @@ int main(int argc, char *argv[]) {
                 camera           = Metavision::Camera::from_file(in_file_path, hints);
                 camera_is_opened = true;
             } catch (Metavision::CameraException &e) { MV_LOG_ERROR() << e.what(); }
-        // Otherwise, set the input source to a camera
+            // Otherwise, set the input source to a camera
         } else {
             try {
                 if (!serial.empty()) {
@@ -306,13 +266,13 @@ int main(int argc, char *argv[]) {
                     if (osd) {
                         std::string text;
                         if (osc_ready) {
-                            text = human_readable_time(cd_frame_ts) + " / " +
-                                   human_readable_time(camera.offline_streaming_control().get_duration());
+                            text = Metavision::getHumanReadableTime(cd_frame_ts) + " / " +
+                                   Metavision::getHumanReadableTime(camera.offline_streaming_control().get_duration());
                         } else {
-                            text = human_readable_time(cd_frame_ts);
+                            text = Metavision::getHumanReadableTime(cd_frame_ts);
                         }
                         text += "     ";
-                        text += human_readable_rate(avg_rate);
+                        text += Metavision::getHumanReadableRate(avg_rate);
                         cv::putText(cd_frame, text, cv::Point(10, 20), cv::FONT_HERSHEY_PLAIN, 1,
                                     cv::Scalar(108, 143, 255), 1, cv::LINE_AA);
                     }
@@ -321,7 +281,7 @@ int main(int argc, char *argv[]) {
             }
 
             // Wait for a pressed key for 33ms, that means that the display is refreshed at 30 FPS
-            int key = process_ui_for(33);
+            int key = processUI(33);
             switch (key) {
             case 'q':
             case ESCAPE:

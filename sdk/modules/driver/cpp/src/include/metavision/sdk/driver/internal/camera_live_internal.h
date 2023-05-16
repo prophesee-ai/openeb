@@ -25,9 +25,9 @@ namespace detail {
 
 class LivePrivate : public Camera::Private {
 public:
-    LivePrivate();
-    LivePrivate(OnlineSourceType input_source_type, uint32_t source_index);
-    LivePrivate(const Serial &serial);
+    LivePrivate(DeviceConfig *dev_config_ptr = nullptr);
+    LivePrivate(OnlineSourceType input_source_type, uint32_t source_index, DeviceConfig *dev_config_ptr = nullptr);
+    LivePrivate(const std::string &serial, DeviceConfig *dev_config_ptr = nullptr);
     ~LivePrivate() override;
 
 private:

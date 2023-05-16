@@ -18,6 +18,10 @@ target_sources(hal_plugin_imx636_evk3 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/psee_i
 target_sources(hal_plugin_imx636_evk4 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/psee_imx636_evk4.cpp)
 target_sources(hal_plugin_prophesee PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/psee_universal.cpp)
 
+if(NOT ANDROID)
+    target_sources(hal_plugin_genx320es_evk3 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/psee_genx320es_evk3.cpp)
+endif(NOT ANDROID)
+
 if(HAL_SENSORLIB_SUPPORT)
     target_sources(hal_plugin_sensorlib_tz PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/psee_sensorlib_tz.cpp)
     target_sources(hal_plugin_sensorlib_fx3 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/psee_sensorlib_fx3.cpp)

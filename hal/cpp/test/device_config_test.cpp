@@ -288,20 +288,20 @@ TEST(DeviceConfigOptionTest, get_values_for_string_option) {
     EXPECT_NO_THROW(opt.get_values());
 }
 
-TEST(DeviceConfigTest, set_evt_format) {
+TEST(DeviceConfigTest, set_format) {
     DeviceConfig config;
-    config.set_evt_format("blub");
-    EXPECT_EQ("blub", config.evt_format());
-    EXPECT_EQ("blub", config.get(DeviceConfig::get_evt_format_key()));
-    EXPECT_EQ("blub", config.get<std::string>(DeviceConfig::get_evt_format_key()));
+    config.set_format("blub");
+    EXPECT_EQ("blub", config.format());
+    EXPECT_EQ("blub", config.get(DeviceConfig::get_format_key()));
+    EXPECT_EQ("blub", config.get<std::string>(DeviceConfig::get_format_key()));
 }
 
-TEST(DeviceConfigTest, set_evt_format_via_key) {
+TEST(DeviceConfigTest, set_format_via_key) {
     DeviceConfig config;
-    config.set(DeviceConfig::get_evt_format_key(), "blub");
-    EXPECT_EQ("blub", config.evt_format());
-    EXPECT_EQ("blub", config.get(DeviceConfig::get_evt_format_key()));
-    EXPECT_EQ("blub", config.get<std::string>(DeviceConfig::get_evt_format_key()));
+    config.set(DeviceConfig::get_format_key(), "blub");
+    EXPECT_EQ("blub", config.format());
+    EXPECT_EQ("blub", config.get(DeviceConfig::get_format_key()));
+    EXPECT_EQ("blub", config.get<std::string>(DeviceConfig::get_format_key()));
 }
 
 TEST(DeviceConfigTest, enable_biases_range_check_bypass) {

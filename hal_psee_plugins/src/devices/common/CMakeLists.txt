@@ -10,6 +10,8 @@
 target_sources(metavision_psee_hw_layer_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/evk2_tz_trigger_event.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/evk2_tz_trigger_out.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/antiflicker_filter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/event_trail_filter.cpp
 )
 
 target_sources(metavision_hal_psee_video_obj PRIVATE

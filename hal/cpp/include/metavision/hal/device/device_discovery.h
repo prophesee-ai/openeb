@@ -83,18 +83,22 @@ public:
     static SerialList list();
 
     /// @brief Lists serial numbers of local available sources.
+    /// @note A camera is considered local if we communicate directly with it.
     static SerialList list_local();
 
     /// @brief Lists serial numbers of remote available sources.
+    /// @note A camera is considered remote if it is part of another SoC and hence communication is indirect.
     static SerialList list_remote();
 
     /// @brief Lists available sources, including remote cameras
     static SystemList list_available_sources();
 
     /// @brief Lists only local available sources.
+    /// @note A source is considered local if we communicate directly with it.
     static SystemList list_available_sources_local();
 
     /// @brief Lists only remote available sources.
+    /// @note A source is considered remote if it is part of another SoC and hence communication is indirect.
     static SystemList list_available_sources_remote();
 
     /// @brief Lists DeviceConfig options supported by the camera
