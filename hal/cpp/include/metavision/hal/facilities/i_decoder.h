@@ -12,6 +12,7 @@
 #ifndef METAVISION_HAL_I_DECODER_H
 #define METAVISION_HAL_I_DECODER_H
 
+#include <cstdint>
 #include <functional>
 
 #include "metavision/hal/utils/decoder_protocol_violation.h"

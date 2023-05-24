@@ -13,11 +13,12 @@
 #define METAVISION_SDK_BASE_OBJECT_POOL_H
 
 #include <condition_variable>
-#include <stack>
+#include <exception>
 #include <memory>
 #include <mutex>
+#include <stack>
+#include <stdexcept>
 #include <type_traits>
-#include <exception>
 
 namespace Metavision {
 
