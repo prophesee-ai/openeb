@@ -432,68 +432,6 @@ if (COMPILE_PYTHON3_BINDINGS)
         _add_python_bindings(${module} ${libname} ${component} ${ARGV})
     endfunction()
 
-
-    #############################
-    # Designer specific functions
-    #############################
-
-    # function to set sources of a target for a Designer python bindings for all python versions
-    function(set_designer_python_bindings_sources module)
-        set(target "metavision_designer_${module}")
-        if (WIN32)
-            set(target "metavision_designer_${module}_internal")
-        endif()
-        set(sources ${ARGV})
-        list(REMOVE_AT sources 0)
-
-        foreach(_python_version ${PYBIND11_PYTHON_VERSIONS})
-            set(_target ${target}_python3_${_python_version})
-            target_sources(${_target} PRIVATE ${sources})
-        endforeach()
-    endfunction()
-
-    # function to install a samples directory for a Designer module
-    function(install_designer_samples_directory directory module)
-        set(destination "share/metavision/designer/${module}/samples")
-        set(component "metavision-designer-${module}-python-samples")
-        install(
-            DIRECTORY "${directory}"
-            DESTINATION "${destination}"
-            COMPONENT ${component}
-            PATTERN __pycache__ EXCLUDE
-        )
-    endfunction()
-
-    # function to install a library for a Designer module
-    function(install_designer_library module)
-        set(target "metavision_designer_${module}")
-        set(component "metavision-designer-${module}-lib")
-        install(TARGETS ${target}
-                RUNTIME
-                    DESTINATION bin
-                    COMPONENT ${component}
-                ARCHIVE
-                    DESTINATION lib
-                    COMPONENT ${component}
-                LIBRARY
-                    DESTINATION lib
-                    COMPONENT ${component}
-        )
-    endfunction()
-
-    # function to add a python bindings for a Designer module for all python versions
-    function(add_designer_python_bindings module)
-        set(module "metavision_designer_${module}")
-        if(WIN32)
-            set(libname ${module}_internal)
-        else()
-            set(libname ${module})
-        endif()
-        set(component "${libname}")
-        string(REPLACE "_" "-" component ${component})
-        _add_python_bindings(${module} ${libname} ${component} ${ARGV})
-    endfunction()
-
     #####################################################################
     #
     # Adds python (based on binary package) cpack component(s)

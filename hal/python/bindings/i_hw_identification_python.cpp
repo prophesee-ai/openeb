@@ -47,7 +47,11 @@ static HALFacilityPythonBinder<I_HW_Identification> bind(
             .def("get_system_info", &get_system_info_wrapper,
                  pybind_doc_hal["Metavision::I_HW_Identification::get_system_info"])
             .def("get_connection_type", &I_HW_Identification::get_connection_type,
-                 pybind_doc_hal["Metavision::I_HW_Identification::get_connection_type"]);
+                 pybind_doc_hal["Metavision::I_HW_Identification::get_connection_type"])
+            .def("get_header", &I_HW_Identification::get_header,
+                 pybind_doc_hal["Metavision::I_HW_Identification::get_header"])
+            .def("get_device_config_options", &I_HW_Identification::get_device_config_options,
+                 pybind_doc_hal["Metavision::I_HW_Identification::get_device_config_options"]);
 
         py::class_<I_HW_Identification::SensorInfo>(module, "SensorInfo",
                                                     pybind_doc_hal["Metavision::I_HW_Identification::SensorInfo"])

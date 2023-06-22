@@ -30,11 +30,11 @@ namespace Metavision {
 ///       represent a type and optional range/set of values. The added information can be useful to guide the user
 ///       when presenting the options that are available, but ultimately the value set for a specific key will be a
 ///       string, so care must be taken when converting the value before calling one of the functions to set a
-///       (key,value) pair in the @ref DeviceConfig"".
+///       (key,value) pair in the @ref DeviceConfig
 /// @sa @ref DeviceConfig
 class DeviceConfigOption {
 public:
-    /// Enumeration class representing the type of an option
+    /// @brief Enumeration class representing the type of an option
     enum class Type { Invalid, Boolean, Int, Double, String };
 
     DeviceConfigOption();
@@ -48,18 +48,22 @@ public:
 
     ~DeviceConfigOption();
 
-    /// Returns the range of accepted values for options representing a numeric type (Int or Double)
+    /// @brief Gets the range of accepted values
+    /// @return The range of accepted values for options representing a numeric type (Int or Double)
     template<typename T>
     std::pair<T, T> get_range() const;
 
-    /// Returns the set of accepted values for options representing a string type
+    /// @brief Gets the set of accepted values
+    /// @return The set of accepted values for options representing a string type
     std::vector<std::string> get_values() const;
 
-    /// Returns the default value
+    /// @brief Gets the set of accepted values
+    /// @return The default value
     template<typename T>
     T get_default_value() const;
 
-    /// Returns the type that is represented by this class
+    /// @brief Gets the type of this class
+    /// @return The type that is represented by this class
     Type type() const;
 
 private:
@@ -153,7 +157,7 @@ public:
         get_evt_format_key();
     [[deprecated("This function is deprecated since version 4.1.0. Please use format() instead.")]] std::string
         evt_format() const;
-    [[deprecated("formatThis function is deprecated since version 4.1.0. Please use set_format() instead.")]] void
+    [[deprecated("This function is deprecated since version 4.1.0. Please use set_format() instead.")]] void
         set_evt_format(const std::string &);
 
 private:

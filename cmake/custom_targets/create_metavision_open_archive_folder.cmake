@@ -20,7 +20,7 @@ set(HAL_OPEN_PLUGIN_FILES apps biasgen cmake CMakeLists.txt lib resources sample
 set(HAL_OPEN_PLUGIN_INCLUDES boards utils geometries plugin devices/common devices/utils devices/others)
 set(HAL_OPEN_PLUGIN_HW_LAYER_INCLUDES boards facilities utils devices/common devices/utils devices/psee-video)
 set(HAL_OPEN_PLUGIN_SOURCES boards CMakeLists.txt facilities plugin utils devices/common devices/utils devices/psee-video devices/others devices/CMakeLists.txt)
-set(HAL_OPEN_PLUGIN_DEVICES gen31 gen41 imx636 genx320 treuzell)
+set(HAL_OPEN_PLUGIN_DEVICES gen31 gen41 imx636 imx646 genx320 treuzell)
 
 foreach (open_device ${HAL_OPEN_PLUGIN_DEVICES})
     list(APPEND HAL_OPEN_PLUGIN_INCLUDES devices/${open_device})
@@ -34,12 +34,14 @@ list(APPEND HAL_OPEN_PLUGIN_FILES ${HAL_OPEN_PLUGIN_INCLUDES} ${HAL_OPEN_PLUGIN_
 list_transform_prepend (HAL_OPEN_PLUGIN_FILES hal_psee_plugins/)
 
 # Add the files and folders needed to compile open :
-foreach (file_or_dir CMakeLists.txt licensing/LICENSE_OPEN .gitignore conftest.py pytest.ini cmake standalone_samples hal ${HAL_OPEN_PLUGIN_FILES} utils/python/metavision_utils utils/cpp utils/scripts utils/CMakeLists.txt sdk/cmake sdk/CMakeLists.txt sdk/modules/CMakeLists.txt)
-    get_filename_component(dest "${OUTPUT_DIR}/${file_or_dir}" DIRECTORY)
-    file(COPY "${PROJECT_SOURCE_DIR}/${file_or_dir}"
-         DESTINATION "${dest}"
-         PATTERN __pycache__ EXCLUDE
-    )
+foreach (file_or_dir CMakeLists.txt licensing/LICENSE_OPEN .gitignore conftest.py pytest.ini cmake standalone_samples hal ${HAL_OPEN_PLUGIN_FILES} utils/python/metavision_utils utils/cpp utils/scripts utils/windows/resources.rc.in utils/CMakeLists.txt sdk/cmake sdk/CMakeLists.txt sdk/modules/CMakeLists.txt)
+    if (EXISTS "${PROJECT_SOURCE_DIR}/${file_or_dir}")
+        get_filename_component(dest "${OUTPUT_DIR}/${file_or_dir}" DIRECTORY)
+        file(COPY "${PROJECT_SOURCE_DIR}/${file_or_dir}"
+            DESTINATION "${dest}"
+            PATTERN __pycache__ EXCLUDE
+        )
+    endif ()
 endforeach(file_or_dir)
 file(MAKE_DIRECTORY "${OUTPUT_DIR}/.github")
 file(COPY "${PROJECT_SOURCE_DIR}/utils/github_actions/openeb/"
@@ -74,8 +76,10 @@ foreach (mod base core driver ui core_ml)
     endforeach(subdir)
 endforeach(mod)
 
-# Remove hdf5_ecf submodule
-file(REMOVE_RECURSE "${OUTPUT_DIR}/sdk/modules/driver/cpp/3rdparty/hdf5_ecf")
+if (NOT KEEP_GIT_SUBMODULES)
+    # Remove hdf5_ecf submodule
+    file(REMOVE_RECURSE "${OUTPUT_DIR}/sdk/modules/driver/cpp/3rdparty/hdf5_ecf")
+endif ()
 # Remove Metavision Studio :
 file(REMOVE_RECURSE "${OUTPUT_DIR}/sdk/modules/core/cpp/apps/metavision_studio")
 

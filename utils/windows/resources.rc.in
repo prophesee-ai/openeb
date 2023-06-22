@@ -1,0 +1,26 @@
+#include <windows.h>
+
+VS_VERSION_INFO   VERSIONINFO
+FILEVERSION       @PROJECT_VERSION_MAJOR@,@PROJECT_VERSION_MINOR@,@PROJECT_VERSION_PATCH@,0
+PRODUCTVERSION    @PROJECT_VERSION_MAJOR@,@PROJECT_VERSION_MINOR@,@PROJECT_VERSION_PATCH@,0
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "CompanyName",        "Prophesee"
+            VALUE "FileDescription",    ""
+            VALUE "FileVersion",        "@PROJECT_VERSION_FULL@"
+            VALUE "InternalName",       ""
+            VALUE "LegalCopyright",     "Copyright (c) Prophesee S.A."
+            VALUE "OriginalFilename",   "@dll_filename@"
+            VALUE "ProductName",        "Metavision SDK"
+            VALUE "ProductVersion",     "@PROJECT_VERSION_FULL@"
+        END
+    END
+
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1252
+    END
+END

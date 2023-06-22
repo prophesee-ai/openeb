@@ -20,6 +20,8 @@ static DeviceFacilityGetter<I_PluginSoftwareInfo> getter("get_i_plugin_software_
 static HALFacilityPythonBinder<I_PluginSoftwareInfo> bind(
     [](auto &module, auto &class_binding) {
         class_binding
+            .def("get_plugin_integrator_name", &I_PluginSoftwareInfo::get_plugin_integrator_name,
+                 pybind_doc_hal["Metavision::I_PluginSoftwareInfo::get_plugin_integrator_name"])
             .def("get_plugin_name", &I_PluginSoftwareInfo::get_plugin_name,
                  pybind_doc_hal["Metavision::I_PluginSoftwareInfo::get_plugin_name"])
             .def("get_software_info", &I_PluginSoftwareInfo::get_software_info,

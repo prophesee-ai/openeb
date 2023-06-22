@@ -254,9 +254,6 @@ void do_systems_diagnosis() {
     bool do_usb_port_analysis = false;
 #endif
     for (auto s : serial_list) {
-        // Get the options before opening the device
-        auto options = Metavision::DeviceDiscovery::list_device_config_options(s);
-
         // Open the camera
         std::unique_ptr<Metavision::Device> device(Metavision::DeviceDiscovery::open(s));
 
@@ -279,6 +276,9 @@ void do_systems_diagnosis() {
                                   << std::right;
                 }
                 MV_LOG_INFO() << "";
+
+                // Get device config options
+                auto options = hw_identification->get_device_config_options();
 
                 MV_LOG_INFO() << "# Available device config options";
                 for (auto option : options) {

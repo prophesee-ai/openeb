@@ -80,8 +80,9 @@ void Viewer::start() {
 
 bool Viewer::update() {
     if (parameters_.in_raw_file.empty() && parameters_.show_biases) {
-        // Handle specific case of trying to set biases when using a IMX636 camera
-        if (camera_.generation().version_major() == 4 && camera_.generation().version_minor() == 2) {
+        // Handle specific case of trying to set biases when using an IMX636 or a GenX320 camera
+        if ((camera_.generation().version_major() == 4 && camera_.generation().version_minor() == 2) ||
+            (camera_.generation().version_major() == 320 && camera_.generation().version_minor() == 0)) {
             MV_LOG_ERROR() << "Metavision Player can not be used to set biases for this camera. Please use "
                               "Metavision Studio instead.";
             return false;

@@ -43,7 +43,27 @@ static HALFacilityPythonBinder<I_AntiFlickerModule> bind(
             .def("set_duty_cycle", &I_AntiFlickerModule::set_duty_cycle, py::arg("percent_activity"),
                  pybind_doc_hal["Metavision::I_AntiFlickerModule::set_duty_cycle"])
             .def("get_duty_cycle", &I_AntiFlickerModule::get_duty_cycle,
-                 pybind_doc_hal["Metavision::I_AntiFlickerModule::get_duty_cycle"]);
+                 pybind_doc_hal["Metavision::I_AntiFlickerModule::get_duty_cycle"])
+            .def("get_min_supported_duty_cycle", &I_AntiFlickerModule::get_min_supported_duty_cycle,
+                 pybind_doc_hal["Metavision::I_AntiFlickerModule::get_min_supported_duty_cycle"])
+            .def("get_max_supported_duty_cycle", &I_AntiFlickerModule::get_max_supported_duty_cycle,
+                 pybind_doc_hal["Metavision::I_AntiFlickerModule::get_max_supported_duty_cycle"])
+            .def("set_start_threshold", &I_AntiFlickerModule::set_start_threshold, py::arg("threshold"),
+                 pybind_doc_hal["Metavision::I_AntiFlickerModule::set_start_threshold"])
+            .def("get_start_threshold", &I_AntiFlickerModule::get_start_threshold,
+                 pybind_doc_hal["Metavision::I_AntiFlickerModule::get_start_threshold"])
+            .def("get_min_supported_start_threshold", &I_AntiFlickerModule::get_min_supported_start_threshold,
+                 pybind_doc_hal["Metavision::I_AntiFlickerModule::get_min_supported_start_threshold"])
+            .def("get_max_supported_start_threshold", &I_AntiFlickerModule::get_max_supported_start_threshold,
+                 pybind_doc_hal["Metavision::I_AntiFlickerModule::get_max_supported_start_threshold"])
+            .def("set_stop_threshold", &I_AntiFlickerModule::set_stop_threshold, py::arg("threshold"),
+                 pybind_doc_hal["Metavision::I_AntiFlickerModule::set_stop_threshold"])
+            .def("get_stop_threshold", &I_AntiFlickerModule::get_stop_threshold,
+                 pybind_doc_hal["Metavision::I_AntiFlickerModule::get_stop_threshold"])
+            .def("get_min_supported_stop_threshold", &I_AntiFlickerModule::get_min_supported_stop_threshold,
+                 pybind_doc_hal["Metavision::I_AntiFlickerModule::get_min_supported_stop_threshold"])
+            .def("get_max_supported_stop_threshold", &I_AntiFlickerModule::get_max_supported_stop_threshold,
+                 pybind_doc_hal["Metavision::I_AntiFlickerModule::get_max_supported_stop_threshold"]);
 
         py::enum_<I_AntiFlickerModule::AntiFlickerMode>(class_binding, "AntiFlickerMode", py::module_local())
             .value("BandStop", I_AntiFlickerModule::AntiFlickerMode::BAND_STOP)

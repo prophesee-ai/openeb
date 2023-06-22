@@ -27,7 +27,9 @@ static HALFacilityPythonBinder<I_CameraSynchronization> bind(
             .def("set_mode_master", &I_CameraSynchronization::set_mode_master,
                  pybind_doc_hal["Metavision::I_CameraSynchronization::set_mode_master"])
             .def("set_mode_slave", &I_CameraSynchronization::set_mode_slave,
-                 pybind_doc_hal["Metavision::I_CameraSynchronization::set_mode_slave"]);
+                 pybind_doc_hal["Metavision::I_CameraSynchronization::set_mode_slave"])
+            .def("get_mode", &I_CameraSynchronization::get_mode,
+                 pybind_doc_hal["Metavision::I_CameraSynchronization::get_mode"]);
     },
     "I_CameraSynchronization", pybind_doc_hal["Metavision::I_CameraSynchronization"]);
 

@@ -58,12 +58,6 @@ set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 # Include cpack configuration from the public packages of MetavisionSDK
 include(${PROJECT_SOURCE_DIR}/sdk/cmake/MetavisionOffersCPackConfig.cmake)
 
-# Include cpack configuration from the public packages of Metavision Designer (if available)
-get_filename_component(designer_cpack_config "${PROJECT_SOURCE_DIR}/designer/cmake/MetavisionDesignerCPackConfig.cmake" REALPATH)
-if(EXISTS "${designer_cpack_config}")
-    include("${designer_cpack_config}")
-endif(EXISTS "${designer_cpack_config}")
-
 ###########################
 #           HAL           #
 ###########################

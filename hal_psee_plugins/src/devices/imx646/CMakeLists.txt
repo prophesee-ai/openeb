@@ -7,11 +7,6 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-target_sources(metavision_psee_hw_layer_obj PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/psee_plugin.cpp)
-
-target_sources(hal_plugin_prophesee PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/psee_universal.cpp)
-
-if(HAL_SENSORLIB_SUPPORT)
-    target_sources(hal_plugin_sensorlib_tz PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/psee_sensorlib_tz.cpp)
-    target_sources(hal_plugin_sensorlib_fx3 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/psee_sensorlib_fx3.cpp)
-endif(HAL_SENSORLIB_SUPPORT)
+target_sources(metavision_hal_imx646_evk3_system_obj PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/imx646_tz_device.cpp
+)

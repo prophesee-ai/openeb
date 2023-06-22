@@ -7,10 +7,28 @@
 #
 #   NODEJS_FOUND - Set to true if nodejs is found
 #   NODEJS_EXECUTABLE - The path to the nodejs executable
+#   NPM_EXECUTABLE - The path to the npm executable
+#   NPX_EXECUTABLE - The path to the npx executable
 #   NODEJS_VERSION  - The version number of the nodejs executable
 
 find_program(NODEJS_EXECUTABLE
     NAMES node nodejs 
+    HINTS /usr
+          /usr/local
+          /opt
+          /opt/local
+    PATH_SUFFIXES bin)
+
+find_program(NPM_EXECUTABLE
+    NAMES npm.cmd npm
+    HINTS /usr
+          /usr/local
+          /opt
+          /opt/local
+    PATH_SUFFIXES bin)
+
+find_program(NPX_EXECUTABLE
+    NAMES npx.cmd npx
     HINTS /usr
           /usr/local
           /opt
@@ -49,7 +67,7 @@ endif ()
 
 include(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(nodejs
-    REQUIRED_VARS NODEJS_EXECUTABLE 
+    REQUIRED_VARS NODEJS_EXECUTABLE NPX_EXECUTABLE 
     VERSION_VAR NODEJS_VERSION)
 
-mark_as_advanced(NODEJS_EXECUTABLE NODEJS_VERSION)
+mark_as_advanced(NODEJS_EXECUTABLE NPX_EXECUTABLE NODEJS_VERSION)

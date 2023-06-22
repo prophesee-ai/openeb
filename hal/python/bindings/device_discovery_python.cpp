@@ -120,7 +120,9 @@ static HALGenericPythonBinder bind([](auto &module) {
                     const auto l = DeviceDiscovery::list_available_sources_remote();
                     return std::vector<CameraDescription>(l.begin(), l.end());
                 },
-                pybind_doc_hal["Metavision::DeviceDiscovery::list_available_sources_remote"]);
+                pybind_doc_hal["Metavision::DeviceDiscovery::list_available_sources_remote"])
+            .def_static("list_device_config_options", &DeviceDiscovery::list_device_config_options, py::arg("serial"),
+                        pybind_doc_hal["Metavision::DeviceDiscovery::list_device_config_options"]);
 });
 
 } // namespace Metavision

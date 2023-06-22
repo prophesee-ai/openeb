@@ -8,8 +8,8 @@
 # See the License for the specific language governing permissions and limitations under the License.
 
 set(GIT_BRANCH "main")
-set(GIT_COMMIT_ID "1c455ed1cbfc8ec26cae354b8da911c2d0d61ecb")
-set(GIT_COMMIT_DATE "2023-05-15 10:39:05 +0200")
+set(GIT_COMMIT_ID "daa86405233eb5cdc235a70a46f7480eccc4fceb")
+set(GIT_COMMIT_DATE "2023-06-21 11:58:30 +0200")
 
 find_program(GIT_SCM git DOC "Git version control" HINTS "C:\\Program Files\\Git\\bin\\")
 

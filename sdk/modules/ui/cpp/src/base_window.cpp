@@ -109,8 +109,12 @@ GLuint LoadShaders() {
 
 BaseWindow::BaseWindow(const std::string &title, int width, int height, RenderMode mode) :
     BaseGLFWWindow(title, width, height), width_(width), height_(height), render_mode_(mode) {
+    const detail::TextureOptions texture_options{static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height),
+                                                 (render_mode_ == RenderMode::GRAY) ? detail::TextureFormat::Gray :
+                                                                                      detail::TextureFormat::RGB,
+                                                 detail::TextureFilter::Linear, detail::TextureFilter::Linear};
     program_id_ = detail::LoadShaders();
-    tex_id_     = detail::initialize_texture(width, height, (render_mode_ == RenderMode::GRAY));
+    tex_id_     = detail::initialize_texture(texture_options);
 
     // clang-format off
     static const GLfloat g_vertex_buffer_data[] = {

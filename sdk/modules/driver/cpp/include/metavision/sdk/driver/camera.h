@@ -397,7 +397,7 @@ public:
     /// @brief Stops recording data from camera to the specified path
     ///
     /// This function stops recording data to the file at the given @p file_path.\n
-    /// If the @p file_path is empty, all recordings of the currenct camera stream are stopped.\n
+    /// If the @p file_path is empty, all recordings of the current camera stream are stopped.\n
     /// @param file_path Path to the file containing the recorded data. If empty, all ongoing recordings are stopped.
     /// @throw CameraException if the camera has not been initialized.
     /// @return true if recording could be stopped, false otherwise

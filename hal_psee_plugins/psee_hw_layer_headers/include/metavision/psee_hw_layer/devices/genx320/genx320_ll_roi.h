@@ -14,7 +14,6 @@
 
 #include <filesystem>
 #include <vector>
-#include <bitset>
 
 #include "metavision/hal/facilities/i_registrable_facility.h"
 
@@ -40,7 +39,7 @@ public:
         std::tuple<unsigned int, unsigned int> get_size() const;
 
     private:
-        unsigned int **grid_;
+        std::vector<unsigned int> grid_;
         unsigned int rows_;
         unsigned int columns_;
     };
@@ -57,7 +56,6 @@ public:
 private:
     std::shared_ptr<RegisterMap> register_map_;
     std::string sensor_prefix_;
-    Grid roi_grid_;
 };
 
 } // namespace Metavision

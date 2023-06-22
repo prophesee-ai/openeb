@@ -104,8 +104,8 @@ protected:
 
     RenderMode render_mode_;
 
-    GLuint vertex_array_id_;
-    GLuint vertex_buffer_;
+    GLuint vertex_array_id_{};
+    GLuint vertex_buffer_{};
     GLuint program_id_;
     GLuint tex_id_;
 

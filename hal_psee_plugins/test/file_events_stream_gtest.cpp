@@ -79,7 +79,7 @@ protected:
                << "\% system_ID " << gen41_system_id << std::endl
                << "\% integrator_name Prophesee" << std::endl
                << "\% firmware_version 0.0.0" << std::endl
-               << "\% plugin_name hal_plugin_gen41_evk3" << std::endl
+               << "\% plugin_name hal_plugin_prophesee" << std::endl
                << "\% evt 2.0" << std::endl
                << "\% subsystem_ID " << dummy_sub_system_id_ << std::endl
                << "\% " << dummy_custom_key_ << " " << dummy_custom_value_ << std::endl
