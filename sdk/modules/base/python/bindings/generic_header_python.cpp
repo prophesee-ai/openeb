@@ -12,6 +12,7 @@
 #include <iostream>
 #include <fstream>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 #include "metavision/sdk/base/utils/generic_header.h"
 
@@ -20,14 +21,6 @@
 namespace py = pybind11;
 
 namespace Metavision {
-
-py::dict get_header_map(GenericHeader &header) {
-    py::dict d;
-    for (const auto &pair : header.get_header_map()) {
-        d[pair.first.c_str()] = pair.second.c_str();
-    }
-    return d;
-}
 
 void export_generic_header(py::module &m) {
     py::class_<GenericHeader>(m, "GenericHeader")
@@ -62,6 +55,8 @@ void export_generic_header(py::module &m) {
         .def("get_date", &GenericHeader::get_date, pybind_doc_base["Metavision::GenericHeader::get_date"])
         .def("remove_date", &GenericHeader::remove_date, pybind_doc_base["Metavision::GenericHeader::remove_date"])
         .def("empty", &GenericHeader::empty, pybind_doc_base["Metavision::GenericHeader::empty"])
-        .def("get_header_map", get_header_map);
+        .def("get_header_map", &GenericHeader::get_header_map,
+             pybind_doc_base["Metavision::GenericHeader::get_header_map"])
+        .def("to_string", &GenericHeader::to_string, pybind_doc_base["Metavision::GenericHeader::to_string"]);
 }
 } // namespace Metavision

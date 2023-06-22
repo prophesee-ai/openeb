@@ -228,31 +228,62 @@ endif(${CMAKE_VERSION} VERSION_LESS "3.12.0")
 
 ##################################################
 
-# Override built-in add_library so that we can call it without sources, and add sources with method target_sources()
-if(${CMAKE_VERSION} VERSION_LESS "3.11.0")
+if (WIN32)
+    # override built-in add_library to include a generated resources.rc file for Windows DLLs
+    # this is done in a very hackish way, because cmake does not officially support overriding add_library
+    # to do so, we need to redefine add_library (our version) and _add_library (called by VCPKG internally)
+    # but since redefining a function shadows its previous version, we successively redefine _{0,4}add_library
+    # to keep vcpkg and the original cmake versions "accessible" 
 
-    set(dummy_header "${GENERATE_FILES_DIRECTORY}/dummy_header.h")
-    file(WRITE "${dummy_header}" "")
+    # save original add_library (already redefined by VCPKG, so renamed _add_library)
+    function (_add_library)
+        # ... renames _add_library to __add_library
+    endfunction ()
+    function (__add_library)
+        # ... renames __add_library to ___add_library
+    endfunction ()
+    function (___add_library)
+        # ... renames ___add_library to ____add_library
+    endfunction ()
+    function (add_library_orig)
+        # make a handy alias to the original cmake version
+        ____add_library(${ARGN})
+    endfunction ()
 
-    function(add_library)
-        cmake_parse_arguments(LIB_ARGS "IMPORTED;ALIAS;INTERFACE" "" "" ${ARGN})
-        if(LIB_ARGS_IMPORTED OR LIB_ARGS_ALIAS OR LIB_ARGS_INTERFACE)
-            # No need to add sources : just redirect call to built-in add_library method
-            _add_library(${ARGN})
-        else()
-            # In this case, if the sources are not provided we need to add them. To make the
-            # code clearer to read, we add the dummy header in any case (even if it's needed
-            # only when the call to add_library is done without any source file) : it doesn't hurt
-            # and if you forget to add sources to the library (via target_sources), you'll be warned
-            # by cmake, which will throw the following error :
-            #
-            #    CMake Error: CMake can not determine linker language for target: LIBNAME
-            #
-            _add_library(${ARGN} ${dummy_header})
-        endif(LIB_ARGS_IMPORTED OR LIB_ARGS_ALIAS OR LIB_ARGS_INTERFACE)
-    endfunction(add_library)
+    # save vcpkg add_library 
+    function (add_library)
+        # ... renames add_library to _add_library
+    endfunction ()
+    function (_add_library)
+        # ... renames _add_library to __add_library
+    endfunction ()
+    function (__add_library)
+        # ... renames __add_library to ___add_library
+    endfunction ()
+    function (add_library_vcpkg)
+        # make a handy alias to the vcpkg version
+        ___add_library(${ARGN})
+    endfunction ()
 
-endif(${CMAKE_VERSION} VERSION_LESS "3.11.0")
+    # finally, define our overriden version
+    function (add_library)
+        cmake_parse_arguments(LIB_ARGS "OBJECT;IMPORTED;ALIAS" "" "" "${ARGN}")
+        # forwards the call to the vcpkg version (which will eventually call the cmake original one)
+        add_library_vcpkg(${ARGN})
+        if (NOT LIB_ARGS_OBJECT AND NOT LIB_ARGS_IMPORTED AND NOT LIB_ARGS_ALIAS)
+            # if we are builing a DLL, let's add a resources.rc to embed some details (version, etc.)
+            set (rc_file_path ${GENERATE_FILES_DIRECTORY}/resources/resources.${ARGV0}.rc)
+            set (dll_filename "${ARGV0}")
+            configure_file(${CMAKE_SOURCE_DIR}/utils/windows/resources.rc.in ${rc_file_path})
+            target_sources(${ARGV0} PRIVATE ${rc_file_path})
+        endif ()
+    endfunction ()
+
+    # ... we also need to correctly redefine _add_library so that vcpkg's version works correctly
+    function(_add_library)
+        add_library_orig(${ARGN})
+    endfunction(_add_library)
+endif()
 
 ##################################################
 

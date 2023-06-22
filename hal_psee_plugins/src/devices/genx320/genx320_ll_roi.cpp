@@ -12,6 +12,7 @@
 #include <fstream>
 #include <iostream>
 #include <iomanip>
+#include <vector>
 #include <cmath> // floor
 
 #include "metavision/psee_hw_layer/devices/genx320/genx320_ll_roi.h"
@@ -25,12 +26,7 @@
 namespace Metavision {
 
 GenX320LowLevelRoi::Grid::Grid(int columns, int rows) : columns_(columns), rows_(rows) {
-    grid_ = new unsigned int *[rows_];
-
-    for (unsigned int i = 0; i < rows_; i++) {
-        grid_[i] = new unsigned int[columns_];
-        memset(grid_[i], 0xFFFFFFFF, columns_ * sizeof(unsigned int));
-    }
+    grid_.resize(rows_ * columns_, 0xFFFFFFFF);
 }
 
 std::string GenX320LowLevelRoi::Grid::to_string() const {
@@ -40,7 +36,7 @@ std::string GenX320LowLevelRoi::Grid::to_string() const {
         std::ostringstream row_str;
         row_str << "|| " << std::dec << std::setw(3) << y << " || ";
         for (unsigned int x = 0; x < columns_; x++) {
-            row_str << std::hex << std::setw(8) << std::setfill('0') << grid_[y][x];
+            row_str << std::hex << std::setw(8) << std::setfill('0') << grid_[y * columns_ + x];
             if (x == columns_ - 1) {
                 row_str << " ||\n";
             } else {
@@ -70,14 +66,14 @@ void GenX320LowLevelRoi::Grid::set_pixel(const unsigned int &column, const unsig
     } else {
         unsigned int vector_idx = floor(column / 32);
         unsigned int bit_idx    = column % 32;
-        unsigned int reg_val    = grid_[row][vector_idx];
+        unsigned int reg_val    = grid_[row * columns_ + vector_idx];
         unsigned int mask       = (1 << bit_idx);
 
         uint32_t saved_fields = reg_val & (~mask);
         uint32_t write_field  = (enable << bit_idx);
         uint32_t new_reg_val  = saved_fields | write_field;
 
-        ss << "Pixel selected   : " << std::dec << row << " x " << column << "\n";
+        ss << "Pixel selected   : " << std::dec << column << " x " << row << "\n";
         ss << "Vector ID        : " << vector_idx << "\n";
         ss << "Vector value     : 0x" << std::hex << std::setw(8) << std::setfill('0') << reg_val << "\n";
         ss << "Vector bit index : " << std::dec << bit_idx << "\n";
@@ -87,7 +83,7 @@ void GenX320LowLevelRoi::Grid::set_pixel(const unsigned int &column, const unsig
 
         MV_HAL_LOG_DEBUG() << ss.str();
 
-        grid_[row][vector_idx] = new_reg_val;
+        grid_[row * columns_ + vector_idx] = new_reg_val;
     }
 }
 
@@ -95,15 +91,15 @@ unsigned int &GenX320LowLevelRoi::Grid::get_vector(const unsigned int &vector_id
     std::stringstream ss;
 
     if (row >= rows_) {
-        ss << "Row index " << row << " out of range for LL ROI grid (" << rows_ << "x" << columns_ << ")";
+        ss << "Row index " << row << " out of range for LL ROI grid (" << columns_ << "x" << rows_ << ")";
         MV_HAL_LOG_ERROR() << ss.str();
         throw HalException(HalErrorCode::InvalidArgument, ss.str());
     } else if (vector_id >= columns_) {
-        ss << "Vector index " << vector_id << " out of range for LL ROI grid (" << rows_ << "x" << columns_ << ")";
+        ss << "Vector index " << vector_id << " out of range for LL ROI grid (" << columns_ << "x" << rows_ << ")";
         MV_HAL_LOG_ERROR() << ss.str();
         throw HalException(HalErrorCode::InvalidArgument, ss.str());
     } else {
-        return grid_[row][vector_id];
+        return grid_[row * columns_ + vector_id];
     }
 }
 
@@ -112,15 +108,15 @@ void GenX320LowLevelRoi::Grid::set_vector(const unsigned int &vector_id, const u
     std::stringstream ss;
 
     if (row >= rows_) {
-        ss << "Row index " << row << " out of range for LL ROI grid (" << rows_ << "x" << columns_ << ")";
+        ss << "Row index " << row << " out of range for LL ROI grid (" << columns_ << "x" << rows_ << ")";
         MV_HAL_LOG_ERROR() << ss.str();
         throw HalException(HalErrorCode::InvalidArgument, ss.str());
     } else if (vector_id >= columns_) {
-        ss << "Vector index " << vector_id << " out of range for LL ROI grid (" << rows_ << "x" << columns_ << ")";
+        ss << "Vector index " << vector_id << " out of range for LL ROI grid (" << columns_ << "x" << rows_ << ")";
         MV_HAL_LOG_ERROR() << ss.str();
         throw HalException(HalErrorCode::InvalidArgument, ss.str());
     } else {
-        grid_[row][vector_id] = val;
+        grid_[row * columns_ + vector_id] = val;
     }
 }
 
@@ -131,7 +127,7 @@ std::filesystem::path GenX320LowLevelRoi::default_calibration_path() {
 
 GenX320LowLevelRoi::GenX320LowLevelRoi(const DeviceConfig &config, const std::shared_ptr<RegisterMap> &regmap,
                                        const std::string &sensor_prefix) :
-    register_map_(regmap), sensor_prefix_(sensor_prefix), roi_grid_(Grid(320, 10)) {
+    register_map_(regmap), sensor_prefix_(sensor_prefix) {
     // Reset ROI to full resolution
     reset();
 
@@ -169,6 +165,14 @@ bool GenX320LowLevelRoi::apply(GenX320LowLevelRoi::Grid &user_grid) {
     std::string reg_y_name;
     std::string reg_x_name;
     unsigned int reg_val = 0;
+
+    if (x_max != 10 || y_max != 320) {
+        std::stringstream ss;
+        ss << "Grid size " << x_max << "x" << y_max << " invalid for GenX320. (Expected size : " << 10 << "x" << 320
+           << ")";
+        MV_HAL_LOG_ERROR() << ss.str();
+        throw HalException(HalErrorCode::InvalidArgument, ss.str());
+    }
 
     MV_HAL_LOG_TRACE() << "Applying ROI" << x_max << "x" << y_max;
 

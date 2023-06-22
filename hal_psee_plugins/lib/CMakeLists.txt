@@ -74,9 +74,7 @@ install(TARGETS metavision_psee_hw_layer
 add_custom_command(TARGET metavision_psee_hw_layer POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory "${HAL_BUILD_PLUGIN_PATH}"
     COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:metavision_psee_hw_layer>" "${HAL_BUILD_PLUGIN_PATH}")
-add_custom_command(TARGET metavision_psee_hw_layer POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${HAL_BUILD_PLUGIN_PATH}/universal"
-    COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:metavision_psee_hw_layer>" "${HAL_BUILD_PLUGIN_PATH}/universal")
+
 if(HAL_SENSORLIB_SUPPORT)
     add_custom_command(TARGET metavision_psee_hw_layer POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory "${HAL_BUILD_PLUGIN_PATH}/sensorlib"
@@ -145,6 +143,7 @@ set(lib_camera_obj_list
         metavision_hal_gen41_evk3_system_obj
         metavision_hal_imx636_evk2_system_obj
         metavision_hal_imx636_evk3_system_obj
+        metavision_hal_imx646_evk3_system_obj
         metavision_hal_psee_lab_obj
 )
 
@@ -212,20 +211,8 @@ add_dependencies(hal_plugins metavision_psee_hw_layer)
 set(hal_psee_plugins_target_file_list)
 
 set(plugin_list
-    hal_plugin_gen31_evk2
-    hal_plugin_gen31_evk3
-    hal_plugin_gen41_evk2
-    hal_plugin_gen41_evk3
-    hal_plugin_imx636_evk2
-    hal_plugin_imx636_evk3
-    hal_plugin_imx636_evk4
     hal_plugin_prophesee
 )
-if(NOT ANDROID)
-    list(APPEND plugin_list
-        hal_plugin_genx320es_evk3
-    )
-endif(NOT ANDROID)
 
 if(HAL_SENSORLIB_SUPPORT)
     list(APPEND plugin_list
@@ -277,9 +264,7 @@ foreach(plugin ${plugin_list})
 
     list(APPEND hal_psee_plugins_target_file_list $<TARGET_FILE:${plugin}>)
 
-    if(plugin STREQUAL "hal_plugin_prophesee")
-        set(HAL_COPY_PLUGIN_PATH "${HAL_BUILD_PLUGIN_PATH}/universal")
-    elseif(plugin STREQUAL "hal_plugin_sensorlib_tz")
+    if(plugin STREQUAL "hal_plugin_sensorlib_tz")
         set(HAL_COPY_PLUGIN_PATH "${HAL_BUILD_PLUGIN_PATH}/sensorlib")
     elseif(plugin STREQUAL "hal_plugin_sensorlib_fx3")
         set(HAL_COPY_PLUGIN_PATH "${HAL_BUILD_PLUGIN_PATH}/sensorlib")
@@ -303,73 +288,6 @@ foreach(plugin ${plugin_list})
 endforeach()
 
 # Linkage with generic hal plugin object
-target_sources(hal_plugin_gen31_evk2
-    PRIVATE
-        $<TARGET_OBJECTS:metavision_hal_gen31_camera_obj>
-        $<TARGET_OBJECTS:metavision_hal_gen3_pattern_checkers_obj>
-        $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
-        $<TARGET_OBJECTS:metavision_hal_psee_video_obj>
-        $<TARGET_OBJECTS:metavision_hal_gen31_evk2_system_obj>
-)
-
-target_link_libraries(hal_plugin_gen31_evk2
-    PRIVATE
-        metavision_hal_gen31_camera_obj
-        metavision_hal_gen3_pattern_checkers_obj
-        metavision_hal_treuzell_protocol_obj
-        metavision_hal_psee_video_obj
-        metavision_hal_gen31_evk2_system_obj
-)
-
-# Linkage with generic hal plugin object
-target_sources(hal_plugin_gen31_evk3
-    PRIVATE
-        $<TARGET_OBJECTS:metavision_hal_gen31_camera_obj>
-        $<TARGET_OBJECTS:metavision_hal_gen3_pattern_checkers_obj>
-        $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
-        $<TARGET_OBJECTS:metavision_hal_ti_tmp103_obj>
-        $<TARGET_OBJECTS:metavision_hal_gen31_evk3_system_obj>
-)
-
-target_link_libraries(hal_plugin_gen31_evk3
-    PRIVATE
-        metavision_hal_gen31_camera_obj
-        metavision_hal_gen3_pattern_checkers_obj
-        metavision_hal_treuzell_protocol_obj
-        metavision_hal_ti_tmp103_obj
-        metavision_hal_gen31_evk3_system_obj
-)
-
-# Linkage with generic hal plugin object
-target_sources(hal_plugin_gen41_evk2
-    PRIVATE
-        $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
-        $<TARGET_OBJECTS:metavision_hal_psee_video_obj>
-        $<TARGET_OBJECTS:metavision_hal_gen41_evk2_system_obj>
-)
-
-target_link_libraries(hal_plugin_gen41_evk2
-    PRIVATE
-        metavision_hal_treuzell_protocol_obj
-        metavision_hal_psee_video_obj
-        metavision_hal_gen41_evk2_system_obj
-)
-
-# Linkage with generic hal plugin object
-target_sources(hal_plugin_gen41_evk3
-    PRIVATE
-        $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
-        $<TARGET_OBJECTS:metavision_hal_ti_tmp103_obj>
-        $<TARGET_OBJECTS:metavision_hal_gen41_evk3_system_obj>
-)
-
-target_link_libraries(hal_plugin_gen41_evk3
-    PRIVATE
-        metavision_hal_treuzell_protocol_obj
-        metavision_hal_ti_tmp103_obj
-        metavision_hal_gen41_evk3_system_obj
-)
-
 if(HAL_SENSORLIB_SUPPORT)
     # Linkage with generic hal plugin object
     target_sources(hal_plugin_sensorlib_tz
@@ -400,66 +318,6 @@ if(HAL_SENSORLIB_SUPPORT)
     )
 endif(HAL_SENSORLIB_SUPPORT)
 
-# Linkage with generic hal plugin object
-target_sources(hal_plugin_imx636_evk2
-    PRIVATE
-        $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
-        $<TARGET_OBJECTS:metavision_hal_psee_video_obj>
-        $<TARGET_OBJECTS:metavision_hal_imx636_evk2_system_obj>
-)
-
-target_link_libraries(hal_plugin_imx636_evk2
-    PRIVATE
-        metavision_hal_treuzell_protocol_obj
-        metavision_hal_psee_video_obj
-        metavision_hal_imx636_evk2_system_obj
-)
-
-# Linkage with generic hal plugin object
-target_sources(hal_plugin_imx636_evk3
-    PRIVATE
-        $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
-        $<TARGET_OBJECTS:metavision_hal_ti_tmp103_obj>
-        $<TARGET_OBJECTS:metavision_hal_imx636_evk3_system_obj>
-)
-
-target_link_libraries(hal_plugin_imx636_evk3
-    PRIVATE
-        metavision_hal_treuzell_protocol_obj
-        metavision_hal_ti_tmp103_obj
-        metavision_hal_imx636_evk3_system_obj
-)
-
-# Linkage with generic hal plugin object
-target_sources(hal_plugin_imx636_evk4
-    PRIVATE
-        $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
-        $<TARGET_OBJECTS:metavision_hal_ti_tmp103_obj>
-        $<TARGET_OBJECTS:metavision_hal_imx636_evk3_system_obj>
-)
-
-target_link_libraries(hal_plugin_imx636_evk4
-    PRIVATE
-        metavision_hal_treuzell_protocol_obj
-        metavision_hal_ti_tmp103_obj
-        metavision_hal_imx636_evk3_system_obj
-)
-
-if(NOT ANDROID)
-# Linkage with generic hal plugin object
-target_sources(hal_plugin_genx320es_evk3
-    PRIVATE
-        $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
-        $<TARGET_OBJECTS:metavision_hal_genx320_cx3_system_obj>
-)
-
-target_link_libraries(hal_plugin_genx320es_evk3
-    PRIVATE
-        metavision_hal_treuzell_protocol_obj
-        metavision_hal_genx320_cx3_system_obj
-)
-endif(NOT ANDROID)
-
 foreach(object ${lib_camera_obj_list})
     # Linkage with generic hal plugin object
     target_sources(hal_plugin_prophesee
@@ -472,13 +330,6 @@ foreach(object ${lib_camera_obj_list})
             ${object}
     )
 endforeach()
-
-set(output_universal_plugin_path "${GENERATE_FILES_DIRECTORY}/universal_plugin_${PROJECT_VERSION_FULL}.tar")
-add_custom_target(create_universal_plugin_archive
-  COMMAND ${CMAKE_COMMAND} -E remove_directory "universal_plugin"
-  COMMAND ${CMAKE_COMMAND} -E copy_directory "${HAL_BUILD_PLUGIN_PATH}/universal" "universal_plugin"
-  COMMAND ${CMAKE_COMMAND} -E tar cvf ${output_universal_plugin_path} "universal_plugin")
-add_dependencies(create_universal_plugin_archive hal_plugin_prophesee)
 
 if(EXISTS "${PROJECT_SOURCE_DIR}/licensing/LICENSE_METAVISION_SDK")
     install(FILES ${PROJECT_SOURCE_DIR}/licensing/LICENSE_METAVISION_SDK

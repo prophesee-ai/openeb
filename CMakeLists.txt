@@ -17,7 +17,7 @@ endif(NOT CMAKE_BUILD_TYPE)
 
 cmake_minimum_required(VERSION 3.5)
 
-project(metavision VERSION 4.1.0)
+project(metavision VERSION 4.2.0)
 set(PROJECT_VERSION_SUFFIX "")
 
 if(PROJECT_VERSION_SUFFIX STREQUAL "")
@@ -162,7 +162,6 @@ endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/utils/platforms/CMakeLists.txt")
 
 if (NOT ANDROID)
     option(COMPILE_PYTHON3_BINDINGS "Compile python 3 bindings" ON)
-    option(COMPILE_3DVIEW "Compile 3dview module for Designer" ON)
     cmake_dependent_option(CODE_COVERAGE "Enable code coverage" ON "CMAKE_BUILD_TYPE_LOWER STREQUAL debug" OFF)
     string(TOLOWER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_LOWER)
     cmake_dependent_option(GENERATE_DOC "Generate Doxygen documentation" OFF "COMPILE_PYTHON3_BINDINGS" OFF)
@@ -200,9 +199,6 @@ endif ()
 # OpenCV
 find_package(OpenCV COMPONENTS core highgui imgproc videoio imgcodecs calib3d objdetect REQUIRED)
 
-# OpenSceneGraph
-find_package(OpenSceneGraph COMPONENTS osg osgViewer osgDB osgGA osgUtil osgText)
-
 # HDF5
 if (NOT ANDROID)
     find_package(HDF5 1.10.2 COMPONENTS CXX)
@@ -224,9 +220,9 @@ if (BUILD_TESTING)
     if (NOT GTest_FOUND)
         find_package(GTest REQUIRED)
     endif (NOT GTest_FOUND)
-    if (NOT TARGET GTest::gmock) 
+    if (NOT TARGET GTest::gmock)
         message(FATAL_ERROR
-            "GMock can't be found. Please install 'libgmock-dev' package. " 
+            "GMock can't be found. Please install 'libgmock-dev' package. "
             "Otherwise make sure it's compiled and installed along with your GoogleTest suite."
         )
     endif()
@@ -239,7 +235,7 @@ if (BUILD_TESTING)
         message("|  - Metavision SDK: https://dataset.prophesee.ai/index.php/s/l3RpHoC3NDL7OU6 (5 Gb archive)            |")
         message("---------------------------------------------------------------------------------------------------------\n")
     endif()
-    
+
     set(PYTEST_CMD ${PYTHON_${PYTEST_PYTHON_VERSION}_EXECUTABLE} -m pytest)
     if(CMAKE_CROSSCOMPILING)
         # When cross compiling, we cannot use python executable path from the Host
@@ -311,9 +307,11 @@ if (BUILD_TESTING)
     endfunction(add_test_app)
 
     # Paths where gtest and pytests xml output files are stored
-    set(TEST_XML_OUTPUT_DIRECTORY "${GENERATE_FILES_DIRECTORY}/tests_xml_output")
+    set(TEST_OUTPUT_DIRECTORY "${GENERATE_FILES_DIRECTORY}/tests_output")
+    set(TEST_XML_OUTPUT_DIRECTORY "${TEST_OUTPUT_DIRECTORY}/xml")
     set(JUNIT_XML_OUTPUT_DIRECTORY "${TEST_XML_OUTPUT_DIRECTORY}/junit/")
     set(GTEST_XML_OUTPUT_DIRECTORY "${TEST_XML_OUTPUT_DIRECTORY}/gtest/")
+    set(TEST_LOG_OUTPUT_DIRECTORY "${TEST_OUTPUT_DIRECTORY}/log/")
 
     include(register_gtest)
 
@@ -341,9 +339,6 @@ set(METAVISION_SDK_MODULES_ADVANCED analytics calibration cv ml CACHE STRING "SD
 if (NOT ANDROID)
     list(APPEND METAVISION_SDK_MODULES_OPEN ui)
     list(APPEND METAVISION_SDK_MODULES_ADVANCED cv3d)
-    if(OpenSceneGraph_FOUND)
-        list(APPEND METAVISION_SDK_MODULES_ADVANCED 3dview)
-    endif(OpenSceneGraph_FOUND)
 endif (NOT ANDROID)
 
 set(METAVISION_SDK_MODULES_AVAILABLE)
@@ -426,13 +421,6 @@ endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/hal_psee_plugins/CMakeLists.txt")
 add_subdirectory(sdk)
 
 ################################
-#           Designer          ##
-################################
-if (COMPILE_PYTHON3_BINDINGS AND EXISTS "${CMAKE_CURRENT_LIST_DIR}/designer/CMakeLists.txt")
-    add_subdirectory(designer)
-endif (COMPILE_PYTHON3_BINDINGS AND EXISTS "${CMAKE_CURRENT_LIST_DIR}/designer/CMakeLists.txt")
-
-################################
 #      Standalone samples     ##
 ################################
 add_subdirectory(standalone_samples)
@@ -466,7 +454,7 @@ set(cpack_all_components ${cpack_public_components} ${cpack_internal_components}
 list(REMOVE_DUPLICATES cpack_all_components)
 file(WRITE ${GENERATE_FILES_DIRECTORY}/meta-package.log "")
 foreach(comp ${cpack_all_components})
-    if ("${comp}" MATCHES "^metavision-(open|sdk|sdk-advanced|designer)-(lib|bin|dev|samples|python3.*|python|python-samples)$" OR
+    if ("${comp}" MATCHES "^metavision-(open|sdk|sdk-advanced)-(lib|bin|dev|samples|python3.*|python|python-samples)$" OR
         "${comp}" STREQUAL "metavision-sdk")
         install(FILES ${GENERATE_FILES_DIRECTORY}/meta-package.log
                 DESTINATION share/metavision/log/${comp}

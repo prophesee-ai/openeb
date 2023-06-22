@@ -32,6 +32,8 @@ static HALFacilityPythonBinder<I_ErcModule> bind(
                  pybind_doc_hal["Metavision::I_ErcModule::get_min_supported_cd_event_rate"])
             .def("get_max_supported_cd_event_rate", &I_ErcModule::get_max_supported_cd_event_rate,
                  pybind_doc_hal["Metavision::I_ErcModule::get_max_supported_cd_event_rate"])
+            .def("get_count_period", &I_ErcModule::get_count_period,
+                 pybind_doc_hal["Metavision::I_ErcModule::get_count_period"])
             .def("set_cd_event_count", &I_ErcModule::set_cd_event_count, py::arg("event_count"),
                  pybind_doc_hal["Metavision::I_ErcModule::set_cd_event_count"])
             .def("get_cd_event_count", &I_ErcModule::get_cd_event_count,

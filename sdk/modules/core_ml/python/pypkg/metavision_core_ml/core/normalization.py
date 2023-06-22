@@ -60,8 +60,8 @@ class LocalContextNorm2d(nn.Module):
                 total number of channels
             window_size : int/tuple
                 size of the window around each pixel to normalize (better when odd numbers) default value not best
-                one/two ints -> per channel spatial dims only norm 
-                three ints -> across channels and spatial dims 
+                one/two ints -> per channel spatial dims only norm
+                three ints -> across channels and spatial dims
             c_group: int
                 number of channels per group, if window size is three long, its first value takes precedence (for older trained models)
                 with do_submatrick=False, this norm does not actually compute by group!

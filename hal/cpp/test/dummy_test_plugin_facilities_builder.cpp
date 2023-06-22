@@ -15,7 +15,9 @@
 #include "metavision/hal/device/device.h"
 #include "metavision/hal/facilities/i_digital_crop.h"
 #include "metavision/hal/facilities/i_digital_event_mask.h"
+#include "metavision/hal/facilities/i_event_trail_filter_module.h"
 #include "metavision/hal/facilities/i_hw_identification.h"
+#include "metavision/hal/facilities/i_ll_biases.h"
 #include "metavision/hal/facilities/i_monitoring.h"
 #include "metavision/hal/facilities/i_trigger_in.h"
 #include "metavision/hal/plugin/plugin.h"
@@ -69,6 +71,39 @@ struct DummyFileHWIdentification : public I_HW_Identification {
     }
 
     RawFileHeader header_;
+};
+
+struct DummyLLBiases : public I_LL_Biases {
+    DummyLLBiases(const DeviceConfig &device_config) :
+        I_LL_Biases(device_config),
+        biases_{{"dummy", std::make_pair(LL_Bias_Info(-10, 10, "dummy desc", true, "dummy category"), 1)}} {}
+
+    std::map<std::string, int> get_all_biases() override {
+        std::map<std::string, int> m;
+        for (const auto &bias : biases_) {
+            m[bias.first] = bias.second.second;
+        }
+        return m;
+    }
+
+    bool set_impl(const std::string &bias_name, int bias_value) override {
+        biases_[bias_name].second = bias_value;
+        return true;
+    }
+
+    int get_impl(const std::string &bias_name) override {
+        return biases_[bias_name].second;
+    }
+
+    bool get_bias_info_impl(const std::string &bias_name, LL_Bias_Info &bias_info) const override {
+        auto it = biases_.find(bias_name);
+        if (it == biases_.end())
+            return false;
+        bias_info = it->second.first;
+        return true;
+    }
+
+    std::map<std::string, std::pair<LL_Bias_Info, int>> biases_;
 };
 
 struct DummyFileDiscovery : public FileDiscovery {
@@ -184,6 +219,53 @@ public:
     }
 };
 
+class DummyTrailFilterModule : public Metavision::I_EventTrailFilterModule {
+public:
+    virtual std::set<Type> get_available_types() const override {
+        return {Type::STC_KEEP_TRAIL, Type::STC_CUT_TRAIL, Type::TRAIL};
+    }
+
+    virtual bool enable(bool state) override {
+        enabled_ = state;
+        return true;
+    }
+
+    virtual bool is_enabled() const override {
+        return enabled_;
+    }
+
+    virtual bool set_type(Type type) override {
+        type_ = type;
+        return true;
+    }
+
+    virtual Type get_type() const override {
+        return type_;
+    }
+
+    virtual bool set_threshold(uint32_t threshold) override {
+        threshold_ = threshold;
+        return true;
+    }
+
+    virtual uint32_t get_threshold() const override {
+        return threshold_;
+    }
+
+    virtual uint32_t get_min_supported_threshold() const override {
+        return 0;
+    }
+
+    virtual uint32_t get_max_supported_threshold() const override {
+        return 1000;
+    }
+
+private:
+    uint32_t threshold_{1};
+    Type type_{Type::TRAIL};
+    bool enabled_{false};
+};
+
 struct DummyCameraDiscovery : public CameraDiscovery {
     SerialList list() override final {
         return SerialList{"__DummyTest__"};
@@ -197,6 +279,8 @@ struct DummyCameraDiscovery : public CameraDiscovery {
         device_builder.add_facility(std::make_unique<DummyMonitoring>());
         device_builder.add_facility(std::make_unique<DummyFacilityV3>());
         device_builder.add_facility(std::make_unique<DummyTriggerIn>());
+        device_builder.add_facility(std::make_unique<DummyLLBiases>(config));
+        device_builder.add_facility(std::make_unique<DummyTrailFilterModule>());
         return true;
     }
 

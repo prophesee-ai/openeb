@@ -13,6 +13,7 @@ add_subdirectory(treuzell)
 add_subdirectory(gen31)
 add_subdirectory(gen41)
 add_subdirectory(imx636)
+add_subdirectory(imx646)
 
 if(NOT ANDROID)
     add_subdirectory(genx320)

@@ -49,7 +49,7 @@ class EventSimulator(object):
 
     def __init__(
             self, height, width, Cp, Cn, refractory_period, sigma_threshold=0.0, cutoff_hz=0, leak_rate_hz=0,
-            shot_noise_rate_hz=0):
+            shot_noise_rate_hz=0, verbose=False):
         self.Cp = Cp
         self.Cn = Cn
         self.refractory_period = refractory_period
@@ -71,12 +71,12 @@ class EventSimulator(object):
 
         # Threshold Mismatches
         self.Cps = self.sigma_threshold * np.random.randn(height, width).astype(np.float32) + self.Cp
-        if (self.Cps < 0.01).any() or (self.Cps > 1).any():
+        if verbose and ((self.Cps < 0.01).any() or (self.Cps > 1).any()):
             print(
                 f"WARNING: EventSimulator: Some Cp are out of range: min: {self.Cps.min()}  max: {self.Cps.max()}. Clipping to range [0.01;1]")
         self.Cps = np.clip(self.Cps, 0.01, 1)
         self.Cns = self.sigma_threshold * np.random.randn(height, width).astype(np.float32) + self.Cn
-        if (self.Cns < 0.01).any() or (self.Cns > 1).any():
+        if verbose and ((self.Cns < 0.01).any() or (self.Cns > 1).any()):
             print(
                 f"WARNING: EventSimulator: Some Cn are out of range: min: {self.Cns.min()}  max: {self.Cns.max()}. Clipping to range [0.01;1]")
         self.Cns = np.clip(self.Cns, 0.01, 1)

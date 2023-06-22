@@ -17,7 +17,22 @@
 namespace Metavision {
 namespace detail {
 
-unsigned int initialize_texture(int width, int height, bool is_gray);
+enum class TextureFormat { Gray, RGB, RGBA };
+enum class TextureFilter { Nearest, Linear };
+
+struct TextureOptions {
+    std::uint32_t width;
+    std::uint32_t height;
+    TextureFormat format;
+    TextureFilter minify_filter;
+    TextureFilter magnify_filter;
+};
+
+unsigned int initialize_texture(const TextureOptions &options);
+
+[[deprecated("This function is deprecated since version 4.2.0. Please use initialize_texture(const TextureOptions &) "
+             "instead.")]] unsigned int
+    initialize_texture(int width, int height, bool is_gray);
 
 void upload_texture(const cv::Mat &img, const unsigned int &tex_id);
 
