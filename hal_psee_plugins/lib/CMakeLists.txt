@@ -144,6 +144,7 @@ set(lib_camera_obj_list
         metavision_hal_imx636_evk2_system_obj
         metavision_hal_imx636_evk3_system_obj
         metavision_hal_imx646_evk3_system_obj
+        metavision_hal_imx636_rdk2_system_obj
         metavision_hal_psee_lab_obj
 )
 
@@ -258,8 +259,12 @@ foreach(plugin ${plugin_list})
 
     if(APPLE)
         set_target_properties(${plugin} PROPERTIES "INSTALL_RPATH" "@loader_path;${plugin_rpath}")
+        set_target_properties(${plugin} PROPERTIES "BUILD_RPATH" "@loader_path")
     else ()
+        # It seems cmake does an additional variable substitution when replacing BUILD_RPATH with INSTALL_RPATH
+        # requiring additional escaping for INSTALL_RPATH
         set_target_properties(${plugin} PROPERTIES "INSTALL_RPATH" "\\\${ORIGIN};${plugin_rpath}")
+        set_target_properties(${plugin} PROPERTIES "BUILD_RPATH" "\${ORIGIN}")
     endif()
 
     list(APPEND hal_psee_plugins_target_file_list $<TARGET_FILE:${plugin}>)

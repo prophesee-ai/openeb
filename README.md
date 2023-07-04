@@ -131,7 +131,7 @@ python3 -m pip install "numba==0.56.3" "profilehooks==1.12.0" "pytorch_lightning
 
 ### Compilation
 
- 1. Retrieve the code `git clone https://github.com/prophesee-ai/openeb.git --branch 4.1.0`.
+ 1. Retrieve the code `git clone https://github.com/prophesee-ai/openeb.git --branch 4.2.1`.
     (If you choose to download an archive of OpenEB from GitHub rather than cloning the repository,
     you need to ensure that you select a ``Full.Source.Code.*`` archive instead of using
     the automatically generated ``Source.Code.*`` archives. This is because the latter do not include
@@ -322,7 +322,7 @@ python -m pip install "numba==0.56.3" "profilehooks==1.12.0" "pytorch_lightning=
 First, retrieve the codebase:
 
 ```bash
-git clone https://github.com/prophesee-ai/openeb.git --branch 4.1.0
+git clone https://github.com/prophesee-ai/openeb.git --branch 4.2.1
 ```
 
 Note that if you choose to download an archive of OpenEB from GitHub rather than cloning the repository,
@@ -387,6 +387,22 @@ Open a command prompt inside the `openeb` folder (absolute path to this director
  2. Generate the Visual Studio files using CMake: `cmake -G "Visual Studio 17 2022" -A x64 -DCMAKE_TOOLCHAIN_FILE=<OPENEB_SRC_DIR>\cmake\toolchains\vcpkg.cmake -DVCPKG_DIRECTORY=<VCPKG_SRC_DIR> ..` (adapt to your Visual Studio version).
     Note that the value passed to the parameter `-DCMAKE_TOOLCHAIN_FILE` must be an absolute path, not a relative one.
  3. Open the solution file `metavision.sln`, select the `Release` configuration and build the `ALL_BUILD` project.
+
+
+
+Once the compilation is done, you can choose to work directly from the `build` folder
+or you can deploy the OpenEB files (applications, samples, libraries etc.) in a directory of your choice.
+
+* Option 1 - working from the `build` folder
+
+  * To use OpenEB directly from the `build` folder,
+  you need to update the environment variables as done in the script `utils\scripts\setup_env.bat`
+
+* Option 2 - deploying OpenEB
+
+  * To deploy OpenEB, you need to build the `INSTALL` project.
+  By default, files will be deployed in `C:\Program Files\Prophesee`
+
 
 #### Camera Plugins
 
