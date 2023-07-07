@@ -8,10 +8,10 @@
  * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.                      *
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
-
 #if !defined(__ANDROID__) || defined(ANDROID_USES_LIBUSB)
 #include "boards/fx3/fx3_camera_discovery.h"
 #include "boards/treuzell/tz_camera_discovery.h"
+#include "boards/v4l2/v4l2_camera_discovery.h"
 #include "metavision/psee_hw_layer/boards/treuzell/tz_libusb_board_command.h"
 #endif
 #include "boards/rawfile/psee_file_discovery.h"
@@ -38,6 +38,7 @@ void initialize_plugin(void *plugin_ptr) {
     // Register live camera discoveries
     auto &fx3_disc = plugin.add_camera_discovery(std::make_unique<Fx3CameraDiscovery>());
     auto &tz_disc  = plugin.add_camera_discovery(std::move(tz_cam_discovery));
+    auto &v4l2_disc = plugin.add_camera_discovery(std::make_unique<V4l2CameraDiscovery>());
 #endif
 
     auto &file_disc = plugin.add_file_discovery(std::make_unique<PseeFileDiscovery>());

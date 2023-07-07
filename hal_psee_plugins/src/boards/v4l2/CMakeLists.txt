@@ -7,8 +7,10 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-add_subdirectory(treuzell)
-add_subdirectory(fx3)
-add_subdirectory(utils)
-add_subdirectory(rawfile)
-add_subdirectory(v4l2)
+target_sources(metavision_hal_v4l2_protocol_obj PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/v4l2_camera_discovery.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/v4l2_device.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/v4l2_device_mmap.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/v4l2_device_user_ptr.cpp
+)
+
