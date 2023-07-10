@@ -9,11 +9,60 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-#include "boards/v4l2/dma_buf_heap.h"
-#include "boards/v4l2/v4l2_device_user_ptr.h"
+#include "boards/v4l2/v4l2_device.h"
+#include "boards/v4l2/v4l2_data_transfer.h"
 
-namespace Metavision {
+#include "metavision/hal/utils/hal_log.h"
 
+using namespace Metavision;
+
+V4l2DataTransfer::V4l2DataTransfer(std::shared_ptr<V4l2Device> device, uint32_t raw_event_size_bytes) :
+    DataTransfer(raw_event_size_bytes), device_(device) {}
+
+V4l2DataTransfer::~V4l2DataTransfer() {}
+
+void V4l2DataTransfer::start_impl(BufferPtr buffer) {
+    MV_HAL_LOG_INFO() << "V4l2DataTransfer - start_impl() ";
+    buffer.reset(); // we don't use the buffer here... let's put it back in the pool
+
+    buffers = std::make_unique<V4l2DeviceUserPtr>(device_, std::make_unique<DmaBufHeap>("/dev/dma_heap", "linux,cma"));
+
+    MV_HAL_LOG_TRACE() << " Nb buffers pre allocated: " << buffers->get_nb_buffers() << std::endl;
+    for (unsigned int i = 0; i < buffers->get_nb_buffers(); ++i) {
+        buffers->release_buffer(i);
+    }
+}
+
+void V4l2DataTransfer::run_impl() {
+    MV_HAL_LOG_INFO() << "V4l2DataTransfer - run_impl() ";
+
+    while (!this->should_stop()) {
+        // Grab a MIPI frame
+        using RawData = DataTransfer::Data *;
+
+        int idx                  = buffers->get_buffer();
+        auto [data, data_length] = buffers->get_buffer_desc(idx);
+
+        MV_HAL_LOG_TRACE() << "Grabed buffer " << idx << "from: " << std::hex << data << " of: " << std::dec
+                           << data_length << " Bytes.";
+
+        auto local_buff = this->get_buffer();
+        local_buff->resize(data_length);
+
+        std::memcpy(local_buff->data(), data, data_length);
+        this->transfer_data(local_buff);
+
+        // Reset the buffer data
+        memset(data, 0, data_length);
+
+        buffers->release_buffer(idx);
+    }
+}
+
+void V4l2DataTransfer::stop_impl() {
+    MV_HAL_LOG_INFO() << "V4l2DataTransfer - stop_impl() ";
+    buffers.reset();
+}
 void V4l2DeviceUserPtr::allocate_buffers(unsigned int nb_buffers) {
     for (unsigned int i = 0; i < nb_buffers; ++i) {
         /* Get a buffer using CMA allocator in user space. */
@@ -54,10 +103,11 @@ unsigned int V4l2DeviceUserPtr::get_nb_buffers() const {
     return buffers_desc_.size();
 }
 
-V4l2DeviceUserPtr::V4l2DeviceUserPtr(const std::string &dev_name, std::unique_ptr<Metavision::DmaBufHeap> dma_buf_heap,
-                                     std::size_t length, unsigned int nb_buffers) :
-    V4l2Device(dev_name), dma_buf_heap_(std::move(dma_buf_heap)), length_(length) {
-    auto granted_buffers = request_buffers(V4L2_MEMORY_USERPTR, nb_buffers);
+V4l2DeviceUserPtr::V4l2DeviceUserPtr(std::shared_ptr<V4l2Device> device,
+                                     std::unique_ptr<Metavision::DmaBufHeap> dma_buf_heap, std::size_t length,
+                                     unsigned int nb_buffers) :
+    fd_(device->get_fd()), device_(device), dma_buf_heap_(std::move(dma_buf_heap)), length_(length) {
+    auto granted_buffers = device->request_buffers(V4L2_MEMORY_USERPTR, nb_buffers);
     std::cout << "Requested buffers: " << nb_buffers << " granted buffers: " << granted_buffers << std::endl;
     allocate_buffers(granted_buffers);
 }
@@ -103,7 +153,5 @@ int V4l2DeviceUserPtr::get_buffer() const {
 /** Return the buffer address and size (in bytes) designed by the index. */
 std::pair<void *, std::size_t> V4l2DeviceUserPtr::get_buffer_desc(int idx) const {
     auto desc = buffers_desc_.at(idx);
-    return std::make_pair(desc.start, nb_not_null_data(desc.start, length_));
+    return std::make_pair(desc.start, V4l2Device::nb_not_null_data(desc.start, length_));
 }
-
-} // namespace Metavision

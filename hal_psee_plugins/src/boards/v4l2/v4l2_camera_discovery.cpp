@@ -9,16 +9,21 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
+#include <algorithm>
 #include <array>
+#include <cstring>
+#include <iterator>
 #include <memory>
 #include <string>
+#include <sys/ioctl.h>
 
-//#include "boards/v4l2/dma_buf_heap.h"
+#include "boards/v4l2/dma_buf_heap.h"
 #include "boards/v4l2/v4l2_camera_discovery.h"
 #include "boards/v4l2/v4l2_data_transfer.h"
 #include "boards/v4l2/v4l2_device_mmap.h"
-#include "boards/v4l2/v4l2_device_user_ptr.h"
 #include "metavision/hal/device/device_discovery.h"
+#include "metavision/hal/facilities/i_camera_synchronization.h"
+#include "metavision/hal/facilities/i_decoder.h"
 #include "metavision/hal/facilities/i_events_stream.h"
 #include "metavision/hal/facilities/i_hw_identification.h"
 #include "metavision/hal/facilities/i_plugin_software_info.h"
@@ -53,24 +58,10 @@ bool V4l2CameraDiscovery::discover(DeviceBuilder &device_builder, const std::str
         "/dev/video0", "/dev/video1", "/dev/video2", "/dev/video3", "/dev/video4",
     };
 
-    std::vector<V4l2Device> devices;
+    std::vector<std::shared_ptr<V4l2Device>> devices;
     for (auto device_name : device_names) {
         try {
-            /*
-            const std::string heap_path = "/dev/dma_heap";
-            const std::string heap_name = "linux,cma";
-
-            // We might want to expose the buffer number/size to facilitate tweaking
-            constexpr size_t buffer_length = 8 * 1024 * 1024;
-            constexpr uint32_t nb_buffers = 32;
-
-            std::unique_ptr<DmaBufHeap> buffer_heap = std::make_unique<DmaBufHeap>(heap_path, heap_name);
-
-            new V4l2DeviceUserPtr(device_name, std::move(buffer_heap), buffer_length, nb_buffers)
-            */
-
-            devices.emplace_back(device_name);
-
+            devices.emplace_back(std::make_shared<V4l2Device>(device_name));
         } catch (std::exception &e) {
             MV_HAL_LOG_TRACE() << "Cannot open V4L2 device '" << device_name << "' (err: " << e.what();
         }
@@ -80,55 +71,23 @@ bool V4l2CameraDiscovery::discover(DeviceBuilder &device_builder, const std::str
         return false;
     }
 
-    class V4l2DeviceControl : public DeviceControl {
-    public:
-        virtual void start() {
-            MV_HAL_LOG_INFO() << "V4l2 Device Control - start()";
-        }
-        virtual void stop() {
-            MV_HAL_LOG_INFO() << "V4l2 Device Control - stop()";
-        }
-        virtual void reset() {
-            MV_HAL_LOG_INFO() << "V4l2 Device Control - reset()";
-        }
-    };
-
-    class V4l2DataTransfer : public DataTransfer {
-    public:
-        V4l2DataTransfer(uint32_t raw_event_size_bytes) : DataTransfer(raw_event_size_bytes) {}
-        ~V4l2DataTransfer() {}
-
-    private:
-        void start_impl(BufferPtr buffer) override final {
-            MV_HAL_LOG_INFO() << "V4l2DataTransfer - start_impl() ";
-        }
-        void run_impl() override final {
-            MV_HAL_LOG_INFO() << "V4l2DataTransfer - run_impl() ";
-        }
-        void stop_impl() override final {
-            MV_HAL_LOG_INFO() << "V4l2DataTransfer - start_impl() ";
-        }
-    };
-
-    auto &main_device = devices[0];
-
+    auto &main_device  = devices[0];
     auto software_info = device_builder.get_plugin_software_info();
-    auto hw_id       = device_builder.add_facility(std::make_unique<V4l2HwIdentification>(main_device, software_info));
-    auto device_ctrl = std::make_shared<V4l2DeviceControl>();
 
     try {
+        auto hw_id = device_builder.add_facility(
+            std::make_unique<V4l2HwIdentification>(main_device->get_capability(), software_info));
         auto encoding_format = StreamFormat(hw_id->get_current_data_encoding_format());
         size_t raw_size_bytes;
-        auto decoder = make_decoder(device_builder, encoding_format, raw_size_bytes, false);
+        auto decoder     = make_decoder(device_builder, encoding_format, raw_size_bytes, false);
+        auto device_ctrl = std::make_shared<V4l2DeviceControl>(main_device);
 
-        auto v4l2_data_transfer = std::make_unique<V4l2DataTransfer>(raw_size_bytes);
+        device_builder.add_facility(std::make_unique<Metavision::I_EventsStream>(
+            std::make_unique<V4l2DataTransfer>(main_device, raw_size_bytes), hw_id, decoder, device_ctrl));
+        device_builder.add_facility(std::make_unique<V4l2Synchronization>());
+    } catch (std::exception &e) { MV_HAL_LOG_ERROR() << "Failed to build streaming facilities :" << e.what(); }
 
-        auto event_stream =
-            std::make_unique<Metavision::I_EventsStream>(std::move(v4l2_data_transfer), hw_id, decoder, device_ctrl);
-        auto event_stream_facility = device_builder.add_facility(std::move(event_stream));
-
-    } catch (std::exception &e) { MV_HAL_LOG_WARNING() << "System can't stream:" << e.what(); }
-
+    MV_HAL_LOG_INFO() << "V4l2 Discovery with great success +1";
     return true;
 }
 

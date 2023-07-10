@@ -9,8 +9,8 @@
 
 target_sources(metavision_hal_v4l2_protocol_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/v4l2_camera_discovery.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/v4l2_data_transfer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/v4l2_device.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/v4l2_device_mmap.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/v4l2_device_user_ptr.cpp
 )
 

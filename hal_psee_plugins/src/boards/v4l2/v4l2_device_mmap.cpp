@@ -10,14 +10,15 @@
  **********************************************************************************************************************/
 
 #include <cstring>
+#include <memory>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include "boards/v4l2/v4l2_device_mmap.h"
 
 using namespace Metavision;
 
-V4l2DeviceMmap::V4l2DeviceMmap(const char *dev_name, unsigned int nb_buffers) : V4l2Device(dev_name) {
-    auto granted_buffers = request_buffers(V4L2_MEMORY_MMAP, nb_buffers);
+V4l2DeviceMmap::V4l2DeviceMmap(std::shared_ptr<V4l2Device> device, unsigned int nb_buffers) : fd_(device->get_fd()) {
+    auto granted_buffers = device->request_buffers(V4L2_MEMORY_MMAP, nb_buffers);
     query_buffers(granted_buffers);
 }
 
@@ -51,7 +52,7 @@ int V4l2DeviceMmap::get_buffer() const {
 /** Return the buffer address and size (in bytes) designed by the index. */
 std::pair<void *, std::size_t> V4l2DeviceMmap::get_buffer_desc(int idx) const {
     auto desc = buffers_desc_.at(idx);
-    return std::make_pair(desc.start, nb_not_null_data(desc.start, desc.length));
+    return std::make_pair(desc.start, V4l2Device::nb_not_null_data(desc.start, desc.length));
 }
 
 void V4l2DeviceMmap::query_buffers(unsigned int nb_buffers) {

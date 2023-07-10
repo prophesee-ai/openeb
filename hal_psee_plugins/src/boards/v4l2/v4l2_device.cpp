@@ -11,6 +11,7 @@
 
 #include <cstring>
 #include "boards/v4l2/v4l2_device.h"
+#include "metavision/hal/facilities/i_camera_synchronization.h"
 #include "metavision/hal/utils/detail/hal_log_impl.h"
 
 // Linux specific headers
@@ -47,12 +48,6 @@ V4l2Device::V4l2Device(const std::string &dev_name) {
             raise_error("VIDIOC_QUERYCAP failed");
         }
     }
-    MV_HAL_LOG_INFO() << "V4l2 Device opened : \n"
-                      << "  - card : " << cap_.card << "\n"
-                      << "  - driver : " << cap_.driver << "\n"
-                      << "  - bus info : " << cap_.bus_info << "\n"
-                      << "  - capabilities : " << cap_.capabilities << "\n"
-                      << "  - device cap : " << cap_.device_caps << "\n";
 
     if (!(cap_.capabilities & V4L2_CAP_VIDEO_CAPTURE))
         throw std::runtime_error(dev_name + " is not video capture device");
@@ -84,18 +79,79 @@ unsigned int V4l2Device::request_buffers(v4l2_memory memory, unsigned int nb_buf
     return req.count;
 }
 
-void V4l2Device::start() {
-    MV_HAL_LOG_TRACE() << " Nb buffers pre allocated: " << get_nb_buffers() << std::endl;
-    for (unsigned int i = 0; i < get_nb_buffers(); ++i) {
-        release_buffer(i);
-    }
-    enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    if (ioctl(fd_, VIDIOC_STREAMON, &type))
-        raise_error("VIDIOC_STREAMON failed");
+int V4l2Device::get_fd() const {
+    return fd_;
 }
 
-void V4l2Device::stop() {
+V4l2Capability V4l2Device::get_capability() const {
+    return cap_;
+}
+
+V4l2DeviceControl::V4l2DeviceControl(std::shared_ptr<V4l2Device> device) : device_(device) {}
+
+void V4l2DeviceControl::start() {
     enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    if (ioctl(fd_, VIDIOC_STREAMOFF, &type))
+    if (ioctl(device_->get_fd(), VIDIOC_STREAMON, &type))
+        raise_error("VIDIOC_STREAMON failed");
+}
+void V4l2DeviceControl::stop() {
+    enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    if (ioctl(device_->get_fd(), VIDIOC_STREAMOFF, &type))
         raise_error("VIDIOC_STREAMOFF failed");
+}
+void V4l2DeviceControl::reset() {}
+
+bool V4l2Synchronization::set_mode_standalone() {
+    mode_ = SyncMode::STANDALONE;
+    return true;
+}
+bool V4l2Synchronization::set_mode_master() {
+    mode_ = SyncMode::MASTER;
+    return true;
+}
+bool V4l2Synchronization::set_mode_slave() {
+    mode_ = SyncMode::STANDALONE;
+    return true;
+}
+I_CameraSynchronization::SyncMode V4l2Synchronization::get_mode() {
+    return mode_;
+}
+
+V4l2HwIdentification::V4l2HwIdentification(const V4l2Capability cap,
+                                           const std::shared_ptr<I_PluginSoftwareInfo> &plugin_sw_info) :
+    I_HW_Identification(plugin_sw_info), cap_(cap) {}
+
+// @TODO Retrieve those info through V4L2
+long V4l2HwIdentification::get_system_id() const {
+    return 1234;
+}
+// @TODO Retrieve those info through V4L2
+I_HW_Identification::SensorInfo V4l2HwIdentification::get_sensor_info() const {
+    return {4, 1, "imx636"};
+}
+// @TODO Retrieve those info through V4L2
+std::vector<std::string> V4l2HwIdentification::get_available_data_encoding_formats() const {
+    return {"EVT3", "EVT2"};
+}
+// @TODO Retrieve those info through V4L2
+std::string V4l2HwIdentification::get_current_data_encoding_format() const {
+    return "EVT3;height=720;width=1280";
+}
+std::string V4l2HwIdentification::get_serial() const {
+    std::stringstream ss;
+    ss << cap_.card;
+    return ss.str();
+}
+std::string V4l2HwIdentification::get_integrator() const {
+    std::stringstream ss;
+    ss << cap_.driver;
+    return ss.str();
+}
+std::string V4l2HwIdentification::get_connection_type() const {
+    std::stringstream ss;
+    ss << cap_.bus_info;
+    return ss.str();
+}
+DeviceConfigOptionMap V4l2HwIdentification::get_device_config_options_impl() const {
+    return {};
 }
