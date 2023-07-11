@@ -12,8 +12,9 @@
 #ifndef METAVISION_HAL_PSEE_PLUGINS_V4L2_DEVICE_H
 #define METAVISION_HAL_PSEE_PLUGINS_V4L2_DEVICE_H
 
-#include <algorithm>
 #include <string>
+#include <vector>
+
 #include <linux/videodev2.h>
 
 #include "metavision/hal/facilities/i_hw_identification.h"
@@ -25,9 +26,11 @@ namespace Metavision {
 
 void raise_error(const std::string &str);
 
-using V4l2Capability = struct v4l2_capability;
+using V4l2Capability     = struct v4l2_capability;
+using V4l2Buffer         = struct v4l2_buffer;
+using V4l2RequestBuffers = struct v4l2_requestbuffers;
 
-class V4l2Device {
+class V4l2Device : public DeviceControl {
     V4l2Capability cap_;
     int fd_ = -1;
 
@@ -51,31 +54,33 @@ public:
     V4l2Device(const std::string &dev_name);
     virtual ~V4l2Device() = default;
 
-    unsigned int request_buffers(v4l2_memory memory, unsigned int nb_buffers);
-    int get_fd() const;
-
     V4l2Capability get_capability() const;
-};
 
-class V4l2DeviceControl : public DeviceControl {
-    std::shared_ptr<V4l2Device> device_;
+    V4l2RequestBuffers request_buffers(v4l2_memory memory, uint32_t nb_buffers);
+    int queue_buffer(V4l2Buffer &buffer);
+    int dequeue_buffer(V4l2Buffer *buffer);
 
+    // DeviceControl
 public:
-    V4l2DeviceControl(std::shared_ptr<V4l2Device> device);
-
     virtual void start() override;
     virtual void stop() override;
     virtual void reset() override;
 };
 
 class V4l2Synchronization : public I_CameraSynchronization {
-    SyncMode mode_ = SyncMode::STANDALONE;
-
 public:
-    virtual bool set_mode_standalone() override;
-    virtual bool set_mode_master() override;
-    virtual bool set_mode_slave() override;
-    virtual SyncMode get_mode() override;
+    virtual bool set_mode_standalone() override {
+        return true;
+    }
+    virtual bool set_mode_master() override {
+        return false;
+    }
+    virtual bool set_mode_slave() override {
+        return false;
+    }
+    virtual SyncMode get_mode() override {
+        return SyncMode::STANDALONE;
+    }
 };
 
 class V4l2HwIdentification : public I_HW_Identification {

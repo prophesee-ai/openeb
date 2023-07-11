@@ -79,11 +79,10 @@ bool V4l2CameraDiscovery::discover(DeviceBuilder &device_builder, const std::str
             std::make_unique<V4l2HwIdentification>(main_device->get_capability(), software_info));
         auto encoding_format = StreamFormat(hw_id->get_current_data_encoding_format());
         size_t raw_size_bytes;
-        auto decoder     = make_decoder(device_builder, encoding_format, raw_size_bytes, false);
-        auto device_ctrl = std::make_shared<V4l2DeviceControl>(main_device);
+        auto decoder = make_decoder(device_builder, encoding_format, raw_size_bytes, false);
 
         device_builder.add_facility(std::make_unique<Metavision::I_EventsStream>(
-            std::make_unique<V4l2DataTransfer>(main_device, raw_size_bytes), hw_id, decoder, device_ctrl));
+            std::make_unique<V4l2DataTransfer>(main_device, raw_size_bytes), hw_id, decoder, main_device));
         device_builder.add_facility(std::make_unique<V4l2Synchronization>());
     } catch (std::exception &e) { MV_HAL_LOG_ERROR() << "Failed to build streaming facilities :" << e.what(); }
 

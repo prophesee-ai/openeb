@@ -9,14 +9,13 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
+#include <bits/stdint-uintn.h>
 #include <cstring>
 #include "boards/v4l2/v4l2_device.h"
-#include "metavision/hal/facilities/i_camera_synchronization.h"
-#include "metavision/hal/utils/detail/hal_log_impl.h"
 
 // Linux specific headers
-#include <linux/videodev2.h>
 #include <fcntl.h>
+#include <linux/videodev2.h>
 #include <string>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
@@ -51,6 +50,7 @@ V4l2Device::V4l2Device(const std::string &dev_name) {
 
     if (!(cap_.capabilities & V4L2_CAP_VIDEO_CAPTURE))
         throw std::runtime_error(dev_name + " is not video capture device");
+
     if (!(cap_.capabilities & V4L2_CAP_STREAMING))
         throw std::runtime_error(dev_name + " does not support streaming i/o");
 
@@ -66,9 +66,8 @@ V4l2Device::V4l2Device(const std::string &dev_name) {
         raise_error("VIDIOC_S_FMT failed");
 }
 
-unsigned int V4l2Device::request_buffers(v4l2_memory memory, unsigned int nb_buffers) {
-    struct v4l2_requestbuffers req;
-    std::memset(&req, 0, sizeof(req));
+V4l2RequestBuffers V4l2Device::request_buffers(v4l2_memory memory, uint32_t nb_buffers) {
+    V4l2RequestBuffers req{0};
     req.count  = nb_buffers;
     req.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     req.memory = memory;
@@ -76,65 +75,56 @@ unsigned int V4l2Device::request_buffers(v4l2_memory memory, unsigned int nb_buf
     if (-1 == ioctl(fd_, VIDIOC_REQBUFS, &req)) {
         raise_error("VIDIOC_QUERYBUF failed");
     }
-    return req.count;
-}
 
-int V4l2Device::get_fd() const {
-    return fd_;
+    return req;
 }
 
 V4l2Capability V4l2Device::get_capability() const {
     return cap_;
 }
 
-V4l2DeviceControl::V4l2DeviceControl(std::shared_ptr<V4l2Device> device) : device_(device) {}
+int V4l2Device::queue_buffer(V4l2Buffer &buffer) {
+    auto ioctl_res = ioctl(fd_, VIDIOC_QBUF, &buffer);
+    if (ioctl_res) {
+        raise_error("VIDIOC_QBUF failed");
+    }
+    return ioctl_res;
+}
 
-void V4l2DeviceControl::start() {
+int V4l2Device::dequeue_buffer(V4l2Buffer *buffer) {
+    return ioctl(fd_, VIDIOC_DQBUF, buffer);
+}
+
+void V4l2Device::start() {
     enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    if (ioctl(device_->get_fd(), VIDIOC_STREAMON, &type))
+    if (ioctl(fd_, VIDIOC_STREAMON, &type))
         raise_error("VIDIOC_STREAMON failed");
 }
-void V4l2DeviceControl::stop() {
+void V4l2Device::stop() {
     enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    if (ioctl(device_->get_fd(), VIDIOC_STREAMOFF, &type))
+    if (ioctl(fd_, VIDIOC_STREAMOFF, &type))
         raise_error("VIDIOC_STREAMOFF failed");
 }
-void V4l2DeviceControl::reset() {}
-
-bool V4l2Synchronization::set_mode_standalone() {
-    mode_ = SyncMode::STANDALONE;
-    return true;
-}
-bool V4l2Synchronization::set_mode_master() {
-    mode_ = SyncMode::MASTER;
-    return true;
-}
-bool V4l2Synchronization::set_mode_slave() {
-    mode_ = SyncMode::STANDALONE;
-    return true;
-}
-I_CameraSynchronization::SyncMode V4l2Synchronization::get_mode() {
-    return mode_;
-}
+void V4l2Device::reset() {}
 
 V4l2HwIdentification::V4l2HwIdentification(const V4l2Capability cap,
                                            const std::shared_ptr<I_PluginSoftwareInfo> &plugin_sw_info) :
     I_HW_Identification(plugin_sw_info), cap_(cap) {}
 
-// @TODO Retrieve those info through V4L2
 long V4l2HwIdentification::get_system_id() const {
+    // @TODO Retrieve those info through V4L2
     return 1234;
 }
-// @TODO Retrieve those info through V4L2
 I_HW_Identification::SensorInfo V4l2HwIdentification::get_sensor_info() const {
+    // @TODO Retrieve those info through V4L2
     return {4, 1, "imx636"};
 }
-// @TODO Retrieve those info through V4L2
 std::vector<std::string> V4l2HwIdentification::get_available_data_encoding_formats() const {
+    // @TODO Retrieve those info through V4L2
     return {"EVT3", "EVT2"};
 }
-// @TODO Retrieve those info through V4L2
 std::string V4l2HwIdentification::get_current_data_encoding_format() const {
+    // @TODO Retrieve those info through V4L2
     return "EVT3;height=720;width=1280";
 }
 std::string V4l2HwIdentification::get_serial() const {

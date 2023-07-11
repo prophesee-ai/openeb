@@ -17,15 +17,15 @@
 using namespace Metavision;
 
 V4l2DataTransfer::V4l2DataTransfer(std::shared_ptr<V4l2Device> device, uint32_t raw_event_size_bytes) :
-    DataTransfer(raw_event_size_bytes), device_(device) {}
+    DataTransfer(raw_event_size_bytes, DataTransfer::BufferPool::make_bounded(100, 1 * 1024), true), device_(device) {}
 
 V4l2DataTransfer::~V4l2DataTransfer() {}
 
-void V4l2DataTransfer::start_impl(BufferPtr buffer) {
+void V4l2DataTransfer::start_impl(BufferPtr) {
     MV_HAL_LOG_INFO() << "V4l2DataTransfer - start_impl() ";
-    buffer.reset(); // we don't use the buffer here... let's put it back in the pool
 
-    buffers = std::make_unique<V4l2DeviceUserPtr>(device_, std::make_unique<DmaBufHeap>("/dev/dma_heap", "linux,cma"));
+    buffers = std::make_unique<V4l2DeviceUserPtr>(device_, std::make_unique<DmaBufHeap>("/dev/dma_heap", "linux,cma"),
+                                                  8 * 1024 * 1024, 2);
 
     MV_HAL_LOG_TRACE() << " Nb buffers pre allocated: " << buffers->get_nb_buffers() << std::endl;
     for (unsigned int i = 0; i < buffers->get_nb_buffers(); ++i) {
@@ -36,21 +36,21 @@ void V4l2DataTransfer::start_impl(BufferPtr buffer) {
 void V4l2DataTransfer::run_impl() {
     MV_HAL_LOG_INFO() << "V4l2DataTransfer - run_impl() ";
 
-    while (!this->should_stop()) {
+    while (!should_stop()) {
         // Grab a MIPI frame
         using RawData = DataTransfer::Data *;
 
-        int idx                  = buffers->get_buffer();
+        int idx                  = buffers->poll_buffer();
         auto [data, data_length] = buffers->get_buffer_desc(idx);
 
         MV_HAL_LOG_TRACE() << "Grabed buffer " << idx << "from: " << std::hex << data << " of: " << std::dec
                            << data_length << " Bytes.";
 
-        auto local_buff = this->get_buffer();
+        // Get transfer buffer from the pool and transfer the data
+        auto local_buff = get_buffer();
         local_buff->resize(data_length);
-
         std::memcpy(local_buff->data(), data, data_length);
-        this->transfer_data(local_buff);
+        transfer_data(local_buff);
 
         // Reset the buffer data
         memset(data, 0, data_length);
@@ -60,34 +60,15 @@ void V4l2DataTransfer::run_impl() {
 }
 
 void V4l2DataTransfer::stop_impl() {
-    MV_HAL_LOG_INFO() << "V4l2DataTransfer - stop_impl() ";
+    MV_HAL_LOG_TRACE() << "V4l2DataTransfer - stop_impl() ";
     buffers.reset();
-}
-void V4l2DeviceUserPtr::allocate_buffers(unsigned int nb_buffers) {
-    for (unsigned int i = 0; i < nb_buffers; ++i) {
-        /* Get a buffer using CMA allocator in user space. */
-        auto dmabuf_fd = dma_buf_heap_->alloc(length_);
-
-        void *start = mmap(NULL, length_, PROT_READ | PROT_WRITE, MAP_SHARED, dmabuf_fd, 0);
-        if (MAP_FAILED == start)
-            raise_error("mmap failed");
-
-        dma_buf_heap_->cpu_sync_start(dmabuf_fd);
-        memset(start, 0, length_);
-
-        std::cout << "Allocate buffer: " << i << " at: " << std::hex << start << " of " << std::dec << length_
-                  << " bytes." << std::endl;
-
-        /* Record the handle to manage the life cycle. */
-        buffers_desc_.push_back(BufferDesc{start, dmabuf_fd});
-    }
 }
 
 void V4l2DeviceUserPtr::free_buffers() {
     int i = get_nb_buffers();
 
     while (0 < i) {
-        auto idx = get_buffer();
+        auto idx = poll_buffer();
         std::cout << "Release " << i << " buffer: " << idx << std::endl;
         auto buf = buffers_desc_.at(idx);
         if (-1 == munmap(buf.start, length_))
@@ -106,10 +87,27 @@ unsigned int V4l2DeviceUserPtr::get_nb_buffers() const {
 V4l2DeviceUserPtr::V4l2DeviceUserPtr(std::shared_ptr<V4l2Device> device,
                                      std::unique_ptr<Metavision::DmaBufHeap> dma_buf_heap, std::size_t length,
                                      unsigned int nb_buffers) :
-    fd_(device->get_fd()), device_(device), dma_buf_heap_(std::move(dma_buf_heap)), length_(length) {
+    device_(device), dma_buf_heap_(std::move(dma_buf_heap)), length_(length) {
     auto granted_buffers = device->request_buffers(V4L2_MEMORY_USERPTR, nb_buffers);
-    std::cout << "Requested buffers: " << nb_buffers << " granted buffers: " << granted_buffers << std::endl;
-    allocate_buffers(granted_buffers);
+    std::cout << "Requested buffers: " << nb_buffers << " granted buffers: " << granted_buffers.count << std::endl;
+
+    for (unsigned int i = 0; i < granted_buffers.count; ++i) {
+        /* Get a buffer using CMA allocator in user space. */
+        auto dmabuf_fd = dma_buf_heap_->alloc(length_);
+
+        void *start = mmap(NULL, length_, PROT_READ | PROT_WRITE, MAP_SHARED, dmabuf_fd, 0);
+        if (MAP_FAILED == start)
+            raise_error("mmap failed");
+
+        dma_buf_heap_->cpu_sync_start(dmabuf_fd);
+        memset(start, 0, length_);
+
+        std::cout << "Allocate buffer: " << i << " at: " << std::hex << start << " of " << std::dec << length_
+                  << " bytes." << std::endl;
+
+        /* Record the handle to manage the life cycle. */
+        buffers_desc_.push_back(BufferDesc{start, dmabuf_fd});
+    }
 }
 
 V4l2DeviceUserPtr::~V4l2DeviceUserPtr() {
@@ -123,31 +121,28 @@ void V4l2DeviceUserPtr::release_buffer(int idx) const {
     dma_buf_heap_->cpu_sync_stop(desc.dmabuf_fd);
     std::cout << "Release buffer: " << idx << " at " << std::hex << desc.start << " of " << std::dec << length_
               << " bytes." << std::endl;
-    struct v4l2_buffer buf;
-    std::memset(&buf, 0, sizeof(buf));
+    V4l2Buffer buf{0};
     buf.type      = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     buf.memory    = V4L2_MEMORY_USERPTR;
     buf.index     = idx;
     buf.m.userptr = (unsigned long)desc.start;
     buf.length    = length_;
-    if (ioctl(fd_, VIDIOC_QBUF, &buf))
-        raise_error("VIDIOC_QBUF failed");
+    device_->queue_buffer(buf);
 }
 
 /** Poll a MIPI frame buffer through the V4L2 interface.
  * Return the buffer index.
  * */
-int V4l2DeviceUserPtr::get_buffer() const {
-    struct v4l2_buffer buf;
-    std::memset(&buf, 0, sizeof(buf));
+int V4l2DeviceUserPtr::poll_buffer() const {
+    V4l2Buffer buf{0};
     buf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     buf.memory = V4L2_MEMORY_USERPTR;
-    while (ioctl(fd_, VIDIOC_DQBUF, &buf)) {}
 
-    int idx   = buf.index;
-    auto desc = buffers_desc_.at(idx);
+    while (device_->dequeue_buffer(&buf)) {}
+
+    auto desc = buffers_desc_.at(buf.index);
     dma_buf_heap_->cpu_sync_start(desc.dmabuf_fd);
-    return idx;
+    return buf.index;
 }
 
 /** Return the buffer address and size (in bytes) designed by the index. */

@@ -52,9 +52,9 @@ public:
     /** Poll a MIPI frame buffer through the V4L2 interface.
      * Return the buffer index.
      * */
-    int get_buffer() const;
+    int poll_buffer() const;
 
-    /** Release the buffer designed by the index to the driver. */
+    /** Queue the buffer designed by the index to the driver. */
     void release_buffer(int idx) const;
 
     unsigned int get_nb_buffers() const;
@@ -70,7 +70,6 @@ private:
         unsigned int dmabuf_fd;
     };
 
-    int fd_;
     std::shared_ptr<V4l2Device> device_;
     std::unique_ptr<DmaBufHeap> dma_buf_heap_;
     std::size_t length_;
