@@ -200,7 +200,7 @@ endif ()
 find_package(OpenCV COMPONENTS core highgui imgproc videoio imgcodecs calib3d objdetect REQUIRED)
 
 # HDF5
-if (NOT ANDROID)
+if (NOT ANDROID AND NOT HDF5_DISABLED)
     find_package(HDF5 1.10.2 COMPONENTS CXX)
     if (HDF5_FOUND AND WIN32)
         LIST(APPEND HDF5_DEFINITIONS H5_BUILT_AS_DYNAMIC_LIB)

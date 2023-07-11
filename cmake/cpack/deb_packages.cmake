@@ -56,8 +56,10 @@ foreach(PackageGroup All Public)
         #                       |-- <all/public>_debN <--|
         add_dependencies(${package_group_lower}_deb_packages ${package_group_lower}_build)
         foreach (dep ${${package_group_lower}_deb_packages_dependencies})
-            add_dependencies(${dep} ${package_group_lower}_build)
-            add_dependencies(${package_group_lower}_deb_packages ${dep})
+            if(TARGET ${dep})
+                add_dependencies(${dep} ${package_group_lower}_build)
+                add_dependencies(${package_group_lower}_deb_packages ${dep})
+            endif()
         endforeach (dep ${${package_group_lower}_deb_packages_dependencies})
     else()
         add_custom_target(${package_group_lower}_deb_packages
