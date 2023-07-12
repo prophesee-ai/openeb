@@ -38,8 +38,11 @@ void initialize_plugin(void *plugin_ptr) {
     // Register live camera discoveries
     auto &fx3_disc = plugin.add_camera_discovery(std::make_unique<Fx3CameraDiscovery>());
     auto &tz_disc  = plugin.add_camera_discovery(std::move(tz_cam_discovery));
+#ifdef HAS_V4L2
     auto &v4l2_disc = plugin.add_camera_discovery(std::make_unique<V4l2CameraDiscovery>());
-#endif
+#endif // HAS_V4L2
+
+#endif // !defined(__ANDROID__)
 
     auto &file_disc = plugin.add_file_discovery(std::make_unique<PseeFileDiscovery>());
 }

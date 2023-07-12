@@ -134,7 +134,6 @@ set(lib_camera_obj_list
         metavision_hal_gen31_camera_obj
         metavision_hal_fx3_protocol_obj
         metavision_hal_treuzell_protocol_obj
-        metavision_hal_v4l2_protocol_obj
         metavision_hal_treuzell_unknown_obj
         metavision_hal_psee_video_obj
         metavision_hal_ti_tmp103_obj
@@ -155,6 +154,10 @@ if(NOT ANDROID)
         metavision_hal_genx320_cx3_system_obj
     )
 endif(NOT ANDROID)
+
+if(HAS_V4L2)
+    list(APPEND lib_camera_obj_list metavision_hal_v4l2_protocol_obj)
+endif(HAS_V4L2)
 
 if(HAL_SAPHIR_SUPPORT)
     list(APPEND lib_camera_obj_list

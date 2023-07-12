@@ -18,7 +18,6 @@
 namespace Metavision {
 
 class V4l2Device;
-
 class V4l2DeviceUserPtr; // @TODO Replace with a V4l2 Buffer class interface
 
 class V4l2DataTransfer : public DataTransfer {

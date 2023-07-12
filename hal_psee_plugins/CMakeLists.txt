@@ -15,6 +15,22 @@ if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/src/devices/sensorlib")
     set(HAL_SENSORLIB_SUPPORT TRUE)
 endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/src/devices/sensorlib")
 
+find_file(v4l2_headers videodev2.h PATH_SUFFIXES linux)
+message(STATUS "Found V4l2 header : ${v4l2_headers}")
+
+find_file(dma_buf_header dma-buf.h PATH_SUFFIXES linux)
+message(STATUS "Found dma-buf header : ${dma_buf_header}")
+
+find_file(dma_heap_header dma-heap.h PATH_SUFFIXES linux)
+message(STATUS "Found dma-heap header : ${dma_heap_header}")
+
+set(HAS_V4L2_SUPPORT FALSE)
+if(v4l2_headers AND dma_buf_header AND dma_heap_header)
+    set(HAS_V4L2_SUPPORT TRUE)
+endif()
+set(HAS_V4L2 ${HAS_V4L2_SUPPORT} CACHE BOOL "Has V4l2 support with dma")
+
+
 # Add libraries (plugins)
 set(biasgen_calib_files_dir "${GENERATE_FILES_DIRECTORY}/biasgen_calib")
 set(metavision_hal_psee_plugins_include_dir "${CMAKE_CURRENT_SOURCE_DIR}/include")
