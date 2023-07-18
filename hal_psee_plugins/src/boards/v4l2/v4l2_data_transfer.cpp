@@ -13,11 +13,23 @@
 #include "boards/v4l2/v4l2_data_transfer.h"
 
 #include "metavision/hal/utils/hal_log.h"
+#include <thread>
+#include <chrono>
 
 using namespace Metavision;
 
+constexpr bool allow_buffer_drop           = true;
+constexpr size_t data_stream_buffer_number = 32;
+constexpr size_t data_stream_buffer_size   = 1 * 1024;
+
+constexpr size_t device_buffer_size   = 8 * 1024 * 1024;
+constexpr size_t device_buffer_number = 32;
+
 V4l2DataTransfer::V4l2DataTransfer(std::shared_ptr<V4l2Device> device, uint32_t raw_event_size_bytes) :
-    DataTransfer(raw_event_size_bytes, DataTransfer::BufferPool::make_bounded(100, 1 * 1024), true), device_(device) {}
+    DataTransfer(raw_event_size_bytes,
+                 DataTransfer::BufferPool::make_bounded(data_stream_buffer_number, data_stream_buffer_size),
+                 allow_buffer_drop),
+    device_(device) {}
 
 V4l2DataTransfer::~V4l2DataTransfer() {}
 
@@ -25,7 +37,7 @@ void V4l2DataTransfer::start_impl(BufferPtr) {
     MV_HAL_LOG_INFO() << "V4l2DataTransfer - start_impl() ";
 
     buffers = std::make_unique<V4l2DeviceUserPtr>(device_, std::make_unique<DmaBufHeap>("/dev/dma_heap", "linux,cma"),
-                                                  8 * 1024 * 1024, 2);
+                                                  device_buffer_size, device_buffer_number);
 
     MV_HAL_LOG_TRACE() << " Nb buffers pre allocated: " << buffers->get_nb_buffers() << std::endl;
     for (unsigned int i = 0; i < buffers->get_nb_buffers(); ++i) {
