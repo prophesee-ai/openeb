@@ -149,7 +149,10 @@ int V4l2DeviceUserPtr::poll_buffer() const {
     buf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     buf.memory = V4L2_MEMORY_USERPTR;
 
-    while (device_->dequeue_buffer(&buf)) {}
+    while (device_->dequeue_buffer(&buf)) {
+        using namespace std::literals::chrono_literals;
+        std::this_thread::sleep_for(1ms);
+    }
 
     auto desc = buffers_desc_.at(buf.index);
     dma_buf_heap_->cpu_sync_start(desc.dmabuf_fd);
