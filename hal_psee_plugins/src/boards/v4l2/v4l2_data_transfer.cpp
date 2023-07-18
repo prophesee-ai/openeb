@@ -69,7 +69,6 @@ void V4l2DeviceUserPtr::free_buffers() {
 
     while (0 < i) {
         auto idx = poll_buffer();
-        std::cout << "Release " << i << " buffer: " << idx << std::endl;
         auto buf = buffers_desc_.at(idx);
         if (-1 == munmap(buf.start, length_))
             raise_error("munmap failed");
@@ -89,7 +88,8 @@ V4l2DeviceUserPtr::V4l2DeviceUserPtr(std::shared_ptr<V4l2Device> device,
                                      unsigned int nb_buffers) :
     device_(device), dma_buf_heap_(std::move(dma_buf_heap)), length_(length) {
     auto granted_buffers = device->request_buffers(V4L2_MEMORY_USERPTR, nb_buffers);
-    std::cout << "Requested buffers: " << nb_buffers << " granted buffers: " << granted_buffers.count << std::endl;
+    MV_HAL_LOG_INFO() << "V4l2 - Requested buffers: " << nb_buffers << " granted buffers: " << granted_buffers.count
+                      << std::endl;
 
     for (unsigned int i = 0; i < granted_buffers.count; ++i) {
         /* Get a buffer using CMA allocator in user space. */
@@ -102,8 +102,8 @@ V4l2DeviceUserPtr::V4l2DeviceUserPtr(std::shared_ptr<V4l2Device> device,
         dma_buf_heap_->cpu_sync_start(dmabuf_fd);
         memset(start, 0, length_);
 
-        std::cout << "Allocate buffer: " << i << " at: " << std::hex << start << " of " << std::dec << length_
-                  << " bytes." << std::endl;
+        MV_HAL_LOG_TRACE() << "Allocate buffer: " << i << " at: " << std::hex << start << " of " << std::dec << length_
+                           << " bytes." << std::endl;
 
         /* Record the handle to manage the life cycle. */
         buffers_desc_.push_back(BufferDesc{start, dmabuf_fd});
@@ -119,8 +119,7 @@ void V4l2DeviceUserPtr::release_buffer(int idx) const {
     auto desc = buffers_desc_.at(idx);
 
     dma_buf_heap_->cpu_sync_stop(desc.dmabuf_fd);
-    std::cout << "Release buffer: " << idx << " at " << std::hex << desc.start << " of " << std::dec << length_
-              << " bytes." << std::endl;
+
     V4l2Buffer buf{0};
     buf.type      = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     buf.memory    = V4L2_MEMORY_USERPTR;
