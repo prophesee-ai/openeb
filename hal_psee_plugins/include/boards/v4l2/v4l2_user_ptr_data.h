@@ -9,47 +9,58 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-#ifndef METAVISION_HAL_PSEE_PLUGINS_V4L2_DEVICE_NMAP_H
-#define METAVISION_HAL_PSEE_PLUGINS_V4L2_DEVICE_NMAP_H
+#ifndef METAVISION_HAL_PSEE_PLUGINS_V4L2_USER_PTR_DATA_H
+#define METAVISION_HAL_PSEE_PLUGINS_V4L2_USER_PTR_DATA_H
 
-#include "boards/v4l2/v4l2_device.h"
 #include <memory>
+#include <utility>
+#include <vector>
 
 namespace Metavision {
 
 /** Manage buffer manipulation through the V4L2 interface.
- * In this implementation, buffers are allocated in the driver after a request during the .
+ * In this implementation, buffers are allocated in user space using a dma_buf allocator. This allocator allocates
+ * continuous buffers in physical memory which is necessary as buffers are used by DMA without gather/scatter
+ * facility.
  */
-class V4l2DeviceMmap {
+class DmaBufHeap;
+class V4l2Device;
+
+class V4l2DeviceUserPtr {
 public:
-    V4l2DeviceMmap(std::shared_ptr<V4l2Device> device, unsigned int nb_buffers = 32);
-    ~V4l2DeviceMmap();
+    V4l2DeviceUserPtr(std::shared_ptr<V4l2Device> device, const std::string &heap_path, const std::string &heap_name,
+                      std::size_t length = 8 * 1024 * 1024, unsigned int nb_buffers = 32);
 
-    /** Release the buffer designed by the index to the driver. */
-    void release_buffer(int idx) const;
-
-    unsigned int get_nb_buffers() const;
+    virtual ~V4l2DeviceUserPtr();
 
     /** Poll a MIPI frame buffer through the V4L2 interface.
      * Return the buffer index.
      * */
     int poll_buffer() const;
 
+    /** Queue the buffer designed by the index to the driver. */
+    void release_buffer(int idx) const;
+
+    unsigned int get_nb_buffers() const;
+
     /** Return the buffer address and size (in bytes) designed by the index. */
     std::pair<void *, std::size_t> get_buffer_desc(int idx) const;
+
+    void free_buffers();
 
 private:
     struct BufferDesc {
         void *start;
-        std::size_t length; /* In bytes. */
+        unsigned int dmabuf_fd;
     };
 
     std::shared_ptr<V4l2Device> device_;
+    std::unique_ptr<DmaBufHeap> dma_buf_heap_;
+    std::size_t length_;
     std::vector<BufferDesc> buffers_desc_;
 
-    void free_buffers();
+    void allocate_buffers(unsigned int nb_buffers);
 };
-
 } // namespace Metavision
 
-#endif // METAVISION_HAL_PSEE_PLUGINS_V4L2_DEVICE_NMAP_H
+#endif // METAVISION_HAL_PSEE_PLUGINS_V4L2_USER_PTR_DATA_H

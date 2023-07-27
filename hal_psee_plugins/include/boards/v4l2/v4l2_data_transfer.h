@@ -13,7 +13,6 @@
 #define METAVISION_HAL_PSEE_PLUGINS_V4L2_DATA_TRANSFER_H
 
 #include "metavision/hal/utils/data_transfer.h"
-#include "boards/v4l2/dma_buf_heap.h"
 
 namespace Metavision {
 
@@ -34,48 +33,6 @@ private:
     void stop_impl() override final;
 };
 
-/** Manage buffer manipulation through the V4L2 interface.
- * In this implementation, buffers are allocated in user space using a dma_buf allocator. This allocator allocates
- * continuous buffers in physical memory which is necessary as buffers are used by DMA without gather/scatter
- * facility.
- */
-class DmaBufHeap;
-
-class V4l2DeviceUserPtr {
-public:
-    V4l2DeviceUserPtr(std::shared_ptr<V4l2Device> device, std::unique_ptr<Metavision::DmaBufHeap> dma_buf_heap,
-                      std::size_t length = 8 * 1024 * 1024, unsigned int nb_buffers = 32);
-
-    virtual ~V4l2DeviceUserPtr();
-
-    /** Poll a MIPI frame buffer through the V4L2 interface.
-     * Return the buffer index.
-     * */
-    int poll_buffer() const;
-
-    /** Queue the buffer designed by the index to the driver. */
-    void release_buffer(int idx) const;
-
-    unsigned int get_nb_buffers() const;
-
-    /** Return the buffer address and size (in bytes) designed by the index. */
-    std::pair<void *, std::size_t> get_buffer_desc(int idx) const;
-
-    void free_buffers();
-
-private:
-    struct BufferDesc {
-        void *start;
-        unsigned int dmabuf_fd;
-    };
-
-    std::shared_ptr<V4l2Device> device_;
-    std::unique_ptr<DmaBufHeap> dma_buf_heap_;
-    std::size_t length_;
-    std::vector<BufferDesc> buffers_desc_;
-
-    void allocate_buffers(unsigned int nb_buffers);
-};
 } // namespace Metavision
 
 #endif // METAVISION_HAL_PSEE_PLUGINS_V4L2_DATA_TRANSFER_H

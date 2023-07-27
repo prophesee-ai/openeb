@@ -79,6 +79,18 @@ V4l2RequestBuffers V4l2Device::request_buffers(v4l2_memory memory, uint32_t nb_b
     return req;
 }
 
+V4l2Buffer V4l2Device::query_buffer(v4l2_memory memory_type, uint32_t buf_index) {
+    V4l2Buffer buf{0};
+    buf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    buf.memory = memory_type;
+    buf.index  = buf_index;
+
+    if (ioctl(fd_, VIDIOC_QUERYBUF, &buf))
+        raise_error("VIDIOC_QUERYBUF failed");
+
+    return buf;
+}
+
 V4l2Capability V4l2Device::get_capability() const {
     return cap_;
 }
