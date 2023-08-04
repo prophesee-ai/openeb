@@ -46,13 +46,13 @@ public:
 
     /// @brief Default constructor
     RawEventFrameHisto(const RawEventFrameHistoConfig &cfg, std::unique_ptr<const std::vector<uint8_t>> data) :
-        cfg_(cfg), histogram_(std::move(data)) {
+        histogram_(std::move(data)), cfg_(cfg) {
         assert(histogram_);
     }
 
     /// @brief Copy constructor
     RawEventFrameHisto(const RawEventFrameHisto &h) :
-        cfg_(h.cfg_), histogram_(std::make_unique<const std::vector<uint8_t>>(h.get_data())) {}
+        histogram_(std::make_unique<const std::vector<uint8_t>>(h.get_data())), cfg_(h.cfg_) {}
 
     const RawEventFrameHistoConfig &get_config() const {
         return cfg_;

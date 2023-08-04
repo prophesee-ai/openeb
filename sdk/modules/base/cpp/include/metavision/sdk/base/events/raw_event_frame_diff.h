@@ -32,20 +32,20 @@ struct RawEventFrameDiffConfig {
 class RawEventFrameDiff {
 public:
     /// @brief Constructor
-    RawEventFrameDiff(const unsigned height, const unsigned width) : cfg_{width, height} {
+    RawEventFrameDiff(const unsigned height, const unsigned width) : cfg_{width, height, 0} {
         diff_.reset(new std::vector<int8_t>(height * width));
         assert(diff_);
     }
 
     /// @brief Default constructor
     RawEventFrameDiff(const RawEventFrameDiffConfig &cfg, std::unique_ptr<const std::vector<int8_t>> data) :
-        cfg_(cfg), diff_(std::move(data)) {
+        diff_(std::move(data)), cfg_(cfg) {
         assert(diff_);
     }
 
     /// @brief Copy constructor
     RawEventFrameDiff(const RawEventFrameDiff &d) :
-        cfg_(d.cfg_), diff_(std::make_unique<const std::vector<int8_t>>(d.get_data())) {}
+        diff_(std::make_unique<const std::vector<int8_t>>(d.get_data())), cfg_(d.cfg_) {}
 
     const RawEventFrameDiffConfig &get_config() const {
         return cfg_;
