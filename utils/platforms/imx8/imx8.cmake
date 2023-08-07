@@ -7,17 +7,12 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-message(STATUS "Building for platforms imx8")
+message(STATUS "Building for platforms i.MX8")
 
 # options specific to the platform
-
-## Remove all advanced plugin from the build.
-# We need Eigen3 lib compiled as part of the SDK sysroot to enable them
-set(METAVISION_SDK_MODULES_ADVANCED CACHE STRING "SDK Advanced modules")
-
 set(HDF5_DISABLED ON CACHE BOOL "disable HDF5")
 
-set(COMPILE_PYTHON3_BINDINGS OFF CACHE BOOL "disable python binding while waiting for pybind 2.6")
+option(COMPILE_PYTHON3_BINDINGS "disable python binding while waiting for pybind 2.6" OFF)
 option(COMPILE_METAVISION_STUDIO "Compile Metavision Studio" OFF)
 
 
