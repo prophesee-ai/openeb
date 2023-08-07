@@ -32,11 +32,19 @@
 #include "metavision/hal/utils/device_builder.h"
 #include "metavision/hal/utils/hal_log.h"
 #include "metavision/psee_hw_layer/utils/psee_format.h"
+#include "metavision/psee_hw_layer/boards/v4l2/v4l2_board_command.h"
+#include "metavision/psee_hw_layer/devices/treuzell/tz_regmap_device.h"
+#include "metavision/psee_hw_layer/devices/genx320/genx320_erc.h"
+
+
+#include "devices/genx320/register_maps/genx320es_registermap.h"
 
 #include "utils/make_decoder.h"
 
 namespace Metavision {
 
+using RegmapData = RegisterMap::RegmapData;
+std::string ROOT_PREFIX   = "PSEE/GENX320/";
 bool V4l2CameraDiscovery::is_for_local_camera() const {
     return true;
 }
@@ -54,14 +62,14 @@ bool V4l2CameraDiscovery::discover(DeviceBuilder &device_builder, const std::str
     MV_HAL_LOG_TRACE() << "V4l2Discovery - Discovering...";
 
     std::vector<std::string> device_names = {
-        // We might want to iterate over all /dev/videoX files
-        "/dev/video0", "/dev/video1", "/dev/video2", "/dev/video3", "/dev/video4",
+        // We might want to iterate over all /dev/mediaX files
+        "/dev/media0", "/dev/media1", "/dev/media2", "/dev/media3", "/dev/media4",
     };
 
-    std::vector<std::shared_ptr<V4l2Device>> devices;
+    std::vector<std::shared_ptr<V4L2BoardCommand>> devices;
     for (auto device_name : device_names) {
         try {
-            devices.emplace_back(std::make_shared<V4l2Device>(device_name));
+            devices.emplace_back(std::make_shared<V4L2BoardCommand>(device_name));
         } catch (std::exception &e) {
             MV_HAL_LOG_TRACE() << "Cannot open V4L2 device '" << device_name << "' (err: " << e.what();
         }
@@ -71,21 +79,34 @@ bool V4l2CameraDiscovery::discover(DeviceBuilder &device_builder, const std::str
         return false;
     }
 
+
     auto &main_device  = devices[0];
     auto software_info = device_builder.get_plugin_software_info();
+    // TODO: Request sensor/board info and select which regmap to generate
+    // hardcoded to Genx320 for now
+    auto regmap_data = RegisterMap::RegmapData(1 ,std::make_tuple(GenX320ESRegisterMap, GenX320ESRegisterMapSize, ROOT_PREFIX, 0));
+    auto register_map = std::make_shared<RegisterMap>(regmap_data);
+
+    // TODO: use shadow values in otder to avoid too many i2c accesses.
+    // build a V4l2DeviceWithRegmap structure for this.
+    register_map->set_read_cb([this, &main_device](uint32_t address) {
+        return main_device->read_device_register(0, address, 1)[0];
+    });
+    register_map->set_write_cb([this, &main_device](uint32_t address, uint32_t v) { main_device->write_device_register(0, address, {v}); });
 
     try {
         auto hw_id = device_builder.add_facility(
-            std::make_unique<V4l2HwIdentification>(main_device->get_capability(), software_info));
+            std::make_unique<V4l2HwIdentification>(main_device->get_device()->get_capability(), software_info));
 
         auto encoding_format = StreamFormat(hw_id->get_current_data_encoding_format());
         size_t raw_size_bytes;
         auto decoder = make_decoder(device_builder, encoding_format, raw_size_bytes, false);
 
         device_builder.add_facility(std::make_unique<Metavision::I_EventsStream>(
-            std::make_unique<V4l2DataTransfer>(main_device, raw_size_bytes), hw_id, decoder, main_device));
+            main_device->build_data_transfer(raw_size_bytes), hw_id, decoder, main_device->get_device()));
 
         device_builder.add_facility(std::make_unique<V4l2Synchronization>());
+        device_builder.add_facility(std::make_unique<GenX320Erc>(register_map));
     } catch (std::exception &e) { MV_HAL_LOG_ERROR() << "Failed to build streaming facilities :" << e.what(); }
 
     MV_HAL_LOG_INFO() << "V4l2 Discovery with great success +1";
