@@ -69,10 +69,11 @@ bool TzEvk2Gen41::can_build(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id) 
 static TzRegisterBuildMethod method("psee,video_gen4.1", TzEvk2Gen41::build, TzEvk2Gen41::can_build);
 
 void TzEvk2Gen41::spawn_facilities(DeviceBuilder &device_builder, const DeviceConfig &device_config) {
+    // FIXME: make_shared called on a reference
     device_builder.add_facility(std::make_unique<EventTrailFilter>(
-        std::dynamic_pointer_cast<TzDeviceWithRegmap>(shared_from_this()), get_sensor_info(), SENSOR_PREFIX));
+        std::make_shared<RegisterMap>(regmap()), get_sensor_info(), SENSOR_PREFIX));
     device_builder.add_facility(std::make_unique<AntiFlickerFilter>(
-        std::dynamic_pointer_cast<TzDeviceWithRegmap>(shared_from_this()), get_sensor_info(), SENSOR_PREFIX));
+        std::make_shared<RegisterMap>(regmap()), get_sensor_info(), SENSOR_PREFIX));
 
     auto erc = device_builder.add_facility(std::make_unique<Gen41Erc>(register_map, SENSOR_PREFIX + "erc/"));
     erc->initialize();

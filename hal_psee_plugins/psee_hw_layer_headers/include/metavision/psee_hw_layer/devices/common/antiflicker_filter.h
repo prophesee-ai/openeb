@@ -24,7 +24,7 @@ namespace Metavision {
 
 class AntiFlickerFilter : public I_AntiFlickerModule {
 public:
-    AntiFlickerFilter(const std::shared_ptr<TzDeviceWithRegmap> &dev,
+    AntiFlickerFilter(const std::shared_ptr<RegisterMap> &dev,
                       const I_HW_Identification::SensorInfo &sensor_info, const std::string &sensor_prefix);
 
     virtual bool enable(bool b) override;
@@ -57,7 +57,7 @@ private:
     uint32_t freq_to_period(const uint32_t &freq);
     std::pair<uint32_t, uint32_t> compute_invalidation(const uint32_t &max_cutoff_period, const uint32_t &clk_freq);
 
-    std::shared_ptr<TzDeviceWithRegmap> dev_;
+    std::shared_ptr<RegisterMap> register_map_;
     std::string sensor_prefix_;
     bool is_sensor_saphir;
     std::string flag_done_;
@@ -74,7 +74,6 @@ private:
     uint32_t start_threshold_{6};
     uint32_t stop_threshold_{4};
 
-    RegisterMap &regmap();
 };
 
 } // namespace Metavision

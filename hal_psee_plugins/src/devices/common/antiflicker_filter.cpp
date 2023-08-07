@@ -19,10 +19,10 @@ using vfield = std::map<std::string, uint32_t>;
 
 namespace Metavision {
 
-AntiFlickerFilter::AntiFlickerFilter(const std::shared_ptr<TzDeviceWithRegmap> &dev,
+AntiFlickerFilter::AntiFlickerFilter(const std::shared_ptr<RegisterMap> &register_map,
                                      const I_HW_Identification::SensorInfo &sensor_info,
                                      const std::string &sensor_prefix) :
-    dev_(dev), sensor_prefix_(sensor_prefix) {
+    register_map_(register_map), sensor_prefix_(sensor_prefix) {
     if (sensor_info.name_ == "GenX320") {
         is_sensor_saphir = true;
         flag_done_       = "flag_init_done";
@@ -65,21 +65,21 @@ std::pair<uint32_t, uint32_t> AntiFlickerFilter::compute_invalidation(const uint
 
 bool AntiFlickerFilter::enable(bool b) {
     // Always disable in order to configure AFK parameters
-    regmap()[sensor_prefix_ + "afk/pipeline_control"].write_value(0b101);
+    (*register_map_)[sensor_prefix_ + "afk/pipeline_control"].write_value(0b101);
     if (!b) {
         return true;
     }
 
     if (is_sensor_saphir) {
         // SRAM powerup
-        regmap()[sensor_prefix_ + "sram_initn"]["afk_initn"].write_value(1);
-        regmap()[sensor_prefix_ + "sram_pd0"].write_value(
+        (*register_map_)[sensor_prefix_ + "sram_initn"]["afk_initn"].write_value(1);
+        (*register_map_)[sensor_prefix_ + "sram_pd0"].write_value(
             vfield{{"afk_alr_pd", 0}, {"afk_str0_pd", 0}, {"afk_str1_pd", 0}});
     }
 
     bool init_done = 0;
     for (int i = 0; i < 3; i++) {
-        init_done = regmap()[sensor_prefix_ + "afk/initialization"][flag_done_].read_value();
+        init_done = (*register_map_)[sensor_prefix_ + "afk/initialization"][flag_done_].read_value();
         if (init_done == 1) {
             break;
         }
@@ -95,33 +95,33 @@ bool AntiFlickerFilter::enable(bool b) {
     std::pair<uint32_t, uint32_t> invalidation_cfg;
     if (is_sensor_saphir) {
         invalidation_cfg = compute_invalidation(max_cutoff_period, 25);
-        regmap()[sensor_prefix_ + "afk/invalidation"].write_value(
+        (*register_map_)[sensor_prefix_ + "afk/invalidation"].write_value(
             vfield{{"dt_fifo_wait_time", std::get<0>(invalidation_cfg)},
                    {"dt_fifo_timeout", std::get<1>(invalidation_cfg)},
                    {"in_parallel", 5}});
     } else {
-        regmap()[sensor_prefix_ + "afk/invalidation"]["dt_fifo_wait_time"].write_value(1630);
+        (*register_map_)[sensor_prefix_ + "afk/invalidation"]["dt_fifo_wait_time"].write_value(1630);
     }
 
     // Set duty cycle
-    regmap()[sensor_prefix_ + "afk/filter_period"].write_value(vfield{{"min_cutoff_period", min_cutoff_period},
+    (*register_map_)[sensor_prefix_ + "afk/filter_period"].write_value(vfield{{"min_cutoff_period", min_cutoff_period},
                                                                       {"max_cutoff_period", max_cutoff_period},
                                                                       {"inverted_duty_cycle", inverted_duty_cycle_}});
 
     // Set filtering mode
-    regmap()[sensor_prefix_ + afk_param_]["invert"].write_value(mode_ == BAND_STOP ? 0 : 1);
+    (*register_map_)[sensor_prefix_ + afk_param_]["invert"].write_value(mode_ == BAND_STOP ? 0 : 1);
 
     // Set hysteresis counters
-    regmap()[sensor_prefix_ + afk_param_]["counter_high"].write_value(start_threshold_);
-    regmap()[sensor_prefix_ + afk_param_]["counter_low"].write_value(stop_threshold_);
+    (*register_map_)[sensor_prefix_ + afk_param_]["counter_high"].write_value(start_threshold_);
+    (*register_map_)[sensor_prefix_ + afk_param_]["counter_low"].write_value(stop_threshold_);
 
-    regmap()[sensor_prefix_ + "afk/pipeline_control"].write_value(0b001);
+    (*register_map_)[sensor_prefix_ + "afk/pipeline_control"].write_value(0b001);
 
     return true;
 }
 
 bool AntiFlickerFilter::is_enabled() {
-    return regmap()[sensor_prefix_ + "afk/pipeline_control"].read_value() == 0b001;
+    return (*register_map_)[sensor_prefix_ + "afk/pipeline_control"].read_value() == 0b001;
 }
 
 bool AntiFlickerFilter::reset() {
@@ -280,10 +280,6 @@ uint32_t AntiFlickerFilter::get_min_supported_stop_threshold() const {
 
 uint32_t AntiFlickerFilter::get_max_supported_stop_threshold() const {
     return (1 << 3) - 1;
-}
-
-RegisterMap &AntiFlickerFilter::regmap() {
-    return dev_->regmap();
 }
 
 } // namespace Metavision

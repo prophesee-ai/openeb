@@ -224,10 +224,10 @@ std::map<const int, std::map<const std::string, const int>> saphir_25_stc_thresh
     {100, {{"presc", 13}, {"mult", 1}, {"dt_fifo_timeout", 635}}}};
 } // namespace
 
-EventTrailFilter::EventTrailFilter(const std::shared_ptr<TzDeviceWithRegmap> &dev,
+EventTrailFilter::EventTrailFilter(const std::shared_ptr<RegisterMap> &register_map,
                                    const I_HW_Identification::SensorInfo &sensor_info,
                                    const std::string &sensor_prefix) :
-    dev_(dev), sensor_prefix_(sensor_prefix) {
+    register_map_(register_map), sensor_prefix_(sensor_prefix) {
     if (sensor_info.name_ == "GenX320") {
         stc_prefix_   = "";
         trail_prefix_ = "";
@@ -295,7 +295,7 @@ bool EventTrailFilter::set_type(I_EventTrailFilterModule::Type type) {
 
 bool EventTrailFilter::enable(bool state) {
     // Bypass filter
-    regmap()[sensor_prefix_ + "stc/pipeline_control"].write_value(0b101);
+    (*register_map_)[sensor_prefix_ + "stc/pipeline_control"].write_value(0b101);
     enabled_ = false;
 
     if (!state)
@@ -303,15 +303,15 @@ bool EventTrailFilter::enable(bool state) {
 
     // Start sram init
     // Clear init flag
-    regmap()[sensor_prefix_ + "stc/initialization"][stc_prefix_ + "flag_init_done"].write_value(1);
+    (*register_map_)[sensor_prefix_ + "stc/initialization"][stc_prefix_ + "flag_init_done"].write_value(1);
 
     if (is_sensor_saphir) {
         // SRAM power up
-        regmap()[sensor_prefix_ + "sram_initn"]["ehc_stc_initn"].write_value(1);
-        regmap()[sensor_prefix_ + "sram_pd0"]["stc0_pd"].write_value(0);
+        (*register_map_)[sensor_prefix_ + "sram_initn"]["ehc_stc_initn"].write_value(1);
+        (*register_map_)[sensor_prefix_ + "sram_pd0"]["stc0_pd"].write_value(0);
     }
 
-    regmap()[sensor_prefix_ + "stc/initialization"][stc_prefix_ + "req_init"].write_value(1);
+    (*register_map_)[sensor_prefix_ + "stc/initialization"][stc_prefix_ + "req_init"].write_value(1);
 
     // Setup new configuration
     if (filtering_type_ == I_EventTrailFilterModule::Type::STC_CUT_TRAIL ||
@@ -321,12 +321,12 @@ bool EventTrailFilter::enable(bool state) {
         if (is_stc_improved) {
             fields.insert({"disable_stc_cut_trail", filtering_type_ == I_EventTrailFilterModule::Type::STC_KEEP_TRAIL});
         }
-        regmap()[sensor_prefix_ + "stc/stc_param"].write_value(fields);
-        regmap()[sensor_prefix_ + "stc/trail_param"][trail_prefix_ + "enable"].write_value(0);
+        (*register_map_)[sensor_prefix_ + "stc/stc_param"].write_value(fields);
+        (*register_map_)[sensor_prefix_ + "stc/trail_param"][trail_prefix_ + "enable"].write_value(0);
 
     } else if (filtering_type_ == I_EventTrailFilterModule::Type::TRAIL) {
-        regmap()[sensor_prefix_ + "stc/stc_param"][stc_prefix_ + "enable"].write_value(0);
-        regmap()[sensor_prefix_ + "stc/trail_param"].write_value(
+        (*register_map_)[sensor_prefix_ + "stc/stc_param"][stc_prefix_ + "enable"].write_value(0);
+        (*register_map_)[sensor_prefix_ + "stc/trail_param"].write_value(
             vfield{{trail_prefix_ + "enable", 1}, {trail_prefix_ + "threshold", threshold_ms_ * 1000}});
     }
 
@@ -337,14 +337,14 @@ bool EventTrailFilter::enable(bool state) {
         fields.insert({"enable_last_ts_update_at_every_event", 1});
     }
 
-    regmap()[sensor_prefix_ + "stc/timestamping"].write_value(fields);
-    regmap()[sensor_prefix_ + "stc/invalidation"]["dt_fifo_timeout"].write_value(
+    (*register_map_)[sensor_prefix_ + "stc/timestamping"].write_value(fields);
+    (*register_map_)[sensor_prefix_ + "stc/invalidation"]["dt_fifo_timeout"].write_value(
         threshold_params_[threshold_ms_]["dt_fifo_timeout"]);
 
     // Check sram init done
     bool init_done = 0;
     for (int i = 0; i < 3; i++) {
-        init_done = regmap()[sensor_prefix_ + "stc/initialization"][stc_prefix_ + "flag_init_done"].read_value();
+        init_done = (*register_map_)[sensor_prefix_ + "stc/initialization"][stc_prefix_ + "flag_init_done"].read_value();
         if (init_done == 1) {
             break;
         }
@@ -354,7 +354,7 @@ bool EventTrailFilter::enable(bool state) {
     }
 
     // Enable filter
-    regmap()[sensor_prefix_ + "stc/pipeline_control"].write_value(0b001);
+    (*register_map_)[sensor_prefix_ + "stc/pipeline_control"].write_value(0b001);
     enabled_ = true;
 
     return true;
@@ -380,8 +380,5 @@ uint32_t EventTrailFilter::get_min_supported_threshold() const {
     return 1000;
 }
 
-RegisterMap &EventTrailFilter::regmap() {
-    return dev_->regmap();
-}
 
 } // namespace Metavision
