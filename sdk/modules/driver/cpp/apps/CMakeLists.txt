@@ -16,5 +16,6 @@ if (HDF5_FOUND)
 endif ()
 if (NOT ANDROID)
     # need support for std::filesystem in NDK
+    # AK comment here
     add_subdirectory(metavision_active_pixel_detection)
 endif (NOT ANDROID)

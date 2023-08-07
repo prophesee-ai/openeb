@@ -8,5 +8,5 @@
 # See the License for the specific language governing permissions and limitations under the License.
 
 if (NOT ANDROID)
-    add_subdirectory(metavision_imx636_facility_casting_sample)
+    # add_subdirectory(metavision_imx636_facility_casting_sample)
 endif (NOT ANDROID)
