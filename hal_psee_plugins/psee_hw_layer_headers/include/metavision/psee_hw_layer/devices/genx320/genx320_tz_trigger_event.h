@@ -26,8 +26,7 @@ class TzDevice;
 class GenX320TzTriggerEvent : public I_TriggerIn {
 public:
     /// @brief Constructor
-    GenX320TzTriggerEvent(const std::shared_ptr<RegisterMap> &register_map, const std::string &prefix,
-                          const std::shared_ptr<TzDevice> tzDev);
+    GenX320TzTriggerEvent(const std::shared_ptr<RegisterMap> &register_map, const std::string &prefix);
 
     /// @brief Enables external trigger monitoring
     /// @param channel external trigger channel to enable
@@ -51,8 +50,6 @@ protected:
     std::string prefix_;
 
 private:
-    std::shared_ptr<TzDevice> tzDev_;
-
     const std::map<Channel, short> chan_map_;
 };
 
