@@ -26,9 +26,9 @@ class DeviceConfig;
 
 class TzCcam5Gen31 : public TzPseeFpgaDevice, public TzIssdDevice, public TzMainDevice, public IlluminationProvider {
 public:
-    TzCcam5Gen31(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent);
+    TzCcam5Gen31(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent);
     virtual ~TzCcam5Gen31();
-    static std::shared_ptr<TzDevice> build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id,
+    static std::shared_ptr<TzDevice> build(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id,
                                            std::shared_ptr<TzDevice> parent);
 
     virtual std::list<StreamFormat> get_supported_formats() const override;

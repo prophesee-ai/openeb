@@ -42,7 +42,7 @@ std::string ROOT_PREFIX   = "PSEE/";
 std::string SENSOR_PREFIX = "SENSOR_IF/GEN41/";
 } // namespace
 
-TzEvk2Gen41::TzEvk2Gen41(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent) :
+TzEvk2Gen41::TzEvk2Gen41(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent) :
     TzDevice(cmd, dev_id, parent),
     TzPseeVideo(cmd, dev_id, parent),
     TzDeviceWithRegmap(Gen41Evk2RegisterMap, Gen41Evk2RegisterMapSize, ROOT_PREFIX),
@@ -55,7 +55,7 @@ TzEvk2Gen41::TzEvk2Gen41(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev
     lifo_control(true, true, true);
 }
 
-std::shared_ptr<TzDevice> TzEvk2Gen41::build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id,
+std::shared_ptr<TzDevice> TzEvk2Gen41::build(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id,
                                              std::shared_ptr<TzDevice> parent) {
     if (can_build(cmd, dev_id))
         return std::make_shared<TzEvk2Gen41>(cmd, dev_id, parent);
@@ -63,7 +63,7 @@ std::shared_ptr<TzDevice> TzEvk2Gen41::build(std::shared_ptr<TzLibUSBBoardComman
         return nullptr;
 }
 
-bool TzEvk2Gen41::can_build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id) {
+bool TzEvk2Gen41::can_build(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id) {
     return (cmd->read_device_register(dev_id, 0x800)[0] == SYSTEM_EVK2_GEN41);
 }
 static TzRegisterBuildMethod method("psee,video_gen4.1", TzEvk2Gen41::build, TzEvk2Gen41::can_build);

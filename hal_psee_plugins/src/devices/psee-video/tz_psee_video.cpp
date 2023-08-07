@@ -18,7 +18,7 @@
 
 namespace Metavision {
 
-TzPseeVideo::TzPseeVideo(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent) :
+TzPseeVideo::TzPseeVideo(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent) :
     TzDevice(cmd, dev_id, parent), TzPseeFpgaDevice() {
     try {
         destroy();

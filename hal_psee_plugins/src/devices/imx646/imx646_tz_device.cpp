@@ -51,7 +51,7 @@ namespace Imx646 {
 #include "devices/imx636/imx636_bias_settings_iterator.h"
 } // namespace Imx646
 
-TzImx646::TzImx646(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent) :
+TzImx646::TzImx646(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent) :
     TzDevice(cmd, dev_id, parent),
     TzIssdDevice(issd_evk3_imx636_sequence),
     TzDeviceWithRegmap(Imx636RegisterMap, Imx636RegisterMapSize, ROOT_PREFIX) {
@@ -62,7 +62,7 @@ TzImx646::TzImx646(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id, s
     lifo_control(true, true, true);
 }
 
-std::shared_ptr<TzDevice> TzImx646::build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id,
+std::shared_ptr<TzDevice> TzImx646::build(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id,
                                           std::shared_ptr<TzDevice> parent) {
     if (can_build(cmd, dev_id)) {
         return std::make_shared<TzImx646>(cmd, dev_id, parent);
@@ -73,7 +73,7 @@ std::shared_ptr<TzDevice> TzImx646::build(std::shared_ptr<TzLibUSBBoardCommand> 
 
 static TzRegisterBuildMethod method1("psee,ccam5_imx646", TzImx646::build, TzImx646::can_build);
 
-bool TzImx646::can_build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id) {
+bool TzImx646::can_build(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id) {
     bool res = (cmd->read_device_register(dev_id, 0x14)[0] == 0xA0401806);
     res      = res && ((cmd->read_device_register(dev_id, 0xF128)[0] & 3) == 0b10);
     return res;

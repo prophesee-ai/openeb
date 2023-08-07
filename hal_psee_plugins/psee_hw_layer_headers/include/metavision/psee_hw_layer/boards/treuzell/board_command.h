@@ -9,26 +9,32 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-#ifndef METAVISION_HAL_TZ_UNKNOWN_H
-#define METAVISION_HAL_TZ_UNKNOWN_H
+#ifndef METAVISION_HAL_BOARD_COMMAND_H
+#define METAVISION_HAL_BOARD_COMMAND_H
 
-#include "metavision/psee_hw_layer/devices/treuzell/tz_device.h"
+#include <cstdint>
+#include <vector>
+#include <string>
+#include <memory>
 
 namespace Metavision {
 
-class BoardCommand;
+class TzCtrlFrame;
+class DataTransfer;
 
-class TzUnknownDevice : public TzDevice {
+class BoardCommand {
 public:
-    TzUnknownDevice(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent);
-    static std::shared_ptr<TzDevice> build(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id,
-                                           std::shared_ptr<TzDevice> parent);
-    virtual ~TzUnknownDevice();
-
-protected:
-    virtual void spawn_facilities(DeviceBuilder &device_builder, const DeviceConfig &device_config);
+    virtual std::vector<uint32_t> read_device_register(uint32_t device, uint32_t address, int nval = 1) = 0;
+    virtual void write_device_register(uint32_t device, uint32_t address, const std::vector<uint32_t> &val) = 0;
+    virtual void transfer_tz_frame(TzCtrlFrame &req) = 0;
+    virtual uint32_t get_device_count() = 0;
+    virtual std::string get_name() = 0;
+    virtual std::string get_serial() = 0;
+    virtual std::unique_ptr<Metavision::DataTransfer> build_data_transfer(uint32_t raw_event_size_bytes);
+    virtual long get_board_speed();
+    virtual std::string get_manufacturer();
+    virtual uint32_t get_version();
+    virtual time_t get_build_date();
 };
-
-} // namespace Metavision
-
-#endif // METAVISION_HAL_TZ_UNKNOWN_H
+}
+#endif // METAVISION_HAL_BOARD_COMMAND_H

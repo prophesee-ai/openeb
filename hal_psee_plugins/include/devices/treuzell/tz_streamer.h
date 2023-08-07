@@ -22,9 +22,9 @@ class DeviceConfig;
 
 class TzStreamer : public TzDevice {
 public:
-    TzStreamer(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent);
+    TzStreamer(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent);
     virtual ~TzStreamer();
-    static std::shared_ptr<TzDevice> build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id,
+    static std::shared_ptr<TzDevice> build(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id,
                                            std::shared_ptr<TzDevice> parent);
 
     virtual void start();

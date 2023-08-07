@@ -17,12 +17,14 @@
 
 namespace Metavision {
 
+class BoardCommand;
+
 class TzPseeVideo : public TzPseeFpgaDevice, public TzMainDevice {
 public:
-    TzPseeVideo(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent);
+    TzPseeVideo(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent);
     virtual ~TzPseeVideo();
     virtual void spawn_facilities(DeviceBuilder &device_builder, const DeviceConfig &device_config);
-    static std::shared_ptr<TzDevice> build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id,
+    static std::shared_ptr<TzDevice> build(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id,
                                            std::shared_ptr<TzDevice> parent);
 
     virtual std::list<StreamFormat> get_supported_formats() const override;

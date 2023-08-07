@@ -39,7 +39,7 @@ std::string SENSOR_PREFIX = "";
 using vfield              = std::map<std::string, uint32_t>;
 } // namespace
 
-TzCx3GenX320::TzCx3GenX320(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id,
+TzCx3GenX320::TzCx3GenX320(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id,
                            std::shared_ptr<TzDevice> parent) :
     TzDevice(cmd, dev_id, parent),
     TzIssdDevice(issd_genx320es_cx3_sequence),
@@ -47,7 +47,7 @@ TzCx3GenX320::TzCx3GenX320(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t d
     sync_mode_ = I_CameraSynchronization::SyncMode::STANDALONE;
 }
 
-std::shared_ptr<TzDevice> TzCx3GenX320::build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id,
+std::shared_ptr<TzDevice> TzCx3GenX320::build(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id,
                                               std::shared_ptr<TzDevice> parent) {
     if (can_build(cmd, dev_id)) {
         return std::make_shared<TzCx3GenX320>(cmd, dev_id, parent);
@@ -58,7 +58,7 @@ std::shared_ptr<TzDevice> TzCx3GenX320::build(std::shared_ptr<TzLibUSBBoardComma
 
 static TzRegisterBuildMethod method0("psee,cx3_saphir", TzCx3GenX320::build, TzCx3GenX320::can_build);
 
-bool TzCx3GenX320::can_build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id) {
+bool TzCx3GenX320::can_build(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id) {
     return (cmd->read_device_register(dev_id, 0x14)[0] == 0x30501C01);
 }
 

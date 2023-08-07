@@ -26,8 +26,8 @@ namespace Metavision {
 TzCameraDiscovery::TzCameraDiscovery() :
     libusb_ctx(std::make_shared<LibUSBContext>()), builder(std::make_unique<TzDeviceBuilder>()) {}
 
-std::vector<std::shared_ptr<TzLibUSBBoardCommand>> TzCameraDiscovery::list_boards() const {
-    std::vector<std::shared_ptr<TzLibUSBBoardCommand>> boards;
+std::vector<std::shared_ptr<BoardCommand>> TzCameraDiscovery::list_boards() const {
+    std::vector<std::shared_ptr<BoardCommand>> boards;
     libusb_device **devs;
 
     ssize_t cnt = libusb_get_device_list(libusb_ctx->ctx(), &devs); // get the list of devices
@@ -47,7 +47,7 @@ std::vector<std::shared_ptr<TzLibUSBBoardCommand>> TzCameraDiscovery::list_board
         }
 
         try {
-            std::shared_ptr<TzLibUSBBoardCommand> cmd =
+            std::shared_ptr<BoardCommand> cmd =
                 std::make_shared<TzLibUSBBoardCommand>(libusb_ctx, devs[i], desc, known_usb_ids);
             MV_HAL_LOG_TRACE() << "Create board command for" << cmd->get_name() << cmd->get_serial() << "(" << std::hex
                                << desc.idVendor << ":" << desc.idProduct << std::dec << ")";

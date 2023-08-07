@@ -11,12 +11,12 @@
 
 #include "devices/treuzell/tz_unknown.h"
 #include "devices/treuzell/tz_device_builder.h"
-#include "metavision/psee_hw_layer/boards/treuzell/tz_libusb_board_command.h"
+#include "metavision/psee_hw_layer/boards/treuzell/board_command.h"
 #include "metavision/hal/utils/hal_log.h"
 
 namespace Metavision {
 
-TzUnknownDevice::TzUnknownDevice(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id,
+TzUnknownDevice::TzUnknownDevice(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id,
                                  std::shared_ptr<TzDevice> parent) :
     TzDevice(cmd, dev_id, parent) {
     try {
@@ -30,7 +30,7 @@ TzUnknownDevice::~TzUnknownDevice() {
     } catch (const std::system_error &e) { MV_HAL_LOG_TRACE() << name << "did not disable:" << e.what(); }
 }
 
-std::shared_ptr<TzDevice> TzUnknownDevice::build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id,
+std::shared_ptr<TzDevice> TzUnknownDevice::build(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id,
                                                  std::shared_ptr<TzDevice> parent) {
     return std::make_shared<TzUnknownDevice>(cmd, dev_id, parent);
 }

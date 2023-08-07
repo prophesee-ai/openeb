@@ -45,7 +45,7 @@ std::string ROOT_PREFIX   = "PSEE/IMX636/";
 std::string SENSOR_PREFIX = "";
 } // namespace
 
-TzImx636::TzImx636(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent) :
+TzImx636::TzImx636(std::shared_ptr<Metavision::BoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent) :
     TzDevice(cmd, dev_id, parent),
     TzIssdDevice(issd_evk3_imx636_sequence),
     TzDeviceWithRegmap(Imx636RegisterMap, Imx636RegisterMapSize, ROOT_PREFIX) {
@@ -56,7 +56,7 @@ TzImx636::TzImx636(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id, s
     lifo_control(true, true, true);
 }
 
-std::shared_ptr<TzDevice> TzImx636::build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id,
+std::shared_ptr<TzDevice> TzImx636::build(std::shared_ptr<Metavision::BoardCommand> cmd, uint32_t dev_id,
                                           std::shared_ptr<TzDevice> parent) {
     if (can_build(cmd, dev_id)) {
         return std::make_shared<TzImx636>(cmd, dev_id, parent);
@@ -67,7 +67,7 @@ std::shared_ptr<TzDevice> TzImx636::build(std::shared_ptr<TzLibUSBBoardCommand> 
 static TzRegisterBuildMethod method0("psee,ccam5_gen42", TzImx636::build, TzImx636::can_build);
 static TzRegisterBuildMethod method1("psee,ccam5_imx636", TzImx636::build, TzImx636::can_build);
 
-bool TzImx636::can_build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id) {
+bool TzImx636::can_build(std::shared_ptr<Metavision::BoardCommand> cmd, uint32_t dev_id) {
     bool res = (cmd->read_device_register(dev_id, 0x14)[0] == 0xA0401806);
     res      = res && ((cmd->read_device_register(dev_id, 0xF128)[0] & 3) == 0);
     return res;

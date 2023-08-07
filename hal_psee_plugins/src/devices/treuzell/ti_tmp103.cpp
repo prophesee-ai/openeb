@@ -11,14 +11,14 @@
 
 #include "devices/treuzell/ti_tmp103.h"
 #include "devices/treuzell/tz_device_builder.h"
-#include "metavision/psee_hw_layer/boards/treuzell/tz_libusb_board_command.h"
+#include "metavision/psee_hw_layer/boards/treuzell/board_command.h"
 
 namespace Metavision {
 
-TiTmp103::TiTmp103(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent) :
+TiTmp103::TiTmp103(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent) :
     TzDevice(cmd, dev_id, parent) {}
 
-std::shared_ptr<TzDevice> TiTmp103::build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id,
+std::shared_ptr<TzDevice> TiTmp103::build(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id,
                                           std::shared_ptr<TzDevice> parent) {
     return std::make_shared<TiTmp103>(cmd, dev_id, parent);
 }

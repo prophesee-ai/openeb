@@ -42,7 +42,7 @@ std::string ROOT_PREFIX   = "PSEE/";
 std::string SENSOR_PREFIX = "SENSOR_IF/IMX636/";
 } // namespace
 
-TzRdk2Imx636::TzRdk2Imx636(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id,
+TzRdk2Imx636::TzRdk2Imx636(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id,
                            std::shared_ptr<TzDevice> parent) :
     TzDevice(cmd, dev_id, parent),
     TzPseeVideo(cmd, dev_id, parent),
@@ -55,7 +55,7 @@ TzRdk2Imx636::TzRdk2Imx636(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t d
     lifo_control(true, true, true);
 }
 
-std::shared_ptr<TzDevice> TzRdk2Imx636::build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id,
+std::shared_ptr<TzDevice> TzRdk2Imx636::build(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id,
                                               std::shared_ptr<TzDevice> parent) {
     if (can_build(cmd, dev_id))
         return std::make_shared<TzRdk2Imx636>(cmd, dev_id, parent);
@@ -63,7 +63,7 @@ std::shared_ptr<TzDevice> TzRdk2Imx636::build(std::shared_ptr<TzLibUSBBoardComma
         return nullptr;
 }
 
-bool TzRdk2Imx636::can_build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id) {
+bool TzRdk2Imx636::can_build(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id) {
     TzGenericCtrlFrame is_enable(TZ_PROP_DEVICE_ENABLE);
     is_enable.push_back32(dev_id);
     cmd->transfer_tz_frame(is_enable);

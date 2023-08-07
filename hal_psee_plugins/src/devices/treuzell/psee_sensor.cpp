@@ -34,7 +34,7 @@ static std::pair<TzDeviceBuilder::Build_Fun, TzDeviceBuilder::Check_Fun> get_met
     return {nullptr, nullptr};
 }
 
-static std::shared_ptr<TzDevice> build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id,
+static std::shared_ptr<TzDevice> build(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id,
                                        std::shared_ptr<TzDevice> parent) {
     /* If the board generically reports an I2C/SPI sensor, we may try to identify the sensor
      * through direct register access and build it if we know how */

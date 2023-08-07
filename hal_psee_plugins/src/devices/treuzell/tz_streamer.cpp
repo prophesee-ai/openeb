@@ -11,14 +11,14 @@
 
 #include "devices/treuzell/tz_streamer.h"
 #include "devices/treuzell/tz_device_builder.h"
-#include "metavision/psee_hw_layer/boards/treuzell/tz_libusb_board_command.h"
+#include "metavision/psee_hw_layer/boards/treuzell/board_command.h"
 #include "metavision/psee_hw_layer/boards/treuzell/tz_control_frame.h"
 #include "boards/treuzell/treuzell_command_definition.h"
 #include "metavision/psee_hw_layer/utils/psee_format.h"
 
 namespace Metavision {
 
-TzStreamer::TzStreamer(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent) :
+TzStreamer::TzStreamer(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent) :
     TzDevice(cmd, dev_id, parent) {
     // Try to stop any previous activity. Ignore failure, as it is the expected behavior from a stopped device
     try {
@@ -26,7 +26,7 @@ TzStreamer::TzStreamer(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_i
     } catch (std::system_error &e) {}
 }
 
-std::shared_ptr<TzDevice> TzStreamer::build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id,
+std::shared_ptr<TzDevice> TzStreamer::build(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id,
                                             std::shared_ptr<TzDevice> parent) {
     return std::make_shared<TzStreamer>(cmd, dev_id, parent);
 }

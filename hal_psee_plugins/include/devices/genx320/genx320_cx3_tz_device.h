@@ -20,12 +20,12 @@ namespace Metavision {
 
 class TzCx3GenX320 : public TzIssdDevice, public TzMainDevice, public TemperatureProvider {
 public:
-    TzCx3GenX320(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent);
+    TzCx3GenX320(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent);
     virtual ~TzCx3GenX320();
-    static std::shared_ptr<TzDevice> build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id,
+    static std::shared_ptr<TzDevice> build(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id,
                                            std::shared_ptr<TzDevice> parent);
 
-    static bool can_build(std::shared_ptr<TzLibUSBBoardCommand>, uint32_t dev_id);
+    static bool can_build(std::shared_ptr<BoardCommand>, uint32_t dev_id);
     std::list<StreamFormat> get_supported_formats() const override;
     StreamFormat get_output_format() const override;
     virtual long get_system_id() const;

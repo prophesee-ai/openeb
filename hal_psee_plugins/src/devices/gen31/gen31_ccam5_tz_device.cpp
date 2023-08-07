@@ -48,7 +48,7 @@ std::string SENSOR_IF_PREFIX = "SENSOR_IF/GEN31_IF/";
 std::string SENSOR_PREFIX    = "SENSOR_IF/GEN31/";
 } // namespace
 
-TzCcam5Gen31::TzCcam5Gen31(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id,
+TzCcam5Gen31::TzCcam5Gen31(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id,
                            std::shared_ptr<TzDevice> parent) :
     TzDevice(cmd, dev_id, parent),
     TzPseeFpgaDevice(),
@@ -70,7 +70,7 @@ TzCcam5Gen31::TzCcam5Gen31(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t d
     sync_mode_                                              = I_CameraSynchronization::SyncMode::STANDALONE;
 }
 
-std::shared_ptr<TzDevice> TzCcam5Gen31::build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id,
+std::shared_ptr<TzDevice> TzCcam5Gen31::build(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id,
                                               std::shared_ptr<TzDevice> parent) {
     if (cmd->read_device_register(dev_id, 0x800)[0] != SYSTEM_EVK3_GEN31_EVT3)
         throw HalException(HalErrorCode::FailedInitialization, "Wrong FPGA system ID");

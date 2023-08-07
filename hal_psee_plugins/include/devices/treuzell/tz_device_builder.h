@@ -23,11 +23,12 @@ namespace Metavision {
 class TzDevice;
 
 class TzRegisterBuildMethod;
+class BoardCommand;
 class TzDeviceBuilder {
 public:
-    using Build_Fun = std::function<std::shared_ptr<TzDevice>(std::shared_ptr<TzLibUSBBoardCommand>, uint32_t id,
+    using Build_Fun = std::function<std::shared_ptr<TzDevice>(std::shared_ptr<BoardCommand>, uint32_t id,
                                                               std::shared_ptr<TzDevice> parent)>;
-    using Check_Fun = std::function<bool(std::shared_ptr<TzLibUSBBoardCommand>, uint32_t id)>;
+    using Check_Fun = std::function<bool(std::shared_ptr<BoardCommand>, uint32_t id)>;
     using Build_Map = std::unordered_map<std::string, std::pair<Build_Fun, Check_Fun>>;
 
     TzDeviceBuilder() : map(generic_map()) {}
@@ -35,8 +36,8 @@ public:
     void set(std::string key, Build_Fun method, Check_Fun buildable = nullptr) {
         map[key] = {method, buildable};
     }
-    bool can_build(std::shared_ptr<TzLibUSBBoardCommand>);
-    bool can_build_device(std::shared_ptr<TzLibUSBBoardCommand>, uint32_t dev_id);
+    bool can_build(std::shared_ptr<BoardCommand>);
+    bool can_build_device(std::shared_ptr<BoardCommand>, uint32_t dev_id);
     /******************************************************************************************************************
     The builder is meant to evolve to be able to manage future use cases:
     * builder will, for the board having the required serial, build a TzDevice for every device plugged on the board.
@@ -52,13 +53,13 @@ public:
     * The builder will also spawn the device control and propagate start/stop as needed. The propagation mechanism will
       be strictly internal, and can be rewritten to manage multiple successors if needed at some point in the future.
     ******************************************************************************************************************/
-    bool build_devices(std::shared_ptr<TzLibUSBBoardCommand> cmd, DeviceBuilder &device_builder,
+    bool build_devices(std::shared_ptr<BoardCommand> cmd, DeviceBuilder &device_builder,
                        const DeviceConfig &config);
 
 private:
     Build_Map map;
     static Build_Map &generic_map();
-    std::vector<Build_Fun> get_build_fun(std::shared_ptr<TzLibUSBBoardCommand>, uint32_t dev_id) const;
+    std::vector<Build_Fun> get_build_fun(std::shared_ptr<BoardCommand>, uint32_t dev_id) const;
     friend TzDevice;
     friend TzRegisterBuildMethod;
 };

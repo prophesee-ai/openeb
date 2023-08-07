@@ -20,7 +20,7 @@
 
 namespace Metavision {
 
-TzDevice::TzDevice(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent) :
+TzDevice::TzDevice(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent) :
     cmd(cmd), tzID(dev_id), parent(parent) {
     try {
         name = get_name();

@@ -13,7 +13,7 @@
 
 #include "metavision/psee_hw_layer/devices/treuzell/tz_device.h"
 #include "metavision/psee_hw_layer/boards/treuzell/tz_control_frame.h"
-#include "metavision/psee_hw_layer/boards/treuzell/tz_libusb_board_command.h"
+#include "metavision/psee_hw_layer/boards/treuzell/board_command.h"
 #include "boards/treuzell/treuzell_command_definition.h"
 #include "metavision/psee_hw_layer/boards/treuzell/tz_hw_identification.h"
 #include "metavision/psee_hw_layer/boards/utils/psee_libusb_data_transfer.h"
@@ -27,7 +27,7 @@
 
 namespace Metavision {
 
-bool TzDeviceBuilder::can_build(std::shared_ptr<TzLibUSBBoardCommand> cmd) {
+bool TzDeviceBuilder::can_build(std::shared_ptr<BoardCommand> cmd) {
     try {
         auto device_count = cmd->get_device_count();
         MV_HAL_LOG_TRACE() << cmd->get_name() << "has" << device_count << "Treuzell devices";
@@ -42,7 +42,7 @@ bool TzDeviceBuilder::can_build(std::shared_ptr<TzLibUSBBoardCommand> cmd) {
     }
 }
 
-std::vector<TzDeviceBuilder::Build_Fun> TzDeviceBuilder::get_build_fun(std::shared_ptr<TzLibUSBBoardCommand> cmd,
+std::vector<TzDeviceBuilder::Build_Fun> TzDeviceBuilder::get_build_fun(std::shared_ptr<BoardCommand> cmd,
                                                                        uint32_t dev_id) const {
     std::vector<TzDeviceBuilder::Build_Fun> build_fun;
     std::vector<std::string> compat_str;
@@ -94,7 +94,7 @@ std::vector<TzDeviceBuilder::Build_Fun> TzDeviceBuilder::get_build_fun(std::shar
     return build_fun;
 }
 
-bool TzDeviceBuilder::can_build_device(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id) {
+bool TzDeviceBuilder::can_build_device(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id) {
     return !get_build_fun(cmd, dev_id).empty();
 }
 
@@ -110,7 +110,7 @@ std::shared_ptr<T> get_provider(Devices &devices) {
     return nullptr;
 }
 
-bool TzDeviceBuilder::build_devices(std::shared_ptr<TzLibUSBBoardCommand> cmd,
+bool TzDeviceBuilder::build_devices(std::shared_ptr<BoardCommand> cmd,
                                     Metavision::DeviceBuilder &device_builder, const Metavision::DeviceConfig &config) {
     auto device_count = cmd->get_device_count();
     Devices devices;

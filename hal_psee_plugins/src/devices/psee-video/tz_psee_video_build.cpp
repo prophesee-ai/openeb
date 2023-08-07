@@ -10,14 +10,14 @@
  **********************************************************************************************************************/
 
 #include "metavision/psee_hw_layer/devices/psee-video/tz_psee_video.h"
-#include "metavision/psee_hw_layer/boards/treuzell/tz_libusb_board_command.h"
+#include "metavision/psee_hw_layer/boards/treuzell/board_command.h"
 #include "metavision/psee_hw_layer/devices/treuzell/tz_device.h"
 #include "metavision/hal/utils/hal_log.h"
 #include "devices/treuzell/tz_device_builder.h"
 
 namespace Metavision {
 
-std::shared_ptr<TzDevice> TzPseeVideo::build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id,
+std::shared_ptr<TzDevice> TzPseeVideo::build(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id,
                                              std::shared_ptr<TzDevice> parent) {
     auto variants = {
         // clang-format off

@@ -25,11 +25,11 @@ class TzRdk2Imx636 : public TzPseeVideo,
                      public TemperatureProvider,
                      public IlluminationProvider {
 public:
-    TzRdk2Imx636(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent);
+    TzRdk2Imx636(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent);
     virtual ~TzRdk2Imx636();
-    static std::shared_ptr<TzDevice> build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id,
+    static std::shared_ptr<TzDevice> build(std::shared_ptr<BoardCommand> cmd, uint32_t dev_id,
                                            std::shared_ptr<TzDevice> parent);
-    static bool can_build(std::shared_ptr<TzLibUSBBoardCommand>, uint32_t dev_id);
+    static bool can_build(std::shared_ptr<BoardCommand>, uint32_t dev_id);
 
     virtual std::list<StreamFormat> get_supported_formats() const override;
     StreamFormat get_output_format() const override;

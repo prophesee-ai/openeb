@@ -30,7 +30,7 @@ namespace Metavision {
 
 class DeviceBuilder;
 class DeviceConfig;
-class TzLibUSBBoardCommand;
+class BoardCommand;
 class StreamFormat;
 
 class TzDevice : public std::enable_shared_from_this<TzDevice> {
@@ -51,7 +51,7 @@ public:
     virtual void spawn_facilities(DeviceBuilder &device_builder, const DeviceConfig &device_config) = 0;
 
 protected:
-    TzDevice(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent);
+    TzDevice(std::shared_ptr<Metavision::BoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent);
     virtual ~TzDevice();
 
     virtual void initialize();
@@ -60,7 +60,7 @@ protected:
     std::string name;
     std::shared_ptr<TzDevice> parent;
     std::weak_ptr<TzDevice> child;
-    std::shared_ptr<TzLibUSBBoardCommand> cmd;
+    std::shared_ptr<Metavision::BoardCommand> cmd;
     uint32_t tzID;
 };
 
