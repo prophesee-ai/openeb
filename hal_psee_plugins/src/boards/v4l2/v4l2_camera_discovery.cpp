@@ -34,8 +34,10 @@
 #include "metavision/psee_hw_layer/utils/psee_format.h"
 #include "metavision/psee_hw_layer/boards/v4l2/v4l2_board_command.h"
 #include "metavision/psee_hw_layer/devices/treuzell/tz_regmap_device.h"
-#include "metavision/psee_hw_layer/devices/genx320/genx320_erc.h"
 
+#include "metavision/psee_hw_layer/devices/genx320/genx320_erc.h"
+#include "metavision/psee_hw_layer/devices/genx320/genx320_ll_roi.h"
+#include "metavision/psee_hw_layer/devices/genx320/genx320_ll_biases.h"
 
 #include "devices/genx320/register_maps/genx320es_registermap.h"
 
@@ -107,6 +109,8 @@ bool V4l2CameraDiscovery::discover(DeviceBuilder &device_builder, const std::str
 
         device_builder.add_facility(std::make_unique<V4l2Synchronization>());
         device_builder.add_facility(std::make_unique<GenX320Erc>(register_map));
+        device_builder.add_facility(std::make_unique<GenX320LowLevelRoi>(config, register_map, ""));
+        device_builder.add_facility(std::make_unique<GenX320LLBiases>(register_map, config));
     } catch (std::exception &e) { MV_HAL_LOG_ERROR() << "Failed to build streaming facilities :" << e.what(); }
 
     MV_HAL_LOG_INFO() << "V4l2 Discovery with great success +1";
