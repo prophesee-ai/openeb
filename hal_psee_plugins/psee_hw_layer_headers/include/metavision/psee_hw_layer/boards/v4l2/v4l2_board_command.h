@@ -38,21 +38,21 @@ public:
     V4L2BoardCommand(std::string filepath);
     ~V4L2BoardCommand();
 
-    long get_board_speed();
+    long get_board_speed() override;
 
-    std::string get_serial();
-    std::string get_name();
-    std::string get_manufacturer();
-    time_t get_build_date();
-    uint32_t get_version();
+    std::string get_serial() override;
+    std::string get_name() override;
+    std::string get_manufacturer() override;
+    time_t get_build_date() override;
+    uint32_t get_version() override;
 
-    unsigned int get_device_count();
-    std::vector<uint32_t> read_device_register(uint32_t device, uint32_t address, int nval = 1);
-    void write_device_register(uint32_t device, uint32_t address, const std::vector<uint32_t> &val);
+    uint32_t get_device_count() override;
+    std::vector<uint32_t> read_device_register(uint32_t device, uint32_t address, int nval = 1) override;
+    void write_device_register(uint32_t device, uint32_t address, const std::vector<uint32_t> &val) override;
 
     // @brief Create a new DataTransfer object to stream the currently opened device
-    std::unique_ptr<DataTransfer> build_data_transfer(uint32_t raw_event_size_bytes);
-    void transfer_tz_frame(TzCtrlFrame &req);
+    std::unique_ptr<DataTransfer> build_data_transfer(uint32_t raw_event_size_bytes) override;
+    void transfer_tz_frame(TzCtrlFrame &req) override;
     std::shared_ptr<V4l2Device> get_device();
 
 private:
