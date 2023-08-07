@@ -30,11 +30,11 @@ public:
     virtual uint32_t get_device_count() = 0;
     virtual std::string get_name() = 0;
     virtual std::string get_serial() = 0;
-    virtual std::unique_ptr<Metavision::DataTransfer> build_data_transfer(uint32_t raw_event_size_bytes);
-    virtual long get_board_speed();
-    virtual std::string get_manufacturer();
-    virtual uint32_t get_version();
-    virtual time_t get_build_date();
+    virtual std::unique_ptr<Metavision::DataTransfer> build_data_transfer(uint32_t raw_event_size_bytes) = 0;
+    virtual long get_board_speed() = 0;
+    virtual std::string get_manufacturer() = 0;
+    virtual uint32_t get_version() = 0;
+    virtual time_t get_build_date() = 0;
 };
 }
 #endif // METAVISION_HAL_BOARD_COMMAND_H
