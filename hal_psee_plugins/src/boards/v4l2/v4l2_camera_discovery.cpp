@@ -38,6 +38,9 @@
 #include "metavision/psee_hw_layer/devices/genx320/genx320_erc.h"
 #include "metavision/psee_hw_layer/devices/genx320/genx320_ll_roi.h"
 #include "metavision/psee_hw_layer/devices/genx320/genx320_ll_biases.h"
+#include "metavision/psee_hw_layer/devices/common/antiflicker_filter.h"
+#include "metavision/psee_hw_layer/devices/common/event_trail_filter.h"
+#include "metavision/psee_hw_layer/devices/genx320/genx320_tz_trigger_event.h"
 
 #include "devices/genx320/register_maps/genx320es_registermap.h"
 
@@ -107,10 +110,19 @@ bool V4l2CameraDiscovery::discover(DeviceBuilder &device_builder, const std::str
         device_builder.add_facility(std::make_unique<Metavision::I_EventsStream>(
             main_device->build_data_transfer(raw_size_bytes), hw_id, decoder, main_device->get_device()));
 
+    // FIXME: make_shared called on a reference
+        device_builder.add_facility(std::make_unique<AntiFlickerFilter>(
+            register_map, hw_id->get_sensor_info(), ""));
+
+        device_builder.add_facility(std::make_unique<EventTrailFilter>(
+            register_map, hw_id->get_sensor_info(), ""));
+
         device_builder.add_facility(std::make_unique<V4l2Synchronization>());
         device_builder.add_facility(std::make_unique<GenX320Erc>(register_map));
         device_builder.add_facility(std::make_unique<GenX320LowLevelRoi>(config, register_map, ""));
         device_builder.add_facility(std::make_unique<GenX320LLBiases>(register_map, config));
+        device_builder.add_facility(
+            std::make_unique<GenX320TzTriggerEvent>(register_map, ""));
     } catch (std::exception &e) { MV_HAL_LOG_ERROR() << "Failed to build streaming facilities :" << e.what(); }
 
     MV_HAL_LOG_INFO() << "V4l2 Discovery with great success +1";
