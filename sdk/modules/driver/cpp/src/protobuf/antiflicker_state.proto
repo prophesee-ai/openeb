@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package DeviceSerialization;
+
+message AntiflickerState {
+    oneof optional_enabled { bool enabled = 1; }
+    oneof optional_band_low_freq { uint32 band_low_freq = 2; }
+    oneof optional_band_high_freq { uint32 band_high_freq = 3; }
+
+    enum AFKFilteringMode {
+        BAND_PASS = 0;
+        BAND_STOP = 1;
+    }
+
+    oneof optional_filtering_mode { AFKFilteringMode filtering_mode = 4; }
+    oneof optional_duty_cycle { float duty_cycle = 5; }
+    oneof optional_start_threshold { uint32 start_threshold = 6; }
+    oneof optional_stop_threshold { uint32 stop_threshold = 7; }
+}

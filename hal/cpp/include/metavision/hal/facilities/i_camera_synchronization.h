@@ -51,7 +51,7 @@ public:
 
     /// @brief Retrieves Synchronization mode
     /// @return synchronization mode
-    virtual SyncMode get_mode() = 0;
+    virtual SyncMode get_mode() const = 0;
 };
 
 } // namespace Metavision

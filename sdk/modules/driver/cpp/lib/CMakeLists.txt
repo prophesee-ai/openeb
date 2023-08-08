@@ -27,6 +27,7 @@ target_link_libraries(metavision_sdk_driver
         metavision_hal_discovery
     PRIVATE
         Boost::filesystem
+        metavision_device_serialization_obj
 )
 if (HDF5_FOUND)
     target_compile_definitions(metavision_sdk_driver

@@ -180,7 +180,7 @@ bool TzImx646::set_mode_slave() {
     return true;
 }
 
-I_CameraSynchronization::SyncMode TzImx646::get_mode() {
+I_CameraSynchronization::SyncMode TzImx646::get_mode() const {
     return sync_mode_;
 }
 

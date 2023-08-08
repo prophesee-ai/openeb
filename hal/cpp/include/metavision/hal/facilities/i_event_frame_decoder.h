@@ -32,6 +32,8 @@ public:
 
     I_EventFrameDecoder(int height, int width);
 
+    virtual ~I_EventFrameDecoder() = default;
+
     /// @brief Sets the functions to call to each decoded frame of events
     /// @param cb Callback to add
     /// @return ID of the added callback

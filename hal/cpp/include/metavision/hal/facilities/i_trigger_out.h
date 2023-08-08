@@ -58,7 +58,7 @@ public:
 
     /// @brief Checks if trigger out is enabled
     /// @return true if trigger out is enabled, False otherwise
-    virtual bool is_enabled() = 0;
+    virtual bool is_enabled() const = 0;
 };
 
 } // namespace Metavision

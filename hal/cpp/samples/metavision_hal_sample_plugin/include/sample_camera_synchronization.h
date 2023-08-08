@@ -45,7 +45,7 @@ public:
 
     /// @brief Retrieves Synchronization mode
     /// @return synchronization mode
-    SyncMode get_mode() override final;
+    SyncMode get_mode() const override final;
 };
 
 #endif // METAVISION_HAL_SAMPLE_CAMERA_SYNCHRONIZATION_H

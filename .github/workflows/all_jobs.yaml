@@ -18,9 +18,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
-        with:
-          submodules : 'recursive'
+        uses: actions/checkout@v2
 
       - name: Install dependencies
         run: |
@@ -29,7 +27,7 @@ jobs:
           python3-pip python3-distutils xvfb libglfw3 libglfw3-dev libglew-dev libopencv-dev ffmpeg \
           libboost-dev libboost-program-options-dev libboost-filesystem-dev libboost-timer-dev \
           libboost-chrono-dev libboost-thread-dev zip unzip git-lfs libhdf5-dev hdf5-tools
-          pip install $numpy_version pytest opencv-python==4.5.5.64 torch==1.13.1 scipy sk-video==1.1.10 numba==0.56.3 h5py command_runner kornia==0.6.8 pytorch_lightning==1.8.6 pytorch_msssim==0.2.1
+          pip install $numpy_version pytest opencv-python==4.5.5.64 torch==1.13.1 scipy sk-video==1.1.10 numba==0.56.3 h5py protobuf==3.20.3 command_runner kornia==0.6.8 pytorch_lightning==1.8.6 pytorch_msssim==0.2.1
 
       - name: Build pybind and gtest
         run: |
@@ -67,9 +65,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
-        with:
-          submodules : 'recursive'
+        uses: actions/checkout@v2
 
       - name: Install dependencies
         run: |
@@ -78,7 +74,7 @@ jobs:
           python3-pip python3-distutils xvfb libglfw3 libglfw3-dev libglew-dev libopencv-dev ffmpeg \
           libboost-dev libboost-program-options-dev libboost-filesystem-dev libboost-timer-dev \
           libboost-chrono-dev libboost-thread-dev zip unzip git-lfs libhdf5-dev hdf5-tools
-          pip install $numpy_version pytest opencv-python==4.5.5.64 torch==1.13.1 scipy sk-video==1.1.10 numba==0.56.3 h5py command_runner kornia==0.6.8 pytorch_lightning==1.8.6 pytorch_msssim==0.2.1
+          pip install $numpy_version pytest opencv-python==4.5.5.64 torch==1.13.1 scipy sk-video==1.1.10 numba==0.56.3 h5py protobuf==3.20.3 command_runner kornia==0.6.8 pytorch_lightning==1.8.6 pytorch_msssim==0.2.1
 
       - name: Build pybind and gtest
         run: |

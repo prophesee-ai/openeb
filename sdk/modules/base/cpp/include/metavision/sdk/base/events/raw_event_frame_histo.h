@@ -13,8 +13,8 @@
 #define METAVISION_SDK_RAW_EVENT_FRAME_HISTO_H
 
 #include <memory>
+#include <stdexcept>
 #include <vector>
-#include <cassert>
 
 #include "metavision/sdk/base/events/detail/event_traits.h"
 
@@ -34,41 +34,84 @@ struct RawEventFrameHistoConfig {
 /// number of negative events and the second channel being the number of positive events.
 class RawEventFrameHisto {
 public:
-    RawEventFrameHisto(const unsigned height, const unsigned width, const unsigned channel_bit_neg = 4,
-                       const unsigned channel_bit_pos = 4, bool packed = false) {
-        cfg_.height           = height;
-        cfg_.width            = width;
-        cfg_.channel_bit_size = {channel_bit_neg, channel_bit_pos};
-        cfg_.packed           = packed;
-        histogram_.reset(new std::vector<uint8_t>(2 * height * width));
-        assert(histogram_);
+    /// @brief Default constructor
+    RawEventFrameHisto() = default;
+
+    /// @brief Constructor
+    /// @throws invalid_argument if either bit size is zero or if their sum is more than 8
+    RawEventFrameHisto(unsigned height, unsigned width, unsigned channel_bit_neg = 4, unsigned channel_bit_pos = 4,
+                       bool packed = false) :
+        cfg_{width, height, {channel_bit_neg, channel_bit_pos}, packed}, histo_((packed ? 1 : 2) * height * width, 0) {
+        if (channel_bit_neg == 0 || channel_bit_pos == 0 || channel_bit_neg + channel_bit_pos > 8) {
+            throw std::invalid_argument("Invalid channel bit sizes!");
+        }
     }
 
-    /// @brief Default constructor
-    RawEventFrameHisto(const RawEventFrameHistoConfig &cfg, std::unique_ptr<const std::vector<uint8_t>> data) :
-        cfg_(cfg), histogram_(std::move(data)) {
-        assert(histogram_);
+    /// @brief Constructor
+    /// @throws invalid_argument if either bit size is zero or if their sum is more than 8
+    RawEventFrameHisto(const RawEventFrameHistoConfig &cfg, const std::vector<uint8_t> &data) :
+        cfg_(cfg), histo_(data) {
+        if (cfg.channel_bit_size[0] == 0 || cfg.channel_bit_size[1] == 0 ||
+            cfg.channel_bit_size[0] + cfg.channel_bit_size[1] > 8) {
+            throw std::invalid_argument("Invalid channel bit sizes!");
+        }
     }
 
     /// @brief Copy constructor
-    RawEventFrameHisto(const RawEventFrameHisto &h) :
-        cfg_(h.cfg_), histogram_(std::make_unique<const std::vector<uint8_t>>(h.get_data())) {}
+    RawEventFrameHisto(const RawEventFrameHisto &h) : cfg_(h.cfg_), histo_(h.histo_) {}
+
+    [[deprecated("'RawEventFrameHisto(const RawEventFrameHistoConfig &, std::unique_ptr<const std::vector<int8_t>>)' "
+                 "constructor "
+                 "is deprecated since v4.3.0 and will be removed in future releases, "
+                 "please use 'RawEventFrameHisto(const RawEventFrameHistoConfig &, const std::vector<uint8_t>&)' "
+                 "instead.")]] RawEventFrameHisto(const RawEventFrameHistoConfig &cfg,
+                                                  std::unique_ptr<const std::vector<uint8_t>> data) :
+        RawEventFrameHisto(cfg, *data) {}
+
+    /// @brief Resets the event frame configuration and sets all values to 0.
+    /// @throws invalid_argument if either bit size is zero or if their sum is more than 8
+    void reset(unsigned height, unsigned width, unsigned channel_bit_neg = 4, unsigned channel_bit_pos = 4,
+               bool packed = false) {
+        if (channel_bit_neg == 0 || channel_bit_pos == 0 || channel_bit_neg + channel_bit_pos > 8) {
+            throw std::invalid_argument("Invalid channel bit sizes!");
+        }
+        cfg_.width            = width;
+        cfg_.height           = height;
+        cfg_.channel_bit_size = {channel_bit_neg, channel_bit_pos};
+        cfg_.packed           = packed;
+        reset();
+    }
+
+    /// @brief Reset all values in the event frame to 0.
+    void reset() {
+        histo_.clear();
+        histo_.resize((cfg_.packed ? 1 : 2) * cfg_.height * cfg_.width, 0);
+    }
 
     const RawEventFrameHistoConfig &get_config() const {
         return cfg_;
     }
 
     const std::vector<uint8_t> &get_data() const {
-        return *histogram_;
+        return histo_;
+    }
+
+    std::vector<uint8_t> &get_data() {
+        return histo_;
     }
 
     std::size_t buffer_size() const {
-        return histogram_->size();
+        return histo_.size();
+    }
+
+    void swap(RawEventFrameHisto &h) {
+        histo_.swap(h.histo_);
+        std::swap(cfg_, h.cfg_);
     }
 
 private:
-    std::unique_ptr<const std::vector<uint8_t>> histogram_;
     RawEventFrameHistoConfig cfg_;
+    std::vector<uint8_t> histo_;
 };
 
 } // namespace Metavision

@@ -52,6 +52,9 @@ private:
 
     bool start_recording_impl(const std::string &file_path) override;
 
+    void save(std::ostream &) const override;
+    void load(std::istream &) override;
+
     std::unique_ptr<Device> device_                    = nullptr;
     I_EventsStream *i_events_stream_                   = nullptr;
     I_EventsStreamDecoder *i_events_stream_decoder_    = nullptr;

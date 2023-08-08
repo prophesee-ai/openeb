@@ -149,7 +149,7 @@ bool GenX320Erc::enable(bool en) {
     return true;
 }
 
-bool GenX320Erc::is_enabled() {
+bool GenX320Erc::is_enabled() const {
     bool t_dropping_en = (*register_map_)["erc/ahvt_dropping_control"]["t_dropping_en"].read_value();
     return t_dropping_en;
 }
@@ -183,7 +183,7 @@ uint32_t GenX320Erc::get_max_supported_cd_event_count() const {
     return CD_EVENT_COUNT_MAX;
 }
 
-uint32_t GenX320Erc::get_cd_event_count() {
+uint32_t GenX320Erc::get_cd_event_count() const {
     return (*register_map_)["erc/td_target_event_count"]["val"].read_value();
 }
 

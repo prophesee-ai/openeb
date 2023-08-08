@@ -63,7 +63,7 @@ public:
 
     /// @brief Retrieves Synchronization mode
     /// @return synchronization mode
-    virtual SyncMode get_mode() override final;
+    virtual SyncMode get_mode() const override final;
 
     virtual long long get_sensor_id();
 

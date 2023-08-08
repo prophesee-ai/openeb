@@ -11,17 +11,29 @@
 
 #include <cstdint>
 #include <string>
+#include <map>
 
+#include "metavision/hal/decoders/evt3/evt3_decoder.h"
 #include "metavision/hal/device/device.h"
+#include "metavision/hal/facilities/i_antiflicker_module.h"
+#include "metavision/hal/facilities/i_camera_synchronization.h"
 #include "metavision/hal/facilities/i_digital_crop.h"
 #include "metavision/hal/facilities/i_digital_event_mask.h"
+#include "metavision/hal/facilities/i_erc_module.h"
+#include "metavision/hal/facilities/i_event_rate_noise_filter_module.h"
 #include "metavision/hal/facilities/i_event_trail_filter_module.h"
+#include "metavision/hal/facilities/i_events_stream.h"
 #include "metavision/hal/facilities/i_hw_identification.h"
+#include "metavision/hal/facilities/i_hw_register.h"
 #include "metavision/hal/facilities/i_ll_biases.h"
 #include "metavision/hal/facilities/i_monitoring.h"
+#include "metavision/hal/facilities/i_plugin_software_info.h"
+#include "metavision/hal/facilities/i_roi.h"
 #include "metavision/hal/facilities/i_trigger_in.h"
+#include "metavision/hal/facilities/i_trigger_out.h"
 #include "metavision/hal/plugin/plugin.h"
 #include "metavision/hal/plugin/plugin_entrypoint.h"
+#include "metavision/hal/utils/data_transfer.h"
 #include "metavision/hal/utils/device_builder.h"
 #include "metavision/hal/utils/file_discovery.h"
 #include "metavision/hal/utils/hal_software_info.h"
@@ -31,7 +43,50 @@
 
 using namespace Metavision;
 
+// TODO MV-1443 : move this class in the unnamed namespace below, the Test namespace is only here
+// to enable the dynamic_cast used in the camera gtest (which we won't need as soon as we use
+// public HAL API to get access to some fields)
+namespace Test {
+struct DummyROI : public I_ROI {
+    bool enable(bool state) override {
+        enabled_ = state;
+        return true;
+    }
+
+    bool set_mode(const Mode &mode) override {
+        mode_ = mode;
+        return true;
+    }
+
+    size_t get_max_supported_windows_count() const override {
+        return 5;
+    }
+
+    bool set_lines(const std::vector<bool> &cols, const std::vector<bool> &rows) override {
+        rows_ = rows;
+        cols_ = cols;
+        return true;
+    }
+
+    bool set_windows_impl(const std::vector<Window> &windows) override {
+        windows_ = windows;
+        return true;
+    }
+
+    bool enabled_{false};
+    Mode mode_;
+    std::vector<Window> windows_;
+    std::vector<bool> rows_, cols_;
+};
+} // namespace Test
+
 namespace {
+
+struct DummyDataTransfer : public DataTransfer {
+    DummyDataTransfer() : DataTransfer(1) {}
+
+    virtual void run_impl() override {}
+};
 
 struct DummyFileHWIdentification : public I_HW_Identification {
     DummyFileHWIdentification(const std::shared_ptr<I_PluginSoftwareInfo> &plugin_sw_info,
@@ -73,12 +128,47 @@ struct DummyFileHWIdentification : public I_HW_Identification {
     RawFileHeader header_;
 };
 
+struct DummyHWRegister : public I_HW_Register {
+    void write_register(uint32_t address, uint32_t v) override {
+        hex_accesses_[address] = v;
+    }
+
+    void write_register(const std::string &address, uint32_t v) override {
+        str_accesses_[address] = v;
+    }
+
+    uint32_t read_register(uint32_t address) override {
+        return hex_accesses_[address];
+    }
+
+    uint32_t read_register(const std::string &address) override {
+        return str_accesses_[address];
+    }
+
+    void write_register(const std::string &address, const std::string &bitfield, uint32_t v) override {
+        bitfield_accesses_[std::make_pair(address, bitfield)] = v;
+    }
+
+    uint32_t read_register(const std::string &address, const std::string &bitfield) override {
+        return bitfield_accesses_[std::make_pair(address, bitfield)];
+    }
+
+    std::map<uint32_t, uint32_t> hex_accesses_;
+    std::map<std::string, uint32_t> str_accesses_;
+    std::map<std::pair<std::string, std::string>, uint32_t> bitfield_accesses_;
+};
+
 struct DummyLLBiases : public I_LL_Biases {
     DummyLLBiases(const DeviceConfig &device_config) :
         I_LL_Biases(device_config),
-        biases_{{"dummy", std::make_pair(LL_Bias_Info(-10, 10, "dummy desc", true, "dummy category"), 1)}} {}
+        biases_{
+            {"dummy", std::make_pair(LL_Bias_Info(-10, 10, "dummy desc", true, "dummy category"), 1)},
+            {"a", std::make_pair(LL_Bias_Info(-10, 10, "", true), 0)},
+            {"b", std::make_pair(LL_Bias_Info(-10, 10, "", false), 0)},
+            {"c", std::make_pair(LL_Bias_Info(-10, 10, "", true), 0)},
+        } {}
 
-    std::map<std::string, int> get_all_biases() override {
+    std::map<std::string, int> get_all_biases() const override {
         std::map<std::string, int> m;
         for (const auto &bias : biases_) {
             m[bias.first] = bias.second.second;
@@ -91,8 +181,8 @@ struct DummyLLBiases : public I_LL_Biases {
         return true;
     }
 
-    int get_impl(const std::string &bias_name) override {
-        return biases_[bias_name].second;
+    int get_impl(const std::string &bias_name) const override {
+        return biases_.find(bias_name)->second.second;
     }
 
     bool get_bias_info_impl(const std::string &bias_name, LL_Bias_Info &bias_info) const override {
@@ -134,6 +224,8 @@ struct DummyDigitalEvenMask : public I_DigitalEventMask {
 
     DummyDigitalEvenMask() {
         pixel_masks_.push_back(std::make_shared<DummyPixelMask>());
+        pixel_masks_.push_back(std::make_shared<DummyPixelMask>());
+        pixel_masks_.push_back(std::make_shared<DummyPixelMask>());
     }
     const std::vector<I_PixelMaskPtr> &get_pixel_masks() const override final {
         return pixel_masks_;
@@ -165,7 +257,7 @@ public:
         enabled_ = state;
         return true;
     }
-    bool is_enabled() override {
+    bool is_enabled() const override {
         return enabled_;
     }
     bool set_window_region(const Region &region, bool reset_origin) override {
@@ -179,7 +271,7 @@ public:
         region_ = region;
         return true;
     }
-    Region get_window_region() override {
+    Region get_window_region() const override {
         return region_;
     }
 };
@@ -217,6 +309,46 @@ public:
     std::map<Channel, short> get_available_channels() const override {
         return channel_map_;
     }
+};
+
+class DummyTriggerOut : public I_TriggerOut {
+public:
+    uint32_t get_period() const override {
+        return period_;
+    }
+
+    bool set_period(uint32_t period_us) override {
+        period_ = period_us;
+        return true;
+    }
+
+    double get_duty_cycle() const override {
+        return duty_cycle_;
+    }
+
+    bool set_duty_cycle(double period_ratio) override {
+        duty_cycle_ = period_ratio;
+        return true;
+    }
+
+    bool enable() override {
+        enabled_ = true;
+        return true;
+    }
+
+    bool disable() override {
+        enabled_ = false;
+        return true;
+    }
+
+    bool is_enabled() const override {
+        return enabled_;
+    }
+
+private:
+    bool enabled_{false};
+    uint32_t period_{1000};
+    double duty_cycle_{0.1};
 };
 
 class DummyTrailFilterModule : public Metavision::I_EventTrailFilterModule {
@@ -266,6 +398,263 @@ private:
     bool enabled_{false};
 };
 
+class DummyCameraSynchronization : public I_CameraSynchronization {
+public:
+    virtual bool set_mode_standalone() override {
+        mode_ = I_CameraSynchronization::SyncMode::STANDALONE;
+        return true;
+    }
+
+    virtual bool set_mode_master() override {
+        mode_ = I_CameraSynchronization::SyncMode::MASTER;
+        return true;
+    }
+
+    virtual bool set_mode_slave() override {
+        mode_ = I_CameraSynchronization::SyncMode::SLAVE;
+        return true;
+    }
+
+    virtual SyncMode get_mode() const override {
+        return mode_;
+    }
+
+private:
+    I_CameraSynchronization::SyncMode mode_ = I_CameraSynchronization::SyncMode::STANDALONE;
+};
+
+class DummyGeometry : public I_Geometry {
+public:
+    DummyGeometry(int width, int height) : width_(width), height_(height) {}
+
+    virtual int get_width() const override {
+        return width_;
+    }
+
+    virtual int get_height() const override {
+        return height_;
+    }
+
+private:
+    int width_;
+    int height_;
+};
+
+class DummyHWIdentification : public I_HW_Identification {
+public:
+    DummyHWIdentification(const std::shared_ptr<I_PluginSoftwareInfo> &plugin_info) :
+        I_HW_Identification(plugin_info) {}
+
+    virtual std::string get_serial() const override {
+        return "";
+    }
+
+    virtual long get_system_id() const override {
+        return 0;
+    }
+    virtual SensorInfo get_sensor_info() const override {
+        return SensorInfo();
+    }
+
+    virtual std::vector<std::string> get_available_data_encoding_formats() const override {
+        return {"EVT3"};
+    }
+
+    virtual std::string get_current_data_encoding_format() const override {
+        return "EVT3";
+    }
+
+    virtual std::string get_integrator() const override {
+        return "";
+    }
+
+    virtual SystemInfo get_system_info() const override {
+        return SystemInfo();
+    }
+
+    virtual std::string get_connection_type() const override {
+        return "";
+    }
+
+    virtual DeviceConfigOptionMap get_device_config_options_impl() const override {
+        return DeviceConfigOptionMap();
+    }
+};
+
+class DummyAntiFlickerModule : public I_AntiFlickerModule {
+public:
+    virtual bool enable(bool b) override {
+        enabled_ = b;
+        return true;
+    }
+
+    virtual bool is_enabled() const override {
+        return enabled_;
+    }
+
+    virtual bool set_frequency_band(uint32_t low_freq, uint32_t high_freq) override {
+        low_freq_  = low_freq;
+        high_freq_ = high_freq;
+        return true;
+    }
+
+    virtual uint32_t get_band_low_frequency() const override {
+        return low_freq_;
+    }
+
+    virtual uint32_t get_band_high_frequency() const override {
+        return high_freq_;
+    }
+
+    virtual uint32_t get_min_supported_frequency() const override {
+        return 0;
+    }
+
+    virtual uint32_t get_max_supported_frequency() const override {
+        return 1000000;
+    };
+
+    virtual bool set_filtering_mode(I_AntiFlickerModule::AntiFlickerMode mode) override {
+        mode_ = mode;
+        return true;
+    }
+
+    virtual AntiFlickerMode get_filtering_mode() const override {
+        return mode_;
+    }
+
+    virtual bool set_duty_cycle(float duty_cycle) override {
+        duty_cycle_ = duty_cycle;
+        return true;
+    }
+
+    virtual float get_duty_cycle() const override {
+        return duty_cycle_;
+    }
+
+    virtual float get_min_supported_duty_cycle() const override {
+        return 0.0;
+    }
+
+    virtual float get_max_supported_duty_cycle() const override {
+        return 100.0;
+    }
+
+    virtual bool set_start_threshold(uint32_t threshold) override {
+        start_threshold_ = threshold;
+        return true;
+    }
+
+    virtual bool set_stop_threshold(uint32_t threshold) override {
+        stop_threshold_ = threshold;
+        return true;
+    }
+
+    virtual uint32_t get_start_threshold() const override {
+        return start_threshold_;
+    }
+
+    virtual uint32_t get_stop_threshold() const override {
+        return stop_threshold_;
+    }
+
+    virtual uint32_t get_min_supported_start_threshold() const override {
+        return 0;
+    }
+
+    virtual uint32_t get_max_supported_start_threshold() const override {
+        return 100000;
+    }
+
+    virtual uint32_t get_min_supported_stop_threshold() const override {
+        return 0;
+    }
+
+    virtual uint32_t get_max_supported_stop_threshold() const override {
+        return 100000;
+    }
+
+private:
+    bool enabled_                              = false;
+    I_AntiFlickerModule::AntiFlickerMode mode_ = I_AntiFlickerModule::AntiFlickerMode::BAND_PASS;
+    uint32_t low_freq_                         = 0;
+    uint32_t high_freq_                        = 100;
+    uint32_t start_threshold_                  = 0;
+    uint32_t stop_threshold_                   = 0;
+    float duty_cycle_                          = 50.0;
+};
+
+struct DummyErcModule : public I_ErcModule {
+public:
+    virtual bool enable(bool b) override {
+        enabled_ = b;
+        return true;
+    }
+
+    virtual bool is_enabled() const override {
+        return enabled_;
+    }
+
+    virtual uint32_t get_count_period() const override {
+        return count_period_;
+    }
+
+    virtual bool set_cd_event_count(uint32_t event_count) override {
+        cd_event_count_ = event_count;
+        return true;
+    }
+
+    virtual uint32_t get_min_supported_cd_event_count() const override {
+        return 2 * count_period_;
+    }
+
+    virtual uint32_t get_max_supported_cd_event_count() const override {
+        return 874 * count_period_;
+    }
+
+    virtual uint32_t get_cd_event_count() const override {
+        return cd_event_count_;
+    }
+
+    bool set_cd_event_rate(uint32_t events_per_sec) override {
+        uint32_t count_period = get_count_period();
+        set_cd_event_count(static_cast<uint32_t>(static_cast<uint64_t>(events_per_sec) * count_period / 1000000));
+        return true;
+    }
+
+    virtual void erc_from_file(const std::string &) override {}
+
+private:
+    bool enabled_            = false;
+    uint32_t count_period_   = 1000;
+    uint32_t cd_event_count_ = 1000;
+};
+
+struct DummyNFLModule : public I_EventRateNoiseFilterModule {
+public:
+    virtual bool enable(bool b) override {
+        enabled_ = b;
+        return true;
+    }
+
+    virtual bool is_enabled() const override {
+        return enabled_;
+    }
+
+    virtual bool set_event_rate_threshold(uint32_t threshold) override {
+        threshold_ = threshold;
+        return true;
+    }
+
+    virtual uint32_t get_event_rate_threshold() const override {
+        return threshold_;
+    }
+
+private:
+    bool enabled_       = false;
+    uint32_t threshold_ = 1000;
+};
+
 struct DummyCameraDiscovery : public CameraDiscovery {
     SerialList list() override final {
         return SerialList{"__DummyTest__"};
@@ -279,8 +668,22 @@ struct DummyCameraDiscovery : public CameraDiscovery {
         device_builder.add_facility(std::make_unique<DummyMonitoring>());
         device_builder.add_facility(std::make_unique<DummyFacilityV3>());
         device_builder.add_facility(std::make_unique<DummyTriggerIn>());
+        device_builder.add_facility(std::make_unique<DummyTriggerOut>());
         device_builder.add_facility(std::make_unique<DummyLLBiases>(config));
         device_builder.add_facility(std::make_unique<DummyTrailFilterModule>());
+        device_builder.add_facility(std::make_unique<DummyAntiFlickerModule>());
+        device_builder.add_facility(std::make_unique<DummyErcModule>());
+        device_builder.add_facility(std::make_unique<DummyNFLModule>());
+        device_builder.add_facility(std::make_unique<DummyHWRegister>());
+        device_builder.add_facility(std::make_unique<Test::DummyROI>());
+        // To make dummy plugin usable in Metavision::Camera
+        device_builder.add_facility(std::make_unique<DummyHWIdentification>(device_builder.get_plugin_software_info()));
+        device_builder.add_facility(std::make_unique<DummyGeometry>(640, 480));
+        device_builder.add_facility(std::make_unique<I_EventsStream>(
+            std::make_unique<DummyDataTransfer>(),
+            std::make_unique<DummyHWIdentification>(device_builder.get_plugin_software_info())));
+        device_builder.add_facility(make_evt3_decoder(false, 640, 480));
+        device_builder.add_facility(std::make_unique<DummyCameraSynchronization>());
         return true;
     }
 

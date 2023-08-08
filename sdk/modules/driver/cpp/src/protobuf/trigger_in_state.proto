@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package DeviceSerialization;
+
+message TriggerInState {
+    enum TriggerInChannel {
+        MAIN = 0;
+        AUX = 1;
+        LOOPBACK = 2;
+    }
+
+    message TriggerInChannelStatus {
+        TriggerInChannel channel = 1;
+        bool enabled = 2;
+    }
+
+    repeated TriggerInChannelStatus channel_status = 1;
+}

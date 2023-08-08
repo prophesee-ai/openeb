@@ -153,6 +153,16 @@ bool OfflineGenericPrivate::process_impl(TimingProfilerType *profiler) {
     return true;
 }
 
+void OfflineGenericPrivate::save(std::ostream &) const {
+    throw CameraException(UnsupportedFeatureErrors::SerializationUnsupported,
+                          "Cannot serialize when running from a file.");
+}
+
+void OfflineGenericPrivate::load(std::istream &) {
+    throw CameraException(UnsupportedFeatureErrors::SerializationUnsupported,
+                          "Cannot deserialize when running from a file.");
+}
+
 void OfflineGenericPrivate::init() {
     is_init_ = true;
 

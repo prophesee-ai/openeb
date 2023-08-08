@@ -21,7 +21,14 @@
 #include <thread>
 
 #include "metavision/hal/device/device_discovery.h"
+#include "metavision/hal/facilities/i_camera_synchronization.h"
+#include "metavision/hal/facilities/i_digital_crop.h"
+#include "metavision/hal/facilities/i_digital_event_mask.h"
+#include "metavision/hal/facilities/i_event_rate_noise_filter_module.h"
 #include "metavision/hal/facilities/i_events_stream_decoder.h"
+#include "metavision/hal/facilities/i_hw_register.h"
+#include "metavision/hal/facilities/i_trigger_in.h"
+#include "metavision/hal/facilities/i_trigger_out.h"
 #include "metavision/hal/utils/raw_file_header.h"
 #include "metavision/sdk/base/utils/timestamp.h"
 #include "metavision/sdk/driver/camera_error_code.h"
@@ -1419,3 +1426,366 @@ TEST_F_WITH_DATASET(Camera_Gtest, offline_streaming_control_seeks) {
         ++i;
     }
 }
+
+#ifdef HAS_PROTOBUF
+TEST_F(Camera_Gtest, should_load_serialized_state) {
+    const std::string dummy_plugin_test_path(HAL_DUMMY_TEST_PLUGIN);
+    const char *env = getenv("MV_HAL_PLUGIN_PATH");
+
+#ifdef _WIN32
+    std::string s("MV_HAL_PLUGIN_PATH=");
+    s += std::string(env ? env : "") + ";" + dummy_plugin_test_path;
+    _putenv(s.c_str());
+#else
+    std::string s(env ? env : "");
+    s += ":" + dummy_plugin_test_path;
+    setenv("MV_HAL_PLUGIN_PATH", s.c_str(), 1);
+#endif
+
+    {
+        Camera camera = Camera::from_serial(Camera_Gtest::dummy_serial_);
+        // AFK
+        camera.get_device().get_facility<I_AntiFlickerModule>()->set_frequency_band(40, 4000);
+        camera.get_device().get_facility<I_AntiFlickerModule>()->enable(true);
+
+        // camera synchronization
+        camera.get_device().get_facility<I_CameraSynchronization>()->set_mode_slave();
+
+        // digital crop
+        camera.get_device().get_facility<I_DigitalCrop>()->enable(true);
+        camera.get_device().get_facility<I_DigitalCrop>()->set_window_region(I_DigitalCrop::Region(1, 2, 3, 4));
+
+        // digital event mask
+        camera.get_device().get_facility<I_DigitalEventMask>()->get_pixel_masks()[0]->set_mask(1, 2, true);
+        camera.get_device().get_facility<I_DigitalEventMask>()->get_pixel_masks()[1]->set_mask(211, 244, false);
+        camera.get_device().get_facility<I_DigitalEventMask>()->get_pixel_masks()[2]->set_mask(22, 33, false);
+
+        // ERC
+        camera.get_device().get_facility<I_ErcModule>()->set_cd_event_count(3);
+        camera.get_device().get_facility<I_ErcModule>()->enable(true);
+
+        // ETF
+        camera.get_device().get_facility<I_EventTrailFilterModule>()->set_type(
+            I_EventTrailFilterModule::Type::STC_CUT_TRAIL);
+        camera.get_device().get_facility<I_EventTrailFilterModule>()->set_threshold(3250);
+        camera.get_device().get_facility<I_EventTrailFilterModule>()->enable(true);
+
+        // LL Biases
+        camera.get_device().get_facility<I_LL_Biases>()->set("dummy", 1);
+        camera.get_device().get_facility<I_LL_Biases>()->set("a", 2);
+        camera.get_device().get_facility<I_LL_Biases>()->set("c", 4);
+
+        // NFL
+        camera.get_device().get_facility<I_EventRateNoiseFilterModule>()->set_event_rate_threshold(14237);
+        camera.get_device().get_facility<I_EventRateNoiseFilterModule>()->enable(true);
+
+        // TriggerIn
+        camera.get_device().get_facility<I_TriggerIn>()->enable(I_TriggerIn::Channel::Main);
+        camera.get_device().get_facility<I_TriggerIn>()->disable(I_TriggerIn::Channel::Aux);
+        camera.get_device().get_facility<I_TriggerIn>()->enable(I_TriggerIn::Channel::Loopback);
+
+        // TriggerOut
+        camera.get_device().get_facility<I_TriggerOut>()->set_period(2437);
+        camera.get_device().get_facility<I_TriggerOut>()->set_duty_cycle(0.73);
+        camera.get_device().get_facility<I_TriggerOut>()->enable();
+
+        EXPECT_TRUE(camera.save(tmpdir_handler_->get_full_path("dummy_camera_state.json")));
+    }
+    {
+        Camera camera = Camera::from_serial(Camera_Gtest::dummy_serial_);
+        EXPECT_TRUE(camera.load(tmpdir_handler_->get_full_path("dummy_camera_state.json")));
+
+        // AFK
+        EXPECT_TRUE(camera.get_device().get_facility<I_AntiFlickerModule>()->is_enabled());
+        EXPECT_EQ(40, camera.get_device().get_facility<I_AntiFlickerModule>()->get_band_low_frequency());
+        EXPECT_EQ(4000, camera.get_device().get_facility<I_AntiFlickerModule>()->get_band_high_frequency());
+
+        // camera synchronization
+        EXPECT_EQ(I_CameraSynchronization::SyncMode::SLAVE,
+                  camera.get_device().get_facility<I_CameraSynchronization>()->get_mode());
+
+        // digital crop
+        EXPECT_TRUE(camera.get_device().get_facility<I_DigitalCrop>()->is_enabled());
+        EXPECT_EQ(I_DigitalCrop::Region(1, 2, 3, 4),
+                  camera.get_device().get_facility<I_DigitalCrop>()->get_window_region());
+
+        // digital event mask
+        EXPECT_EQ(
+            1, std::get<0>(camera.get_device().get_facility<I_DigitalEventMask>()->get_pixel_masks()[0]->get_mask()));
+        EXPECT_EQ(
+            2, std::get<1>(camera.get_device().get_facility<I_DigitalEventMask>()->get_pixel_masks()[0]->get_mask()));
+        EXPECT_TRUE(
+            std::get<2>(camera.get_device().get_facility<I_DigitalEventMask>()->get_pixel_masks()[0]->get_mask()));
+        EXPECT_EQ(
+            211, std::get<0>(camera.get_device().get_facility<I_DigitalEventMask>()->get_pixel_masks()[1]->get_mask()));
+        EXPECT_EQ(
+            244, std::get<1>(camera.get_device().get_facility<I_DigitalEventMask>()->get_pixel_masks()[1]->get_mask()));
+        EXPECT_FALSE(
+            std::get<2>(camera.get_device().get_facility<I_DigitalEventMask>()->get_pixel_masks()[1]->get_mask()));
+        EXPECT_EQ(
+            22, std::get<0>(camera.get_device().get_facility<I_DigitalEventMask>()->get_pixel_masks()[2]->get_mask()));
+        EXPECT_EQ(
+            33, std::get<1>(camera.get_device().get_facility<I_DigitalEventMask>()->get_pixel_masks()[2]->get_mask()));
+        EXPECT_FALSE(
+            std::get<2>(camera.get_device().get_facility<I_DigitalEventMask>()->get_pixel_masks()[2]->get_mask()));
+
+        // ERC
+        EXPECT_TRUE(camera.get_device().get_facility<I_ErcModule>()->is_enabled());
+        EXPECT_EQ(3, camera.get_device().get_facility<I_ErcModule>()->get_cd_event_count());
+
+        // ETF
+        EXPECT_EQ(I_EventTrailFilterModule::Type::STC_CUT_TRAIL,
+                  camera.get_device().get_facility<I_EventTrailFilterModule>()->get_type());
+        EXPECT_EQ(3250, camera.get_device().get_facility<I_EventTrailFilterModule>()->get_threshold());
+        EXPECT_TRUE(camera.get_device().get_facility<I_EventTrailFilterModule>()->is_enabled());
+
+        // LL Biases
+        EXPECT_EQ(1, camera.get_device().get_facility<I_LL_Biases>()->get("dummy"));
+        EXPECT_EQ(2, camera.get_device().get_facility<I_LL_Biases>()->get("a"));
+        EXPECT_EQ(0, camera.get_device().get_facility<I_LL_Biases>()->get("b"));
+        EXPECT_EQ(4, camera.get_device().get_facility<I_LL_Biases>()->get("c"));
+
+        // NFL
+        EXPECT_EQ(14237, camera.get_device().get_facility<I_EventRateNoiseFilterModule>()->get_event_rate_threshold());
+        EXPECT_TRUE(camera.get_device().get_facility<I_EventRateNoiseFilterModule>()->is_enabled());
+
+        // TriggerIn
+        EXPECT_TRUE(camera.get_device().get_facility<I_TriggerIn>()->is_enabled(I_TriggerIn::Channel::Main));
+        EXPECT_FALSE(camera.get_device().get_facility<I_TriggerIn>()->is_enabled(I_TriggerIn::Channel::Aux));
+        EXPECT_TRUE(camera.get_device().get_facility<I_TriggerIn>()->is_enabled(I_TriggerIn::Channel::Loopback));
+
+        // TriggerOut
+        EXPECT_EQ(2437, camera.get_device().get_facility<I_TriggerOut>()->get_period());
+        EXPECT_DOUBLE_EQ(0.73, camera.get_device().get_facility<I_TriggerOut>()->get_duty_cycle());
+        EXPECT_TRUE(camera.get_device().get_facility<I_TriggerOut>()->is_enabled());
+    }
+}
+
+// This facility is declared here so that we can access it directly in the gtest
+// because it is exposing fields that should instead be accesible via I_ROI API
+// TODO MV-1443 : remove this and override public virtual functions from HAL API, and use
+// those functions in the test
+namespace Test {
+struct DummyROI : public I_ROI {
+    bool enable(bool state) override;
+    bool set_mode(const Mode &mode) override;
+    size_t get_max_supported_windows_count() const override;
+    bool set_lines(const std::vector<bool> &cols, const std::vector<bool> &rows) override;
+    bool set_windows_impl(const std::vector<Window> &windows) override;
+
+    bool enabled_{false};
+    Mode mode_;
+    std::vector<Window> windows_;
+    std::vector<bool> rows_, cols_;
+};
+} // namespace Test
+
+TEST_F(Camera_Gtest, should_load_hand_written_state) {
+    const std::string dummy_plugin_test_path(HAL_DUMMY_TEST_PLUGIN);
+    const char *env = getenv("MV_HAL_PLUGIN_PATH");
+
+#ifdef _WIN32
+    std::string s("MV_HAL_PLUGIN_PATH=");
+    s += std::string(env ? env : "") + ";" + dummy_plugin_test_path;
+    _putenv(s.c_str());
+#else
+    std::string s(env ? env : "");
+    s += ":" + dummy_plugin_test_path;
+    setenv("MV_HAL_PLUGIN_PATH", s.c_str(), 1);
+#endif
+
+    {
+        Camera camera = Camera::from_serial(Camera_Gtest::dummy_serial_);
+        std::ofstream ofs(tmpdir_handler_->get_full_path("dummy_camera_state.json"));
+        ASSERT_TRUE(ofs.is_open());
+
+        ofs << R"({
+  "hw_register_state": { 
+    "num_access": [
+      {
+        "address": 12,
+        "value": 19
+      },
+      {
+        "address": 33,
+        "value": 25
+      },
+      {
+        "address": 3,
+        "value": 812 
+      }
+    ],
+    "str_access": [
+      {
+        "address": "blub",
+        "value": 74
+      },
+    ],
+    "bitfield_access": [
+      {
+        "address": "blub",
+        "bitfield": "010",
+        "value": 851
+      },
+      {
+        "address": "blab",
+        "bitfield": "001",
+        "value": 992
+      }
+    ]
+  },
+  "ll_biases_state": { 
+    "bias": [
+      {
+        "name": "a",
+        "value": 3
+      },
+      {
+        "name": "b",
+        "value": 35
+      },
+      {
+        "name": "c",
+        "value": 42
+      },
+      {
+        "name": "d",
+        "value": 56
+      }
+    ],
+  }
+})";
+    }
+    {
+        Camera camera = Camera::from_serial(Camera_Gtest::dummy_serial_);
+        EXPECT_TRUE(camera.load(tmpdir_handler_->get_full_path("dummy_camera_state.json")));
+
+        // HW registers
+        EXPECT_EQ(19, camera.get_device().get_facility<I_HW_Register>()->read_register(12));
+        EXPECT_EQ(25, camera.get_device().get_facility<I_HW_Register>()->read_register(33));
+        EXPECT_EQ(812, camera.get_device().get_facility<I_HW_Register>()->read_register(3));
+        EXPECT_EQ(74, camera.get_device().get_facility<I_HW_Register>()->read_register("blub"));
+        EXPECT_EQ(851, camera.get_device().get_facility<I_HW_Register>()->read_register("blub", "010"));
+        EXPECT_EQ(992, camera.get_device().get_facility<I_HW_Register>()->read_register("blab", "001"));
+
+        // LL Biases
+        EXPECT_EQ(3, camera.get_device().get_facility<I_LL_Biases>()->get("a"));
+        EXPECT_EQ(0, camera.get_device().get_facility<I_LL_Biases>()->get("b")); // read only bias
+        EXPECT_EQ(0, camera.get_device().get_facility<I_LL_Biases>()->get("c")); // out of range value
+        // bias d does not exist
+    }
+
+    // ROI : windows
+    {
+        Camera camera = Camera::from_serial(Camera_Gtest::dummy_serial_);
+        std::ofstream ofs(tmpdir_handler_->get_full_path("dummy_camera_state.json"));
+        ASSERT_TRUE(ofs.is_open());
+
+        ofs << R"({
+  "roi_state": { 
+    "enabled": true,
+    "mode": "RONI",
+    "window": [
+      {
+        "x": 12,
+        "y": 19,
+        "width": 213,
+        "height": 334,
+      },
+      {
+        "x": 4,
+        "y": 32,
+        "width": 13,
+        "height": 384,
+      }
+    ]
+  }
+})";
+    }
+    {
+        Camera camera = Camera::from_serial(Camera_Gtest::dummy_serial_);
+        EXPECT_TRUE(camera.load(tmpdir_handler_->get_full_path("dummy_camera_state.json")));
+
+        auto *roi = camera.get_device().get_facility<I_ROI>();
+        EXPECT_TRUE(roi != nullptr);
+
+        // TODO MV-1443 : use roi and HAL functions from the API directly
+        auto *dummy_roi = dynamic_cast<::Test::DummyROI *>(roi);
+        EXPECT_TRUE(dummy_roi != nullptr);
+        EXPECT_TRUE(dummy_roi->enabled_);
+        EXPECT_EQ(I_ROI::Mode::RONI, dummy_roi->mode_);
+        EXPECT_EQ(I_ROI::Window(12, 19, 213, 334), dummy_roi->windows_[0]);
+        EXPECT_EQ(I_ROI::Window(4, 32, 13, 384), dummy_roi->windows_[1]);
+    }
+
+    // ROI : lines
+    {
+        Camera camera = Camera::from_serial(Camera_Gtest::dummy_serial_);
+        std::ofstream ofs(tmpdir_handler_->get_full_path("dummy_camera_state.json"));
+        ASSERT_TRUE(ofs.is_open());
+
+        ofs << R"({
+  "roi_state": { 
+    "enabled": true,
+    "mode": "ROI",
+    "lines": {
+      "rows": "101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010", 
+      "cols": "0110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110"
+    }
+  }
+})";
+    }
+    {
+        Camera camera = Camera::from_serial(Camera_Gtest::dummy_serial_);
+        EXPECT_TRUE(camera.load(tmpdir_handler_->get_full_path("dummy_camera_state.json")));
+
+        auto *roi = camera.get_device().get_facility<I_ROI>();
+        EXPECT_TRUE(roi != nullptr);
+
+        // TODO MV-1443 : use roi and HAL functions from the API directly
+        auto *dummy_roi = dynamic_cast<::Test::DummyROI *>(roi);
+        EXPECT_TRUE(dummy_roi != nullptr);
+        EXPECT_TRUE(dummy_roi->enabled_);
+        EXPECT_EQ(I_ROI::Mode::ROI, dummy_roi->mode_);
+        std::vector<bool> rows(480);
+        for (size_t i = 0; i < 480; ++i) {
+            rows[i] = i % 2 == 0 ? true : false;
+        }
+        EXPECT_EQ(rows, dummy_roi->rows_);
+        std::vector<bool> cols(640);
+        for (size_t i = 0; i < 640; ++i) {
+            cols[i] = i % 3 == 0 ? false : true;
+        }
+        EXPECT_EQ(cols, dummy_roi->cols_);
+    }
+}
+#endif
+
+TEST_F(Camera_Gtest, serialization_unavailable_with_empty_camera) {
+    Camera camera;
+    EXPECT_THROW(camera.save(""), CameraException);
+    EXPECT_THROW(camera.load(""), CameraException);
+}
+
+TEST_F_WITH_DATASET(Camera_Gtest, serialization_unavailable_with_raw_file) {
+    std::string dataset_file_path = (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" /
+                                     "blinking_gen4_with_ext_triggers.raw")
+                                        .string();
+
+    Camera camera = Camera::from_file(dataset_file_path, FileConfigHints().real_time_playback(false));
+    EXPECT_THROW(camera.save(""), CameraException);
+    EXPECT_THROW(camera.load(""), CameraException);
+}
+
+#ifdef HAS_HDF5
+TEST_F_WITH_DATASET(Camera_Gtest, serialization_unavailable_with_hdf5_file) {
+    // Read the dataset provided
+    std::string dataset_file_path = (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" /
+                                     "blinking_gen4_with_ext_triggers.hdf5")
+                                        .string();
+
+    Camera camera = Camera::from_file(dataset_file_path, FileConfigHints().real_time_playback(false));
+    EXPECT_THROW(camera.save(""), CameraException);
+    EXPECT_THROW(camera.load(""), CameraException);
+}
+#endif

@@ -28,7 +28,7 @@ public:
                       const I_HW_Identification::SensorInfo &sensor_info, const std::string &sensor_prefix);
 
     virtual bool enable(bool b) override;
-    virtual bool is_enabled() override;
+    virtual bool is_enabled() const override;
 
     virtual bool set_frequency_band(uint32_t low_freq, uint32_t high_freq) override;
     virtual uint32_t get_band_low_frequency() const override;
@@ -75,6 +75,7 @@ private:
     uint32_t stop_threshold_{4};
 
     RegisterMap &regmap();
+    const RegisterMap &regmap() const;
 };
 
 } // namespace Metavision

@@ -1022,7 +1022,7 @@ TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_diff3d_nominal) {
     ASSERT_NE(nullptr, diff_decoder);
     ASSERT_NE(nullptr, es);
 
-    diff_decoder->add_event_frame_callback([&](auto histo) { received_event_frame_count++; });
+    diff_decoder->add_event_frame_callback([&](auto diff) { received_event_frame_count++; });
 
     es->start();
 

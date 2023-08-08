@@ -132,7 +132,7 @@ bool Fx3LibUSBBoardCommand::open(const std::string &serial) {
     try {
         libusb_ctx = std::make_shared<LibUSBContext>();
     } catch (const std::system_error &e) {
-        MV_HAL_LOG_ERROR() << "An error occured while initializing libusb:" << e.what();
+        MV_HAL_LOG_ERROR() << "An error occurred while initializing libusb:" << e.what();
         return false;
     }
     get_ccam2_with_serial(libusb_ctx, serial);
@@ -586,7 +586,7 @@ Fx3LibUSBBoardCommand::ListSerial Fx3LibUSBBoardCommand::get_list_serial() {
     try {
         libusb_ctx = std::make_shared<LibUSBContext>();
     } catch (const std::system_error &e) {
-        MV_HAL_LOG_ERROR() << "An error occured while initializing libusb:" << e.what();
+        MV_HAL_LOG_ERROR() << "An error occurred while initializing libusb:" << e.what();
         return lserial;
     }
     get_all_serial(libusb_ctx, lserial);

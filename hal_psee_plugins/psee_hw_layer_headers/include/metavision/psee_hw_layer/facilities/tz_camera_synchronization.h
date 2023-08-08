@@ -49,7 +49,7 @@ public:
 
     /// @brief Retrieves Synchronization mode
     /// @return synchronization mode
-    virtual SyncMode get_mode() override final;
+    virtual SyncMode get_mode() const override final;
 
 private:
     std::vector<std::shared_ptr<TzDevice>> devices_;

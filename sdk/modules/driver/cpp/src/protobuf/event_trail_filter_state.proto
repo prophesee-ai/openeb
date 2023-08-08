@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package DeviceSerialization;
+
+message EventTrailFilterState {
+
+    oneof optional_enabled { bool enabled = 1; }
+
+    enum EventTrailFilteringType {
+        TRAIL = 0;
+        STC_CUT_TRAIL = 1;
+        STC_KEEP_TRAIL = 2;
+    }
+
+    oneof optional_filtering_type { EventTrailFilteringType filtering_type = 2; }
+    oneof optional_threshold { uint32 threshold = 3; }
+}

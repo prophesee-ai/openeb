@@ -78,7 +78,7 @@ bool PseeDeviceControl::set_mode_master() {
     return valid;
 }
 
-I_CameraSynchronization::SyncMode PseeDeviceControl::get_mode() {
+I_CameraSynchronization::SyncMode PseeDeviceControl::get_mode() const {
     return sync_mode_;
 }
 

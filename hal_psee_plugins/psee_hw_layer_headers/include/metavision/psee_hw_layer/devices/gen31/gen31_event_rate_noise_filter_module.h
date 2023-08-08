@@ -25,8 +25,9 @@ public:
     Gen31_EventRateNoiseFilterModule(const std::shared_ptr<I_HW_Register> &i_hw_register, const std::string &prefix);
 
     virtual bool enable(bool enable_filter) override;
+    virtual bool is_enabled() const override;
     virtual bool set_event_rate_threshold(uint32_t threshold_Kev_s) override;
-    virtual uint32_t get_event_rate_threshold() override;
+    virtual uint32_t get_event_rate_threshold() const override;
 
     static constexpr uint32_t min_time_window_us_            = 1;
     static constexpr uint32_t max_time_window_us_            = 1023;
@@ -34,15 +35,15 @@ public:
     static constexpr uint32_t max_event_rate_threshold_kev_s = 10000;
 
 protected:
-    const std::shared_ptr<I_HW_Register> &get_hw_register();
+    const std::shared_ptr<I_HW_Register> &get_hw_register() const;
 
 private:
     bool set_time_window(uint32_t window_length_us);
-    uint32_t get_time_window();
+    uint32_t get_time_window() const;
 
     std::shared_ptr<I_HW_Register> i_hw_register_;
     const std::string base_name_;
-    uint32_t current_threshold_kev_s_{0};
+    mutable uint32_t current_threshold_kev_s_{0};
 };
 
 } // namespace Metavision

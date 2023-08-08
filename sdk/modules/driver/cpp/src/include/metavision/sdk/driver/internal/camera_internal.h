@@ -76,6 +76,9 @@ public:
     virtual bool start_recording_impl(const std::string &file_path);
     virtual bool stop_recording_impl(const std::string &file_path);
 
+    virtual void save(std::ostream &os) const;
+    virtual void load(std::istream &is);
+
     void run();
     void set_is_running(bool);
 

@@ -18,6 +18,7 @@
 # Runtime (library)
 set(CPACK_COMPONENT_METAVISION-SDK-DRIVER-LIB_DESCRIPTION "Metavision SDK Driver library.\n${OPEN_PACKAGE_LICENSE}")
 set(CPACK_COMPONENT_METAVISION-SDK-DRIVER-LIB_DEPENDS metavision-hal-lib metavision-sdk-base-lib metavision-sdk-core-lib)
+set(CPACK_COMPONENT_METAVISION-SDK-DRIVER-LIB_PACKAGE_DEPENDS "libprotobuf-dev")
 if (HDF5_FOUND)
     list(APPEND CPACK_DEBIAN_METAVISION-SDK-DRIVER-LIB_PACKAGE_DEPENDS "hdf5-ecf-codec-lib")
 endif (HDF5_FOUND)

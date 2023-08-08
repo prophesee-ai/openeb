@@ -14,8 +14,8 @@
 
 #include <cstdint>
 #include <functional>
-#include <map>
-#include <memory>
+#include <ostream>
+#include <istream>
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -422,6 +422,18 @@ public:
     /// @warning If no event decoding callback has been set, this functions returns -1
     timestamp get_last_timestamp() const;
 
+    /// @brief Saves the camera to a given file
+    ///
+    /// @param path The path of the file to save the camera to
+    /// @return true on success
+    bool save(const std::string &path) const;
+
+    /// @brief Loads the camera from a given file
+    ///
+    /// @param path The path of the file to load the camera from
+    /// @return true on success
+    bool load(const std::string &path);
+
     /// @brief Gets corresponding @ref Device in HAL library
     ///
     /// This Device retrieved can then be used to call the different facilities of the camera.
@@ -445,6 +457,7 @@ public:
 
     /// @brief For internal use
     Private &get_pimpl();
+    const Private &get_pimpl() const;
 
     /// @brief For internal use
     Camera(Private *);
@@ -453,6 +466,20 @@ private:
     /// @brief For internal use
     std::unique_ptr<Private> pimpl_;
 };
+
+/// @brief Saves the camera to a given stream
+///
+/// @param os The output stream in which the camera will be saved
+/// @param camera The camera to save
+/// @return The modified output stream
+std::ostream &operator<<(std::ostream &os, const Camera &camera);
+
+/// @brief Loads the camera from a given stream
+///
+/// @param is The input stream from which the camera will be loaded
+/// @param camera The camera to load
+/// @return The modified input stream
+std::istream &operator>>(std::istream &is, Camera &camera);
 
 } // namespace Metavision
 

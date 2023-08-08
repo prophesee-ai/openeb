@@ -85,7 +85,7 @@ struct MockConsumingStage : public BaseStage {
             try {
                 if (started_)
                     datas.emplace_back(boost::any_cast<int>(data));
-            } catch (boost::bad_any_cast &c) {}
+            } catch (boost::bad_any_cast &) {}
         });
     }
     std::vector<int> datas;
@@ -623,7 +623,7 @@ TEST(PipelineTest, step_callbacks_are_called_in_sequence) {
     s2->set_consuming_callback([&outputs](const boost::any &in) {
         try {
             outputs.emplace_back(boost::any_cast<int>(in));
-        } catch (boost::bad_any_cast &c) {}
+        } catch (boost::bad_any_cast &) {}
     });
     p.add_stage(std::move(s2), s1);
 

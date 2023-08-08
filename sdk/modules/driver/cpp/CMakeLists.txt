@@ -7,6 +7,8 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
+option(USE_PROTOBUF "Use Protobuf for device state serialization" ON)
+
 # Add third party projects
 add_subdirectory(3rdparty)
 

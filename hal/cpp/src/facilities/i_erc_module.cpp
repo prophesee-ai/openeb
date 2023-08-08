@@ -21,19 +21,19 @@ bool I_ErcModule::set_cd_event_rate(uint32_t events_per_sec) {
     return set_cd_event_count(static_cast<uint32_t>(static_cast<uint64_t>(events_per_sec) * count_period / 1000000));
 }
 
-uint32_t I_ErcModule::get_cd_event_rate() {
+uint32_t I_ErcModule::get_cd_event_rate() const {
     uint32_t count_period = get_count_period();
     uint32_t evt_count    = get_cd_event_count();
     return static_cast<uint32_t>(static_cast<uint64_t>(evt_count) * 1000000 / count_period);
 }
 
-uint32_t I_ErcModule::get_min_supported_cd_event_rate() {
+uint32_t I_ErcModule::get_min_supported_cd_event_rate() const {
     uint32_t count_period = get_count_period();
     uint32_t evt_count    = get_min_supported_cd_event_count();
     return static_cast<uint32_t>(static_cast<uint64_t>(evt_count) * 1000000 / count_period);
 }
 
-uint32_t I_ErcModule::get_max_supported_cd_event_rate() {
+uint32_t I_ErcModule::get_max_supported_cd_event_rate() const {
     uint32_t count_period = get_count_period();
     uint32_t evt_count    = get_max_supported_cd_event_count();
     return static_cast<uint32_t>(static_cast<uint64_t>(evt_count) * 1000000 / count_period);

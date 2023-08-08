@@ -116,7 +116,7 @@ std::shared_ptr<I_EventsStreamDecoder> make_decoder(DeviceBuilder &device_builde
         auto pixel_layout = get_pixel_layout(format["pixellayout"]);
         auto i_geometry   = device_builder.add_facility(format.geometry());
         auto diff_decoder = device_builder.add_facility(
-            std::make_unique<Diff3dDecoder>(i_geometry->get_height(), i_geometry->get_width(), pixel_layout.second));
+            std::make_unique<Diff3dDecoder>(i_geometry->get_height(), i_geometry->get_width(), pixel_layout.first));
         raw_size_bytes = diff_decoder->get_raw_event_size_bytes();
     } else if (format.name() == "AER-8b") {
         auto i_geometry = device_builder.add_facility(format.geometry());

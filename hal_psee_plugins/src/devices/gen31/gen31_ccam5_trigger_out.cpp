@@ -83,7 +83,7 @@ uint32_t Gen31Ccam5TriggerOut::get_period() const {
     return (*register_map_)["SYSTEM_MONITOR/EXT_TRIGGERS/OUT_PULSE_PERIOD"].read_value();
 }
 
-bool Gen31Ccam5TriggerOut::is_enabled() {
+bool Gen31Ccam5TriggerOut::is_enabled() const {
     return (*register_map_)["SYSTEM_MONITOR/EXT_TRIGGERS/OUT_ENABLE"].read_value();
 }
 

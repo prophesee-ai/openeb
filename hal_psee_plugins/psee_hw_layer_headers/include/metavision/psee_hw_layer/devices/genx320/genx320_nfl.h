@@ -25,8 +25,9 @@ public:
     GenX320NoiseFilter(const std::shared_ptr<RegisterMap> &register_map);
 
     virtual bool enable(bool enable_filter) override;
+    virtual bool is_enabled() const override;
     virtual bool set_event_rate_threshold(uint32_t threshold_Kev_s) override;
-    virtual uint32_t get_event_rate_threshold() override;
+    virtual uint32_t get_event_rate_threshold() const override;
 
     static constexpr uint32_t min_time_window_us_            = 1;
     static constexpr uint32_t max_time_window_us_            = 1023;
@@ -35,8 +36,8 @@ public:
 
 private:
     bool set_time_window(uint32_t window_length_us);
-    uint32_t get_time_window();
-    uint32_t current_threshold_kev_s_{0};
+    uint32_t get_time_window() const;
+    mutable uint32_t current_threshold_kev_s_{0};
 
     static constexpr uint32_t max_pixel_event_threshold_on  = 0xFFFFFFFF;
     static constexpr uint32_t max_pixel_event_threshold_off = 0xFFFFFFFF;

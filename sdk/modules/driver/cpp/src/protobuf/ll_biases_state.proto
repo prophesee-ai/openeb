@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package DeviceSerialization;
+
+message LLBiasesState {
+
+    message Bias {
+        string name = 1;
+        sint32 value = 2;
+    }
+
+    repeated Bias bias = 1;
+}

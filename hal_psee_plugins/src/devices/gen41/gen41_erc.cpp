@@ -63,7 +63,7 @@ bool Gen41Erc::enable(bool en) {
     return true;
 }
 
-bool Gen41Erc::is_enabled() {
+bool Gen41Erc::is_enabled() const {
     bool res           = ((*register_map_)[prefix_ + "Reserved_6000"]["Reserved_1_0"].read_value() == 1) ? true : false;
     bool t_dropping_en = (*register_map_)[prefix_ + "t_dropping_control"]["t_dropping_en"].read_value();
     return t_dropping_en && res;
@@ -162,7 +162,7 @@ uint32_t Gen41Erc::get_max_supported_cd_event_count() const {
     return CD_EVENT_COUNT_MAX;
 }
 
-uint32_t Gen41Erc::get_cd_event_count() {
+uint32_t Gen41Erc::get_cd_event_count() const {
     return (*register_map_)[prefix_ + "td_target_event_rate"].read_value();
 }
 

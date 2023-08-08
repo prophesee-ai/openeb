@@ -37,6 +37,9 @@ void MTWindow::show_async(cv::Mat &image, bool auto_poll) {
 
     std::lock_guard<std::mutex> lock(swap_mtx_);
 
+    // pre-allocate the frame for the next time
+    front_.create(image.size(), image.type());
+
     cv::swap(image, front_);
     has_been_updated_ = true;
 }

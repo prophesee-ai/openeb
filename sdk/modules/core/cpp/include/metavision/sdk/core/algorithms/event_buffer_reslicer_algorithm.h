@@ -182,8 +182,8 @@ public:
     template<typename InputIt, typename OnEventsCbT>
     void process_events(InputIt it_begin, InputIt it_end, OnEventsCbT on_events_cb);
 
-    /// @brief Notify the reslicing algorithm that time has elapsed without new events, which may trigger several calls
-    /// to the slicing callback depending on the configured slicing condition.
+    /// @brief Notifies the reslicing algorithm that time has elapsed without new events, which may trigger several
+    /// calls to the slicing callback depending on the configured slicing condition.
     /// @param ts current timestamp
     ///
     /// @note If @p enable_interruptions is true, this function can be interrupted asynchronously, with no guarantees

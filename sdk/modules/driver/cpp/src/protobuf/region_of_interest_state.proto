@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package DeviceSerialization;
+
+message RegionOfInterestState {
+
+    oneof optional_enabled { bool enabled = 1; }
+
+    enum ROIMode {
+        ROI = 0;
+        RONI = 1;
+    }
+    oneof optional_mode { ROIMode mode = 2; }
+
+    message ROIWindow {
+        uint32 x = 1;
+        uint32 y = 2;
+        uint32 width = 3;
+        uint32 height = 4;
+    }
+
+    repeated ROIWindow window = 3;
+
+    message ROILines {
+        oneof optional_cols { string cols = 1; }
+        oneof optional_rows { string rows = 2; }
+    }
+    ROILines lines = 4;
+}

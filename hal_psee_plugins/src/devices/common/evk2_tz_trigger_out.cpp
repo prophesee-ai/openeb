@@ -90,7 +90,7 @@ uint32_t Evk2TzTriggerOut::get_period() const {
     return (*register_map_)[prefix_ + "SYSTEM_MONITOR/EXT_TRIGGERS/OUT_PULSE_PERIOD"].read_value();
 }
 
-bool Evk2TzTriggerOut::is_enabled() {
+bool Evk2TzTriggerOut::is_enabled() const {
     bool sync_out = (*register_map_)[prefix_ + "SYSTEM_CONTROL/IO_CONTROL"]["SYNC_OUT_MODE"].read_value();
     bool hside_en = (*register_map_)[prefix_ + "SYSTEM_CONTROL/IO_CONTROL"]["SYNC_OUT_EN_HSIDE"].read_value();
     bool out_en   = (*register_map_)[prefix_ + "SYSTEM_MONITOR/EXT_TRIGGERS/OUT_ENABLE"].read_value();

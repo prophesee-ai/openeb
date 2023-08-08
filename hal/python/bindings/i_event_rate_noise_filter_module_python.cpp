@@ -22,6 +22,8 @@ static HALFacilityPythonBinder<I_EventRateNoiseFilterModule> bind(
         class_binding
             .def("enable", &I_EventRateNoiseFilterModule::enable, py::arg("enable_filter"),
                  pybind_doc_hal["Metavision::I_EventRateNoiseFilterModule::enable"])
+            .def("is_enabled", &I_EventRateNoiseFilterModule::is_enabled,
+                 pybind_doc_hal["Metavision::I_EventRateNoiseFilterModule::is_enabled"])
             .def("set_event_rate_threshold", &I_EventRateNoiseFilterModule::set_event_rate_threshold,
                  py::arg("threshold_Kev_s"),
                  pybind_doc_hal["Metavision::I_EventRateNoiseFilterModule::set_event_rate_threshold"])

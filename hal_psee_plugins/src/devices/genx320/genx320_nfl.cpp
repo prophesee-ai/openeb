@@ -42,6 +42,10 @@ bool GenX320NoiseFilter::enable(bool enable_filter) {
     return true;
 }
 
+bool GenX320NoiseFilter::is_enabled() const {
+    return !(*register_map_)["nfl/pipeline_control"]["bypass"].read_value();
+}
+
 bool GenX320NoiseFilter::set_time_window(uint32_t window_length_us) {
     if (window_length_us < min_time_window_us_ || window_length_us > max_time_window_us_) {
         return false;
@@ -51,7 +55,7 @@ bool GenX320NoiseFilter::set_time_window(uint32_t window_length_us) {
     return true;
 }
 
-uint32_t GenX320NoiseFilter::get_time_window() {
+uint32_t GenX320NoiseFilter::get_time_window() const {
     return (*register_map_)["nfl/reference_period"]["val"].read_value();
 }
 
@@ -74,7 +78,7 @@ bool GenX320NoiseFilter::set_event_rate_threshold(uint32_t threshold_kev_s) {
     return true;
 }
 
-uint32_t GenX320NoiseFilter::get_event_rate_threshold() {
+uint32_t GenX320NoiseFilter::get_event_rate_threshold() const {
     current_threshold_kev_s_ =
         std::round(((*register_map_)["nfl/min_voxel_threshold_off"]["val"].read_value() * 1000.) / get_time_window());
     return current_threshold_kev_s_;

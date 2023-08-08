@@ -30,7 +30,7 @@ public:
     uint32_t get_period() const override final;
     bool set_duty_cycle(double period_ratio) override final;
     double get_duty_cycle() const override final;
-    bool is_enabled() override final;
+    bool is_enabled() const override final;
 
 private:
     double period_ratio_ = 0.5;

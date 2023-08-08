@@ -17,7 +17,7 @@ endif(NOT CMAKE_BUILD_TYPE)
 
 cmake_minimum_required(VERSION 3.5)
 
-project(metavision VERSION 4.2.1)
+project(metavision VERSION 4.3.0)
 set(PROJECT_VERSION_SUFFIX "")
 
 if(PROJECT_VERSION_SUFFIX STREQUAL "")
@@ -437,6 +437,7 @@ endif (EXISTS "${CMAKE_CURRENT_LIST_DIR}/standalone_apps/CMakeLists.txt")
 ################################
 if (GENERATE_DOC)
     add_subdirectory(doc)
+    add_subdirectory(appnotes)
 endif (GENERATE_DOC)
 
 # Add script generation at the end, once all other subdirs have been processed

@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package DeviceSerialization;
+
+message CameraSynchronizationState {
+    enum CameraSynchronizationMode {
+        MASTER = 0;
+        SLAVE = 1;
+        STANDALONE = 2;
+    }
+
+    oneof optional_sync_mode { CameraSynchronizationMode sync_mode = 1; }
+}

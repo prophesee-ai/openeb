@@ -118,7 +118,7 @@ bool TzCx3GenX320::set_mode_slave() {
     return true;
 }
 
-I_CameraSynchronization::SyncMode TzCx3GenX320::get_mode() {
+I_CameraSynchronization::SyncMode TzCx3GenX320::get_mode() const {
     return sync_mode_;
 }
 

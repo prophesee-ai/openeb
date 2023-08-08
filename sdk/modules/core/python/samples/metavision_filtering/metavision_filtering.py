@@ -18,7 +18,7 @@ from metavision_sdk_core import PeriodicFrameGenerationAlgorithm, PolarityFilter
 from metavision_sdk_ui import EventLoop, BaseWindow, MTWindow, UIAction, UIKeyEvent
 
 
-roi_crop_width = 80
+roi_crop_width = 150
 
 
 class Polarity(Enum):
