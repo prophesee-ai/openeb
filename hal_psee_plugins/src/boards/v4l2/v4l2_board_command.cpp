@@ -19,6 +19,9 @@
 #include <stdlib.h>
 #include <sstream>
 #include <unordered_set>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
 
 #include "metavision/hal/utils/hal_log.h"
 #include "boards/v4l2/v4l2_device.h"
