@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package DeviceSerialization;
+
+message TriggerOutState {
+    oneof optional_enabled { bool enabled = 1; }
+    oneof optional_period { uint32 period = 2; }
+    oneof optional_duty_cycle { double duty_cycle = 3; }
+}

@@ -166,7 +166,7 @@ bool TzEvk2Gen31::set_mode_slave() {
     return true;
 }
 
-I_CameraSynchronization::SyncMode TzEvk2Gen31::get_mode() {
+I_CameraSynchronization::SyncMode TzEvk2Gen31::get_mode() const {
     return sync_mode_;
 }
 

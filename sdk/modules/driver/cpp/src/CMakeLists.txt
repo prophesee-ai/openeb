@@ -36,3 +36,12 @@ target_sources(metavision_sdk_driver PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/roi.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/trigger_out.cpp
 )
+
+add_subdirectory(protobuf)
+
+target_sources(metavision_device_serialization_obj PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/camera_serialization.cpp
+)
+target_include_directories(metavision_device_serialization_obj PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)

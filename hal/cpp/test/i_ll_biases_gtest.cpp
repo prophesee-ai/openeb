@@ -98,13 +98,13 @@ public:
 
 #if defined(MOCK_METHOD)
     MOCK_METHOD(bool, set_impl, (const std::string &, int), (override));
-    MOCK_METHOD(int, get_impl, (const std::string &), (override));
-    MOCK_METHOD((std::map<std::string, int>), get_all_biases, (), (override));
+    MOCK_METHOD(int, get_impl, (const std::string &), (const, override));
+    MOCK_METHOD((std::map<std::string, int>), get_all_biases, (), (const, override));
     MOCK_METHOD(bool, get_bias_info_impl, (const std::string &, Metavision::LL_Bias_Info &), (const, override));
 #else
 #define GMOCK_DOES_NOT_SUPPORT_LAMBDA
     MOCK_METHOD2(set_impl, bool(const std::string &, int));
-    MOCK_METHOD1(get_impl, int(const std::string &));
+    MOCK_CONST_METHOD1(get_impl, int(const std::string &));
     MOCK_METHOD0(get_all_biases, std::map<std::string, int>());
     MOCK_CONST_METHOD2(get_bias_info_impl, bool(const std::string &, Metavision::LL_Bias_Info &));
 #endif

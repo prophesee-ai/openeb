@@ -13,6 +13,7 @@
 #define METAVISION_SDK_CORE_EVENT_BUFFER_RESLICER_ALGORITHM_IMPL_H
 
 #include <algorithm>
+#include <cassert>
 
 namespace Metavision {
 

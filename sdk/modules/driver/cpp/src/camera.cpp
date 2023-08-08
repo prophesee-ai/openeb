@@ -353,6 +353,14 @@ bool Camera::Private::stop_recording_impl(const std::string &file_path) {
     return false;
 }
 
+void Camera::Private::save(std::ostream &os) const {
+    throw CameraException(CameraErrorCode::CameraNotInitialized);
+}
+
+void Camera::Private::load(std::istream &is) {
+    throw CameraException(CameraErrorCode::CameraNotInitialized);
+}
+
 void Camera::Private::run() {
     check_initialization();
 
@@ -638,6 +646,32 @@ Metavision::timestamp Camera::get_last_timestamp() const {
     return pimpl_->get_last_timestamp();
 }
 
+bool Camera::save(const std::string &path) const {
+    std::ofstream ofs(path);
+    if (!ofs.is_open()) {
+        throw CameraException(CameraErrorCode::CouldNotOpenFile,
+                              "Could not open file '" + path +
+                                  "' to save a camera to. Make sure it is a valid filename and that you have "
+                                  "permissions to write it.");
+    }
+
+    ofs << *this;
+    return ofs.good();
+}
+
+bool Camera::load(const std::string &path) {
+    std::ifstream ifs(path);
+    if (!ifs.is_open()) {
+        throw CameraException(CameraErrorCode::CouldNotOpenFile,
+                              "Could not open file '" + path +
+                                  "' to load a camera from. Make sure it is a valid filename and that you have "
+                                  "permissions to read it.");
+    }
+
+    ifs >> *this;
+    return ifs.good();
+}
+
 Device &Camera::get_device() {
     return pimpl_->device();
 }
@@ -648,6 +682,20 @@ const Device &Camera::get_device() const {
 
 Camera::Private &Camera::get_pimpl() {
     return *pimpl_;
+}
+
+const Camera::Private &Camera::get_pimpl() const {
+    return *pimpl_;
+}
+
+std::ostream &operator<<(std::ostream &os, const Camera &camera) {
+    camera.get_pimpl().save(os);
+    return os;
+}
+
+std::istream &operator>>(std::istream &is, Camera &camera) {
+    camera.get_pimpl().load(is);
+    return is;
 }
 
 } // namespace Metavision

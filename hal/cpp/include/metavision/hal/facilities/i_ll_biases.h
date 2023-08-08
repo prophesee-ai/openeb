@@ -40,7 +40,7 @@ public:
     /// @brief Gets bias value
     /// @param bias_name Name of the bias whose value to get
     /// @return The bias value
-    int get(const std::string &bias_name);
+    int get(const std::string &bias_name) const;
 
     /// @brief Gets bias metadata
     /// @param bias_name Name of the bias whose metadata to get
@@ -50,7 +50,7 @@ public:
 
     /// @brief Gets all biases values
     /// @return A map containing the biases values
-    virtual std::map<std::string, int> get_all_biases() = 0;
+    virtual std::map<std::string, int> get_all_biases() const = 0;
 
 protected:
     DeviceConfig device_config_;
@@ -75,7 +75,7 @@ private:
     ///
     /// @param bias_name Name of the bias whose value to get
     /// @return The bias value
-    virtual int get_impl(const std::string &bias_name) = 0;
+    virtual int get_impl(const std::string &bias_name) const = 0;
 
     /// @brief Gets bias metadata
     ///

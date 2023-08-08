@@ -23,6 +23,6 @@ bool SampleCameraSynchronization::set_mode_slave() {
     return false;
 }
 
-SampleCameraSynchronization::SyncMode SampleCameraSynchronization::get_mode() {
+SampleCameraSynchronization::SyncMode SampleCameraSynchronization::get_mode() const {
     return SyncMode::STANDALONE;
 }

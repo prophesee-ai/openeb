@@ -23,7 +23,7 @@ and to read recordings of event-based data. The supported cameras are:
 
 This document describes how to compile and install the OpenEB codebase.
 For further information, refer to our [online documentation](https://docs.prophesee.ai/) where you will find
-some [tutorials](https://docs.prophesee.ai/stable/metavision_sdk/tutorials/index.html) to get you started in C++ or Python,
+some [tutorials](https://docs.prophesee.ai/stable/tutorials/index.html) to get you started in C++ or Python,
 some [samples](https://docs.prophesee.ai/stable/samples.html) to discover how to use
 [our API](https://docs.prophesee.ai/stable/api.html) and a more detailed
 [description of our modules and packaging](https://docs.prophesee.ai/stable/modules.html).
@@ -131,7 +131,7 @@ python3 -m pip install "numba==0.56.3" "profilehooks==1.12.0" "pytorch_lightning
 
 ### Compilation
 
- 1. Retrieve the code `git clone https://github.com/prophesee-ai/openeb.git --branch 4.2.1`.
+ 1. Retrieve the code `git clone https://github.com/prophesee-ai/openeb.git --branch 4.3.0`.
     (If you choose to download an archive of OpenEB from GitHub rather than cloning the repository,
     you need to ensure that you select a ``Full.Source.Code.*`` archive instead of using
     the automatically generated ``Source.Code.*`` archives. This is because the latter do not include
@@ -189,7 +189,7 @@ Note that if you are using a third-party camera, you need to install the plugin 
 by the camera vendor and specify the location of the plugin using the `MV_HAL_PLUGIN_PATH` environment variable.
 
 To get started with OpenEB, you can download some [sample recordings](https://docs.prophesee.ai/stable/datasets.html) 
-and visualize them with [metavision_viewer](https://docs.prophesee.ai/stable/metavision_sdk/modules/driver/samples/viewer.html)
+and visualize them with [metavision_viewer](https://docs.prophesee.ai/stable/samples/modules/driver/viewer.html)
 or you can stream data from your Prophesee-compatible event-based camera.
 
 ### Running the test suite (Optional)
@@ -199,9 +199,10 @@ Running the test suite is a sure-fire way to ensure you did everything well with
  * Download [the files](https://dataset.prophesee.ai/index.php/s/tiP0wl0r5aW5efL) necessary to run the tests.
    Click `Download` on the top right folder. Beware of the size of the obtained archive which weighs around 1.2 Gb.
 
- * Extract and put the content of this archive to `<OPENEB_SRC_DIR>/`. For instance, the correct path of sequence `gen31_timer.raw` should be `<OPENEB_SRC_DIR>/datasets/openeb/gen31_timer.raw`.
+ * Extract and put the content of this archive to `<OPENEB_SRC_DIR>/datasets`. 
+   For instance, the correct path of sequence `gen31_timer.raw` should be `<OPENEB_SRC_DIR>/datasets/openeb/gen31_timer.raw`.
 
- * Regenerate the makefiles with the test options on.
+ * Regenerate the makefiles with the test options enabled:
 
   ```bash
   cd <OPENEB_SRC_DIR>/build
@@ -322,7 +323,7 @@ python -m pip install "numba==0.56.3" "profilehooks==1.12.0" "pytorch_lightning=
 First, retrieve the codebase:
 
 ```bash
-git clone https://github.com/prophesee-ai/openeb.git --branch 4.2.1
+git clone https://github.com/prophesee-ai/openeb.git --branch 4.3.0
 ```
 
 Note that if you choose to download an archive of OpenEB from GitHub rather than cloning the repository,
@@ -427,7 +428,7 @@ the `MV_HAL_PLUGIN_PATH` environment variable.
 #### Getting Started
 
 To get started with OpenEB, you can download some [sample recordings](https://docs.prophesee.ai/stable/datasets.html) 
-and visualize them with [metavision_viewer](https://docs.prophesee.ai/stable/metavision_sdk/modules/driver/samples/viewer.html)
+and visualize them with [metavision_viewer](https://docs.prophesee.ai/stable/samples/modules/driver/viewer.html)
 or you can stream data from your Prophesee-compatible event-based camera.
 
 *Note* that since OpenEB 3.0.0, Prophesee camera plugins are included in the OpenEB repository, so you don't need to perform
@@ -441,7 +442,8 @@ Running the test suite is a sure-fire way to ensure you did everything well with
  * Download [the files](https://dataset.prophesee.ai/index.php/s/tiP0wl0r5aW5efL) necessary to run the tests.
    Click `Download` on the top right folder. Beware of the size of the obtained archive which weighs around 1.2 Gb.
    
- * Extract and put the content of this archive to `<OPENEB_SRC_DIR>/`. For instance, the correct path of sequence `gen31_timer.raw` should be `<OPENEB_SRC_DIR>/datasets/openeb/gen31_timer.raw`.
+ * Extract and put the content of this archive to `<OPENEB_SRC_DIR>/datasets`. 
+   For instance, the correct path of sequence `gen31_timer.raw` should be `<OPENEB_SRC_DIR>/datasets/openeb/gen31_timer.raw`.
 
  * To run the test suite you need to reconfigure your build environment using CMake and to recompile
 

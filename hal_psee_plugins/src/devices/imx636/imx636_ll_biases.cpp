@@ -67,7 +67,7 @@ bool Imx636_LL_Biases::set_impl(const std::string &bias_name, int bias_value) {
  * @param bias_name name of the desired bias
  * @return int the offset
  */
-int Imx636_LL_Biases::get_impl(const std::string &bias_name) {
+int Imx636_LL_Biases::get_impl(const std::string &bias_name) const {
     auto it = biases_map_.find(bias_name);
     assert(it != biases_map_.end());
     auto &bias_info = it->second;
@@ -84,7 +84,7 @@ bool Imx636_LL_Biases::get_bias_info_impl(const std::string &bias_name, LL_Bias_
     return true;
 }
 
-std::map<std::string, int> Imx636_LL_Biases::get_all_biases() {
+std::map<std::string, int> Imx636_LL_Biases::get_all_biases() const {
     std::map<std::string, int> ret;
     for (auto &b : biases_map_) {
         ret[b.first] = get(b.first);

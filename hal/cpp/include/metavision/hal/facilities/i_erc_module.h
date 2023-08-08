@@ -31,7 +31,7 @@ public:
 
     /// @brief Returns ERC activation state
     /// @return The ERC state
-    virtual bool is_enabled() = 0;
+    virtual bool is_enabled() const = 0;
 
     /// @brief Sets the target CD event rate of the ERC
     /// @param events_per_sec Event rate expressed in events per second
@@ -43,15 +43,15 @@ public:
     virtual bool set_cd_event_rate(uint32_t events_per_sec);
 
     /// @brief Gets the minimum supported value for cd_event_rate setting
-    virtual uint32_t get_min_supported_cd_event_rate();
+    virtual uint32_t get_min_supported_cd_event_rate() const;
 
     /// @brief Gets the maximum supported value for cd_event_rate setting
-    virtual uint32_t get_max_supported_cd_event_rate();
+    virtual uint32_t get_max_supported_cd_event_rate() const;
 
     /// @brief Gets the CD event rate set point of the ERC
     /// @return The event rate expressed in events per second
     /// @note See @ref set_cd_event_rate to define the event rate target.
-    virtual uint32_t get_cd_event_rate();
+    virtual uint32_t get_cd_event_rate() const;
 
     /// @brief Gets the count period
     /// @return The count period duration expressed in microseconds
@@ -74,7 +74,7 @@ public:
     /// @brief Gets the maximum number of events that ERC will transmit over the count period
     /// @return The maximum event count
     /// @note See @ref set_cd_event_count to define the event count parameter.
-    virtual uint32_t get_cd_event_count() = 0;
+    virtual uint32_t get_cd_event_count() const = 0;
 
     /// @cond DEV
     virtual void erc_from_file(const std::string &) = 0;

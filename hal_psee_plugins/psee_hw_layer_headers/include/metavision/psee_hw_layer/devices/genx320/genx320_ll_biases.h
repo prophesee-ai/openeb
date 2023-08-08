@@ -27,7 +27,7 @@ class GenX320LLBiases : public I_LL_Biases {
 public:
     GenX320LLBiases(const std::shared_ptr<RegisterMap> &register_map, const DeviceConfig &device_config);
 
-    virtual std::map<std::string, int> get_all_biases() override;
+    virtual std::map<std::string, int> get_all_biases() const override;
 
 protected:
     class GenX320Bias : public LL_Bias_Info {
@@ -51,7 +51,7 @@ protected:
 
 private:
     virtual bool set_impl(const std::string &bias_name, int bias_value) override;
-    virtual int get_impl(const std::string &bias_name) override;
+    virtual int get_impl(const std::string &bias_name) const override;
     virtual bool get_bias_info_impl(const std::string &bias_name, LL_Bias_Info &info) const override;
 
     std::shared_ptr<RegisterMap> register_map_;

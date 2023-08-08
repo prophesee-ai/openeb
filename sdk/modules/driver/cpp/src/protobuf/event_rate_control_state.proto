@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package DeviceSerialization;
+
+message EventRateControlState {
+    oneof optional_enabled { bool enabled = 1; }
+    oneof optional_cd_event_count { uint32 cd_event_count = 2; }
+}

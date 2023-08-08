@@ -38,7 +38,7 @@ public:
     Imx636_LL_Biases(const DeviceConfig &device_config, const std::shared_ptr<I_HW_Register> &i_hw_register,
                      const std::string &sensor_prefix, std::vector<imx636_bias_setting> &bias_settings);
 
-    virtual std::map<std::string, int> get_all_biases() override;
+    virtual std::map<std::string, int> get_all_biases() const override;
 
 protected:
     class Imx636LLBias : public LL_Bias_Info {
@@ -65,7 +65,7 @@ protected:
 
 private:
     virtual bool set_impl(const std::string &bias_name, int bias_value) override;
-    virtual int get_impl(const std::string &bias_name) override;
+    virtual int get_impl(const std::string &bias_name) const override;
     virtual bool get_bias_info_impl(const std::string &bias_name, LL_Bias_Info &info) const override;
 
     bool bypass_range_check_;

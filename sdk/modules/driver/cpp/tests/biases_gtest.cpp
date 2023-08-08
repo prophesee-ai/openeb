@@ -34,11 +34,11 @@ public:
         return true;
     }
 
-    int get_impl(const std::string &bias_name) override {
-        return biases_map_[bias_name];
+    int get_impl(const std::string &bias_name) const override {
+        return biases_map_.find(bias_name)->second;
     }
 
-    std::map<std::string, int> get_all_biases() override {
+    std::map<std::string, int> get_all_biases() const override {
         return biases_map_;
     }
 

@@ -42,7 +42,7 @@ bool I_LL_Biases::set(const std::string &bias_name, int bias_value) {
     return set_impl(bias_name, bias_value);
 }
 
-int I_LL_Biases::get(const std::string &bias_name) {
+int I_LL_Biases::get(const std::string &bias_name) const {
     LL_Bias_Info bias_info;
     if (!get_bias_info(bias_name, bias_info)) {
         throw HalException(HalErrorCode::NonExistingValue, "Unavailable bias: \"" + bias_name + "\".");

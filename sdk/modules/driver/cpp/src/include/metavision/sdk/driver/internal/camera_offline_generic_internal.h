@@ -45,6 +45,9 @@ private:
     template<typename TimingProfilerType>
     bool process_impl(TimingProfilerType *);
 
+    void save(std::ostream &) const override;
+    void load(std::istream &) override;
+
     bool realtime_playback_speed_;
     timestamp first_ts_, last_ts_;
     uint64_t first_ts_clock_;

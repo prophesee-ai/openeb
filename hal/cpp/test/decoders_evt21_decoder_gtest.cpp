@@ -187,3 +187,18 @@ TEST_F(Evt21DecoderTest, should_decode_event_timestamp_loop) {
 
     EXPECT_THAT(events, ContainerEq(expected_events));
 }
+
+TEST_F(Evt21DecoderTest, should_decode_negative_32bit_as_unsigned_timehigh) {
+    // Timehigh with bit 25 set creates a timestamp with bit 32 set which is a negative value for signed ints
+    auto events = decode<EventCdBuffer>({
+        time_high(1ULL << 25),
+        event_2d(5, 4, 5, false),
+    });
+
+    const std::vector<EventCD> expected_events = {
+        // x. y, p, t
+        {5, 4, 0, ((1ULL << 25) << 6) + 5},
+    };
+
+    EXPECT_THAT(events, ContainerEq(expected_events));
+}

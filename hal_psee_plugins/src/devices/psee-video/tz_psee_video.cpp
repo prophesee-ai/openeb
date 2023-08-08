@@ -79,7 +79,7 @@ bool TzPseeVideo::set_mode_slave() {
     return false;
 }
 
-I_CameraSynchronization::SyncMode TzPseeVideo::get_mode() {
+I_CameraSynchronization::SyncMode TzPseeVideo::get_mode() const {
     return I_CameraSynchronization::SyncMode::STANDALONE;
 }
 

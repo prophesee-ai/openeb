@@ -114,7 +114,7 @@ struct MockConsumingStage : public BaseStage {
         set_consuming_callback([this](const boost::any &data) {
             try {
                 frames.emplace_back(boost::any_cast<FrameData>(data));
-            } catch (boost::bad_any_cast &c) {}
+            } catch (boost::bad_any_cast &) {}
         });
     }
     std::vector<FrameData> &frames;

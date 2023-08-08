@@ -117,7 +117,7 @@ bool Gen41_LL_Biases::set_impl(const std::string &bias_name, int bias_value) {
     return true;
 }
 
-int Gen41_LL_Biases::get_impl(const std::string &bias_name) {
+int Gen41_LL_Biases::get_impl(const std::string &bias_name) const {
     auto it = get_gen41_biases_map().find(bias_name);
     assert(it != get_gen41_biases_map().end());
     auto &bias_info = it->second;
@@ -141,7 +141,7 @@ bool Gen41_LL_Biases::get_bias_info_impl(const std::string &bias_name, LL_Bias_I
     return true;
 }
 
-std::map<std::string, int> Gen41_LL_Biases::get_all_biases() {
+std::map<std::string, int> Gen41_LL_Biases::get_all_biases() const {
     std::map<std::string, int> ret;
     for (auto &b : get_gen41_biases_map()) {
         ret[b.first] = get(b.first);

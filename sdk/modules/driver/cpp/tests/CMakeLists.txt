@@ -46,11 +46,26 @@ if (TARGET metavision_hal_gtest_utils)
         ${CMAKE_CURRENT_SOURCE_DIR}/camera_generation_gtest.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/camera_stage_gtest.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/camera_gtest.cpp
+        # TODO : remove this, we should not have to link with this file, it's only used
+        # in the camera gtest because we need functions that are not yet part of HAL I_ROI API
+        ${PROJECT_SOURCE_DIR}/hal/cpp/test/dummy_test_plugin_facilities_builder.cpp
     )
     target_link_libraries(gtest_metavision_sdk_driver PRIVATE metavision_hal_gtest_utils)
 endif (TARGET metavision_hal_gtest_utils)
 
-target_include_directories(gtest_metavision_sdk_driver PRIVATE 
+add_dependencies(gtest_metavision_sdk_driver hal_dummy_test_plugin)
+
+# Until we execute ctest in docker on Windows, the embedded paths to resources used in the code
+# can not be absolute. Here the path is relative to the working directory of the test (which is the
+# current binary dir).
+target_compile_definitions(gtest_metavision_sdk_driver PRIVATE HAL_DUMMY_TEST_PLUGIN="${CMAKE_CURRENT_BINARY_DIR}/../../../../../hal/cpp/test/plugins")
+
+find_package(Protobuf 3.15)
+if (Protobuf_FOUND)
+    target_compile_definitions(gtest_metavision_sdk_driver PRIVATE HAS_PROTOBUF)
+endif()
+
+target_include_directories(gtest_metavision_sdk_driver PRIVATE
     ${CMAKE_SOURCE_DIR}/sdk/modules/driver/cpp/src/include
     ${GENERATE_FILES_DIRECTORY}
 )

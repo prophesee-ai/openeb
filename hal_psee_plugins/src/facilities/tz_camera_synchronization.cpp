@@ -63,7 +63,7 @@ bool TzCameraSynchronization::set_mode_slave() {
     return false;
 }
 
-I_CameraSynchronization::SyncMode TzCameraSynchronization::get_mode() {
+I_CameraSynchronization::SyncMode TzCameraSynchronization::get_mode() const {
     for (auto dev : devices_) {
         if (auto main_dev = dynamic_cast<TzMainDevice *>(dev.get())) {
             return main_dev->get_mode();

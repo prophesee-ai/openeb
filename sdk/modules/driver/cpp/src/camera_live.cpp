@@ -23,6 +23,7 @@
 #include "metavision/sdk/driver/internal/camera_error_code_internal.h"
 #include "metavision/sdk/driver/internal/camera_generation_internal.h"
 #include "metavision/sdk/driver/internal/camera_live_internal.h"
+#include "metavision/sdk/driver/internal/camera_serialization.h"
 #include "metavision/sdk/driver/internal/cd_internal.h"
 #include "metavision/sdk/driver/internal/ext_trigger_internal.h"
 #include "metavision/sdk/driver/internal/erc_counter_internal.h"
@@ -210,6 +211,14 @@ bool LivePrivate::start_recording_impl(const std::string &file_path) {
         biases_->save_to_file(base_path + ".bias");
     }
     return Camera::Private::start_recording_impl(file_path);
+}
+
+void LivePrivate::save(std::ostream &os) const {
+    save_device(*device_, os);
+}
+
+void LivePrivate::load(std::istream &is) {
+    load_device(*device_, is);
 }
 
 void LivePrivate::init() {

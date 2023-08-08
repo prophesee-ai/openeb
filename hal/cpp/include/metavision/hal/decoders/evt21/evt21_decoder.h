@@ -72,7 +72,8 @@ private:
                 if (static_cast<EventTypesUnderlying_t>(Evt21EventTypes_4bits::EVT_TIME_HIGH) == cur_raw_ev->type) {
                     const Event_TIME_HIGH *ev_timehigh = reinterpret_cast<const Event_TIME_HIGH *>(cur_raw_ev);
 
-                    timestamp t = ev_timehigh->ts << 6;
+                    // Prevent integer convertion from happening when bits 34-32 are not set
+                    timestamp t = static_cast<uint64_t>(ev_timehigh->ts) << 6;
                     set_last_high_timestamp(t);
                     if (!time_shifting_set_ && is_time_shifting_enabled()) {
                         timestamp_shift_   = t;
@@ -125,7 +126,8 @@ private:
                 ++cur_ev;
             } else if (type == static_cast<EventTypesUnderlying_t>(Evt21EventTypes_4bits::EVT_TIME_HIGH)) {
                 const Event_TIME_HIGH *ev_timehigh = reinterpret_cast<const Event_TIME_HIGH *>(cur_ev);
-                set_last_high_timestamp(ev_timehigh->ts << 6);
+                // Prevent integer convertion from happening when bits 34-32 are not set
+                set_last_high_timestamp(static_cast<uint64_t>(ev_timehigh->ts) << 6);
                 ++cur_ev;
             } else if (type == static_cast<EventTypesUnderlying_t>(Evt21EventTypes_4bits::EXT_TRIGGER)) {
                 const Event_EXT_TRIGGER *ev_exttrigger = reinterpret_cast<const Event_EXT_TRIGGER *>(cur_ev);

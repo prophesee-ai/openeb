@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package DeviceSerialization;
+
+message DigitalEventMaskState {
+
+    message PixelMask {
+        uint32 x = 1;
+        uint32 y = 2;
+        bool enabled = 3;
+    }
+
+    repeated PixelMask mask = 1;
+}

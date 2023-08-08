@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package DeviceSerialization;
+
+message HWRegisterState {
+
+    message NumAccess {
+        uint32 address = 1;
+        uint32 value = 2;
+    }
+
+    repeated NumAccess num_access = 1;
+
+    message StringAccess {
+        string address = 1;
+        uint32 value = 2;
+    }
+
+    repeated StringAccess str_access = 2;
+
+    message BitFieldAccess {
+        string address = 1;
+        string bitfield = 2;
+        uint32 value = 3;
+    }
+
+    repeated BitFieldAccess bitfield_access = 3;
+}

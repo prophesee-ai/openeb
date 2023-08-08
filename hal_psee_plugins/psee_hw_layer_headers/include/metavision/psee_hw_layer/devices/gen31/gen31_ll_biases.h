@@ -23,14 +23,14 @@ public:
     Gen31_LL_Biases(const DeviceConfig &device_config, const std::shared_ptr<I_HW_Register> &i_hw_register,
                     const std::string &prefix);
 
-    virtual std::map<std::string, int> get_all_biases() override;
+    virtual std::map<std::string, int> get_all_biases() const override;
 
 protected:
     const std::shared_ptr<I_HW_Register> &get_hw_register() const;
 
 private:
     virtual bool set_impl(const std::string &bias_name, int bias_value) override;
-    virtual int get_impl(const std::string &bias_name) override;
+    virtual int get_impl(const std::string &bias_name) const override;
     virtual bool get_bias_info_impl(const std::string &bias_name, LL_Bias_Info &info) const override;
 
     std::shared_ptr<I_HW_Register> i_hw_register_;

@@ -29,6 +29,10 @@ public:
     /// @param enable_filter Whether to enable the noise filtering
     virtual bool enable(bool enable_filter) = 0;
 
+    /// @brief Returns the noise filter state
+    /// @return the noise filter state
+    virtual bool is_enabled() const = 0;
+
     /// @brief Sets the event rate threshold. Below this threshold, no events are streamed.
     /// @param threshold_Kev_s Event rate threshold in Kevt/s
     /// @return true if the input value was correctly set (i.e. it falls in the range of acceptable values for the
@@ -37,7 +41,7 @@ public:
 
     /// @brief Gets the event rate threshold in Kevt/s below which no events are streamed
     /// @return Event rate threshold in Kevt/s
-    virtual uint32_t get_event_rate_threshold() = 0;
+    virtual uint32_t get_event_rate_threshold() const = 0;
 };
 
 } // namespace Metavision

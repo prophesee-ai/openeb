@@ -49,6 +49,9 @@ private:
     template<typename TimingProfilerType>
     bool process_impl(TimingProfilerType *);
 
+    void save(std::ostream &) const override;
+    void load(std::istream &) override;
+
     std::unique_ptr<Device> device_  = nullptr;
     I_EventsStream *i_events_stream_ = nullptr;
     I_Decoder *i_decoder_            = nullptr;

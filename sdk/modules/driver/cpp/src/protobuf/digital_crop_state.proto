@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package DeviceSerialization;
+
+message DigitalCropState {
+    oneof optional_enabled { bool enabled = 1; }
+
+    message Region {
+        uint32 X1 = 1;
+        uint32 Y1 = 2;
+        uint32 X2 = 3;
+        uint32 Y2 = 4;
+    }
+
+    Region region = 2;
+}

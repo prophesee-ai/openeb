@@ -53,6 +53,10 @@ bool Gen31_EventRateNoiseFilterModule::enable(bool enable_filter) {
     return true;
 }
 
+bool Gen31_EventRateNoiseFilterModule::is_enabled() const {
+    return get_hw_register()->read_register(base_name_ + "nfl_ctrl", "nfl_en");
+}
+
 bool Gen31_EventRateNoiseFilterModule::set_time_window(uint32_t window_length_us) {
     if (window_length_us < min_time_window_us_ || window_length_us > max_time_window_us_) {
         return false;
@@ -62,7 +66,7 @@ bool Gen31_EventRateNoiseFilterModule::set_time_window(uint32_t window_length_us
     return true;
 }
 
-uint32_t Gen31_EventRateNoiseFilterModule::get_time_window() {
+uint32_t Gen31_EventRateNoiseFilterModule::get_time_window() const {
     return get_hw_register()->read_register(base_name_ + "nfl_thresh", "period_cnt_thresh");
 }
 
@@ -82,13 +86,13 @@ bool Gen31_EventRateNoiseFilterModule::set_event_rate_threshold(uint32_t thresho
     return true;
 }
 
-uint32_t Gen31_EventRateNoiseFilterModule::get_event_rate_threshold() {
+uint32_t Gen31_EventRateNoiseFilterModule::get_event_rate_threshold() const {
     current_threshold_kev_s_ = std::round(
         (get_hw_register()->read_register(base_name_ + "nfl_thresh", "evt_thresh") * 1000.) / get_time_window());
     return current_threshold_kev_s_;
 }
 
-const std::shared_ptr<I_HW_Register> &Gen31_EventRateNoiseFilterModule::get_hw_register() {
+const std::shared_ptr<I_HW_Register> &Gen31_EventRateNoiseFilterModule::get_hw_register() const {
     return i_hw_register_;
 }
 

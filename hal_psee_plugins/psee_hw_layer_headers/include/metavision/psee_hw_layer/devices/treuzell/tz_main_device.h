@@ -48,7 +48,7 @@ public:
 
     /// @brief Retrieves Synchronization mode
     /// @return synchronization mode
-    virtual I_CameraSynchronization::SyncMode get_mode() = 0;
+    virtual I_CameraSynchronization::SyncMode get_mode() const = 0;
 
     /// @brief Provides information on the sensor used in the system
     ///

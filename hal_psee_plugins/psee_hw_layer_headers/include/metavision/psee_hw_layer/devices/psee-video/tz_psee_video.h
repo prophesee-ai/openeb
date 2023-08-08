@@ -31,7 +31,7 @@ public:
     virtual bool set_mode_standalone();
     virtual bool set_mode_master();
     virtual bool set_mode_slave();
-    virtual I_CameraSynchronization::SyncMode get_mode();
+    virtual I_CameraSynchronization::SyncMode get_mode() const;
     virtual I_HW_Identification::SensorInfo get_sensor_info() {
         return {0, 0, "Gen0.0"};
     }

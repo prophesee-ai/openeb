@@ -60,7 +60,9 @@ int main(int argc, char *argv[]) {
     std::string serial;
     std::string biases_file;
     std::string in_file_path;
+    std::string in_cam_config_path;
     std::string out_file_path;
+    std::string out_cam_config_path;
     std::vector<uint16_t> roi;
 
     bool do_retry = false;
@@ -70,7 +72,9 @@ int main(int argc, char *argv[]) {
     std::string long_program_desc(short_program_desc +
                                   "Press SPACE key while running to record or stop recording raw data\n"
                                   "Press 'q' or Escape key to leave the program.\n"
-                                  "Press 'o' to toggle the on screen display\n"
+                                  "Press 'o' to toggle the on screen display.\n"
+                                  "Press 'l' to load the camera state from the input camera config file.\n"
+                                  "Press 's' to save the camera state to the output camera config file.\n"
                                   "Press 'r' to toggle the hardware ROI given as input.\n"
                                   "Press 'e' to toggle the ERC module (if available).\n"
                                   "Press '+' to increase the ERC threshold (if available).\n"
@@ -81,11 +85,13 @@ int main(int argc, char *argv[]) {
     // clang-format off
     options_desc.add_options()
         ("help,h", "Produce help message.")
-        ("serial,s",          po::value<std::string>(&serial),"Serial ID of the camera. This flag is incompatible with flag '--input-file'.")
-        ("input-file,i",      po::value<std::string>(&in_file_path), "Path to input file. If not specified, the camera live stream is used.")
-        ("biases,b",          po::value<std::string>(&biases_file), "Path to a biases file. If not specified, the camera will be configured with the default biases.")
-        ("output-file,o",     po::value<std::string>(&out_file_path)->default_value("data.raw"), "Path to an output file used for data recording. Default value is 'data.raw'. It also works when reading data from a file.")
-        ("roi,r",             po::value<std::vector<uint16_t>>(&roi)->multitoken(), "Hardware ROI to set on the sensor in the format [x y width height].")
+        ("serial,s",             po::value<std::string>(&serial),"Serial ID of the camera. This flag is incompatible with flag '--input-file'.")
+        ("input-file,i",         po::value<std::string>(&in_file_path), "Path to input file. If not specified, the camera live stream is used.")
+        ("input-camera-config",  po::value<std::string>(&in_cam_config_path), "Path to a file containing camera config settings to restore a camera state. Only works for live cameras.")
+        ("biases,b",             po::value<std::string>(&biases_file), "Path to a biases file. If not specified, the camera will be configured with the default biases.")
+        ("output-file,o",        po::value<std::string>(&out_file_path)->default_value("data.raw"), "Path to an output file used for data recording. Default value is 'data.raw'. It also works when reading data from a file.")
+        ("output-camera-config", po::value<std::string>(&out_cam_config_path)->default_value("settings.json"), "Path to a file that will contain the camera state. Default value is 'settings.json'. Only works for live camera.")
+        ("roi,r",                po::value<std::vector<uint16_t>>(&roi)->multitoken(), "Hardware ROI to set on the sensor in the format [x y width height].")
     ;
     // clang-format on
 
@@ -148,6 +154,12 @@ int main(int argc, char *argv[]) {
                     camera = Metavision::Camera::from_serial(serial);
                 } else {
                     camera = Metavision::Camera::from_first_available();
+                }
+
+                if (!in_cam_config_path.empty()) {
+                    try {
+                        camera.load(in_cam_config_path);
+                    } catch (Metavision::CameraException &e) { MV_LOG_ERROR() << e.what(); }
                 }
 
                 if (biases_file != "") {
@@ -322,6 +334,26 @@ int main(int argc, char *argv[]) {
                 break;
             case 'o': {
                 osd = !osd;
+                break;
+            }
+            case 'l': {
+                if (in_cam_config_path.empty()) {
+                    break;
+                }
+                try {
+                    camera.load(in_cam_config_path);
+                    MV_LOG_INFO() << "Settings restored from" << in_cam_config_path;
+                } catch (Metavision::CameraException &e) {}
+                break;
+            }
+            case 's': {
+                if (out_cam_config_path.empty()) {
+                    break;
+                }
+                try {
+                    camera.save(out_cam_config_path);
+                    MV_LOG_INFO() << "Settings saved to" << out_cam_config_path;
+                } catch (Metavision::CameraException &e) {}
                 break;
             }
             case 'r': {

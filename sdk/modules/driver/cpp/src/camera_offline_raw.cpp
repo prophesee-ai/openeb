@@ -163,6 +163,16 @@ bool OfflineRawPrivate::process_impl(TimingProfilerType *profiler) {
     return true;
 }
 
+void OfflineRawPrivate::save(std::ostream &) const {
+    throw CameraException(UnsupportedFeatureErrors::SerializationUnsupported,
+                          "Cannot serialize when running from a file.");
+}
+
+void OfflineRawPrivate::load(std::istream &) {
+    throw CameraException(UnsupportedFeatureErrors::SerializationUnsupported,
+                          "Cannot deserialize when running from a file.");
+}
+
 void OfflineRawPrivate::init() {
     is_init_ = true;
     if (!device_) {

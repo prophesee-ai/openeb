@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
 
     // 1) Stage wrapping an ROI filter algorithm
     auto &roi_stage = p.add_algorithm_stage(
-        std::make_unique<Metavision::RoiFilterAlgorithm>(80, 80, width - 80, height - 80, false), cam_stage, false);
+        std::make_unique<Metavision::RoiFilterAlgorithm>(150, 150, width - 150, height - 150, false), cam_stage, false);
 
     // 2) Stage wrapping a polarity filter algorithm
     auto &pol_stage = p.add_algorithm_stage(std::make_unique<Metavision::PolarityFilterAlgorithm>(0), roi_stage, false);

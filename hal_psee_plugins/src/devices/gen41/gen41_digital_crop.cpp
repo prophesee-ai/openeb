@@ -27,7 +27,7 @@ bool Gen41DigitalCrop::enable(bool state) {
     return true;
 }
 
-bool Gen41DigitalCrop::is_enabled() {
+bool Gen41DigitalCrop::is_enabled() const {
     return enable_.read_value();
 }
 
@@ -54,6 +54,6 @@ bool Gen41DigitalCrop::set_window_region(const Region &region, bool reset_origin
     return true;
 }
 
-Gen41DigitalCrop::Region Gen41DigitalCrop::get_window_region() {
+Gen41DigitalCrop::Region Gen41DigitalCrop::get_window_region() const {
     return {start_x_.read_value(), start_y_.read_value(), end_x_.read_value(), end_y_.read_value()};
 }

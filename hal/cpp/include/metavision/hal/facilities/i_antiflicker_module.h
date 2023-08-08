@@ -38,7 +38,7 @@ public:
 
     /// @brief Returns Anti-flicker activation state
     /// @return The Anti-flicker state
-    virtual bool is_enabled() = 0;
+    virtual bool is_enabled() const = 0;
 
     /// @brief Sets anti-flicker parameters.
     ///

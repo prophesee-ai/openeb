@@ -29,14 +29,14 @@ public:
              std::shared_ptr<TzDevice> tzDev = nullptr);
 
     virtual bool enable(bool en) override;
-    virtual bool is_enabled() override;
+    virtual bool is_enabled() const override;
     virtual void initialize() override;
     virtual void erc_from_file(const std::string &) override;
     virtual uint32_t get_count_period() const override;
     virtual bool set_cd_event_count(uint32_t count) override;
     virtual uint32_t get_min_supported_cd_event_count() const override;
     virtual uint32_t get_max_supported_cd_event_count() const override;
-    virtual uint32_t get_cd_event_count() override;
+    virtual uint32_t get_cd_event_count() const override;
 
     void set_device_control(const std::shared_ptr<PseeDeviceControl> &device_control);
 

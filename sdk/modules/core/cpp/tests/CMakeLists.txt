@@ -15,6 +15,8 @@ set(metavision_sdk_core_tests_srcs
     ${CMAKE_CURRENT_SOURCE_DIR}/cv_color_map_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/data_synchronizer_from_triggers_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/event_buffer_reslicer_algorithm_gtest.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/event_frame_diff_generation_algorithm_gtest.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/event_frame_histo_generation_algorithm_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/flip_x_algorithm_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/flip_y_algorithm_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/frame_composer_gtest.cpp

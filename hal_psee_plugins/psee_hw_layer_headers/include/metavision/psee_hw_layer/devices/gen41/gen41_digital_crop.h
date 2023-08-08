@@ -40,7 +40,7 @@ public:
 
     /// @brief Returns Digital Crop activation state
     /// @return The Digital Crop state
-    bool is_enabled() override;
+    bool is_enabled() const override;
 
     /// @brief Defines digital crop window region
     /// @param region The region of pixels that should be cropped
@@ -50,7 +50,7 @@ public:
 
     /// @brief Gets the digital crop window region currently defined
     /// @return digital crop window region currently defined
-    Region get_window_region() override;
+    Region get_window_region() const override;
 };
 
 } // namespace Metavision

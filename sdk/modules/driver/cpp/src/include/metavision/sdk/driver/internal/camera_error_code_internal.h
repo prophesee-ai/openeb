@@ -51,6 +51,7 @@ enum : CameraErrorCodeType {
     ERCCounterUnavailable              = CameraErrorCode::UnsupportedFeature | 0x16,
     FrameHistoUnavailable              = CameraErrorCode::UnsupportedFeature | 0x17,
     FrameDiffUnavailable               = CameraErrorCode::UnsupportedFeature | 0x18,
+    SerializationUnsupported           = CameraErrorCode::UnsupportedFeature | 0x19,
 };
 }
 

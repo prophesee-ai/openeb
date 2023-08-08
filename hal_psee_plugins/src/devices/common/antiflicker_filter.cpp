@@ -120,7 +120,7 @@ bool AntiFlickerFilter::enable(bool b) {
     return true;
 }
 
-bool AntiFlickerFilter::is_enabled() {
+bool AntiFlickerFilter::is_enabled() const {
     return regmap()[sensor_prefix_ + "afk/pipeline_control"].read_value() == 0b001;
 }
 
@@ -283,6 +283,10 @@ uint32_t AntiFlickerFilter::get_max_supported_stop_threshold() const {
 }
 
 RegisterMap &AntiFlickerFilter::regmap() {
+    return dev_->regmap();
+}
+
+const RegisterMap &AntiFlickerFilter::regmap() const {
     return dev_->regmap();
 }
 
