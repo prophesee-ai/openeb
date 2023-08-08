@@ -26,6 +26,7 @@ jobs:
           libglew-dev git g++ libusb-1.0-0-dev libgtest-dev libgmock-dev libssl-dev python3.8 \
           python3-pip python3-distutils xvfb libglfw3 libglfw3-dev libglew-dev libopencv-dev ffmpeg \
           libboost-dev libboost-program-options-dev libboost-filesystem-dev libboost-timer-dev \
+          libprotobuf-dev protobuf-compiler \
           libboost-chrono-dev libboost-thread-dev zip unzip git-lfs libhdf5-dev hdf5-tools
           pip install $numpy_version pytest opencv-python==4.5.5.64 torch==1.13.1 scipy sk-video==1.1.10 numba==0.56.3 h5py protobuf==3.20.3 command_runner kornia==0.6.8 pytorch_lightning==1.8.6 pytorch_msssim==0.2.1
 
@@ -73,6 +74,7 @@ jobs:
           libglew-dev git g++ libusb-1.0-0-dev libgtest-dev libgmock-dev libssl-dev \
           python3-pip python3-distutils xvfb libglfw3 libglfw3-dev libglew-dev libopencv-dev ffmpeg \
           libboost-dev libboost-program-options-dev libboost-filesystem-dev libboost-timer-dev \
+          libprotobuf-dev protobuf-compiler \
           libboost-chrono-dev libboost-thread-dev zip unzip git-lfs libhdf5-dev hdf5-tools
           pip install $numpy_version pytest opencv-python==4.5.5.64 torch==1.13.1 scipy sk-video==1.1.10 numba==0.56.3 h5py protobuf==3.20.3 command_runner kornia==0.6.8 pytorch_lightning==1.8.6 pytorch_msssim==0.2.1
 
