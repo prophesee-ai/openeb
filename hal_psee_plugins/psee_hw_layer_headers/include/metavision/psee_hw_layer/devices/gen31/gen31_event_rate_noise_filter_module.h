@@ -14,20 +14,29 @@
 
 #include <string>
 
-#include "metavision/hal/facilities/i_event_rate_noise_filter_module.h"
+#include "metavision/hal/facilities/i_event_rate_activity_filter_module.h"
 
 namespace Metavision {
 
 class I_HW_Register;
 
-class Gen31_EventRateNoiseFilterModule : public I_EventRateNoiseFilterModule {
+class Gen31_EventRateNoiseFilterModule : public I_EventRateActivityFilterModule {
 public:
+    using NflThresholds = I_EventRateActivityFilterModule::thresholds;
+
     Gen31_EventRateNoiseFilterModule(const std::shared_ptr<I_HW_Register> &i_hw_register, const std::string &prefix);
 
-    virtual bool enable(bool enable_filter) override;
-    virtual bool is_enabled() const override;
-    virtual bool set_event_rate_threshold(uint32_t threshold_Kev_s) override;
-    virtual uint32_t get_event_rate_threshold() const override;
+    bool enable(bool enable_filter) override;
+    bool is_enabled() const override;
+    bool set_event_rate_threshold(uint32_t threshold_Kev_s) override;
+    uint32_t get_event_rate_threshold() const override;
+
+    NflThresholds is_thresholds_supported() const override;
+    bool set_thresholds(const NflThresholds &thresholds_ev_s) override;
+    NflThresholds get_thresholds() const override;
+
+    NflThresholds get_min_supported_thresholds() const override;
+    NflThresholds get_max_supported_thresholds() const override;
 
     static constexpr uint32_t min_time_window_us_            = 1;
     static constexpr uint32_t max_time_window_us_            = 1023;

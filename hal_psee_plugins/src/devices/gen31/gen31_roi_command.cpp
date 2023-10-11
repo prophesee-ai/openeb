@@ -82,11 +82,17 @@ bool Gen31ROICommand::enable(bool state) {
         write_ROI(roi_save_);
     }
 
+    enabled_ = state;
+
     (*register_map_)[prefix_ + "roi_ctrl"]["roi_td_en"]             = true;
     (*register_map_)[prefix_ + "roi_ctrl"]["roi_td_shadow_trigger"] = true;
     (*register_map_)[prefix_ + "roi_ctrl"]["roi_td_shadow_trigger"] = false;
 
     return true;
+}
+
+bool Gen31ROICommand::is_enabled() const {
+    return enabled_;
 }
 
 } // namespace Metavision

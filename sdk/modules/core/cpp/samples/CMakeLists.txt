@@ -7,11 +7,17 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
+option(COMPILE_PLAYER "Compile Metavision SDK player" ON)
+if (COMPILE_PLAYER)
+    add_subdirectory(metavision_player)
+endif ()
+
 if (NOT ANDROID)
     add_subdirectory(metavision_composed_viewer)
     add_subdirectory(metavision_csv_viewer)
     add_subdirectory(metavision_event_frame_generation)
     add_subdirectory(metavision_event_frame_gpu_loading)
+    add_subdirectory(metavision_file_to_video)
     add_subdirectory(metavision_filtering)
     add_subdirectory(metavision_sdk_get_started)
     add_subdirectory(metavision_time_surface)

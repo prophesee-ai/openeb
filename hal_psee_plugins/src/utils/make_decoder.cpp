@@ -17,11 +17,14 @@
 
 #include "metavision/hal/utils/device_builder.h"
 #include "metavision/hal/facilities/i_event_decoder.h"
+#include "metavision/hal/facilities/i_event_frame_decoder.h"
+#include "metavision/hal/facilities/i_events_stream_decoder.h"
 #include "metavision/hal/decoders/aer/aer_decoder.h"
 #include "metavision/hal/decoders/evt2/evt2_decoder.h"
 #include "metavision/hal/decoders/evt21/evt21_decoder.h"
 #include "metavision/hal/decoders/evt3/evt3_decoder.h"
 #include "metavision/hal/decoders/ehc/ehc_decoder.h"
+#include "metavision/hal/decoders/mtr/mtr_decoder.h"
 #include "metavision/hal/utils/hal_log.h"
 #include "metavision/psee_hw_layer/utils/psee_format.h"
 
@@ -60,9 +63,11 @@ static std::pair<unsigned, unsigned> get_pixel_layout(const std::string &layout_
 std::shared_ptr<I_EventsStreamDecoder> make_decoder(DeviceBuilder &device_builder, const StreamFormat &format,
                                                     size_t &raw_size_bytes, bool do_time_shifting) {
     std::shared_ptr<I_EventsStreamDecoder> decoder;
+    std::shared_ptr<I_Decoder> frame_decoder;
+    auto i_geometry = device_builder.add_facility(format.geometry());
+
     raw_size_bytes = 0;
     if (format.name() == "EVT3") {
-        auto i_geometry           = device_builder.add_facility(format.geometry());
         auto cd_decoder           = device_builder.add_facility(std::make_unique<I_EventDecoder<EventCD>>());
         auto ext_trig_decoder     = device_builder.add_facility(std::make_unique<I_EventDecoder<EventExtTrigger>>());
         auto erc_count_ev_decoder = device_builder.add_facility(std::make_unique<I_EventDecoder<EventERCCounter>>());
@@ -73,7 +78,6 @@ std::shared_ptr<I_EventsStreamDecoder> make_decoder(DeviceBuilder &device_builde
 
         raw_size_bytes = decoder->get_raw_event_size_bytes();
     } else if (format.name() == "EVT2") {
-        auto i_geometry       = device_builder.add_facility(format.geometry());
         auto cd_decoder       = device_builder.add_facility(std::make_unique<I_EventDecoder<EventCD>>());
         auto ext_trig_decoder = device_builder.add_facility(std::make_unique<I_EventDecoder<EventExtTrigger>>());
 
@@ -81,7 +85,6 @@ std::shared_ptr<I_EventsStreamDecoder> make_decoder(DeviceBuilder &device_builde
             device_builder.add_facility(std::make_unique<EVT2Decoder>(do_time_shifting, cd_decoder, ext_trig_decoder));
         raw_size_bytes = decoder->get_raw_event_size_bytes();
     } else if (format.name() == "EVT21") {
-        auto i_geometry           = device_builder.add_facility(format.geometry());
         auto cd_decoder           = device_builder.add_facility(std::make_unique<I_EventDecoder<EventCD>>());
         auto ext_trig_decoder     = device_builder.add_facility(std::make_unique<I_EventDecoder<EventExtTrigger>>());
         auto erc_count_ev_decoder = device_builder.add_facility(std::make_unique<I_EventDecoder<EventERCCounter>>());
@@ -96,7 +99,6 @@ std::shared_ptr<I_EventsStreamDecoder> make_decoder(DeviceBuilder &device_builde
         }
         raw_size_bytes = decoder->get_raw_event_size_bytes();
     } else if (format.name() == "HISTO3D") {
-        auto i_geometry   = device_builder.add_facility(format.geometry());
         auto pixel_layout = get_pixel_layout(format["pixellayout"]);
         int pixel_bytes;
         try {
@@ -108,27 +110,32 @@ std::shared_ptr<I_EventsStreamDecoder> make_decoder(DeviceBuilder &device_builde
             // stoi throws non standard exceptions on Android
             throw std::invalid_argument("Format is missing a valid pixelbytes value");
         }
-        auto histo_decoder = device_builder.add_facility(
+        frame_decoder = device_builder.add_facility(
             std::make_unique<Histo3dDecoder>(i_geometry->get_height(), i_geometry->get_width(), pixel_layout.first,
                                              pixel_layout.second, pixel_bytes == 2));
-        raw_size_bytes = histo_decoder->get_raw_event_size_bytes();
+        raw_size_bytes = frame_decoder->get_raw_event_size_bytes();
     } else if (format.name() == "DIFF3D") {
         auto pixel_layout = get_pixel_layout(format["pixellayout"]);
-        auto i_geometry   = device_builder.add_facility(format.geometry());
-        auto diff_decoder = device_builder.add_facility(
+        frame_decoder     = device_builder.add_facility(
             std::make_unique<Diff3dDecoder>(i_geometry->get_height(), i_geometry->get_width(), pixel_layout.first));
-        raw_size_bytes = diff_decoder->get_raw_event_size_bytes();
+        raw_size_bytes = frame_decoder->get_raw_event_size_bytes();
     } else if (format.name() == "AER-8b") {
-        auto i_geometry = device_builder.add_facility(format.geometry());
         auto cd_decoder = device_builder.add_facility(std::make_unique<I_EventDecoder<EventCD>>());
         decoder        = device_builder.add_facility(std::make_unique<AERDecoder<false>>(do_time_shifting, cd_decoder));
         raw_size_bytes = decoder->get_raw_event_size_bytes();
     } else if (format.name() == "AER-4b") {
-        auto i_geometry = device_builder.add_facility(format.geometry());
         auto cd_decoder = device_builder.add_facility(std::make_unique<I_EventDecoder<EventCD>>());
         decoder         = device_builder.add_facility(std::make_unique<AERDecoder<true>>(do_time_shifting, cd_decoder));
         raw_size_bytes  = decoder->get_raw_event_size_bytes();
-    } else {
+    } else if (format.name().rfind("MTR") == 0) {
+        auto mtr_decoder = mtr_decoder_from_format(*i_geometry, format.name());
+        if (mtr_decoder) {
+            frame_decoder = device_builder.add_facility(std::move(mtr_decoder));
+            raw_size_bytes = frame_decoder->get_raw_event_size_bytes();
+        }
+    }
+
+    if (!decoder && !frame_decoder) {
         throw std::runtime_error("Format " + format.name() + " is not supported");
     }
 

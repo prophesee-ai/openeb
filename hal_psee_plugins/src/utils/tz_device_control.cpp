@@ -38,7 +38,11 @@ TzDeviceControl::TzDeviceControl(std::vector<std::shared_ptr<TzDevice>> &devices
 TzDeviceControl::~TzDeviceControl() {
     // Stop streaming if the caller program "forgot"
     if (streaming_) {
-        stop();
+        try {
+            stop();
+        } catch (const std::system_error &e) {
+            MV_HAL_LOG_WARNING() << "Treuzell Device Control destruction failed: " << e.what();
+        }
     }
     // Stop intermediate blocks
     for (auto dev = devices_.rbegin(); dev != devices_.rend(); dev++) {

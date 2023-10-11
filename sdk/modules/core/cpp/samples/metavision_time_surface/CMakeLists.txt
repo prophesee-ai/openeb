@@ -14,12 +14,12 @@ add_executable(${sample} ${sample}.cpp)
 target_link_libraries(${sample} PRIVATE ${common_libraries})
 
 install(FILES ${sample}.cpp
-        DESTINATION share/metavision/sdk/core/samples/${sample}
+        DESTINATION share/metavision/sdk/core/cpp_samples/${sample}
         COMPONENT metavision-sdk-core-samples
 )
 
 install(FILES CMakeLists.txt.install
         RENAME CMakeLists.txt
-        DESTINATION share/metavision/sdk/core/samples/${sample}
+        DESTINATION share/metavision/sdk/core/cpp_samples/${sample}
         COMPONENT metavision-sdk-core-samples
 )

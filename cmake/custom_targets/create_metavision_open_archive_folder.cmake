@@ -14,13 +14,14 @@ file(MAKE_DIRECTORY "${OUTPUT_DIR}")
 # For some reason, CMAKE_MODULE_PATH passed by create_metavision_open_archive
 # has spaces instead of semicolumns
 string(REPLACE " " ";" CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}")
+string(REPLACE " " ";" HAL_OPEN_PLUGIN_DEVICES "${HAL_OPEN_PLUGIN_DEVICES}")
+
 include(overridden_cmake_functions)
 
 set(HAL_OPEN_PLUGIN_FILES apps biasgen cmake CMakeLists.txt lib resources samples test)
 set(HAL_OPEN_PLUGIN_INCLUDES boards utils geometries plugin devices/common devices/utils devices/others)
 set(HAL_OPEN_PLUGIN_HW_LAYER_INCLUDES boards facilities utils devices/common devices/utils devices/psee-video)
 set(HAL_OPEN_PLUGIN_SOURCES boards CMakeLists.txt facilities plugin utils devices/common devices/utils devices/psee-video devices/others devices/CMakeLists.txt)
-set(HAL_OPEN_PLUGIN_DEVICES gen31 gen41 imx636 imx646 genx320 treuzell)
 
 foreach (open_device ${HAL_OPEN_PLUGIN_DEVICES})
     list(APPEND HAL_OPEN_PLUGIN_INCLUDES devices/${open_device})
@@ -82,6 +83,9 @@ if (NOT KEEP_GIT_SUBMODULES)
 endif ()
 # Remove Metavision Studio :
 file(REMOVE_RECURSE "${OUTPUT_DIR}/sdk/modules/core/cpp/apps/metavision_studio")
+
+# Remove evk3d viewer as the plugin is closed source
+file(REMOVE_RECURSE "${OUTPUT_DIR}/sdk/modules/driver/cpp/samples/metavision_evk3d_viewer")
 
 # Now we need to modify the way to determine the VCS information (folder created is not be a git repo)
 string(CONCAT licence_header "# Copyright (c) Prophesee S.A.\n"

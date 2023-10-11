@@ -55,16 +55,28 @@ bool PseeROI::set_mode(const Mode &mode) {
     return mode == Mode::ROI;
 }
 
+I_ROI::Mode PseeROI::get_mode() const {
+    return Mode::ROI;
+}
+
 size_t PseeROI::get_max_supported_windows_count() const {
     return 1;
 }
 
 bool PseeROI::set_windows_impl(const std::vector<Window> &windows) {
-    return set_ROIs_from_bitword(create_ROIs(windows), true);
+    if (set_ROIs_from_bitword(create_ROIs(windows), false)) {
+        active_windows_ = windows;
+        return true;
+    }
+    return false;
+}
+
+std::vector<I_ROI::Window> PseeROI::get_windows() const {
+    return active_windows_;
 }
 
 bool PseeROI::set_ROIs_from_bitword(const std::vector<uint32_t> &vroiparams, bool is_enabled) {
-    program_ROI_Helper(vroiparams, is_enabled);
+    write_ROI(vroiparams);
     return true;
 }
 
@@ -72,7 +84,7 @@ bool PseeROI::set_lines(const std::vector<bool> &cols, const std::vector<bool> &
     if ((cols.size() != static_cast<size_t>(device_width_)) || (rows.size() != static_cast<size_t>(device_height_))) {
         return false;
     }
-    program_ROI_Helper(create_ROIs(cols, rows), true);
+    write_ROI(create_ROIs(cols, rows));
     return true;
 }
 
@@ -167,6 +179,7 @@ std::vector<uint32_t> PseeROI::create_ROIs(const std::vector<bool> &cols_to_enab
         }
     }
 
+    active_windows_ = windows;
     return create_ROIs(windows, device_width_, device_height_, roi_x_flipped(), get_word_size(), x_offset, y_offset);
 }
 
@@ -180,11 +193,6 @@ bool PseeROI::roi_x_flipped() const {
 
 int PseeROI::get_word_size() const {
     return 32;
-}
-
-void PseeROI::program_ROI_Helper(const std::vector<uint32_t> &vroiparams, bool is_enabled) {
-    write_ROI(vroiparams);
-    enable(is_enabled);
 }
 
 } // namespace Metavision

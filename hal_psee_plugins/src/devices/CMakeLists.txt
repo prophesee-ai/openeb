@@ -7,25 +7,17 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-add_subdirectory(utils)
-add_subdirectory(common)
-add_subdirectory(treuzell)
-add_subdirectory(gen31)
-add_subdirectory(gen41)
-add_subdirectory(imx636)
-add_subdirectory(imx646)
+set(HAL_PSEE_OPEN_PLUGIN_DEVICES gen31 gen41 imx636 imx646 genx320 treuzell
+    CACHE INTERNAL "Hal plugin open sourced devices")
 
-if(NOT ANDROID)
-    add_subdirectory(genx320)
-endif(NOT ANDROID)
+set(HAL_PSEE_CLOSED_PLUGIN_DEVICES saphir sensorlib evk3d 
+    CACHE INTERNAL "Hal plugin close sourced devices")
 
-if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/saphir")
-    add_subdirectory(saphir)
-endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/saphir")
+set(HAL_PSEE_PLUGIN_DEVICES_COMMON utils common psee-video others)
+foreach (hal_device IN LISTS HAL_PSEE_PLUGIN_DEVICES_COMMON HAL_PSEE_OPEN_PLUGIN_DEVICES)
+    add_subdirectory(${hal_device})
+endforeach()
 
-add_subdirectory(psee-video)
-add_subdirectory(others)
-
-if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/sensorlib")
-    add_subdirectory(sensorlib)
-endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/sensorlib")
+foreach (hal_closed_device ${HAL_PSEE_CLOSED_PLUGIN_DEVICES})
+    add_subdirectory_if_exists(${hal_closed_device})
+endforeach()

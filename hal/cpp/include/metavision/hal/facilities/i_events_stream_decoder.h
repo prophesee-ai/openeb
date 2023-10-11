@@ -32,7 +32,7 @@ namespace Metavision {
 ///
 /// This class is meant to receive raw data from the camera, and dispatch parts of the buffer to instances
 /// of @ref I_EventDecoder for specific event types.
-class I_EventsStreamDecoder : public I_Decoder, public I_RegistrableFacility<I_EventsStreamDecoder> {
+class I_EventsStreamDecoder : public I_RegistrableFacility<I_EventsStreamDecoder, I_Decoder> {
 public:
     /// @brief Alias for callback on timestamp
     using TimeCallback_t = std::function<void(timestamp)>;

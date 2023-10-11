@@ -169,6 +169,13 @@ if(HAL_SENSORLIB_SUPPORT)
      )
 endif(HAL_SENSORLIB_SUPPORT)
 
+if(HAL_EVK3D_SUPPORT)
+    list(APPEND lib_camera_obj_list
+        metavision_hal_evk3d_system_obj
+    )
+endif(HAL_EVK3D_SUPPORT)
+
+
 set(lib_obj_list ${lib_common_obj_list} ${lib_camera_obj_list})
 
 foreach(lib_obj ${lib_obj_list})

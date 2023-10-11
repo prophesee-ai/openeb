@@ -14,13 +14,13 @@ add_executable(${sample} ${sample}.cpp)
 target_link_libraries(${sample} PRIVATE ${common_libraries})
 
 install(FILES ${sample}.cpp
-        DESTINATION share/metavision/sdk/driver/samples/${sample}
+        DESTINATION share/metavision/sdk/driver/cpp_samples/${sample}
         COMPONENT metavision-sdk-driver-samples
 )
 
 install(FILES CMakeLists.txt.install
         RENAME CMakeLists.txt
-        DESTINATION share/metavision/sdk/driver/samples/${sample}
+        DESTINATION share/metavision/sdk/driver/cpp_samples/${sample}
         COMPONENT metavision-sdk-driver-samples
 )
 

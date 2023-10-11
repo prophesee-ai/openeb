@@ -26,17 +26,19 @@ public:
                     const std::string &sensor_prefix);
 
     virtual bool set_mode(const Mode &mode) override;
+    virtual Mode get_mode() const override;
     virtual bool enable(bool state) override;
+    virtual bool is_enabled() const override;
     virtual void write_ROI(const std::vector<unsigned int> &vroiparams) override;
 
 private:
     void reset_to_full_roi();
 
-private:
     std::shared_ptr<RegisterMap> register_map_;
     std::vector<uint32_t> roi_save_;
     std::string sensor_prefix_;
     I_ROI::Mode mode_;
+    bool enabled_ = false;
 };
 
 } // namespace Metavision

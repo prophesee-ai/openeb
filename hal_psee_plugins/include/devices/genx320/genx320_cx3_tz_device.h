@@ -18,7 +18,11 @@
 
 namespace Metavision {
 
-class TzCx3GenX320 : public TzIssdDevice, public TzMainDevice, public TemperatureProvider {
+class TzCx3GenX320 : public TzIssdDevice,
+                     public TzMainDevice,
+                     public TemperatureProvider,
+                     public IlluminationProvider,
+                     public PixelDeadTimeProvider {
 public:
     TzCx3GenX320(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent);
     virtual ~TzCx3GenX320();
@@ -38,6 +42,8 @@ public:
     }
     long long get_sensor_id();
     virtual int get_temperature();
+    virtual int get_illumination();
+    virtual int get_pixel_dead_time();
 
 protected:
     virtual void spawn_facilities(DeviceBuilder &device_builder, const DeviceConfig &device_config);
@@ -45,6 +51,10 @@ protected:
 private:
     I_CameraSynchronization::SyncMode sync_mode_;
     void time_base_config(bool external, bool master);
+    void iph_mirror_control(bool enable);
+    void lifo_control(bool enable, bool cnt_enable);
+    std::vector<uint32_t> lifo_acquisition(int expected_wait_time);
+    void temperature_init();
 };
 
 } // namespace Metavision

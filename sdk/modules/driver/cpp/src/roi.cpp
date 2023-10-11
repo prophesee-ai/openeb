@@ -22,6 +22,7 @@ Roi::~Roi() {}
 void Roi::set(Window roi) {
     auto roi_to_set = I_ROI::Window(roi.x, roi.y, roi.width, roi.height);
     pimpl_->set_window(roi_to_set);
+    pimpl_->enable(true);
 }
 
 void Roi::set(const std::vector<bool> &cols, const std::vector<bool> &rows) {

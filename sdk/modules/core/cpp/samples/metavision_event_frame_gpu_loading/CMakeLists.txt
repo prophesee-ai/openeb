@@ -38,12 +38,12 @@ if (CMAKE_CUDA_COMPILER)
 endif(CMAKE_CUDA_COMPILER)
 
 install(FILES ${source_files} ${cuda_source_files}
-  DESTINATION share/metavision/sdk/core/samples/${sample}
+  DESTINATION share/metavision/sdk/core/cpp_samples/${sample}
   COMPONENT metavision-sdk-core-samples
 )
 
 install(FILES CMakeLists.txt.install
   RENAME CMakeLists.txt
-  DESTINATION share/metavision/sdk/core/samples/${sample}
+  DESTINATION share/metavision/sdk/core/cpp_samples/${sample}
   COMPONENT metavision-sdk-core-samples
 )

@@ -19,7 +19,6 @@ add_subdirectory(lib)
 add_subdirectory(src)
 
 # Apps and samples
-add_subdirectory(apps)
 add_subdirectory(samples)
 
 # Documentations

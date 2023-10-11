@@ -17,7 +17,7 @@ endif(NOT CMAKE_BUILD_TYPE)
 
 cmake_minimum_required(VERSION 3.5)
 
-project(metavision VERSION 4.3.0)
+project(metavision VERSION 4.4.0)
 set(PROJECT_VERSION_SUFFIX "")
 
 if(PROJECT_VERSION_SUFFIX STREQUAL "")
@@ -71,12 +71,14 @@ include(CMakeDependentOption)
 include(overridden_cmake_functions)
 include(lfs_download)
 include(add_pytest)
+include(common_macros)
+
 if (ANDROID)
     # Setup 3rd party prebuilt libraries dir
     set(ANDROID_PREBUILT_3RDPARTY_ARCHIVE utils/android/prebuilt-3rdparty.tar.gz)
     set(ANDROID_PREBUILT_3RDPARTY_EXTRACT_DIR ${GENERATE_FILES_DIRECTORY}/android/3rdparty)
     if (NOT EXISTS ${ANDROID_PREBUILT_3RDPARTY_EXTRACT_DIR})
-        lfs_download(${ANDROID_PREBUILT_3RDPARTY_ARCHIVE})
+        lfs_download(${ANDROID_PREBUILT_3RDPARTY_ARCHIVE} COMPILATION)
         message(STATUS "Unpacking ${ANDROID_PREBUILT_3RDPARTY_ARCHIVE} in ${ANDROID_PREBUILT_3RDPARTY_EXTRACT_DIR}")
         file(MAKE_DIRECTORY ${ANDROID_PREBUILT_3RDPARTY_EXTRACT_DIR})
         execute_process(
@@ -154,9 +156,7 @@ if (WIN32)
 endif()
 
 
-if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/utils/platforms/CMakeLists.txt")
-    add_subdirectory(utils/platforms) # Load platform specific cmake early to override necessary options
-endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/utils/platforms/CMakeLists.txt")
+add_subdirectory_if_exists(utils/platforms) # Load platform specific cmake early to override necessary options
 
 ################################################### CMake options
 
@@ -242,30 +242,32 @@ if (BUILD_TESTING)
         set(PYTEST_CMD pytest) # TODO we need a proper way to find python executable path on the TARGET.
     endif(CMAKE_CROSSCOMPILING)
 
-    lfs_download(datasets/openeb/gen31_timer.raw)
-    lfs_download(datasets/openeb/gen31_timer.hdf5)
-    lfs_download(datasets/openeb/gen31_timer_holes.raw)
-    lfs_download(datasets/openeb/gen31_timer_holes.hdf5)
-    lfs_download(datasets/openeb/gen4_evt2_hand.raw)
-    lfs_download(datasets/openeb/gen4_evt2_hand.hdf5)
-    lfs_download(datasets/openeb/gen4_evt3_hand.raw)
-    lfs_download(datasets/openeb/gen4_evt3_hand.hdf5)
-    lfs_download(datasets/openeb/blinking_gen4_with_ext_triggers.raw)
-    lfs_download(datasets/openeb/blinking_gen4_with_ext_triggers.hdf5)
-    lfs_download(datasets/openeb/claque_doigt_evt21.raw)
-    lfs_download(datasets/openeb/claque_doigt_evt21.hdf5)
-    lfs_download(datasets/openeb/standup_evt21-legacy.raw)
-    lfs_download(datasets/openeb/standup_evt21-legacy.hdf5)
-    lfs_download(datasets/openeb/diff3d.raw)
-    lfs_download(datasets/openeb/histo3d.raw)
-    lfs_download(datasets/openeb/histo3d_padding.raw)
-    lfs_download(datasets/openeb/test_start_after_0.dat)
-    lfs_download(datasets/openeb/aer_8bits.raw)
-    lfs_download(datasets/openeb/aer_4bits.raw)
+    lfs_download(datasets/openeb/gen31_timer.raw VALIDATION)
+    lfs_download(datasets/openeb/gen31_timer.hdf5 VALIDATION)
+    lfs_download(datasets/openeb/gen31_timer_holes.raw VALIDATION)
+    lfs_download(datasets/openeb/gen31_timer_holes.hdf5 VALIDATION)
+    lfs_download(datasets/openeb/gen4_evt2_hand.raw VALIDATION)
+    lfs_download(datasets/openeb/gen4_evt2_hand.hdf5 VALIDATION)
+    lfs_download(datasets/openeb/gen4_evt3_hand.raw VALIDATION)
+    lfs_download(datasets/openeb/gen4_evt3_hand.hdf5 VALIDATION)
+    lfs_download(datasets/openeb/blinking_gen4_with_ext_triggers.raw VALIDATION)
+    lfs_download(datasets/openeb/blinking_gen4_with_ext_triggers.hdf5 VALIDATION)
+    lfs_download(datasets/openeb/claque_doigt_evt21.raw VALIDATION)
+    lfs_download(datasets/openeb/claque_doigt_evt21.hdf5 VALIDATION)
+    lfs_download(datasets/openeb/standup_evt21-legacy.raw VALIDATION)
+    lfs_download(datasets/openeb/standup_evt21-legacy.hdf5 VALIDATION)
+    lfs_download(datasets/openeb/diff3d.raw VALIDATION)
+    lfs_download(datasets/openeb/histo3d.raw VALIDATION)
+    lfs_download(datasets/openeb/histo3d_padding.raw VALIDATION)
+    lfs_download(datasets/openeb/test_start_after_0.dat VALIDATION)
+    lfs_download(datasets/openeb/aer_8bits.raw VALIDATION)
+    lfs_download(datasets/openeb/aer_4bits.raw VALIDATION)
+    lfs_download(datasets/openeb/0101_cm_mtr12_output.raw VALIDATION)
+    lfs_download(datasets/openeb/0101_cm_mtru_output.raw VALIDATION)
     if(COMPILE_PYTHON3_BINDINGS)
-        lfs_download(datasets/openeb/blinking_leds.raw)
-        lfs_download(datasets/openeb/gen4_evt2_hand_cd.dat)
-        lfs_download(datasets/openeb/core)
+        lfs_download(datasets/openeb/blinking_leds.raw VALIDATION)
+        lfs_download(datasets/openeb/gen4_evt2_hand_cd.dat VALIDATION)
+        lfs_download(datasets/openeb/core VALIDATION)
     endif(COMPILE_PYTHON3_BINDINGS)
 
 
@@ -359,7 +361,7 @@ endforeach(metavision_modules_set)
 include(uninstall)
 include(add_library_version_header)
 include(add_cpack_component)
-include(create_metavision_open_archive)
+
 if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/cmake/custom_targets_metavision_sdk")
     list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/custom_targets_metavision_sdk)
     include(create_metavision_sdk_source_archives)
@@ -403,17 +405,13 @@ endif (METAVISION_SDK_ADVANCED_MODULES_AVAILABLE)
 ################################
 #            Utils            ##
 ################################
-if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/utils/CMakeLists.txt")
-    add_subdirectory(utils)
-endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/utils/CMakeLists.txt")
+add_subdirectory_if_exists(utils)
 
 ################################
 #             HAL             ##
 ################################
 add_subdirectory(hal)
-if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/hal_psee_plugins/CMakeLists.txt")
-    add_subdirectory(hal_psee_plugins)
-endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/hal_psee_plugins/CMakeLists.txt")
+add_subdirectory_if_exists(hal_psee_plugins)
 
 ################################
 #             SDK             ##
@@ -428,9 +426,7 @@ add_subdirectory(standalone_samples)
 ################################
 #      Standalone apps        ##
 ################################
-if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/standalone_apps/CMakeLists.txt")
-    add_subdirectory(standalone_apps)
-endif (EXISTS "${CMAKE_CURRENT_LIST_DIR}/standalone_apps/CMakeLists.txt")
+add_subdirectory_if_exists(standalone_apps)
 
 ################################
 #           Documentation     ##
@@ -442,6 +438,9 @@ endif (GENERATE_DOC)
 
 # Add script generation at the end, once all other subdirs have been processed
 add_subdirectory(utils/scripts)
+
+# Add open archive task after modules, hal and plugins that might affect it
+include(create_metavision_open_archive)
 
 ################################################### CPack for debian packages
 
@@ -463,4 +462,3 @@ foreach(comp ${cpack_all_components})
         )
     endif()
 endforeach()
-

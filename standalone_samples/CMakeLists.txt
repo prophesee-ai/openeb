@@ -19,7 +19,7 @@ foreach(sample ${standalone_sample})
 
     # Install sample in package metavision-decoders-samples
     install(DIRECTORY ${sample}
-            DESTINATION share/metavision/samples
+            DESTINATION share/metavision/standalone_samples
             COMPONENT metavision-decoders-samples
     )
 endforeach(sample)

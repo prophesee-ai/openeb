@@ -9,6 +9,8 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
+// This code sample demonstrates how to preprocess raw event frame on a GPU using CUDA.
+
 #include <cstring>
 #include <iostream>
 #include <list>

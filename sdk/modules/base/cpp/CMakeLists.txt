@@ -13,8 +13,8 @@ add_subdirectory(lib)
 # Add sources to the library
 add_subdirectory(src)
 
-# Apps
-add_subdirectory(apps)
+# Samples
+add_subdirectory(samples)
 
 # Documentations
 if (GENERATE_DOC)

@@ -14,6 +14,7 @@
 
 #include "metavision/psee_hw_layer/devices/gen31/gen31_event_rate_noise_filter_module.h"
 #include "metavision/hal/facilities/i_hw_register.h"
+#include "metavision/hal/utils/hal_log.h"
 #include "metavision/hal/utils/hal_exception.h"
 #include "utils/psee_hal_plugin_error_code.h"
 
@@ -90,6 +91,27 @@ uint32_t Gen31_EventRateNoiseFilterModule::get_event_rate_threshold() const {
     current_threshold_kev_s_ = std::round(
         (get_hw_register()->read_register(base_name_ + "nfl_thresh", "evt_thresh") * 1000.) / get_time_window());
     return current_threshold_kev_s_;
+}
+
+Gen31_EventRateNoiseFilterModule::NflThresholds Gen31_EventRateNoiseFilterModule::is_thresholds_supported() const {
+    return {1, 0, 0, 0};
+}
+
+bool Gen31_EventRateNoiseFilterModule::set_thresholds(
+    const Gen31_EventRateNoiseFilterModule::NflThresholds &thresholds_ev_s) {
+    return set_event_rate_threshold(std::round(thresholds_ev_s.lower_bound_start / 1000.0));
+}
+
+Gen31_EventRateNoiseFilterModule::NflThresholds Gen31_EventRateNoiseFilterModule::get_thresholds() const {
+    return {(get_event_rate_threshold() * 1000), 0, 0, 0};
+}
+
+Gen31_EventRateNoiseFilterModule::NflThresholds Gen31_EventRateNoiseFilterModule::get_min_supported_thresholds() const {
+    return {(min_event_rate_threshold_kev_s * 1000), 0, 0, 0};
+}
+
+Gen31_EventRateNoiseFilterModule::NflThresholds Gen31_EventRateNoiseFilterModule::get_max_supported_thresholds() const {
+    return {(max_event_rate_threshold_kev_s * 1000), 0, 0, 0};
 }
 
 const std::shared_ptr<I_HW_Register> &Gen31_EventRateNoiseFilterModule::get_hw_register() const {

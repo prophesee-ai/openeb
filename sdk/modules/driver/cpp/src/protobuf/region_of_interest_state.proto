@@ -20,10 +20,4 @@ message RegionOfInterestState {
     }
 
     repeated ROIWindow window = 3;
-
-    message ROILines {
-        oneof optional_cols { string cols = 1; }
-        oneof optional_rows { string rows = 2; }
-    }
-    ROILines lines = 4;
 }

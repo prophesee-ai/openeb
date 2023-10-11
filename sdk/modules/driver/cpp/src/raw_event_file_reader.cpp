@@ -26,6 +26,7 @@ public:
         reader_(reader), raw_data_cb_mgr_(get_parent_pimpl().cb_id_mgr_, 0), device_(device) {
         i_events_stream_         = device.get_facility<I_EventsStream>();
         i_events_stream_decoder_ = device.get_facility<I_EventsStreamDecoder>();
+        i_decoder_               = device.get_facility<I_Decoder>();
 
         I_EventDecoder<EventCD> *i_cd_events_decoder = device.get_facility<I_EventDecoder<EventCD>>();
         if (i_cd_events_decoder) {
@@ -51,24 +52,16 @@ public:
                 });
         }
 
-        if (i_events_stream_decoder_) {
-            i_decoder_ = i_events_stream_decoder_;
-            return;
-        }
-
         auto i_histogram_decoder = device.get_facility<I_EventFrameDecoder<RawEventFrameHisto>>();
         if (i_histogram_decoder) {
             i_histogram_decoder->add_event_frame_callback(
                 [this](const RawEventFrameHisto &h) { reader_.notify_event_frame(h); });
-            i_decoder_ = i_histogram_decoder;
-            return;
         }
 
         auto i_diff_decoder = device.get_facility<I_EventFrameDecoder<RawEventFrameDiff>>();
         if (i_diff_decoder) {
             i_diff_decoder->add_event_frame_callback(
                 [this](const RawEventFrameDiff &d) { reader_.notify_event_frame(d); });
-            i_decoder_ = i_diff_decoder;
         }
     }
 

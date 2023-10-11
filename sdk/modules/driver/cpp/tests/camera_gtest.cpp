@@ -24,7 +24,7 @@
 #include "metavision/hal/facilities/i_camera_synchronization.h"
 #include "metavision/hal/facilities/i_digital_crop.h"
 #include "metavision/hal/facilities/i_digital_event_mask.h"
-#include "metavision/hal/facilities/i_event_rate_noise_filter_module.h"
+#include "metavision/hal/facilities/i_event_rate_activity_filter_module.h"
 #include "metavision/hal/facilities/i_events_stream_decoder.h"
 #include "metavision/hal/facilities/i_hw_register.h"
 #include "metavision/hal/facilities/i_trigger_in.h"
@@ -428,7 +428,7 @@ TEST_F(Camera_Gtest, raw_default_constructor) {
         Camera camera                                   = Camera::from_file(tmp_file_);
         const CameraConfiguration &camera_configuration = camera.get_camera_configuration();
         ASSERT_NE(camera_configuration.serial_number, "");
-    } catch (CameraException &e) { FAIL(); }
+    } catch (CameraException &) { FAIL(); }
 
     try {
         Camera camera = Camera::from_file("non_existing_file.raw");
@@ -718,7 +718,7 @@ TEST_F(Camera_Gtest, raw_events_callbacks) {
     Camera camera;
     try {
         camera = Camera::from_file(tmp_file_);
-    } catch (CameraException &e) { FAIL(); }
+    } catch (CameraException &) { FAIL(); }
 
     size_t total_size = 0;
     CallbackId id =
@@ -752,7 +752,7 @@ TEST_F(Camera_Gtest, raw_events_callbacks_decoding_check) {
     Camera camera;
     try {
         camera = Camera::from_file(tmp_file_);
-    } catch (CameraException &e) { FAIL(); }
+    } catch (CameraException &) { FAIL(); }
 
     camera.raw_data().add_callback([i_events_stream_decoder](const uint8_t *data, size_t size) {
         auto raw_data_begin = const_cast<uint8_t *>(data);
@@ -1143,7 +1143,7 @@ TEST_F(Camera_Gtest, decode_evt2_data) {
     Camera camera;
     try {
         camera = Camera::from_file(tmp_file_, FileConfigHints().real_time_playback(false));
-    } catch (CameraException &e) { FAIL(); }
+    } catch (CameraException &) { FAIL(); }
 
     camera.cd().add_callback(
         [&](auto ev_begin, auto ev_end) { received_events.insert(received_events.end(), ev_begin, ev_end); });
@@ -1442,6 +1442,8 @@ TEST_F(Camera_Gtest, should_load_serialized_state) {
     setenv("MV_HAL_PLUGIN_PATH", s.c_str(), 1);
 #endif
 
+    std::vector<I_ROI::Window> roi_windows = {{150, 200, 150, 300}, {10, 10, 20, 20}, {1, 2, 3, 4}};
+
     {
         Camera camera = Camera::from_serial(Camera_Gtest::dummy_serial_);
         // AFK
@@ -1476,8 +1478,8 @@ TEST_F(Camera_Gtest, should_load_serialized_state) {
         camera.get_device().get_facility<I_LL_Biases>()->set("c", 4);
 
         // NFL
-        camera.get_device().get_facility<I_EventRateNoiseFilterModule>()->set_event_rate_threshold(14237);
-        camera.get_device().get_facility<I_EventRateNoiseFilterModule>()->enable(true);
+        camera.get_device().get_facility<I_EventRateActivityFilterModule>()->set_event_rate_threshold(14237);
+        camera.get_device().get_facility<I_EventRateActivityFilterModule>()->enable(true);
 
         // TriggerIn
         camera.get_device().get_facility<I_TriggerIn>()->enable(I_TriggerIn::Channel::Main);
@@ -1488,6 +1490,11 @@ TEST_F(Camera_Gtest, should_load_serialized_state) {
         camera.get_device().get_facility<I_TriggerOut>()->set_period(2437);
         camera.get_device().get_facility<I_TriggerOut>()->set_duty_cycle(0.73);
         camera.get_device().get_facility<I_TriggerOut>()->enable();
+
+        // ROI
+        camera.get_device().get_facility<I_ROI>()->set_mode(I_ROI::Mode::ROI);
+        camera.get_device().get_facility<I_ROI>()->set_windows(roi_windows);
+        camera.get_device().get_facility<I_ROI>()->enable(true);
 
         EXPECT_TRUE(camera.save(tmpdir_handler_->get_full_path("dummy_camera_state.json")));
     }
@@ -1546,8 +1553,9 @@ TEST_F(Camera_Gtest, should_load_serialized_state) {
         EXPECT_EQ(4, camera.get_device().get_facility<I_LL_Biases>()->get("c"));
 
         // NFL
-        EXPECT_EQ(14237, camera.get_device().get_facility<I_EventRateNoiseFilterModule>()->get_event_rate_threshold());
-        EXPECT_TRUE(camera.get_device().get_facility<I_EventRateNoiseFilterModule>()->is_enabled());
+        EXPECT_EQ(14237,
+                  camera.get_device().get_facility<I_EventRateActivityFilterModule>()->get_event_rate_threshold());
+        EXPECT_TRUE(camera.get_device().get_facility<I_EventRateActivityFilterModule>()->is_enabled());
 
         // TriggerIn
         EXPECT_TRUE(camera.get_device().get_facility<I_TriggerIn>()->is_enabled(I_TriggerIn::Channel::Main));
@@ -1558,27 +1566,13 @@ TEST_F(Camera_Gtest, should_load_serialized_state) {
         EXPECT_EQ(2437, camera.get_device().get_facility<I_TriggerOut>()->get_period());
         EXPECT_DOUBLE_EQ(0.73, camera.get_device().get_facility<I_TriggerOut>()->get_duty_cycle());
         EXPECT_TRUE(camera.get_device().get_facility<I_TriggerOut>()->is_enabled());
+
+        // ROI
+        EXPECT_EQ(I_ROI::Mode::ROI, camera.get_device().get_facility<I_ROI>()->get_mode());
+        EXPECT_TRUE(camera.get_device().get_facility<I_ROI>()->is_enabled());
+        EXPECT_EQ(roi_windows, camera.get_device().get_facility<I_ROI>()->get_windows());
     }
 }
-
-// This facility is declared here so that we can access it directly in the gtest
-// because it is exposing fields that should instead be accesible via I_ROI API
-// TODO MV-1443 : remove this and override public virtual functions from HAL API, and use
-// those functions in the test
-namespace Test {
-struct DummyROI : public I_ROI {
-    bool enable(bool state) override;
-    bool set_mode(const Mode &mode) override;
-    size_t get_max_supported_windows_count() const override;
-    bool set_lines(const std::vector<bool> &cols, const std::vector<bool> &rows) override;
-    bool set_windows_impl(const std::vector<Window> &windows) override;
-
-    bool enabled_{false};
-    Mode mode_;
-    std::vector<Window> windows_;
-    std::vector<bool> rows_, cols_;
-};
-} // namespace Test
 
 TEST_F(Camera_Gtest, should_load_hand_written_state) {
     const std::string dummy_plugin_test_path(HAL_DUMMY_TEST_PLUGIN);
@@ -1600,7 +1594,7 @@ TEST_F(Camera_Gtest, should_load_hand_written_state) {
         ASSERT_TRUE(ofs.is_open());
 
         ofs << R"({
-  "hw_register_state": { 
+  "hw_register_state": {
     "num_access": [
       {
         "address": 12,
@@ -1612,7 +1606,7 @@ TEST_F(Camera_Gtest, should_load_hand_written_state) {
       },
       {
         "address": 3,
-        "value": 812 
+        "value": 812
       }
     ],
     "str_access": [
@@ -1634,7 +1628,7 @@ TEST_F(Camera_Gtest, should_load_hand_written_state) {
       }
     ]
   },
-  "ll_biases_state": { 
+  "ll_biases_state": {
     "bias": [
       {
         "name": "a",
@@ -1682,7 +1676,7 @@ TEST_F(Camera_Gtest, should_load_hand_written_state) {
         ASSERT_TRUE(ofs.is_open());
 
         ofs << R"({
-  "roi_state": { 
+  "roi_state": {
     "enabled": true,
     "mode": "RONI",
     "window": [
@@ -1709,54 +1703,10 @@ TEST_F(Camera_Gtest, should_load_hand_written_state) {
         auto *roi = camera.get_device().get_facility<I_ROI>();
         EXPECT_TRUE(roi != nullptr);
 
-        // TODO MV-1443 : use roi and HAL functions from the API directly
-        auto *dummy_roi = dynamic_cast<::Test::DummyROI *>(roi);
-        EXPECT_TRUE(dummy_roi != nullptr);
-        EXPECT_TRUE(dummy_roi->enabled_);
-        EXPECT_EQ(I_ROI::Mode::RONI, dummy_roi->mode_);
-        EXPECT_EQ(I_ROI::Window(12, 19, 213, 334), dummy_roi->windows_[0]);
-        EXPECT_EQ(I_ROI::Window(4, 32, 13, 384), dummy_roi->windows_[1]);
-    }
-
-    // ROI : lines
-    {
-        Camera camera = Camera::from_serial(Camera_Gtest::dummy_serial_);
-        std::ofstream ofs(tmpdir_handler_->get_full_path("dummy_camera_state.json"));
-        ASSERT_TRUE(ofs.is_open());
-
-        ofs << R"({
-  "roi_state": { 
-    "enabled": true,
-    "mode": "ROI",
-    "lines": {
-      "rows": "101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010", 
-      "cols": "0110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110"
-    }
-  }
-})";
-    }
-    {
-        Camera camera = Camera::from_serial(Camera_Gtest::dummy_serial_);
-        EXPECT_TRUE(camera.load(tmpdir_handler_->get_full_path("dummy_camera_state.json")));
-
-        auto *roi = camera.get_device().get_facility<I_ROI>();
-        EXPECT_TRUE(roi != nullptr);
-
-        // TODO MV-1443 : use roi and HAL functions from the API directly
-        auto *dummy_roi = dynamic_cast<::Test::DummyROI *>(roi);
-        EXPECT_TRUE(dummy_roi != nullptr);
-        EXPECT_TRUE(dummy_roi->enabled_);
-        EXPECT_EQ(I_ROI::Mode::ROI, dummy_roi->mode_);
-        std::vector<bool> rows(480);
-        for (size_t i = 0; i < 480; ++i) {
-            rows[i] = i % 2 == 0 ? true : false;
-        }
-        EXPECT_EQ(rows, dummy_roi->rows_);
-        std::vector<bool> cols(640);
-        for (size_t i = 0; i < 640; ++i) {
-            cols[i] = i % 3 == 0 ? false : true;
-        }
-        EXPECT_EQ(cols, dummy_roi->cols_);
+        EXPECT_TRUE(roi->is_enabled());
+        EXPECT_EQ(I_ROI::Mode::RONI, roi->get_mode());
+        EXPECT_EQ(I_ROI::Window(12, 19, 213, 334), roi->get_windows()[0]);
+        EXPECT_EQ(I_ROI::Window(4, 32, 13, 384), roi->get_windows()[1]);
     }
 }
 #endif

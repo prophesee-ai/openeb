@@ -22,6 +22,7 @@ EventFileReader::Private::Private(EventFileReader &reader, const std::string &pa
     erc_counter_buffer_cb_mgr_(cb_id_mgr_, CallbackTagIds::READ_CALLBACK_TAG_ID),
     histogram_cb_mgr_(cb_id_mgr_, CallbackTagIds::READ_CALLBACK_TAG_ID),
     diff_cb_mgr_(cb_id_mgr_, CallbackTagIds::READ_CALLBACK_TAG_ID),
+    pointcloud_cb_mgr_(cb_id_mgr_, CallbackTagIds::READ_CALLBACK_TAG_ID),
     seek_cb_mgr_(cb_id_mgr_, CallbackTagIds::SEEK_CALLBACK_TAG_ID),
     path_(path),
     min_t_(-1),
@@ -50,6 +51,10 @@ size_t EventFileReader::Private::add_read_callback(const EventFrameReadCallback<
 
 size_t EventFileReader::Private::add_read_callback(const EventFrameReadCallback<RawEventFrameDiff> &cb) {
     return diff_cb_mgr_.add_callback(cb);
+}
+
+size_t EventFileReader::Private::add_read_callback(const EventFrameReadCallback<PointCloud> &cb) {
+    return pointcloud_cb_mgr_.add_callback(cb);
 }
 
 bool EventFileReader::Private::has_read_callbacks() const {
@@ -88,6 +93,13 @@ void EventFileReader::Private::notify_event_frame(const RawEventFrameDiff &d) {
     auto cbs = diff_cb_mgr_.get_cbs();
     for (auto &cb : cbs) {
         cb(d);
+    }
+}
+
+void EventFileReader::Private::notify_event_frame(const PointCloud &pc) {
+    auto cbs = pointcloud_cb_mgr_.get_cbs();
+    for (auto &cb : cbs) {
+        cb(pc);
     }
 }
 
@@ -194,6 +206,10 @@ size_t EventFileReader::add_read_callback(const EventFrameReadCallback<RawEventF
     return pimpl_->add_read_callback(cb);
 }
 
+size_t EventFileReader::add_read_callback(const EventFrameReadCallback<PointCloud> &cb) {
+    return pimpl_->add_read_callback(cb);
+}
+
 bool EventFileReader::has_read_callbacks() const {
     return pimpl_->has_read_callbacks();
 }
@@ -228,6 +244,10 @@ void EventFileReader::notify_event_frame(const RawEventFrameHisto &h) {
 
 void EventFileReader::notify_event_frame(const RawEventFrameDiff &d) {
     return pimpl_->notify_event_frame(d);
+}
+
+void EventFileReader::notify_event_frame(const PointCloud &p) {
+    return pimpl_->notify_event_frame(p);
 }
 
 void EventFileReader::notify_seek(timestamp t) {

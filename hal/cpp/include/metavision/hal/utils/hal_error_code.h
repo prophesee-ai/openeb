@@ -50,7 +50,8 @@ enum Enum : HalErrorCodeType {
     OperationNotImplemented = CameraError | 0x04000,
 
     /// Operation reached maximum retries limit
-    MaximumRetriesExeeded = CameraError | 0x05000,
+    MaximumRetriesExeeded  = CameraError | 0x05000,
+    MaximumRetriesExceeded = CameraError | 0x05000,
 };
 }
 

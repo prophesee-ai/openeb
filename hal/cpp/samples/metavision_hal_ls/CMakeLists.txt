@@ -11,12 +11,12 @@ add_executable(metavision_hal_ls metavision_hal_ls.cpp)
 target_link_libraries(metavision_hal_ls PRIVATE metavision_hal_discovery Boost::program_options)
 
 install(FILES metavision_hal_ls.cpp
-        DESTINATION share/metavision/hal/samples/metavision_hal_ls
+        DESTINATION share/metavision/hal/cpp_samples/metavision_hal_ls
         COMPONENT metavision-hal-samples
 )
 
 install(FILES CMakeLists.txt.install
         RENAME CMakeLists.txt
-        DESTINATION share/metavision/hal/samples/metavision_hal_ls
+        DESTINATION share/metavision/hal/cpp_samples/metavision_hal_ls
         COMPONENT metavision-hal-samples
 )

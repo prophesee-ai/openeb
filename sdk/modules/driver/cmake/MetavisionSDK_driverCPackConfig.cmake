@@ -26,7 +26,7 @@ string(REPLACE ";" ", " CPACK_DEBIAN_METAVISION-SDK-DRIVER-LIB_PACKAGE_DEPENDS "
 
 # Runtime (apps)
 set(CPACK_COMPONENT_METAVISION-SDK-DRIVER-BIN_DESCRIPTION "Binaries for the Metavision SDK Driver applications.\n${OPEN_PACKAGE_LICENSE}")
-set(CPACK_COMPONENT_METAVISION-SDK-DRIVER-BIN_DEPENDS metavision-sdk-driver-lib metavision-sdk-core-lib)
+set(CPACK_COMPONENT_METAVISION-SDK-DRIVER-BIN_DEPENDS metavision-sdk-driver-lib metavision-sdk-core-lib metavision-hal-prophesee-hw-layer-lib)
 
 # Development package
 set(CPACK_COMPONENT_METAVISION-SDK-DRIVER-DEV_DESCRIPTION "Development (C++) files for Metavision SDK Driver library.\n${OPEN_PACKAGE_LICENSE}")

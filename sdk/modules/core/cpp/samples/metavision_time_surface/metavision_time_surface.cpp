@@ -25,6 +25,7 @@ int main(int argc, char *argv[]) {
     std::string serial;
     std::string biases_file;
     std::string in_file_path;
+    uint32_t delta_ts;
 
     const std::string short_program_desc(
         "Example of using Metavision SDK Core API for visualizing Time Surface of events.\n");
@@ -36,6 +37,7 @@ int main(int argc, char *argv[]) {
         ("serial,s",          po::value<std::string>(&serial),"Serial ID of the camera. This flag is incompatible with flag '--input-file'.")
         ("input-file,i",      po::value<std::string>(&in_file_path), "Path to input file. If not specified, the camera live stream is used.")
         ("biases,b",          po::value<std::string>(&biases_file), "Path to a biases file. If not specified, the camera will be configured with the default biases.")
+        ("accumulation-time,a", po::value<uint32_t>(&delta_ts)->default_value(10000), "Accumulation time for which to display the Time Surface.")
     ;
     // clang-format on
 
@@ -137,7 +139,7 @@ int main(int argc, char *argv[]) {
         if (!time_surface.empty()) {
             std::unique_lock<std::mutex> lock(frame_mutex);
             // generate the time surface from MostRecentTimestampBuffer
-            time_surface.generate_img_time_surface(last_time, 10000, time_surface_gray);
+            time_surface.generate_img_time_surface(last_time, delta_ts, time_surface_gray);
             // apply a colormap to the time surface and display the new frame
             cv::applyColorMap(time_surface_gray, heatmap, cv::COLORMAP_JET);
             window.show(heatmap);

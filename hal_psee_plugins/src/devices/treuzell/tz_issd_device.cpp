@@ -13,6 +13,7 @@
 #include "metavision/psee_hw_layer/boards/treuzell/tz_libusb_board_command.h"
 #include "devices/common/issd.h"
 #include "metavision/psee_hw_layer/utils/register_map.h"
+#include "metavision/hal/utils/hal_log.h"
 #include <thread>
 
 namespace Metavision {
@@ -24,7 +25,9 @@ TzIssdDevice::TzIssdDevice(const Issd &issd) : issd(issd) {
 }
 
 TzIssdDevice::~TzIssdDevice() {
-    destroy();
+    try {
+        destroy();
+    } catch (...) { MV_HAL_LOG_WARNING() << "Treuzell ISSD Device destruction failed!"; }
 }
 
 void TzIssdDevice::initialize() {

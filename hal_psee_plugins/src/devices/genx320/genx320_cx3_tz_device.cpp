@@ -12,6 +12,7 @@
 #include <thread>
 #include <chrono>
 #include <numeric>
+#include <math.h>
 
 #include "devices/genx320/genx320_cx3_tz_device.h"
 #include "metavision/psee_hw_layer/boards/treuzell/tz_libusb_board_command.h"
@@ -24,13 +25,19 @@
 #include "metavision/psee_hw_layer/utils/psee_format.h"
 #include "metavision/hal/utils/device_builder.h"
 #include "metavision/psee_hw_layer/devices/genx320/genx320_tz_trigger_event.h"
-#include "metavision/psee_hw_layer/devices/genx320/genx320_ll_roi.h"
+#include "metavision/psee_hw_layer/devices/genx320/genx320_roi_driver.h"
+#include "metavision/psee_hw_layer/devices/genx320/genx320_roi_interface.h"
+#include "metavision/psee_hw_layer/devices/genx320/genx320_roi_pixel_mask_interface.h"
 #include "metavision/psee_hw_layer/devices/genx320/genx320_ll_biases.h"
 #include "metavision/psee_hw_layer/devices/genx320/genx320_erc.h"
-#include "metavision/psee_hw_layer/devices/genx320/genx320_nfl.h"
+#include "metavision/psee_hw_layer/devices/genx320/genx320_nfl_driver.h"
+#include "metavision/psee_hw_layer/devices/genx320/genx320_nfl_interface.h"
+#include "metavision/psee_hw_layer/devices/genx320/genx320_dem_interface.h"
+#include "metavision/psee_hw_layer/devices/genx320/genx320_digital_crop.h"
 #include "metavision/psee_hw_layer/devices/common/antiflicker_filter.h"
 #include "metavision/psee_hw_layer/devices/common/event_trail_filter.h"
 #include "devices/utils/device_system_id.h"
+#include "metavision/psee_hw_layer/utils/register_map.h"
 
 namespace Metavision {
 namespace {
@@ -39,12 +46,18 @@ std::string SENSOR_PREFIX = "";
 using vfield              = std::map<std::string, uint32_t>;
 } // namespace
 
+uint32_t get_bitfield(uint32_t value, uint8_t idx, uint8_t size) {
+    return ((1 << size) - 1) & (value >> idx);
+}
+
 TzCx3GenX320::TzCx3GenX320(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id,
                            std::shared_ptr<TzDevice> parent) :
     TzDevice(cmd, dev_id, parent),
     TzIssdDevice(issd_genx320es_cx3_sequence),
     TzDeviceWithRegmap(GenX320ESRegisterMap, GenX320ESRegisterMapSize, ROOT_PREFIX) {
     sync_mode_ = I_CameraSynchronization::SyncMode::STANDALONE;
+    iph_mirror_control(true);
+    temperature_init();
 }
 
 std::shared_ptr<TzDevice> TzCx3GenX320::build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id,
@@ -65,14 +78,24 @@ bool TzCx3GenX320::can_build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t
 void TzCx3GenX320::spawn_facilities(DeviceBuilder &device_builder, const DeviceConfig &device_config) {
     device_builder.add_facility(
         std::make_unique<GenX320TzTriggerEvent>(register_map, SENSOR_PREFIX, shared_from_this()));
-    device_builder.add_facility(std::make_unique<GenX320LowLevelRoi>(device_config, register_map, SENSOR_PREFIX));
+
+    auto roi_driver = std::make_shared<GenX320RoiDriver>(320, 320, register_map, SENSOR_PREFIX, device_config);
+
+    device_builder.add_facility(std::make_unique<GenX320RoiInterface>(roi_driver));
+    device_builder.add_facility(std::make_unique<GenX320RoiPixelMaskInterface>(roi_driver));
+
     device_builder.add_facility(std::make_unique<GenX320LLBiases>(register_map, device_config));
     device_builder.add_facility(std::make_unique<AntiFlickerFilter>(
         std::dynamic_pointer_cast<TzDeviceWithRegmap>(shared_from_this()), get_sensor_info(), SENSOR_PREFIX));
     device_builder.add_facility(std::make_unique<EventTrailFilter>(
         std::dynamic_pointer_cast<TzDeviceWithRegmap>(shared_from_this()), get_sensor_info(), SENSOR_PREFIX));
     device_builder.add_facility(std::make_unique<GenX320Erc>(register_map));
-    device_builder.add_facility(std::make_unique<GenX320NoiseFilter>(register_map));
+
+    auto nfl = std::make_shared<GenX320NflDriver>(register_map);
+    device_builder.add_facility(std::make_unique<GenX320NflInterface>(nfl));
+
+    device_builder.add_facility(std::make_unique<GenX320DemInterface>(register_map, SENSOR_PREFIX));
+    device_builder.add_facility(std::make_unique<GenX320DigitalCrop>(register_map, SENSOR_PREFIX));
 }
 
 TzCx3GenX320::~TzCx3GenX320() {}
@@ -149,7 +172,7 @@ void TzCx3GenX320::time_base_config(bool external, bool master) {
     }
 }
 
-int TzCx3GenX320::get_temperature() {
+void TzCx3GenX320::temperature_init() {
     // ADC enable
     (*register_map)["adc_control"].write_value(vfield({{"adc_en", 1}, {"adc_clk_en", 1}}));
     std::this_thread::sleep_for(std::chrono::microseconds(500));
@@ -171,10 +194,18 @@ int TzCx3GenX320::get_temperature() {
     // Temperature buf cal
     (*register_map)["temp_ctrl"].write_value(vfield{{"temp_buf_cal_en", 1}, {"temp_buf_adj_rng", 0}});
     std::this_thread::sleep_for(std::chrono::milliseconds(20));
+}
+
+int TzCx3GenX320::get_temperature() {
+    MV_HAL_LOG_DEBUG() << "Temperature measurement";
 
     std::list<uint32_t> temp_meas = {};
+    int meas_samples              = 3;
 
-    for (int i = 0; i < 10; i++) {
+    // ADC Clock enable
+    (*register_map)["adc_control"]["adc_clk_en"].write_value(1);
+
+    for (int i = 0; i < meas_samples; i++) {
         (*register_map)["adc_control"]["adc_start"].write_value(1);
         std::this_thread::sleep_for(std::chrono::milliseconds(3));
 
@@ -182,12 +213,147 @@ int TzCx3GenX320::get_temperature() {
         temp_meas.push_back((val * 0.216) - 54);
     }
 
-    int temp = accumulate(temp_meas.begin(), temp_meas.end(), 0) / 10;
+    int temp = accumulate(temp_meas.begin(), temp_meas.end(), 0) / meas_samples;
 
     // ADC Clock disable
     (*register_map)["adc_control"]["adc_clk_en"].write_value(0);
 
     return temp;
+}
+
+int TzCx3GenX320::get_illumination() {
+    MV_HAL_LOG_DEBUG() << "Illumination measurement";
+    bool valid        = false;
+    uint16_t measures = 3;
+    uint32_t ack_time = 20;
+    uint32_t ack_step = 10;
+
+    std::vector<uint32_t> results(3, 0);
+
+    // We follow 20ms->200ms->2s.
+    for (int i = 1; i <= measures; i++) {
+        results = lifo_acquisition(ack_time);
+        if (results[0] != 1) {
+            // We failed to converge.
+            ack_time = ack_time * ack_step;
+        } else {
+            valid = true;
+            (*register_map)["lifo_ton_status"]["lifo_ton_valid"].write_value(1);
+            break;
+        }
+        RegisterMap::Field *my_field((*register_map)["lifo_ton_status"]["lifo_ton_valid"].get_field());
+    }
+
+    if (valid) {
+        int illu = (int)round(exp((11.97 - 0.98 * log(results[2]))));
+
+        return illu;
+    } else {
+        MV_HAL_LOG_ERROR() << "Failed to get illumination";
+        return -1;
+    }
+}
+
+void TzCx3GenX320::iph_mirror_control(bool enable) {
+    (*register_map)["iph_mirr_ctrl"].write_value(vfield({{"iph_mirr_en", enable},
+                                                         {"iph_mirr_tbus_in_en", 0},
+                                                         {"iph_mirr_calib_en", 0},
+                                                         {"iph_mirr_calib_x10_en", 0},
+                                                         {"iph_mirr_dft_en", 0},
+                                                         {"iph_mirr_dft_sel", 0}}));
+
+    if (enable) {
+        std::this_thread::sleep_for(std::chrono::microseconds(100));
+    }
+}
+
+void TzCx3GenX320::lifo_control(bool enable, bool cnt_enable) {
+    (*register_map)["lifo_ctrl"].write_value(
+        vfield({{"lifo_en", enable}, {"lifo_cont_op_en", 1}, {"lifo_dft_mode_en", 0}, {"lifo_timer_en", cnt_enable}}));
+
+    if (enable) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+}
+
+std::vector<uint32_t> TzCx3GenX320::lifo_acquisition(int expected_wait_time = 20) {
+    // The iph mirror needs to be enabled first
+    // Default acquisition time is 500 ms to cover low level light condition
+    // Assuming 25 MHz operation
+
+    lifo_control(true, false);
+
+    // Wait for specified duration for LIFO ton accumulation
+    std::this_thread::sleep_for(std::chrono::milliseconds(expected_wait_time));
+
+    // Read LIFO ton register
+    uint32_t ton_stat = (*register_map)["lifo_ton_status"].read_value();
+
+    uint8_t valid_index = 0xFF;
+    RegisterMap::Field *my_field((*register_map)["lifo_ton_status"]["lifo_ton_valid"].get_field());
+
+    valid_index        = my_field->get_start();
+    auto overrun_index = (*register_map)["lifo_ton_status"]["lifo_ton_overrun"].get_field()->get_start();
+    auto ton_cnt_index = (*register_map)["lifo_ton_status"]["lifo_ton"].get_field()->get_start();
+    auto ton_cnt_size  = (*register_map)["lifo_ton_status"]["lifo_ton"].get_field()->get_len();
+
+    auto valid   = get_bitfield(ton_stat, valid_index, 1);
+    auto overrun = get_bitfield(ton_stat, overrun_index, 1);
+    auto ton_cnt = get_bitfield(ton_stat, ton_cnt_index, ton_cnt_size);
+
+    MV_HAL_LOG_DEBUG() << "Ton status =" << std::hex << "0x" << ton_stat << std::endl;
+    MV_HAL_LOG_DEBUG() << "Valid bit =" << std::dec << valid << std::endl;
+    MV_HAL_LOG_DEBUG() << "Overrun bit =" << std::dec << overrun << std::endl;
+    MV_HAL_LOG_DEBUG() << "Ton cnt bit =" << std::dec << ton_cnt << std::endl;
+
+    lifo_control(false, false);
+
+    std::vector<uint32_t> results = {valid, overrun, ton_cnt};
+
+    return results;
+}
+
+int TzCx3GenX320::get_pixel_dead_time() {
+    MV_HAL_LOG_DEBUG() << "Pixel dead time measurement";
+    auto reg          = (*register_map)[SENSOR_PREFIX + "refractory_ctrl"];
+    uint32_t refr_val = 0;
+    uint32_t valid    = 0;
+    uint32_t overrun  = 0;
+    uint32_t count    = 0;
+
+    reg.write_value(vfield({
+        {"refr_en", 1},
+        {"refr_cnt_en", 1},
+    }));
+
+    // Erase refractory status bit
+    reg["refr_overrun"].write_value(1);
+
+    auto valid_index   = (*register_map)["refractory_ctrl"]["refr_valid"].get_field()->get_start();
+    auto overrun_index = (*register_map)["refractory_ctrl"]["refr_overrun"].get_field()->get_start();
+    auto cnt_index     = (*register_map)["refractory_ctrl"]["refr_counter"].get_field()->get_start();
+    auto cnt_size      = (*register_map)["refractory_ctrl"]["refr_counter"].get_field()->get_len();
+
+    int max_retries = 10;
+    while (valid == 0) {
+        if (max_retries == 0) {
+            throw HalException(HalErrorCode::MaximumRetriesExeeded);
+        } else {
+            // Read refractory counter
+            refr_val = (*register_map)["refractory_ctrl"].read_value();
+            valid    = get_bitfield(refr_val, valid_index, 1);
+            overrun  = get_bitfield(refr_val, overrun_index, 1);
+            count    = get_bitfield(refr_val, cnt_index, cnt_size);
+        }
+        max_retries--;
+    }
+
+    MV_HAL_LOG_DEBUG() << "Refr status =" << std::hex << "0x" << refr_val << std::endl;
+    MV_HAL_LOG_DEBUG() << "Valid bit =" << std::dec << valid << std::endl;
+    MV_HAL_LOG_DEBUG() << "Overrun bit =" << std::dec << overrun << std::endl;
+    MV_HAL_LOG_DEBUG() << "Count bit =" << std::dec << count << std::endl;
+
+    return count / (25 * 2);
 }
 
 } // namespace Metavision
