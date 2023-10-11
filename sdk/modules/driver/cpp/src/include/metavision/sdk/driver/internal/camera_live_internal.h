@@ -18,6 +18,7 @@ namespace Metavision {
 
 class Device;
 class I_CameraSynchronization;
+class I_Decoder;
 class I_EventsStreamDecoder;
 class I_EventsStream;
 
@@ -58,6 +59,7 @@ private:
     std::unique_ptr<Device> device_                    = nullptr;
     I_EventsStream *i_events_stream_                   = nullptr;
     I_EventsStreamDecoder *i_events_stream_decoder_    = nullptr;
+    I_Decoder *i_decoder_                              = nullptr;
     I_CameraSynchronization *i_camera_synchronization_ = nullptr;
 
     std::unique_ptr<Roi> roi_;

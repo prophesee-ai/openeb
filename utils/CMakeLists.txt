@@ -8,11 +8,5 @@
 # See the License for the specific language governing permissions and limitations under the License.
 
 add_subdirectory(cpp)
-
-if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/python/CMakeLists.txt")
-    add_subdirectory(python)
-endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/python/CMakeLists.txt")
-
-if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/windows/CMakeLists.txt")
-    add_subdirectory(windows)
-endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/windows/CMakeLists.txt")
+add_subdirectory_if_exists(python)
+add_subdirectory_if_exists(windows)

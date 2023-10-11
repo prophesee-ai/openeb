@@ -240,7 +240,7 @@ int TzImx636::get_pixel_dead_time() {
     int max_retries = 10;
     while (reg["refr_valid"].read_value() == 0) {
         if (max_retries == 0) {
-            throw HalException(HalErrorCode::MaximumRetriesExeeded);
+            throw HalException(HalErrorCode::MaximumRetriesExceeded);
         }
         max_retries--;
     }

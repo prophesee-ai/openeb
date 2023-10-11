@@ -27,6 +27,7 @@ public:
     Gen31ROICommand(int width, int height, const std::shared_ptr<RegisterMap> &regmap, const std::string &prefix);
 
     virtual bool enable(bool state) override;
+    virtual bool is_enabled() const override;
     virtual void write_ROI(const std::vector<unsigned int> &vroiparams) override;
 
 private:
@@ -36,6 +37,7 @@ private:
     std::shared_ptr<RegisterMap> register_map_;
     const std::string prefix_;
     std::vector<uint32_t> roi_save_;
+    bool enabled_ = false;
 };
 
 } // namespace Metavision

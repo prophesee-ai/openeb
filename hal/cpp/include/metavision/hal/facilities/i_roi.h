@@ -56,6 +56,10 @@ public:
     /// @return true on success
     virtual bool enable(bool state) = 0;
 
+    /// @brief Returns ROI/RONI activation state
+    /// @return The ROI/RONI state
+    virtual bool is_enabled() const  = 0;
+
     /// @brief Window mode
     ///
     /// ROI : Region of interest, any event outside the window will be discarded
@@ -66,6 +70,10 @@ public:
     /// @param mode window mode to set (ROI or RONI)
     /// @return true on success
     virtual bool set_mode(const Mode &mode) = 0;
+
+    /// @brief Gets the window mode
+    /// @return the window mode
+    virtual Mode get_mode() const = 0;
 
     /// @brief Sets a window
     ///
@@ -89,6 +97,11 @@ public:
     /// @throw an exception if the size of @p windows is higher than the maximum supported number
     ///        of windows (see @ref get_max_supported_windows_count)
     bool set_windows(const std::vector<Window> &windows);
+
+    /// @brief Gets active ROI/RONI windows
+    ///
+    /// @return The vector of active windows
+    virtual std::vector<Window> get_windows() const = 0;
 
     /// @brief Sets multiple lines and columns from row and column binary maps
     ///

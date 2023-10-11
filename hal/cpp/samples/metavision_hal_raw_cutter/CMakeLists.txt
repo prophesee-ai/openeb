@@ -11,13 +11,13 @@ add_executable(metavision_hal_raw_cutter metavision_hal_raw_cutter.cpp)
 target_link_libraries(metavision_hal_raw_cutter PRIVATE metavision_hal_discovery Boost::program_options)
 
 install(FILES metavision_hal_raw_cutter.cpp
-        DESTINATION share/metavision/hal/apps/metavision_hal_raw_cutter
+        DESTINATION share/metavision/hal/cpp_samples/metavision_hal_raw_cutter
         COMPONENT metavision-hal-samples
 )
 
 install(FILES CMakeLists.txt.install
         RENAME CMakeLists.txt
-        DESTINATION share/metavision/hal/apps/metavision_hal_raw_cutter
+        DESTINATION share/metavision/hal/cpp_samples/metavision_hal_raw_cutter
         COMPONENT metavision-hal-samples
 )
 

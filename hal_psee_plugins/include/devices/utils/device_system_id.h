@@ -62,6 +62,7 @@ enum SystemId : long {
     SYSTEM_EVK2_SAPHIR                 = 0x37,
     SYSTEM_RDK2_IMX636                 = 0x3A,
     SYSTEM_EVK3_GENX320                = 0x40,
+    SYSTEM_EVK3D_SL                    = 0x41,
     SYSTEM_FX3_UNKNOWN                 = static_cast<long>(0xFFFFFFF0),
     SYSTEM_INVALID_NO_FPGA             = static_cast<long>(0xFFFFFFFF)
 };
@@ -123,6 +124,7 @@ static const std::map<SystemId, const std::string> SYSTEMS_NAME = {
       { SYSTEM_EVK3_IMX647, "IMX647 VGA EVK3"},
       { SYSTEM_EVK3_GENX320, "GenX320 ES EVK3"},
       { SYSTEM_RDK2_IMX636, "IMX636 HD RDK2"},
+      { SYSTEM_EVK3D_SL, "EVK3D Structured Light"},
       { SYSTEM_FX3_UNKNOWN, "FX3 EMPTY DEVICE"}
 };
 // clang-format on
@@ -166,6 +168,7 @@ static const std::map<SystemId, const DataTransferProtocol> SYSTEMS_DATA_TRANSFE
       { SYSTEM_EVK3_IMX647, DataTransferProtocol::USB},
       { SYSTEM_EVK3_GENX320, DataTransferProtocol::USB},
       { SYSTEM_RDK2_IMX636, DataTransferProtocol::USB},
+      { SYSTEM_EVK3D_SL, DataTransferProtocol::USB},
       { SYSTEM_FX3_UNKNOWN, DataTransferProtocol::USB}
 };
 // clang-format on
@@ -221,6 +224,7 @@ inline bool systemid2version(long system_id, uint16_t &major_version, uint16_t &
         break;
     case SystemId::SYSTEM_EVK2_GEN41:
     case SystemId::SYSTEM_EVK3_GEN41:
+    case SystemId::SYSTEM_EVK3D_SL:
         major_version = 4;
         minor_version = 1;
         break;

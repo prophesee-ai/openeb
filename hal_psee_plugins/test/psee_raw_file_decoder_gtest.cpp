@@ -18,6 +18,7 @@
 #include "metavision/utils/gtest/gtest_with_tmp_dir.h"
 #include "metavision/utils/gtest/gtest_custom.h"
 #include "metavision/sdk/base/events/event_cd.h"
+#include "metavision/sdk/base/events/event_pointcloud.h"
 #include "metavision/sdk/base/events/raw_event_frame_diff.h"
 #include "metavision/sdk/base/events/raw_event_frame_histo.h"
 #include "metavision/sdk/base/utils/get_time.h"
@@ -1309,4 +1310,80 @@ TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_aer4_data_byte_by_byte) {
 
     // THEN We decode the same data CD & triggers that are encoded in the RAW file
     ASSERT_EQ(31300, received_cd_event_count);
+}
+
+TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_mtr_nominal) {
+    // GIVEN a RAW file in MTR format with a known content
+    std::string dataset_file_path =
+        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "0101_cm_mtr12_output.raw")
+            .string();
+
+    size_t received_event_frame_count = 0;
+    RawFileConfig cfg;
+    cfg.do_time_shifting_ = false;
+    std::unique_ptr<Device> device(DeviceDiscovery::open_raw_file(dataset_file_path, cfg));
+
+    if (!device) {
+        std::cerr << "Failed to open raw file." << std::endl;
+        FAIL();
+    }
+
+    // AND a PSEE MTR decoder
+    auto mtr_decoder = device->get_facility<I_EventFrameDecoder<PointCloud>>();
+    auto es          = device->get_facility<I_EventsStream>();
+
+    ASSERT_NE(nullptr, mtr_decoder);
+    ASSERT_NE(nullptr, es);
+
+    mtr_decoder->add_event_frame_callback([&](auto pointcloud) { received_event_frame_count++; });
+
+    es->start();
+
+    // WHEN we stream and decode the events in the file
+    long int bytes_polled_count;
+    while (es->wait_next_buffer() >= 0) {
+        auto raw_buffer = es->get_latest_raw_data(bytes_polled_count);
+        mtr_decoder->decode(raw_buffer, raw_buffer + bytes_polled_count);
+    }
+
+    // THEN We decode the same MTR data that are encoded in the RAW file
+    ASSERT_EQ(378, received_event_frame_count);
+}
+
+TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_mtru_nominal) {
+    // GIVEN a RAW file in MTRU format with a known content
+    std::string dataset_file_path =
+        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "0101_cm_mtru_output.raw")
+            .string();
+
+    size_t received_event_frame_count = 0;
+    RawFileConfig cfg;
+    cfg.do_time_shifting_ = false;
+    std::unique_ptr<Device> device(DeviceDiscovery::open_raw_file(dataset_file_path, cfg));
+
+    if (!device) {
+        std::cerr << "Failed to open raw file." << std::endl;
+        FAIL();
+    }
+
+    // AND a PSEE MTR decoder
+    auto mtr_decoder = device->get_facility<I_EventFrameDecoder<PointCloud>>();
+    auto es          = device->get_facility<I_EventsStream>();
+
+    ASSERT_NE(nullptr, mtr_decoder);
+    ASSERT_NE(nullptr, es);
+
+    mtr_decoder->add_event_frame_callback([&](auto pointcloud) { received_event_frame_count++; });
+
+    es->start();
+
+    // WHEN we stream and decode the events in the file
+    long int bytes_polled_count;
+    while (es->wait_next_buffer() >= 0) {
+        auto raw_buffer = es->get_latest_raw_data(bytes_polled_count);
+        mtr_decoder->decode(raw_buffer, raw_buffer + bytes_polled_count);
+    }
+
+    // THEN We decode the same MTR data that are encoded in the RAW file
+    ASSERT_EQ(378, received_event_frame_count);
 }

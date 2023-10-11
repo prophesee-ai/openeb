@@ -19,6 +19,7 @@
 #include "metavision/hal/facilities/i_event_frame_decoder.h"
 #include "metavision/hal/facilities/i_hw_identification.h"
 #include "metavision/hal/facilities/i_plugin_software_info.h"
+#include "metavision/sdk/base/events/event_pointcloud.h"
 #include "metavision/sdk/driver/internal/callback_tag_ids.h"
 #include "metavision/sdk/driver/internal/camera_error_code_internal.h"
 #include "metavision/sdk/driver/internal/camera_generation_internal.h"
@@ -190,9 +191,10 @@ bool LivePrivate::process_impl(TimingProfilerType *profiler) {
         ev_buffer_end = ev_buffer + n_rawbytes;
 
         const bool has_decode_callbacks = index_manager_.counter_map_.tag_count(CallbackTagIds::DECODE_CALLBACK_TAG_ID);
-        if (has_decode_callbacks) {
-            i_events_stream_decoder_->decode(ev_buffer, ev_buffer_end);
-            t.setNumProcessedElements(n_rawbytes / i_events_stream_decoder_->get_raw_event_size_bytes());
+        // Pointcloud is not handled by Camera object. Always do decoding for pointclouds.
+        if (has_decode_callbacks || device_->get_facility<I_EventFrameDecoder<PointCloud>>()) {
+            i_decoder_->decode(ev_buffer, ev_buffer_end);
+            t.setNumProcessedElements(n_rawbytes / i_decoder_->get_raw_event_size_bytes());
         }
 
         // ... then we call the raw buffer callback so that a user has access to some info (e.g last
@@ -253,6 +255,7 @@ void LivePrivate::init() {
     }
     geometry_.reset(new Geometry(i_geometry));
 
+    i_decoder_               = device_->get_facility<I_Decoder>();
     i_events_stream_decoder_ = device_->get_facility<I_EventsStreamDecoder>();
 
     generation_.reset(CameraGeneration::Private::build(*device_));
@@ -315,7 +318,7 @@ void LivePrivate::init() {
         });
     }
 
-    if (!i_events_stream_decoder_ && !i_histogram_decoder && !i_diff_decoder) {
+    if (!i_decoder_) {
         throw CameraException(InternalInitializationErrors::IDecoderNotFound);
     }
 

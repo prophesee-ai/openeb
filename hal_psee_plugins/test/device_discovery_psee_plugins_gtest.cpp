@@ -28,7 +28,7 @@
 #include "metavision/hal/facilities/i_trigger_in.h"
 #include "metavision/hal/facilities/i_trigger_out.h"
 #include "metavision/hal/facilities/i_ll_biases.h"
-#include "metavision/hal/facilities/i_event_rate_noise_filter_module.h"
+#include "metavision/hal/facilities/i_event_rate_activity_filter_module.h"
 #include "metavision/hal/facilities/i_events_stream_decoder.h"
 #include "metavision/hal/facilities/i_event_decoder.h"
 #include "metavision/hal/facilities/i_hw_register.h"
@@ -575,7 +575,7 @@ TEST_WITH_CAMERA(DeviceDiscoveryRepositoryNoF_GTest, open_camera_build_gen31,
     // Now check the information on the device
     ASSERT_NE(nullptr, device->get_facility<I_HW_Register>());
     ASSERT_NE(nullptr, device->get_facility<I_Monitoring>());
-    ASSERT_NE(nullptr, device->get_facility<I_EventRateNoiseFilterModule>());
+    ASSERT_NE(nullptr, device->get_facility<I_EventRateActivityFilterModule>());
     ASSERT_EQ(VGAGeometry::width_, geometry->get_width());
     ASSERT_EQ(VGAGeometry::height_, geometry->get_height());
     if (hw_id_->get_system_id() == 0x28) {

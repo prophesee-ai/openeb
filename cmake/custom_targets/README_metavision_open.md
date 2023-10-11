@@ -1,13 +1,13 @@
 # OpenEB
 
-OpenEB is the open source project associated with [Metavision SDK](https://www.prophesee.ai/metavision-intelligence/)
+OpenEB is the open source project associated with [Metavision SDK](https://docs.prophesee.ai/stable/index.html)
 
 It enables anyone to get a better understanding of event-based vision, directly interact with events and build
-their own applications or plugins. As a camera manufacturer, ensure your customers benefit from the most advanced 
+their own applications or camera plugins. As a camera manufacturer, ensure your customers benefit from the most advanced
 event-based software suite available by building your own plugin. As a creator, scientist, academic, join and contribute
 to the fast-growing event-based vision community.
 
-OpenEB is composed of the Open modules of Metavision SDK:
+OpenEB is composed of the [Open modules of Metavision SDK](https://docs.prophesee.ai/stable/modules.html#chapter-modules-and-packaging-open):
 * HAL: Hardware Abstraction Layer to operate any event-based vision device.
 * Base: Foundations and common definitions of event-based applications.
 * Core: Generic algorithms for visualization, event stream manipulation, applicative pipeline generation.
@@ -15,10 +15,11 @@ OpenEB is composed of the Open modules of Metavision SDK:
 * Driver: High-level abstraction built on the top of HAL to easily interact with event-based cameras.
 * UI: Viewer and display controllers for event-based data.
 
-OpenEB also contains the source code of Prophesee camera plugins, enabling to stream data from our event-based cameras
-and to read recordings of event-based data. The supported cameras are:
-* EVK2 - Gen4.1 HD
-* EVK3 - Gen 3.1 VGA / Gen4.1 HD
+OpenEB also contains the source code of [Prophesee camera plugins](https://docs.prophesee.ai/stable/installation/camera_plugins.html),
+enabling to stream data from our event-based cameras and to read recordings of event-based data.
+The supported cameras are:
+* EVK2 - HD
+* EVK3 - VGA/320/HD
 * EVK4 - HD
 
 This document describes how to compile and install the OpenEB codebase.
@@ -45,7 +46,8 @@ was not tested. For those platforms some adjustments to this guide or to the cod
 ### Upgrading OpenEB
 
 If you are upgrading OpenEB from a previous version, you should first read carefully the [Release Notes](https://docs.prophesee.ai/stable/release_notes.html)
-as some changes may impact your usage of our SDK (e.g. API updates) and cameras (e.g. [firmware update](https://support.prophesee.ai/portal/en/kb/articles/evk-firmware-versions) might be necessary).
+as some changes may impact your usage of our SDK (e.g. [API](https://docs.prophesee.ai/stable/api.html) updates)
+and cameras (e.g. [firmware update](https://support.prophesee.ai/portal/en/kb/articles/evk-firmware-versions) might be necessary).
 
 Then, you need to clean your system from previously installed Prophesee software. If after a previous compilation, you chose to
 deploy the Metavision files in your system path, then go to the `build` folder in the source code directory and
@@ -65,7 +67,7 @@ Install the following dependencies:
 ```bash
 sudo apt update
 sudo apt -y install apt-utils build-essential software-properties-common wget unzip curl git cmake
-sudo apt -y install libopencv-dev libboost-all-dev libusb-1.0-0-dev
+sudo apt -y install libopencv-dev libboost-all-dev libusb-1.0-0-dev libprotobuf-dev protobuf-compiler
 sudo apt -y install libhdf5-dev hdf5-tools libglew-dev libglfw3-dev libcanberra-gtk-module ffmpeg 
 ```
 
@@ -76,7 +78,7 @@ For more details, see [Google Test User Guide](https://google.github.io/googlete
 sudo apt -y install libgtest-dev libgmock-dev
 ```
 
-For the Python API, you will need Python and some additional libraries.
+For the [Python API](https://docs.prophesee.ai/stable/api/python/index.html#chapter-api-python), you will need Python and some additional libraries.
 If Python is not available on your system, install it
 We support Python 3.8 and 3.9 on Ubuntu 20.04 and Python 3.9 and 3.10 on Ubuntu 22.04.
 If you want to use other versions of Python, some source code modifications will be necessary
@@ -86,7 +88,7 @@ Then install `pip` and some Python libraries:
 sudo apt -y install python3-pip python3-distutils
 sudo apt -y install python3.X-dev  # where X is 8, 9 or 10 depending on your Python version (3.8, 3.9 or 3.10)
 python3 -m pip install pip --upgrade
-python3 -m pip install "opencv-python==4.5.5.64" "sk-video==1.1.10" "fire==0.4.0" "numpy==1.23.4" pandas scipy h5py
+python3 -m pip install "opencv-python==4.5.5.64" "sk-video==1.1.10" "fire==0.4.0" "numpy==1.23.4" "h5py==3.7.0" pandas scipy
 python3 -m pip install jupyter jupyterlab matplotlib "ipywidgets==7.6.5" pytest command_runner
 ```
 
@@ -131,7 +133,7 @@ python3 -m pip install "numba==0.56.3" "profilehooks==1.12.0" "pytorch_lightning
 
 ### Compilation
 
- 1. Retrieve the code `git clone https://github.com/prophesee-ai/openeb.git --branch 4.3.0`.
+ 1. Retrieve the code: `git clone https://github.com/prophesee-ai/openeb.git --branch 4.4.0`.
     (If you choose to download an archive of OpenEB from GitHub rather than cloning the repository,
     you need to ensure that you select a ``Full.Source.Code.*`` archive instead of using
     the automatically generated ``Source.Code.*`` archives. This is because the latter do not include
@@ -155,8 +157,8 @@ or you can deploy the OpenEB files in the system path (`/usr/local/lib`, `/usr/l
     source utils/scripts/setup_env.sh
     ```
 
-  * Prophesee camera plugins are included in OpenEB, but you still need to copy the udev rules files in the system path
-    and reload them so that your camera is detected with this command:
+  * [Prophesee camera plugins](https://docs.prophesee.ai/stable/installation/camera_plugins.html) are included in OpenEB,
+    but you still need to copy the udev rules files in the system path and reload them so that your camera is detected with this command:
 
     ```bash
     sudo cp <OPENEB_SRC_DIR>/hal_psee_plugins/resources/rules/*.rules /etc/udev/rules.d
@@ -182,7 +184,7 @@ or you can deploy the OpenEB files in the system path (`/usr/local/lib`, `/usr/l
 
     ```bash
     export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
-    export HDF5_PLUGIN_PATH=$HDF5_PLUGIN_PATH:/usr/local/hdf5/lib/plugin
+    export HDF5_PLUGIN_PATH=$HDF5_PLUGIN_PATH:/usr/local/lib/hdf5/plugin
     ```
 
 Note that if you are using a third-party camera, you need to install the plugin provided
@@ -222,7 +224,8 @@ For those platforms some adjustments to this guide or to the code itself may be 
 ### Upgrading OpenEB
 
 If you are upgrading OpenEB from a previous version, you should first read carefully the [Release Notes](https://docs.prophesee.ai/stable/release_notes.html)
-as some changes may impact your usage of our SDK (e.g. :API updates) and cameras (e.g. [firmware update](https://support.prophesee.ai/portal/en/kb/articles/evk-firmware-versions) might be necessary).
+as some changes may impact your usage of our SDK (e.g. [API](https://docs.prophesee.ai/stable/api.html) updates)
+and cameras (e.g. [firmware update](https://support.prophesee.ai/portal/en/kb/articles/evk-firmware-versions) might be necessary).
 
 Then, if you have previously installed any Prophesee's software, you will need to uninstall it first.
 Remove the folders where you installed Metavision artifacts (check both the `build` folder of the source code and
@@ -288,7 +291,7 @@ Then install `pip` and some Python libraries:
 
 ```bash
 python -m pip install pip --upgrade
-python -m pip install "opencv-python==4.5.5.64" "sk-video==1.1.10" "fire==0.4.0" "numpy==1.23.4" pandas scipy h5py
+python -m pip install "opencv-python==4.5.5.64" "sk-video==1.1.10" "fire==0.4.0" "numpy==1.23.4" "h5py==3.7.0" pandas scipy
 python -m pip install jupyter jupyterlab matplotlib "ipywidgets==7.6.5" pytest command_runner
 ```
 
@@ -323,7 +326,7 @@ python -m pip install "numba==0.56.3" "profilehooks==1.12.0" "pytorch_lightning=
 First, retrieve the codebase:
 
 ```bash
-git clone https://github.com/prophesee-ai/openeb.git --branch 4.3.0
+git clone https://github.com/prophesee-ai/openeb.git --branch 4.4.0
 ```
 
 Note that if you choose to download an archive of OpenEB from GitHub rather than cloning the repository,
@@ -407,7 +410,7 @@ or you can deploy the OpenEB files (applications, samples, libraries etc.) in a 
 
 #### Camera Plugins
 
-Since OpenEB 3.0.0, **Prophesee camera plugins** are included in OpenEB, but you need to install the drivers
+Prophesee camera plugins are included in OpenEB, but you need to install the drivers
 for the cameras to be available on Windows. To do so, follow this procedure:
 
 1. download [wdi-simple.exe from our file server](https://files.prophesee.ai/share/dists/public/drivers/FeD45ki5/wdi-simple.exe)
@@ -431,9 +434,6 @@ To get started with OpenEB, you can download some [sample recordings](https://do
 and visualize them with [metavision_viewer](https://docs.prophesee.ai/stable/samples/modules/driver/viewer.html)
 or you can stream data from your Prophesee-compatible event-based camera.
 
-*Note* that since OpenEB 3.0.0, Prophesee camera plugins are included in the OpenEB repository, so you don't need to perform
-any extra step to install them. If you are using a third-party camera, you need to install the plugin provided
-by the camera vendor and specify the location of the plugin using the `MV_HAL_PLUGIN_PATH` environment variable.
 
 ### Running the test suite (Optional)
 

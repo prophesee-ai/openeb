@@ -19,7 +19,7 @@
 #include "metavision/hal/device/device.h"
 #include "metavision/hal/utils/hal_exception.h"
 #include "metavision/hal/facilities/i_hw_identification.h"
-#include "metavision/hal/facilities/i_event_rate_noise_filter_module.h"
+#include "metavision/hal/facilities/i_event_rate_activity_filter_module.h"
 #include "metavision/hal/facilities/i_events_stream.h"
 #include "metavision/hal/decoders/base/event_base.h"
 #include "metavision/hal/decoders/evt2/evt2_event_types.h"
@@ -45,13 +45,13 @@ public:
 
         ASSERT_NE(nullptr, device_.get());
 
-        ev_rate_ = device_->get_facility<I_EventRateNoiseFilterModule>();
+        ev_rate_ = device_->get_facility<I_EventRateActivityFilterModule>();
         ASSERT_NE(nullptr, ev_rate_);
     }
 
 protected:
     std::unique_ptr<Device> device_;
-    I_EventRateNoiseFilterModule *ev_rate_{nullptr};
+    I_EventRateActivityFilterModule *ev_rate_{nullptr};
 
     static constexpr uint32_t min_event_rate_threshold_kev_s_ =
         Gen31_EventRateNoiseFilterModule::min_event_rate_threshold_kev_s;

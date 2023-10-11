@@ -27,6 +27,7 @@ std::shared_ptr<TzDevice> TzPseeVideo::build(std::shared_ptr<TzLibUSBBoardComman
         "psee,video_imx636",
         "psee,video_saphir",
         "psee,video_rdk2_imx636",
+        "psee,video_evk3d",
         // clang-format on
     };
 

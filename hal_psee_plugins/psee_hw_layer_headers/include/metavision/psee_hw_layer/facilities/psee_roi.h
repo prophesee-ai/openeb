@@ -35,6 +35,10 @@ public:
     /// @return true on success
     virtual bool set_mode(const Mode &mode) override;
 
+    /// @brief Gets the window mode
+    /// @return the window mode
+    virtual Mode get_mode() const override;
+
     /// @brief Gets the maximum number of windows
     /// @return the maximum number of windows that can be set via @ref set_windows
     virtual size_t get_max_supported_windows_count() const override;
@@ -44,7 +48,12 @@ public:
     /// @return true on success
     /// @throw an exception if the size of the vector is higher than the maximum supported number
     ///        of windows (see @ref get_max_supported_windows_count)
-    virtual bool set_windows_impl(const std::vector<Window> &windows) override;
+    virtual bool set_windows_impl(const std::vector<Window> &windows) override final;
+
+    /// @brief Gets active ROI/RONI windows
+    ///
+    /// @return The vector of active windows
+    virtual std::vector<Window> get_windows() const override;
 
     /// @brief Creates several rectangular ROI in bitword register format
     /// @param vroi Vector of ROI to transform to bitword register format
@@ -89,10 +98,10 @@ protected:
     virtual void write_ROI(const std::vector<uint32_t> &vroiparams) = 0;
 
 private:
-    void program_ROI_Helper(const std::vector<uint32_t> &vroiparams, bool enable);
-
     int device_height_{0};
     int device_width_{0};
+
+    std::vector<Window> active_windows_;
 };
 
 } // namespace Metavision

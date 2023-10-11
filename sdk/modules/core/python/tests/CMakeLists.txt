@@ -7,14 +7,14 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-lfs_download("datasets/openeb/core/event_io/csv_zip_eth")
-lfs_download("datasets/openeb/blinking_gen4_with_ext_triggers.raw")
-lfs_download("datasets/openeb/diff3d.raw")
-lfs_download("datasets/openeb/histo3d.raw")
-lfs_download("datasets/openeb/histo3d_padding.raw")
-lfs_download("datasets/openeb/events_big_time_gap_repeated_ts.raw")
-lfs_download("datasets/openeb/events_big_time_gap_repeated_ts.dat")
-lfs_download("datasets/openeb/ts_offset_test.hdf5")
+lfs_download("datasets/openeb/core/event_io/csv_zip_eth" VALIDATION)
+lfs_download("datasets/openeb/blinking_gen4_with_ext_triggers.raw" VALIDATION)
+lfs_download("datasets/openeb/diff3d.raw" VALIDATION)
+lfs_download("datasets/openeb/histo3d.raw" VALIDATION)
+lfs_download("datasets/openeb/histo3d_padding.raw" VALIDATION)
+lfs_download("datasets/openeb/events_big_time_gap_repeated_ts.raw" VALIDATION)
+lfs_download("datasets/openeb/events_big_time_gap_repeated_ts.dat" VALIDATION)
+lfs_download("datasets/openeb/ts_offset_test.hdf5" VALIDATION)
 
 add_sdk_python_module_test(core)
 

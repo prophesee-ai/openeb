@@ -14,6 +14,8 @@
 
 #include <functional>
 #include <map>
+#include <memory>
+#include <mutex>
 
 #include "metavision/hal/facilities/i_decoder.h"
 #include "metavision/hal/facilities/i_registrable_facility.h"
@@ -25,7 +27,7 @@ namespace Metavision {
 /// This class is meant to receive raw data from the camera, and dispatch parts of the buffer to instances
 /// of @ref I_EventDecoder for specific event types.
 template<class FrameType>
-class I_EventFrameDecoder : public I_Decoder, public I_RegistrableFacility<I_EventFrameDecoder<FrameType>> {
+class I_EventFrameDecoder : public I_RegistrableFacility<I_EventFrameDecoder<FrameType>, I_Decoder> {
 public:
     /// @brief Alias for raw data type
     using EventFrameCallback_t = std::function<void(const FrameType &)>;
@@ -51,7 +53,8 @@ public:
     /// @warning It is mandatory to pass strictly consecutive buffers from the same source to this method
     /// @param raw_data_begin Pointer to start of frame data
     /// @param raw_data_end Pointer after the last byte of frame data
-    virtual void decode(const RawData *const raw_data_begin, const RawData *const raw_data_end) = 0;
+    virtual void decode(const I_Decoder::RawData *const raw_data_begin,
+                        const I_Decoder::RawData *const raw_data_end) = 0;
 
     /// @brief Gets size of a raw event element in bytes
     virtual uint8_t get_raw_event_size_bytes() const = 0;
@@ -62,6 +65,10 @@ public:
     unsigned get_width() const {
         return width_;
     }
+
+    /// @brief Returns the last complete decoded frame
+    /// @return Last decoded frame, nullptr if no frame has been completely decoded yet
+    std::shared_ptr<const FrameType> get_last_frame();
 
 protected:
     /// @cond DEV
@@ -74,6 +81,9 @@ protected:
 private:
     std::map<size_t, EventFrameCallback_t> cbs_map_;
     size_t next_cb_idx_{0};
+
+    std::shared_ptr<const FrameType> last_frame_;
+    std::mutex last_frame_lock_;
 };
 
 template<class FrameType>
@@ -90,11 +100,23 @@ bool I_EventFrameDecoder<FrameType>::remove_callback(size_t callback_id) {
     return cbs_map_.erase(callback_id);
 }
 
+template<class FrameType>
+std::shared_ptr<const FrameType> I_EventFrameDecoder<FrameType>::get_last_frame() {
+    std::lock_guard<std::mutex> lock(last_frame_lock_);
+    return last_frame_;
+}
+
 /// @cond DEV
 template<class FrameType>
 void I_EventFrameDecoder<FrameType>::add_event_frame(const FrameType &frame) {
+    {
+        auto new_frame = std::make_shared<FrameType>(std::move(frame));
+        std::lock_guard<std::mutex> lock(last_frame_lock_);
+        last_frame_ = new_frame;
+    }
+
     for (auto &it : cbs_map_) {
-        it.second(frame);
+        it.second(*last_frame_);
     }
 }
 /// @endcond

@@ -21,6 +21,7 @@ namespace Metavision {
 Gen41ROICommand::Gen41ROICommand(int width, int height, const std::shared_ptr<RegisterMap> &regmap,
                                  const std::string &sensor_prefix) :
     PseeROI(width, height), register_map_(regmap), sensor_prefix_(sensor_prefix), mode_(I_ROI::Mode::ROI) {
+    roi_save_ = create_ROIs(std::vector<I_ROI::Window>({I_ROI::Window(0, 0, width, height)}));
     reset_to_full_roi();
 }
 
@@ -84,21 +85,23 @@ bool Gen41ROICommand::set_mode(const I_ROI::Mode &mode) {
     return true;
 }
 
+I_ROI::Mode Gen41ROICommand::get_mode() const {
+    return mode_;
+}
+
 bool Gen41ROICommand::enable(bool state) {
-    write_ROI(roi_save_);
-    if (!state) {
-        reset_to_full_roi();
+    enabled_ = state;
 
-    } else {
-        write_ROI(roi_save_);
-    }
-
-    (*register_map_)[sensor_prefix_ + "roi_ctrl"].write_value(vfield{{"roi_td_en", 1},
+    (*register_map_)[sensor_prefix_ + "roi_ctrl"].write_value(vfield{{"roi_td_en", state},
                                                                      {"td_roi_roni_n_en", (mode_ == I_ROI::Mode::ROI)},
                                                                      {"px_td_rstn", 1},
                                                                      {"roi_td_shadow_trigger", 1}});
 
     return true;
+}
+
+bool Gen41ROICommand::is_enabled() const {
+    return enabled_;
 }
 
 } // namespace Metavision

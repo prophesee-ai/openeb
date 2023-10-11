@@ -20,7 +20,7 @@
 #include "metavision/hal/facilities/i_digital_crop.h"
 #include "metavision/hal/facilities/i_digital_event_mask.h"
 #include "metavision/hal/facilities/i_erc_module.h"
-#include "metavision/hal/facilities/i_event_rate_noise_filter_module.h"
+#include "metavision/hal/facilities/i_event_rate_activity_filter_module.h"
 #include "metavision/hal/facilities/i_event_trail_filter_module.h"
 #include "metavision/hal/facilities/i_events_stream.h"
 #include "metavision/hal/facilities/i_hw_identification.h"
@@ -43,19 +43,25 @@
 
 using namespace Metavision;
 
-// TODO MV-1443 : move this class in the unnamed namespace below, the Test namespace is only here
-// to enable the dynamic_cast used in the camera gtest (which we won't need as soon as we use
-// public HAL API to get access to some fields)
-namespace Test {
+namespace {
+
 struct DummyROI : public I_ROI {
     bool enable(bool state) override {
         enabled_ = state;
         return true;
     }
 
+    bool is_enabled() const override {
+        return enabled_;
+    }
+
     bool set_mode(const Mode &mode) override {
         mode_ = mode;
         return true;
+    }
+
+    Mode get_mode() const override {
+        return mode_;
     }
 
     size_t get_max_supported_windows_count() const override {
@@ -73,14 +79,15 @@ struct DummyROI : public I_ROI {
         return true;
     }
 
+    std::vector<Window> get_windows() const override {
+        return windows_;
+    }
+
     bool enabled_{false};
     Mode mode_;
     std::vector<Window> windows_;
     std::vector<bool> rows_, cols_;
 };
-} // namespace Test
-
-namespace {
 
 struct DummyDataTransfer : public DataTransfer {
     DummyDataTransfer() : DataTransfer(1) {}
@@ -630,7 +637,7 @@ private:
     uint32_t cd_event_count_ = 1000;
 };
 
-struct DummyNFLModule : public I_EventRateNoiseFilterModule {
+struct DummyNFLModule : public I_EventRateActivityFilterModule {
 public:
     virtual bool enable(bool b) override {
         enabled_ = b;
@@ -650,9 +657,31 @@ public:
         return threshold_;
     }
 
+    virtual thresholds is_thresholds_supported() const override {
+        return {1, 1, 1, 1};
+    }
+
+    virtual bool set_thresholds(const thresholds &thresholds_ev_s) override {
+        thresholds_ = thresholds_ev_s;
+        return true;
+    }
+
+    virtual thresholds get_thresholds() const override {
+        return thresholds_;
+    }
+
+    virtual thresholds get_min_supported_thresholds() const override {
+        return {0, 0, 0, 0};
+    }
+
+    virtual thresholds get_max_supported_thresholds() const override {
+        return {200000, 200000, 1600000000, 1600000000};
+    }
+
 private:
-    bool enabled_       = false;
-    uint32_t threshold_ = 1000;
+    bool enabled_          = false;
+    uint32_t threshold_    = 1000;
+    thresholds thresholds_ = {300000, 280000, 800000000, 800000000};
 };
 
 struct DummyCameraDiscovery : public CameraDiscovery {
@@ -675,7 +704,7 @@ struct DummyCameraDiscovery : public CameraDiscovery {
         device_builder.add_facility(std::make_unique<DummyErcModule>());
         device_builder.add_facility(std::make_unique<DummyNFLModule>());
         device_builder.add_facility(std::make_unique<DummyHWRegister>());
-        device_builder.add_facility(std::make_unique<Test::DummyROI>());
+        device_builder.add_facility(std::make_unique<DummyROI>());
         // To make dummy plugin usable in Metavision::Camera
         device_builder.add_facility(std::make_unique<DummyHWIdentification>(device_builder.get_plugin_software_info()));
         device_builder.add_facility(std::make_unique<DummyGeometry>(640, 480));

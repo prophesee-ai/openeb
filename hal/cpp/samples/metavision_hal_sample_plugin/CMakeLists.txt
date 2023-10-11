@@ -60,12 +60,12 @@ endif (BUILD_TESTING)
 
 # Install sample
 install(DIRECTORY include src
-        DESTINATION share/metavision/hal/samples/metavision_hal_sample_plugin
+        DESTINATION share/metavision/hal/cpp_samples/metavision_hal_sample_plugin
         COMPONENT metavision-hal-samples
 )
 install(FILES CMakeLists.txt.install
         RENAME CMakeLists.txt
-        DESTINATION share/metavision/hal/samples/metavision_hal_sample_plugin
+        DESTINATION share/metavision/hal/cpp_samples/metavision_hal_sample_plugin
         COMPONENT metavision-hal-samples
 )
 

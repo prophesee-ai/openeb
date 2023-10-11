@@ -25,10 +25,10 @@ target_include_directories(${sample} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(${sample} PRIVATE ${common_libraries} opencv_highgui)
 
 install(FILES ${sample}.cpp constants.cpp.in constants.h prophesee_logo.jpg
-        DESTINATION share/metavision/sdk/ui/samples/${sample}
+        DESTINATION share/metavision/sdk/ui/cpp_samples/${sample}
         COMPONENT metavision-sdk-ui-samples)
 
 install(FILES CMakeLists.txt.install
         RENAME CMakeLists.txt
-        DESTINATION share/metavision/sdk/ui/samples/${sample}
+        DESTINATION share/metavision/sdk/ui/cpp_samples/${sample}
         COMPONENT metavision-sdk-ui-samples)

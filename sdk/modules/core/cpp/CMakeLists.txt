@@ -10,8 +10,7 @@
 # Add library
 add_subdirectory(lib)
 
-# Samples and apps
-add_subdirectory(apps)
+# Samples
 add_subdirectory(samples)
 
 # Add sources to the library

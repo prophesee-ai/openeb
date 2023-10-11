@@ -276,6 +276,14 @@ void OfflineRawPrivate::init() {
         i_decoder_ = i_diff_decoder;
     }
 
+    I_EventFrameDecoder<PointCloud> *i_pointcloud_decoder = device_->get_facility<I_EventFrameDecoder<PointCloud>>();
+    if (i_pointcloud_decoder) {
+        file_reader_->add_read_callback([this](const PointCloud &pc) {
+            // For now PointClouds are not handled by Camera object
+        });
+        i_decoder_ = i_pointcloud_decoder;
+    }
+
     if (!i_decoder_) {
         throw CameraException(InternalInitializationErrors::IDecoderNotFound);
     }

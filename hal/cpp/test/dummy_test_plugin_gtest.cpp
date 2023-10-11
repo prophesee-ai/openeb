@@ -18,7 +18,7 @@
 #include "metavision/hal/facilities/i_antiflicker_module.h"
 #include "metavision/hal/facilities/i_camera_synchronization.h"
 #include "metavision/hal/facilities/i_erc_module.h"
-#include "metavision/hal/facilities/i_event_rate_noise_filter_module.h"
+#include "metavision/hal/facilities/i_event_rate_activity_filter_module.h"
 #include "metavision/hal/facilities/i_events_stream_decoder.h"
 #include "metavision/hal/facilities/i_digital_crop.h"
 #include "metavision/hal/facilities/i_digital_event_mask.h"
@@ -59,7 +59,7 @@ TEST_F(DummyTestPluginTest, should_have_facilities) {
     EXPECT_THAT(dummy_device->get_facility<I_DigitalEventMask>(), NotNull());
     EXPECT_THAT(dummy_device->get_facility<I_DigitalCrop>(), NotNull());
     EXPECT_THAT(dummy_device->get_facility<I_ErcModule>(), NotNull());
-    EXPECT_THAT(dummy_device->get_facility<I_EventRateNoiseFilterModule>(), NotNull());
+    EXPECT_THAT(dummy_device->get_facility<I_EventRateActivityFilterModule>(), NotNull());
     EXPECT_THAT(dummy_device->get_facility<I_EventTrailFilterModule>(), NotNull());
     EXPECT_THAT(dummy_device->get_facility<I_EventsStream>(), NotNull());
     EXPECT_THAT(dummy_device->get_facility<I_EventsStreamDecoder>(), NotNull());

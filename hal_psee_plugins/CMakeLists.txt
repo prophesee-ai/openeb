@@ -15,6 +15,10 @@ if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/src/devices/sensorlib")
     set(HAL_SENSORLIB_SUPPORT TRUE)
 endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/src/devices/sensorlib")
 
+if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/src/devices/evk3d")
+    set(HAL_EVK3D_SUPPORT TRUE)
+endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/src/devices/evk3d")
+
 # Add libraries (plugins)
 set(biasgen_calib_files_dir "${GENERATE_FILES_DIRECTORY}/biasgen_calib")
 set(metavision_hal_psee_plugins_include_dir "${CMAKE_CURRENT_SOURCE_DIR}/include")
@@ -39,9 +43,7 @@ if (BUILD_TESTING)
 endif (BUILD_TESTING)
 
 # Project Raven
-if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/raven")
-    add_subdirectory(raven)
-endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/raven")
+add_subdirectory_if_exists(raven)
 
 add_cpack_component(PUBLIC metavision-hal-prophesee-hw-layer-lib metavision-hal-prophesee-hw-layer-dev)
 add_cpack_component(PUBLIC metavision-hal-prophesee-plugins)

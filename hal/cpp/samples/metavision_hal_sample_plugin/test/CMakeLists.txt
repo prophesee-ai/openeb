@@ -7,7 +7,7 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-lfs_download(datasets/openeb/sample_plugin_recording.raw)
+lfs_download(datasets/openeb/sample_plugin_recording.raw VALIDATION)
 
 add_executable(gtest_metavision_hal_sample_plugin 
     ${CMAKE_CURRENT_SOURCE_DIR}/hal_sample_plugin_gtest.cpp

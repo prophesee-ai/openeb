@@ -34,6 +34,7 @@ public:
     size_t add_read_callback(const EventsBufferReadCallback<EventERCCounter> &cb);
     size_t add_read_callback(const EventFrameReadCallback<RawEventFrameHisto> &cb);
     size_t add_read_callback(const EventFrameReadCallback<RawEventFrameDiff> &cb);
+    size_t add_read_callback(const EventFrameReadCallback<PointCloud> &cb);
     bool has_read_callbacks() const;
 
     size_t add_seek_callback(const SeekCompletionCallback &cb);
@@ -46,6 +47,7 @@ public:
     void notify_events_buffer(const EventERCCounter *begin, const EventERCCounter *end);
     void notify_event_frame(const RawEventFrameHisto &h);
     void notify_event_frame(const RawEventFrameDiff &d);
+    void notify_event_frame(const PointCloud &pc);
     void notify_seek(timestamp t);
 
     bool read();
@@ -65,6 +67,7 @@ public:
     CallbackManager<EventsBufferReadCallback<EventERCCounter>, size_t> erc_counter_buffer_cb_mgr_;
     CallbackManager<EventFrameReadCallback<RawEventFrameHisto>, size_t> histogram_cb_mgr_;
     CallbackManager<EventFrameReadCallback<RawEventFrameDiff>, size_t> diff_cb_mgr_;
+    CallbackManager<EventFrameReadCallback<PointCloud>, size_t> pointcloud_cb_mgr_;
     CallbackManager<SeekCompletionCallback, size_t> seek_cb_mgr_;
     std::string path_;
     mutable timestamp min_t_, max_t_, duration_;                        // cached

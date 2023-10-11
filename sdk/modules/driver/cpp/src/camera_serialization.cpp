@@ -19,7 +19,7 @@
 #include "metavision/hal/facilities/i_digital_crop.h"
 #include "metavision/hal/facilities/i_digital_event_mask.h"
 #include "metavision/hal/facilities/i_erc_module.h"
-#include "metavision/hal/facilities/i_event_rate_noise_filter_module.h"
+#include "metavision/hal/facilities/i_event_rate_activity_filter_module.h"
 #include "metavision/hal/facilities/i_event_trail_filter_module.h"
 #include "metavision/hal/facilities/i_hw_register.h"
 #include "metavision/hal/facilities/i_ll_biases.h"
@@ -56,8 +56,8 @@ struct FacilityTypeList {
 // This way, it can be documented that registers will not potentially be overwritten by the
 // deserialization of other facilities
 using FacilityTypes = FacilityTypeList<I_AntiFlickerModule, I_CameraSynchronization, I_DigitalCrop, I_DigitalEventMask,
-                                       I_ErcModule, I_EventRateNoiseFilterModule, I_EventTrailFilterModule, I_LL_Biases,
-                                       I_ROI, I_TriggerIn, I_TriggerOut, I_HW_Register>;
+                                       I_ErcModule, I_EventRateActivityFilterModule, I_EventTrailFilterModule,
+                                       I_LL_Biases, I_ROI, I_TriggerIn, I_TriggerOut, I_HW_Register>;
 
 auto get_serializable_facilities(const Device &device) {
     return FacilityTypes::get_facilities(device);
@@ -145,7 +145,7 @@ public:
         erc_state->set_cd_event_count(module->get_cd_event_count());
     }
 
-    void operator()(const I_EventRateNoiseFilterModule *module) {
+    void operator()(const I_EventRateActivityFilterModule *module) {
         if (!module) {
             return;
         }
@@ -194,7 +194,23 @@ public:
     }
 
     void operator()(const I_ROI *module) {
-        // TODO : we need appropriate I_ROI HAL API to serialize this facility
+        if (!module) {
+            return;
+        }
+
+        auto roi_state = state_.mutable_roi_state();
+
+        roi_state->set_enabled(module->is_enabled());
+        roi_state->set_mode(module->get_mode() == I_ROI::Mode::ROI ? DeviceSerialization::RegionOfInterestState::ROI :
+                                                                     DeviceSerialization::RegionOfInterestState::RONI);
+
+        for (auto &w : module->get_windows()) {
+            auto window_state = roi_state->add_window();
+            window_state->set_x(w.x);
+            window_state->set_width(w.width);
+            window_state->set_y(w.y);
+            window_state->set_height(w.height);
+        }
     }
 
     void operator()(const I_TriggerIn *module) {
@@ -341,7 +357,7 @@ public:
         }
     }
 
-    void operator()(I_EventRateNoiseFilterModule *module) {
+    void operator()(I_EventRateActivityFilterModule *module) {
         if (!state_.has_event_rate_noise_filter_state()) {
             return;
         }
@@ -440,9 +456,6 @@ public:
         }
 
         const auto &roi_state = state_.roi_state();
-        if (roi_state.optional_enabled_case() == DeviceSerialization::RegionOfInterestState::kEnabled) {
-            module->enable(roi_state.enabled());
-        }
         if (roi_state.optional_mode_case() == DeviceSerialization::RegionOfInterestState::kMode) {
             module->set_mode(roi_state.mode() == DeviceSerialization::RegionOfInterestState::ROI ? I_ROI::Mode::ROI :
                                                                                                    I_ROI::Mode::RONI);
@@ -457,28 +470,8 @@ public:
             module->set_windows(windows);
         }
 
-        if (roi_state.has_lines() && roi_state.window_size() > 0) {
-            MV_SDK_LOG_WARNING() << "Ignored ROI lines, ROI window is already set";
-        }
-
-        if (roi_state.has_lines()) {
-            const auto &lines = roi_state.lines();
-            if (lines.optional_cols_case() == DeviceSerialization::RegionOfInterestState::ROILines::kCols &&
-                lines.optional_rows_case() == DeviceSerialization::RegionOfInterestState::ROILines::kRows) {
-                const auto &cols_state = lines.cols();
-                std::vector<bool> cols(cols_state.size());
-                for (size_t i = 0; i < cols_state.size(); ++i) {
-                    cols[i] = cols_state[i] == '1';
-                }
-                std::vector<bool> rows(lines.rows().size());
-                const auto &rows_state = lines.rows();
-                for (size_t i = 0; i < rows_state.size(); ++i) {
-                    rows[i] = rows_state[i] == '1';
-                }
-                module->set_lines(cols, rows);
-            } else {
-                MV_SDK_LOG_WARNING() << "Ignored ROI lines : missing rows or cols";
-            }
+        if (roi_state.optional_enabled_case() == DeviceSerialization::RegionOfInterestState::kEnabled) {
+            module->enable(roi_state.enabled());
         }
     }
 

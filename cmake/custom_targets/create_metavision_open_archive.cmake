@@ -9,8 +9,10 @@
 
 set(output_metavision_open_archive_dir_path "${GENERATE_FILES_DIRECTORY}/metavision_open_archive")
 set(output_metavision_open_full_archive_dir_path "${GENERATE_FILES_DIRECTORY}/metavision_open_full_archive")
+
 add_custom_target(create_metavision_open_archive_folder
     COMMAND ${CMAKE_COMMAND}
+        -DHAL_OPEN_PLUGIN_DEVICES="${HAL_PSEE_OPEN_PLUGIN_DEVICES}"
         -DPROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
         -DOUTPUT_DIR="${output_metavision_open_archive_dir_path}"
         -DGIT_COMMAND_GET_BRANCH="${GIT_COMMAND_GET_BRANCH}"
@@ -20,6 +22,7 @@ add_custom_target(create_metavision_open_archive_folder
         -DGENERATE_FILES_DIRECTORY="${GENERATE_FILES_DIRECTORY}"
         -P ${CMAKE_CURRENT_LIST_DIR}/create_metavision_open_archive_folder.cmake
     COMMAND ${CMAKE_COMMAND}
+        -DHAL_OPEN_PLUGIN_DEVICES="${HAL_PSEE_OPEN_PLUGIN_DEVICES}"
         -DPROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
         -DOUTPUT_DIR="${output_metavision_open_full_archive_dir_path}/openeb-${PROJECT_VERSION_FULL}"
         -DGIT_COMMAND_GET_BRANCH="${GIT_COMMAND_GET_BRANCH}"

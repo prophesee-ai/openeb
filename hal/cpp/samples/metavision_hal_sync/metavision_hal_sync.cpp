@@ -24,7 +24,7 @@
 #include <metavision/hal/facilities/i_trigger_out.h>
 #include <metavision/hal/facilities/i_ll_biases.h>
 #include <metavision/hal/facilities/i_monitoring.h>
-#include <metavision/hal/facilities/i_event_rate_noise_filter_module.h>
+#include <metavision/hal/facilities/i_event_rate_activity_filter_module.h>
 #include <metavision/hal/facilities/i_geometry.h>
 #include <metavision/hal/facilities/i_events_stream_decoder.h>
 #include <metavision/hal/facilities/i_event_decoder.h>

@@ -15,11 +15,12 @@
 #include <cstdint>
 #include <functional>
 
+#include "metavision/hal/facilities/i_registrable_facility.h"
 #include "metavision/hal/utils/decoder_protocol_violation.h"
 
 namespace Metavision {
 
-class I_Decoder {
+class I_Decoder : public I_RegistrableFacility<I_Decoder> {
 public:
     /// @brief Alias for raw data type
     using RawData = uint8_t;

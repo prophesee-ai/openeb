@@ -71,7 +71,6 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // TODO : MV-551 use I_EventRateActivityFilterModule facility in this sample
     Metavision::Imx636_LL_Biases *imx636_ll_biases = dynamic_cast<Metavision::Imx636_LL_Biases *>(ll_biases);
     if (!imx636_ll_biases) {
         std::cerr << "Camera is not an IMX636 camera" << std::endl;

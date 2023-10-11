@@ -40,8 +40,7 @@ add_subdirectory(lib)
 # Add sources to the libraries and plugins
 add_subdirectory(src)
 
-# Apps and samples
-add_subdirectory(apps)
+# Samples
 add_subdirectory(samples)
 
 # Tests

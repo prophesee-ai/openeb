@@ -28,7 +28,7 @@
 #include <metavision/hal/facilities/i_digital_event_mask.h>
 #include <metavision/hal/facilities/i_digital_crop.h>
 #include <metavision/hal/facilities/i_event_decoder.h>
-#include <metavision/hal/facilities/i_event_rate_noise_filter_module.h>
+#include <metavision/hal/facilities/i_event_rate_activity_filter_module.h>
 #include <metavision/hal/facilities/i_events_stream.h>
 #include <metavision/hal/facilities/i_events_stream_decoder.h>
 #include <metavision/hal/facilities/i_geometry.h>
@@ -252,11 +252,11 @@ int main(int argc, char *argv[]) {
     }
     /// [biases]
 
-    Metavision::I_EventRateNoiseFilterModule *i_event_rate_noise_filter_module =
-        device->get_facility<Metavision::I_EventRateNoiseFilterModule>();
-    if (i_event_rate_noise_filter_module) {
-        std::cout << "Event rate noise filter: streaming from "
-                  << i_event_rate_noise_filter_module->get_event_rate_threshold() << "Kev/s" << std::endl;
+    Metavision::I_EventRateActivityFilterModule *i_event_rate_activity_filter_module =
+        device->get_facility<Metavision::I_EventRateActivityFilterModule>();
+    if (i_event_rate_activity_filter_module) {
+        std::cout << "Event rate activity filter: streaming from "
+                  << i_event_rate_activity_filter_module->get_event_rate_threshold() << " Kev/s" << std::endl;
     }
 
     auto tokenize = [](std::string str, std::string separator) {
