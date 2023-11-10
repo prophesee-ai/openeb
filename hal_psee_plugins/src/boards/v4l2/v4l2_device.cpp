@@ -54,16 +54,7 @@ V4L2DeviceControl::V4L2DeviceControl(const std::string &dev_name) {
     if (!(cap_.capabilities & V4L2_CAP_STREAMING))
         throw std::runtime_error(dev_name + " does not support streaming i/o");
 
-    struct v4l2_format fmt;
-    std::memset(&fmt, 0, sizeof(fmt));
-    fmt.type                = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
-    fmt.fmt.pix.field       = V4L2_FIELD_ANY;
-    fmt.fmt.pix.width       = 65536;
-    fmt.fmt.pix.height      = 64;
-
-    if (ioctl(fd_, VIDIOC_S_FMT, &fmt))
-        raise_error("VIDIOC_S_FMT failed");
+    // Note: this code expects the V4L2 device to be configured to output a supported format
 }
 
 V4l2Capability V4L2DeviceControl::get_capability() const {
