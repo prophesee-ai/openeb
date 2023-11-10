@@ -117,8 +117,8 @@ unsigned int V4L2BoardCommand::get_device_count() {
 
 std::vector<uint32_t> V4L2BoardCommand::read_device_register(uint32_t device, uint32_t address, int nval) {
     std::vector<uint32_t> res;
-    struct v4l2_dbg_match match;
-    struct v4l2_dbg_register get_reg;
+    struct v4l2_dbg_match match      = {0};
+    struct v4l2_dbg_register get_reg = {0};
     int i, retval;
 
     match.type    = V4L2_CHIP_MATCH_BRIDGE;
@@ -137,8 +137,8 @@ std::vector<uint32_t> V4L2BoardCommand::read_device_register(uint32_t device, ui
 }
 
 void V4L2BoardCommand::write_device_register(uint32_t device, uint32_t address, const std::vector<uint32_t> &val) {
-    struct v4l2_dbg_match match;
-    struct v4l2_dbg_register set_reg;
+    struct v4l2_dbg_match match      = {0};
+    struct v4l2_dbg_register set_reg = {0};
     int i, retval;
 
     match.type    = V4L2_CHIP_MATCH_BRIDGE;
