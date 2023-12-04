@@ -66,45 +66,8 @@ V4L2DeviceControl::V4L2DeviceControl(const std::string &dev_name) {
         raise_error("VIDIOC_S_FMT failed");
 }
 
-V4l2RequestBuffers V4L2DeviceControl::request_buffers(v4l2_memory memory, uint32_t nb_buffers) {
-    V4l2RequestBuffers req{0};
-    req.count  = nb_buffers;
-    req.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    req.memory = memory;
-
-    if (-1 == ioctl(fd_, VIDIOC_REQBUFS, &req)) {
-        raise_error("VIDIOC_QUERYBUF failed");
-    }
-
-    return req;
-}
-
-V4l2Buffer V4L2DeviceControl::query_buffer(v4l2_memory memory_type, uint32_t buf_index) {
-    V4l2Buffer buf{0};
-    buf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    buf.memory = memory_type;
-    buf.index  = buf_index;
-
-    if (ioctl(fd_, VIDIOC_QUERYBUF, &buf))
-        raise_error("VIDIOC_QUERYBUF failed");
-
-    return buf;
-}
-
 V4l2Capability V4L2DeviceControl::get_capability() const {
     return cap_;
-}
-
-int V4L2DeviceControl::queue_buffer(V4l2Buffer &buffer) {
-    auto ioctl_res = ioctl(fd_, VIDIOC_QBUF, &buffer);
-    if (ioctl_res) {
-        raise_error("VIDIOC_QBUF failed");
-    }
-    return ioctl_res;
-}
-
-int V4L2DeviceControl::dequeue_buffer(V4l2Buffer *buffer) {
-    return ioctl(fd_, VIDIOC_DQBUF, buffer);
 }
 
 void V4L2DeviceControl::start() {

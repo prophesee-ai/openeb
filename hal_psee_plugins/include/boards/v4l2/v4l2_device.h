@@ -26,9 +26,7 @@ namespace Metavision {
 
 void raise_error(const std::string &str);
 
-using V4l2Capability     = struct v4l2_capability;
-using V4l2Buffer         = struct v4l2_buffer;
-using V4l2RequestBuffers = struct v4l2_requestbuffers;
+using V4l2Capability = struct v4l2_capability;
 
 class V4L2DeviceControl : public DeviceControl {
     V4l2Capability cap_;
@@ -56,10 +54,6 @@ public:
 
     V4l2Capability get_capability() const;
 
-    V4l2RequestBuffers request_buffers(v4l2_memory memory, uint32_t nb_buffers);
-    V4l2Buffer query_buffer(v4l2_memory memory_type, uint32_t buf_index);
-    int queue_buffer(V4l2Buffer &buffer);
-    int dequeue_buffer(V4l2Buffer *buffer);
     int get_fd() const {
         return fd_;
     }

@@ -15,22 +15,62 @@
 #include "metavision/hal/utils/data_transfer.h"
 
 namespace Metavision {
-
-class V4L2DeviceControl;
-class V4l2DeviceUserPtr; // @TODO Replace with a V4l2 Buffer class interface
+using V4l2Buffer         = struct v4l2_buffer;
+using V4l2RequestBuffers = struct v4l2_requestbuffers;
 
 class V4l2DataTransfer : public DataTransfer {
 public:
-    V4l2DataTransfer(std::shared_ptr<V4L2DeviceControl> device, uint32_t raw_event_size_bytes);
+    V4l2DataTransfer(int fd, uint32_t raw_event_size_bytes);
     ~V4l2DataTransfer();
 
 private:
-    std::shared_ptr<V4L2DeviceControl> device_;
-    std::unique_ptr<V4l2DeviceUserPtr> buffers;
+    static constexpr int device_buffer_number = 32;
+    // List of queued buffers to prevent them from going back to the ObjectPool
+    BufferPtr queued_buffers_[device_buffer_number];
+    // The memory type currently in use
+    const enum v4l2_memory memtype_;
+    const int fd_;
+
+    V4l2RequestBuffers request_buffers(uint32_t nb_buffers);
 
     void start_impl(BufferPtr buffer) override final;
     void run_impl() override final;
     void stop_impl() override final;
+
+    class V4l2Allocator : public Allocator::Impl {
+        size_t buffer_size_;
+
+    protected:
+        V4l2Allocator(int videodev_fd);
+        size_t buffer_size() {
+            return buffer_size_;
+        }
+
+    public:
+        size_t max_size(size_t data_size) const noexcept override {
+            return buffer_size_ / data_size;
+        }
+        // Get a descriptor usable with V4L2 API from a data pointer
+        virtual void fill_v4l2_buffer(void *, V4l2Buffer &) const = 0;
+    };
+
+    class V4l2MmapAllocator : public V4l2Allocator {
+        void *allocate(size_t n, size_t data_size) override;
+        void deallocate(void *p, size_t n, size_t data_size) override;
+        void fill_v4l2_buffer(void *, V4l2Buffer &) const override;
+
+    public:
+        V4l2MmapAllocator(int fd);
+        ~V4l2MmapAllocator() override;
+
+    private:
+        V4l2RequestBuffers request_buffers(uint32_t nb_buffers);
+        // The mapping between buffer indices and their memory mapping
+        std::vector<void *> mapping_;
+        size_t buffer_size_;
+        const int fd_;
+    };
+    void fill_v4l2_buffer(BufferPtr &, V4l2Buffer &) const;
 };
 
 } // namespace Metavision

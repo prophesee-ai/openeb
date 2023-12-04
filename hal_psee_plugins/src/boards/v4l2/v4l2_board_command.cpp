@@ -152,7 +152,7 @@ std::unique_ptr<DataTransfer> V4L2BoardCommand::build_data_transfer(uint32_t raw
     // extract the /dev/videoX associated entity, and populate the DataTransfer with it.
     // Right now, we'll just hard code it to /dev/video0 ¯\_(ツ)_/¯
     // more details in: https://github.com/gjasny/v4l-utils/blob/master/utils/media-ctl/media-ctl.c#L526
-    return std::make_unique<V4l2DataTransfer>(device_, raw_event_size_bytes);
+    return std::make_unique<V4l2DataTransfer>(device_->get_fd(), raw_event_size_bytes);
 }
 
 } // namespace Metavision
