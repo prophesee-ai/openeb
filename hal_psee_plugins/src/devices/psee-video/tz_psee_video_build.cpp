@@ -10,7 +10,7 @@
  **********************************************************************************************************************/
 
 #include "metavision/psee_hw_layer/devices/psee-video/tz_psee_video.h"
-#include "metavision/psee_hw_layer/boards/treuzell/tz_libusb_board_command.h"
+#include "metavision/psee_hw_layer/boards/treuzell/board_command.h"
 #include "metavision/psee_hw_layer/devices/treuzell/tz_device.h"
 #include "metavision/hal/utils/hal_log.h"
 #include "devices/treuzell/tz_device_builder.h"

@@ -20,6 +20,7 @@ namespace Metavision {
 class DeviceBuilder;
 class DeviceBuilderParameters;
 class DeviceConfig;
+class TzLibUSBBoardCommand;
 
 class TiTmp103 : public TzDevice, public TemperatureProvider {
 public:

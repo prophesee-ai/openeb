@@ -79,7 +79,19 @@ public:
     /// @return Pointer to an array of Event structures
     /// @note This function must be called to write the buffer of events in the log file defined in @ref
     /// log_raw_data
+    [[deprecated("'RawData *I_EventsStream::get_latest_raw_data(long &)' is deprecated since v4.5.0 and will be removed"
+                 " in future releases, please use 'DataTransfer::BufferPtr I_EventsStream::get_latest_raw_data()'"
+                 " instead.")]]
     RawData *get_latest_raw_data(long &n_rawbytes);
+
+    /// @brief Gets latest raw data from the event buffer
+    ///
+    /// Gets raw data from the event buffer received since the last time this function was called.
+    ///
+    /// @return Pointer to a vector of Event structures
+    /// @note This function must be called to write the buffer of events in the log file defined in @ref
+    /// log_raw_data
+    DataTransfer::BufferPtr get_latest_raw_data();
 
     /// @brief Enables the logging of the stream of events in the input file @a f
     ///

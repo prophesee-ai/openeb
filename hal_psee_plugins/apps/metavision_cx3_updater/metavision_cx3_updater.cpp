@@ -297,7 +297,7 @@ int main(int argc, char *argv[]) {
         }
         try {
             boost::algorithm::unhex(serial_string.begin(), serial_string.end(), std::back_inserter(serial));
-        } catch (const std::exception &e) {
+        } catch (const std::exception &) {
             MV_LOG_ERROR() << "Error while flashing Serial: serial must only contains Hexadecimal characters";
             return 1;
         }

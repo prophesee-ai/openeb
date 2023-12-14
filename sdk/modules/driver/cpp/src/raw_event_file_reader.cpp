@@ -117,11 +117,11 @@ public:
             if (res <= 0) {
                 return false;
             }
-            long num_bytes = 0;
             if (i_events_stream_) {
-                raw_data_cur_ptr_ = i_events_stream_->get_latest_raw_data(num_bytes);
+                data_buffer_ = i_events_stream_->get_latest_raw_data();
+                raw_data_cur_ptr_ = data_buffer_->data();
+                raw_data_end_ptr_ = data_buffer_->data() + data_buffer_->size();
             }
-            raw_data_end_ptr_ = raw_data_cur_ptr_ + num_bytes;
         }
 
         uint32_t num_bytes_to_decode;
@@ -225,6 +225,7 @@ public:
     I_EventsStream *i_events_stream_                = nullptr;
     I_EventsStreamDecoder *i_events_stream_decoder_ = nullptr;
     I_Decoder *i_decoder_                           = nullptr;
+    DataTransfer::BufferPtr data_buffer_            = nullptr;
     std::uint8_t *raw_data_cur_ptr_ = nullptr, *raw_data_end_ptr_ = nullptr;
 };
 

@@ -13,6 +13,7 @@
 #include <chrono>
 #include <numeric>
 #include <math.h>
+#include <fstream>
 
 #include "devices/genx320/genx320_cx3_tz_device.h"
 #include "metavision/psee_hw_layer/boards/treuzell/tz_libusb_board_command.h"
@@ -20,6 +21,7 @@
 #include "devices/treuzell/tz_device_builder.h"
 #include "devices/common/issd.h"
 #include "devices/genx320/genx320es_cx3_issd.h"
+#include "devices/genx320/genx320mp_cx3_issd.h"
 #include "devices/genx320/register_maps/genx320es_registermap.h"
 #include "metavision/psee_hw_layer/facilities/psee_hw_register.h"
 #include "metavision/psee_hw_layer/utils/psee_format.h"
@@ -50,11 +52,147 @@ uint32_t get_bitfield(uint32_t value, uint8_t idx, uint8_t size) {
     return ((1 << size) - 1) & (value >> idx);
 }
 
-TzCx3GenX320::TzCx3GenX320(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id,
-                           std::shared_ptr<TzDevice> parent) :
+TzIssdGenX320Device::TzIssdGenX320Device(const Issd &issd, const std::pair<std::string, uint32_t> &env_var) :
+    TzIssdDevice(issd), firmware_(TzIssdGenX320Device::read_firmware(env_var.first)), start_address_(env_var.second) {}
+TzIssdGenX320Device::~TzIssdGenX320Device() {}
+
+TzIssdGenX320Device::Firmware TzIssdGenX320Device::read_firmware(const std::string &filename) {
+    Firmware firmware;
+
+    if (filename.empty())
+        return Firmware();
+
+    std::ifstream fid(filename);
+    if (!fid.is_open()) {
+        MV_HAL_LOG_ERROR() << "Failed to load firmware from:" << filename;
+        return Firmware();
+    } else {
+        MV_HAL_LOG_TRACE() << "Loading Risc-V firmware from:" << filename;
+    }
+    std::istream &input(fid);
+
+    uint32_t v0, v1, v2, v3;
+    uint32_t p0, offset = 0, v;
+
+    input >> std::hex;
+    if (input) {
+        input >> std::ws;
+    }
+    while (input) {
+        if (input.peek() == '@') {
+            input.ignore();
+            input >> p0;
+            offset = 0;
+        } else {
+            input >> v0 >> v1 >> v2 >> v3;
+            v = v0 + (v1 << 8) + (v2 << 16) + (v3 << 24);
+            firmware.emplace_back(p0 + offset, v);
+            offset += 4;
+        }
+        input >> std::ws;
+    }
+    MV_HAL_LOG_TRACE() << "Risc-V Firmware size:" << firmware.size() << " words";
+    return firmware;
+}
+
+bool TzIssdGenX320Device::download_firmware() const {
+    if (!firmware_.empty()) {
+        MV_HAL_LOG_TRACE() << "Start Risc-V Firmware programing";
+
+        // Reset RISC-V
+        // TODO : MANAGE RESET OF RISC-V TO ALLOW MULTIPLE FLASH
+        const uint32_t bank_address = (*register_map)["mem_bank/bank_mem0"].get_address();
+
+        uint32_t prev_bank_id = 0;
+        uint32_t prev_mem_id  = GENX_MEM_BANK_NONE;
+
+        (*register_map)["mem_bank/bank_select"]["bank"].write_value(prev_bank_id);
+        (*register_map)["mem_bank/bank_select"]["select"].write_value(prev_mem_id);
+
+        for (auto &operation : firmware_) {
+            uint32_t address = operation.first;
+            uint32_t value   = operation.second;
+
+            uint32_t mem_id;
+            if ((DMEM_ADDR <= address) && (address < DMEM_ADDR + DMEM_SIZE)) {
+                mem_id = GENX_MEM_BANK_DMEM;
+            } else if ((IMEM_ADDR <= address) && (address < IMEM_ADDR + IMEM_SIZE)) {
+                mem_id = GENX_MEM_BANK_IMEM;
+            } else {
+                MV_HAL_LOG_ERROR() << "No memory at 0x" << std::hex << address << std::dec;
+                continue;
+            }
+            uint32_t bank_id     = (address - ((mem_id == GENX_MEM_BANK_DMEM) ? DMEM_ADDR : IMEM_ADDR)) / MEM_BANK_SIZE;
+            uint32_t bank_offset = address % MEM_BANK_SIZE;
+
+            if ((bank_id != prev_bank_id) || (mem_id != prev_mem_id)) {
+                MV_HAL_LOG_TRACE() << "\tPrograming Mem " << ((mem_id == GENX_MEM_BANK_DMEM) ? "DMEM" : "IMEM")
+                                   << " bank:" << bank_id;
+                (*register_map)["mem_bank/bank_select"]["bank"].write_value(bank_id);
+                (*register_map)["mem_bank/bank_select"]["select"].write_value(mem_id);
+                prev_bank_id = bank_id;
+                prev_mem_id  = mem_id;
+            }
+            // MV_HAL_LOG_TRACE() << "\tPrograming @0x " << std::hex << address << "  = 0x" << value;
+
+            (*register_map)[bank_address + bank_offset] = value;
+        }
+        return true;
+    }
+    return false;
+}
+void TzIssdGenX320Device::start_firmware() const {
+    if (((DMEM_ADDR <= start_address_) && (start_address_ < DMEM_ADDR + DMEM_SIZE)) ||
+        ((IMEM_ADDR <= start_address_) && (start_address_ < IMEM_ADDR + IMEM_SIZE))) {
+        MV_HAL_LOG_TRACE() << "Start Risc-V execution at 0x" << std::hex << start_address_;
+        // Currently the CPU will always start at 0x200200 (default address) suposing that ROMMODE IO is in low state
+        (*register_map)["mbx/cpu_start_en"]["cpu_start_en"].write_value(1);
+
+    } else {
+        MV_HAL_LOG_ERROR() << "Start address 0x" << std::hex << start_address_ << std::dec << " is not valid.";
+    }
+}
+
+void TzIssdGenX320Device::initialize() {
+    MV_HAL_LOG_TRACE() << "Device initialization";
+    TzIssdDevice::initialize();
+
+    if (download_firmware() == true)
+        start_firmware();
+}
+std::pair<std::string, uint32_t> TzIssdGenX320Device::parse_env(const char *input) {
+    uint32_t outputValue = 0x200200;
+    if (input == nullptr) {
+        return std::make_pair("", outputValue); // Default values
+    }
+
+    std::istringstream stream(input);
+    std::string outputString;
+
+    std::getline(stream, outputString, ':');
+
+    if (stream.fail()) {
+        outputString = input;
+    } else {
+        if (stream.str().find("0x") != std::string::npos) {
+            stream >> std::hex >> outputValue;
+        } else {
+            stream >> outputValue;
+        }
+    }
+    return std::make_pair(outputString, outputValue);
+}
+
+TzCx3GenX320::TzCx3GenX320(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id, const Issd &issd,
+                           bool mp_variant, std::shared_ptr<TzDevice> parent) :
     TzDevice(cmd, dev_id, parent),
-    TzIssdDevice(issd_genx320es_cx3_sequence),
-    TzDeviceWithRegmap(GenX320ESRegisterMap, GenX320ESRegisterMapSize, ROOT_PREFIX) {
+    TzIssdGenX320Device(issd, TzIssdGenX320Device::parse_env(getenv("MV_FLAGS_RISCV_FW_PATH"))),
+    TzDeviceWithRegmap(GenX320ESRegisterMap, GenX320ESRegisterMapSize, ROOT_PREFIX),
+    is_mp(mp_variant) {
+    // Beware the firmware has not been loaded during the initialize operation performed
+    // in the parent class TzIssdDevice
+    if (download_firmware() == true)
+        start_firmware();
     sync_mode_ = I_CameraSynchronization::SyncMode::STANDALONE;
     iph_mirror_control(true);
     temperature_init();
@@ -62,33 +200,52 @@ TzCx3GenX320::TzCx3GenX320(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t d
 
 std::shared_ptr<TzDevice> TzCx3GenX320::build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id,
                                               std::shared_ptr<TzDevice> parent) {
-    if (can_build(cmd, dev_id)) {
-        return std::make_shared<TzCx3GenX320>(cmd, dev_id, parent);
+    if (can_build_es(cmd, dev_id)) {
+        return std::make_shared<TzCx3GenX320>(cmd, dev_id, issd_genx320es_cx3_sequence, false, parent);
+    } else if (can_build_mp(cmd, dev_id)) {
+        return std::make_shared<TzCx3GenX320>(cmd, dev_id, issd_genx320mp_cx3_sequence, true, parent);
     } else {
         return nullptr;
     }
 }
 
 static TzRegisterBuildMethod method0("psee,cx3_saphir", TzCx3GenX320::build, TzCx3GenX320::can_build);
+static TzRegisterBuildMethod method1("psee,cx3_genx320", TzCx3GenX320::build, TzCx3GenX320::can_build);
 
 bool TzCx3GenX320::can_build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id) {
-    return (cmd->read_device_register(dev_id, 0x14)[0] == 0x30501C01);
+    return (can_build_es(cmd, dev_id) || can_build_mp(cmd, dev_id));
+}
+
+bool TzCx3GenX320::can_build_es(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id) {
+    uint32_t id = cmd->read_device_register(dev_id, 0x14)[0];
+
+    if (id == 0x30501C01) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool TzCx3GenX320::can_build_mp(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id) {
+    uint32_t id = cmd->read_device_register(dev_id, 0x14)[0];
+
+    if (id == 0xB0602003) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 void TzCx3GenX320::spawn_facilities(DeviceBuilder &device_builder, const DeviceConfig &device_config) {
-    device_builder.add_facility(
-        std::make_unique<GenX320TzTriggerEvent>(register_map, SENSOR_PREFIX, shared_from_this()));
+    device_builder.add_facility(std::make_unique<GenX320TzTriggerEvent>(register_map, SENSOR_PREFIX));
 
     auto roi_driver = std::make_shared<GenX320RoiDriver>(320, 320, register_map, SENSOR_PREFIX, device_config);
 
     device_builder.add_facility(std::make_unique<GenX320RoiInterface>(roi_driver));
     device_builder.add_facility(std::make_unique<GenX320RoiPixelMaskInterface>(roi_driver));
-
     device_builder.add_facility(std::make_unique<GenX320LLBiases>(register_map, device_config));
-    device_builder.add_facility(std::make_unique<AntiFlickerFilter>(
-        std::dynamic_pointer_cast<TzDeviceWithRegmap>(shared_from_this()), get_sensor_info(), SENSOR_PREFIX));
-    device_builder.add_facility(std::make_unique<EventTrailFilter>(
-        std::dynamic_pointer_cast<TzDeviceWithRegmap>(shared_from_this()), get_sensor_info(), SENSOR_PREFIX));
+    device_builder.add_facility(std::make_unique<AntiFlickerFilter>(register_map, get_sensor_info(), SENSOR_PREFIX));
+    device_builder.add_facility(std::make_unique<EventTrailFilter>(register_map, get_sensor_info(), SENSOR_PREFIX));
     device_builder.add_facility(std::make_unique<GenX320Erc>(register_map));
 
     auto nfl = std::make_shared<GenX320NflDriver>(register_map);
@@ -118,7 +275,19 @@ StreamFormat TzCx3GenX320::get_output_format() const {
 }
 
 long TzCx3GenX320::get_system_id() const {
-    return SystemId::SYSTEM_EVK3_GENX320;
+    if (is_mp) {
+        return SystemId::SYSTEM_EVK3_GENX320_MP;
+    } else {
+        return SystemId::SYSTEM_EVK3_GENX320;
+    }
+}
+
+I_HW_Identification::SensorInfo TzCx3GenX320::get_sensor_info() {
+    if (is_mp) {
+        return {320, 1, "GenX320MP"};
+    } else {
+        return {320, 0, "GenX320"};
+    }
 }
 
 bool TzCx3GenX320::set_mode_standalone() {

@@ -31,10 +31,11 @@ set(metavision_sdk_core_tests_srcs
     ${CMAKE_CURRENT_SOURCE_DIR}/rate_estimator_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ring_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/roi_filter_algorithm_gtest.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/rolling_event_buffer_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/shared_buffer_queue_gtest.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/shared_cd_events_buffer_producer_algorithm_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/stage_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/stream_logger_algorithm_gtest.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/shared_cd_events_buffer_producer_algorithm_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/threaded_process_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/time_decay_frame_generation_algorithm_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/time_surface_producer_algorithm_gtest.cpp

@@ -18,7 +18,7 @@
 
 namespace Metavision {
 
-class TzLibUSBBoardCommand;
+class BoardCommand;
 class TzDevice;
 
 class TzHWIdentification : public I_HW_Identification {
@@ -26,7 +26,7 @@ public:
     /** Facility Constructor
      */
     TzHWIdentification(const std::shared_ptr<I_PluginSoftwareInfo> &plugin_sw_info,
-                       const std::shared_ptr<TzLibUSBBoardCommand> &cmd,
+                       const std::shared_ptr<BoardCommand> &cmd,
                        std::vector<std::shared_ptr<TzDevice>> &devices);
 
     /**
@@ -107,7 +107,7 @@ public:
 private:
     virtual RawFileHeader get_header_impl() const override;
 
-    std::shared_ptr<TzLibUSBBoardCommand> icmd_;
+    std::shared_ptr<BoardCommand> icmd_;
     I_HW_Identification::SensorInfo sensor_info_;
     std::vector<std::shared_ptr<TzDevice>> devices_;
 };

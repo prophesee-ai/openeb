@@ -29,7 +29,7 @@
 namespace Metavision {
 
 TzHWIdentification::TzHWIdentification(const std::shared_ptr<I_PluginSoftwareInfo> &plugin_sw_info,
-                                       const std::shared_ptr<TzLibUSBBoardCommand> &cmd,
+                                       const std::shared_ptr<BoardCommand> &cmd,
                                        std::vector<std::shared_ptr<TzDevice>> &devices) :
     I_HW_Identification(plugin_sw_info), icmd_(cmd), sensor_info_({0, 0}), devices_(devices) {
     if (!icmd_) {

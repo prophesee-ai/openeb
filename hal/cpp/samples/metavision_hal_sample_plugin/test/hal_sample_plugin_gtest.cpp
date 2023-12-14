@@ -141,8 +141,8 @@ TEST_F(HalSamplePlugin_GTest, record_and_read_back) {
         ASSERT_LE(0, ret);
 
         long n_bytes;
-        uint8_t *raw_data = i_events_stream->get_latest_raw_data(n_bytes);
-        i_eventsstreamdecoder->decode(raw_data, raw_data + n_bytes);
+        auto raw_data = i_events_stream->get_latest_raw_data();
+        i_eventsstreamdecoder->decode(raw_data->data(), raw_data->data() + raw_data->size());
     }
     Metavision::timestamp last_time = i_eventsstreamdecoder->get_last_timestamp();
 
@@ -169,8 +169,8 @@ TEST_F(HalSamplePlugin_GTest, record_and_read_back) {
     short ret = i_events_stream->wait_next_buffer();
     long n_bytes(0);
     while (ret > 0) { // To be sure to record something
-        uint8_t *raw_data = i_events_stream->get_latest_raw_data(n_bytes);
-        i_eventsstreamdecoder->decode(raw_data, raw_data + n_bytes);
+        auto raw_data = i_events_stream->get_latest_raw_data();
+        i_eventsstreamdecoder->decode(raw_data->data(), raw_data->data() + raw_data->size());
         ret = i_events_stream->wait_next_buffer();
     }
     ASSERT_EQ(number_cd_expected, n_cd_events_decoded);

@@ -10,40 +10,45 @@
  **********************************************************************************************************************/
 
 #include <pybind11/numpy.h>
+#include <pybind11/stl.h>
+#include <pybind11/stl_bind.h>
 
 #include "hal_python_binder.h"
 #include "metavision/hal/facilities/i_events_stream.h"
 #include "metavision/utils/pybind/deprecation_warning_exception.h"
 #include "pb_doc_hal.h"
 
+// Needed to avoid copies of vectors of RawData
+PYBIND11_MAKE_OPAQUE(Metavision::DataTransfer::Buffer);
+
 namespace Metavision {
 
 namespace {
-// Wrappers for C array
-py::array_t<I_EventsStream::RawData> get_latest_raw_data_wrapper(I_EventsStream *i_events_stream) {
-    long nevents;
-    I_EventsStream::RawData *ev = i_events_stream->get_latest_raw_data(nevents);
-    return py::array_t<I_EventsStream::RawData>(nevents, ev, py::str());
+    std::shared_ptr<DataTransfer::Buffer> get_latest_raw_data_wrapper(I_EventsStream *ies) {
+        auto data = ies->get_latest_raw_data();
+        // If we return nullptr, python doesn't know the type of the objects and considers it "None".
+        // This causes issues when trying to call decode on an empty buffer which has been possible so far.
+        // So return a shared pointer to an empty vector not to break user scripts
+        if (!data) {
+            return std::make_shared<DataTransfer::Buffer>();
+        }
+        return data;
+    }
 }
-
-} /* anonymous namespace */
 
 static DeviceFacilityGetter<I_EventsStream> getter("get_i_events_stream");
 
 static HALFacilityPythonBinder<I_EventsStream> bind(
     [](auto &module, auto &class_binding) {
+
+        py::bind_vector<DataTransfer::Buffer, DataTransfer::BufferPtr>(module, "RawDataBuffer");
         class_binding.def("start", &I_EventsStream::start, pybind_doc_hal["Metavision::I_EventsStream::start"])
             .def("stop", &I_EventsStream::stop, pybind_doc_hal["Metavision::I_EventsStream::stop"])
             .def("poll_buffer", &I_EventsStream::poll_buffer, pybind_doc_hal["Metavision::I_EventsStream::poll_buffer"])
             .def("wait_next_buffer", &I_EventsStream::wait_next_buffer,
                  pybind_doc_hal["Metavision::I_EventsStream::wait_next_buffer"])
             .def("get_latest_raw_data", &get_latest_raw_data_wrapper,
-                 "Gets latest raw data from the event buffer.\n"
-                 "\n"
-                 "Gets raw data from the event buffer received since the last time this function was called.\n"
-                 "\n"
-                 "Returns:\n"
-                 "   Numpy array of Events\n")
+                 pybind_doc_hal["Metavision::I_EventsStream::get_latest_raw_data()"])
             .def("log_raw_data", &I_EventsStream::log_raw_data, py::arg("f"),
                  pybind_doc_hal["Metavision::I_EventsStream::log_raw_data"])
             .def("stop_log_raw_data", &I_EventsStream::stop_log_raw_data,

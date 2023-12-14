@@ -74,9 +74,9 @@ bool TzGen41::can_build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_
 
 void TzGen41::spawn_facilities(DeviceBuilder &device_builder, const DeviceConfig &device_config) {
     device_builder.add_facility(std::make_unique<EventTrailFilter>(
-        std::dynamic_pointer_cast<TzDeviceWithRegmap>(shared_from_this()), get_sensor_info(), SENSOR_PREFIX));
+        register_map, get_sensor_info(), SENSOR_PREFIX));
     device_builder.add_facility(std::make_unique<AntiFlickerFilter>(
-        std::dynamic_pointer_cast<TzDeviceWithRegmap>(shared_from_this()), get_sensor_info(), SENSOR_PREFIX));
+        register_map, get_sensor_info(), SENSOR_PREFIX));
 
     auto erc = device_builder.add_facility(
         std::make_unique<Gen41Erc>(register_map, SENSOR_PREFIX + "erc/", shared_from_this()));

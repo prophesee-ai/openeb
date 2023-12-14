@@ -10,8 +10,7 @@
  **********************************************************************************************************************/
 
 
-#include <GLFW/glfw3.h>
-
+#include "metavision/sdk/ui/utils/opengl_api.h"
 #include "constants.h"
 
 const std::string image_path = "@FILE_PATH@/prophesee_logo.jpg";

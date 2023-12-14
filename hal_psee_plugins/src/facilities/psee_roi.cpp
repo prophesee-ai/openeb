@@ -63,8 +63,14 @@ size_t PseeROI::get_max_supported_windows_count() const {
     return 1;
 }
 
+bool PseeROI::write_ROI_windows(const std::vector<Window> &windows) {
+    write_ROI(create_ROIs(windows));
+    return true;
+}
+
 bool PseeROI::set_windows_impl(const std::vector<Window> &windows) {
-    if (set_ROIs_from_bitword(create_ROIs(windows), false)) {
+    if (write_ROI_windows(windows)) {
+        is_lines = false;
         active_windows_ = windows;
         return true;
     }
@@ -72,20 +78,51 @@ bool PseeROI::set_windows_impl(const std::vector<Window> &windows) {
 }
 
 std::vector<I_ROI::Window> PseeROI::get_windows() const {
+    if (is_lines) {
+        return std::vector<I_ROI::Window>();
+    }
     return active_windows_;
-}
-
-bool PseeROI::set_ROIs_from_bitword(const std::vector<uint32_t> &vroiparams, bool is_enabled) {
-    write_ROI(vroiparams);
-    return true;
 }
 
 bool PseeROI::set_lines(const std::vector<bool> &cols, const std::vector<bool> &rows) {
     if ((cols.size() != static_cast<size_t>(device_width_)) || (rows.size() != static_cast<size_t>(device_height_))) {
         return false;
     }
-    write_ROI(create_ROIs(cols, rows));
+    is_lines = true;
+    auto windows = lines_to_windows(cols, rows);
+    active_windows_ = windows;
+    write_ROI(create_ROIs(windows));
     return true;
+}
+
+bool PseeROI::get_lines(std::vector<bool> &cols, std::vector<bool> &rows) const {
+    if (!is_lines) {
+        return false;
+    }
+
+    lines_from_windows(active_windows_, cols, rows);
+    return true;
+}
+
+void PseeROI::lines_from_windows(const std::vector<Window> &windows, std::vector<bool> &cols, std::vector<bool> &rows) const {
+    if (cols.size() != static_cast<size_t>(device_width_)) {
+        cols = std::vector<bool>(device_width_);
+    }
+    std::fill(cols.begin(), cols.end(), false);
+
+    if (rows.size() != static_cast<size_t>(device_height_)) {
+        rows = std::vector<bool>(device_height_);
+    }
+    std::fill(rows.begin(), rows.end(), false);
+
+    for (auto &window : windows) {
+        for (int i = window.x; i < window.x + window.width; ++i) {
+            cols[i] = true;
+        }
+        for (int i = window.y; i < window.y + window.height; ++i) {
+            rows[i] = true;
+        }
+    }
 }
 
 std::vector<uint32_t> PseeROI::create_ROIs(const std::vector<Window> &windows, int device_width, int device_height,
@@ -113,8 +150,7 @@ std::vector<uint32_t> PseeROI::create_ROIs(const std::vector<Window> &windows, i
     return get_roi_bitword(is_pixel_in_roi, word_size);
 }
 
-std::vector<uint32_t> PseeROI::create_ROIs(const std::vector<bool> &cols_to_enable,
-                                           const std::vector<bool> &rows_to_enable, int x_offset, int y_offset) {
+std::vector<I_ROI::Window> PseeROI::lines_to_windows(const std::vector<bool> &cols_to_enable, const std::vector<bool> &rows_to_enable) {
     auto windows = std::vector<Window>();
     auto vxroi   = std::vector<std::pair<int, int>>();
     auto vyroi   = std::vector<std::pair<int, int>>();
@@ -179,7 +215,12 @@ std::vector<uint32_t> PseeROI::create_ROIs(const std::vector<bool> &cols_to_enab
         }
     }
 
-    active_windows_ = windows;
+    return windows;
+}
+
+std::vector<uint32_t> PseeROI::create_ROIs(const std::vector<bool> &cols_to_enable,
+                                           const std::vector<bool> &rows_to_enable, int x_offset, int y_offset) {
+    auto windows = lines_to_windows(cols_to_enable, rows_to_enable);
     return create_ROIs(windows, device_width_, device_height_, roi_x_flipped(), get_word_size(), x_offset, y_offset);
 }
 

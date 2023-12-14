@@ -19,6 +19,7 @@ namespace Metavision {
 class DeviceBuilder;
 class DeviceBuilderParameters;
 class DeviceConfig;
+class TzLibUSBBoardCommand;
 
 class TzStreamer : public TzDevice {
 public:

@@ -12,8 +12,9 @@
 #ifndef METAVISION_SDK_UI_BASE_GLFW_WINDOW_H
 #define METAVISION_SDK_UI_BASE_GLFW_WINDOW_H
 
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
+#include <string>
+
+struct GLFWwindow;
 
 namespace Metavision {
 
@@ -38,6 +39,9 @@ public:
     /// effectively be closed when the destructor is called.
     void set_close_flag();
 
+    /// @brief Poll Glfw events
+    static void poll_pending_events();
+
 protected:
     /// @brief Constructs a new window
     /// @param title The window's title
@@ -51,7 +55,6 @@ protected:
     /// @brief No copy allowed
     BaseGLFWWindow(const BaseGLFWWindow &) = delete;
 
-    const char *glsl_version_;
     GLFWwindow *glfw_window_;
 };
 

@@ -75,15 +75,15 @@ protected:
 
     PseeRawFileHeader write_random_header() {
         auto header = std::stringstream();
-        header << "\% Date 2014-02-28 13:37:42" << std::endl
-               << "\% system_ID " << gen41_system_id << std::endl
-               << "\% integrator_name Prophesee" << std::endl
-               << "\% firmware_version 0.0.0" << std::endl
-               << "\% plugin_name hal_plugin_prophesee" << std::endl
-               << "\% evt 2.0" << std::endl
-               << "\% subsystem_ID " << dummy_sub_system_id_ << std::endl
-               << "\% " << dummy_custom_key_ << " " << dummy_custom_value_ << std::endl
-               << "\% serial_number " << dummy_serial_ << std::endl;
+        header << "% Date 2014-02-28 13:37:42" << std::endl
+               << "% system_ID " << gen41_system_id << std::endl
+               << "% integrator_name Prophesee" << std::endl
+               << "% firmware_version 0.0.0" << std::endl
+               << "% plugin_name hal_plugin_prophesee" << std::endl
+               << "% evt 2.0" << std::endl
+               << "% subsystem_ID " << dummy_sub_system_id_ << std::endl
+               << "% " << dummy_custom_key_ << " " << dummy_custom_value_ << std::endl
+               << "% serial_number " << dummy_serial_ << std::endl;
         PseeRawFileHeader header_to_write(header);
 
         (*rawfile_to_log_) << header_to_write;
@@ -230,10 +230,11 @@ TEST_F(FileEventsStream_Gtest, reading_all_data) {
     long n_bytes_polled;
 
     while (file_events_stream_->wait_next_buffer() > 0) {
-        auto data = reinterpret_cast<RawEventType *>(file_events_stream_->get_latest_raw_data(n_bytes_polled));
-        ASSERT_TRUE(n_bytes_polled == (n_events_to_read_default_ * decoder_->get_raw_event_size_bytes()) ||
-                    n_bytes_polled == (n_events_read_in_last_buffer_ * decoder_->get_raw_event_size_bytes()));
-        data_read.insert(data_read.end(), data, data + n_bytes_polled / decoder_->get_raw_event_size_bytes());
+        auto buffer = file_events_stream_->get_latest_raw_data();
+        ASSERT_TRUE(buffer->size() == (n_events_to_read_default_ * decoder_->get_raw_event_size_bytes()) ||
+                    buffer->size() == (n_events_read_in_last_buffer_ * decoder_->get_raw_event_size_bytes()));
+        data_read.insert(data_read.end(), reinterpret_cast<RawEventType *>(buffer->data()),
+                         reinterpret_cast<RawEventType *>(buffer->data() + buffer->size()));
     }
 
     ASSERT_EQ(data_ref, data_read);
@@ -307,9 +308,8 @@ TEST_F(FileEventsStream_Gtest, rawfile_logging_header_is_same_from_input_to_outp
     ASSERT_TRUE(file_events_stream_->log_raw_data(rawfile_to_log_from_rawfile_path_));
     file_events_stream_->start();
 
-    long n_bytes_polled;
     while (file_events_stream_->wait_next_buffer() > 0) {
-        file_events_stream_->get_latest_raw_data(n_bytes_polled);
+        file_events_stream_->get_latest_raw_data();
     }
 
     reset_device();
@@ -332,12 +332,11 @@ TEST_F(FileEventsStream_Gtest, rawfile_logging_data_logged_is_data_read) {
     close_raw();
 
     ASSERT_TRUE(open_file_events_stream());
-    long n_bytes_polled;
 
     ASSERT_TRUE(file_events_stream_->log_raw_data(rawfile_to_log_from_rawfile_path_));
     file_events_stream_->start();
     while (file_events_stream_->wait_next_buffer() > 0) {
-        file_events_stream_->get_latest_raw_data(n_bytes_polled);
+        file_events_stream_->get_latest_raw_data();
     }
     reset_device();
 
@@ -346,10 +345,11 @@ TEST_F(FileEventsStream_Gtest, rawfile_logging_data_logged_is_data_read) {
 
     std::vector<RawEventType> data_read;
     while (file_events_stream_->wait_next_buffer() > 0) {
-        auto data = reinterpret_cast<RawEventType *>(file_events_stream_->get_latest_raw_data(n_bytes_polled));
-        ASSERT_TRUE(n_bytes_polled == n_events_to_read_default_ * decoder_->get_raw_event_size_bytes() ||
-                    n_bytes_polled == n_events_read_in_last_buffer_ * decoder_->get_raw_event_size_bytes());
-        data_read.insert(data_read.end(), data, data + n_bytes_polled / decoder_->get_raw_event_size_bytes());
+        auto buffer = file_events_stream_->get_latest_raw_data();
+        ASSERT_TRUE(buffer->size() == n_events_to_read_default_ * decoder_->get_raw_event_size_bytes() ||
+                    buffer->size() == n_events_read_in_last_buffer_ * decoder_->get_raw_event_size_bytes());
+        data_read.insert(data_read.end(), reinterpret_cast<RawEventType *>(buffer->data()),
+                         reinterpret_cast<RawEventType *>(buffer->data() + buffer->size()));
     }
 
     ASSERT_EQ(data_ref, data_read);
@@ -386,12 +386,12 @@ TEST_F(FileEventsStream_Gtest, reading_from_custom_istream) {
     file_events_stream_->start();
 
     std::vector<RawEventType> data_read;
-    long n_bytes_polled;
     while (file_events_stream_->wait_next_buffer() > 0) {
-        auto data = reinterpret_cast<RawEventType *>(file_events_stream_->get_latest_raw_data(n_bytes_polled));
-        ASSERT_TRUE(n_bytes_polled == n_events_to_read_default_ * decoder_->get_raw_event_size_bytes() ||
-                    n_bytes_polled == n_events_read_in_last_buffer_ * decoder_->get_raw_event_size_bytes());
-        data_read.insert(data_read.end(), data, data + n_bytes_polled / decoder_->get_raw_event_size_bytes());
+        auto buffer = file_events_stream_->get_latest_raw_data();
+        ASSERT_TRUE(buffer->size() == n_events_to_read_default_ * decoder_->get_raw_event_size_bytes() ||
+                    buffer->size() == n_events_read_in_last_buffer_ * decoder_->get_raw_event_size_bytes());
+        data_read.insert(data_read.end(), reinterpret_cast<RawEventType *>(buffer->data()),
+                         reinterpret_cast<RawEventType *>(buffer->data() + buffer->size()));
     }
 
     ASSERT_EQ(data_ref, data_read);

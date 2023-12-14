@@ -17,12 +17,12 @@ target_link_libraries(metavision_imx636_facility_casting_sample
 )
 
 install(FILES metavision_imx636_facility_casting_sample.cpp
-        DESTINATION share/metavision/hal_psee_plugins/samples/metavision_imx636_facility_casting_sample
+        DESTINATION share/metavision/hal_psee_plugins/cpp_samples/metavision_imx636_facility_casting_sample
         COMPONENT metavision-hal-prophesee-plugins
 )
 
 install(FILES CMakeLists.txt.install
         RENAME CMakeLists.txt
-        DESTINATION share/metavision/hal_psee_plugins/samples/metavision_imx636_facility_casting_sample
+        DESTINATION share/metavision/hal_psee_plugins/cpp_samples/metavision_imx636_facility_casting_sample
         COMPONENT metavision-hal-prophesee-plugins
 )

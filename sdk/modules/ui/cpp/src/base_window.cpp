@@ -12,9 +12,10 @@
 #include <map>
 #include <memory>
 
+#include "metavision/sdk/ui/utils/opengl_api.h"
 #include "metavision/sdk/base/utils/sdk_log.h"
-#include "metavision/sdk/ui/utils/base_window.h"
 #include "metavision/sdk/ui/detail/texture_utils.h"
+#include "metavision/sdk/ui/utils/base_window.h"
 
 static const std::map<char, int> name_to_key = {
     {'a', GLFW_KEY_A}, {'z', GLFW_KEY_Z}, {'e', GLFW_KEY_E},    {'r', GLFW_KEY_R}, {'t', GLFW_KEY_T}, {'y', GLFW_KEY_Y},
@@ -27,7 +28,7 @@ namespace Metavision {
 namespace detail {
 
 GLuint LoadShaders() {
-    const char *vertex_shader_str = "#version 330 core\n"
+    const char *vertex_shader_str = "#version 310 es\n"
                                     "layout(location = 0) in vec3 vertexPosition_modelspace;\n"
                                     "layout(location = 1) in vec2 vertexUV;\n"
                                     "out vec2 UV;\n"
@@ -37,12 +38,13 @@ GLuint LoadShaders() {
                                     "    UV = vertexUV;\n"
                                     "}\n";
 
-    const char *fragment_shader_str = "#version 330 core\n"
-                                      "in vec2 UV;\n"
-                                      "out vec3 color;\n"
+    const char *fragment_shader_str = "#version 310 es\n"
+                                      "in mediump vec2 UV;\n"
+                                      "out mediump vec3 color;\n"
                                       "uniform sampler2D Sampler;\n"
                                       "void main(){\n"
-                                      "    color = texture( Sampler, UV ).rgb;\n"
+                                      "     // Inputs are filled using BGR format\n"
+                                      "    color = texture( Sampler, UV ).bgr;\n"
                                       "}\n";
 
     // Create the shaders

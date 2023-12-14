@@ -33,6 +33,11 @@ struct PODEventBuffer {
 
     ~PODEventBuffer() = default;
 
+    py::none resize(size_t size) {
+        buffer_.resize(size);
+        return py::none();
+    }
+
     py::array_t<T> numpy(bool copy = false) {
         if (buffer_.empty() || copy) {
             return py::array_t<T>(buffer_.size(), buffer_.data());
@@ -53,6 +58,7 @@ struct PODEventBuffer {
 
     std::vector<T> buffer_;
 };
+
 template<typename EventType>
 void export_PODEventBuffer(py::module &m, const std::string &event_buffer_name) {
     using EventBuffer = PODEventBuffer<EventType>;
@@ -60,6 +66,10 @@ void export_PODEventBuffer(py::module &m, const std::string &event_buffer_name) 
     py::class_<EventBuffer, std::shared_ptr<EventBuffer>>(m, event_buffer_name.c_str(), py::buffer_protocol())
         .def_buffer(&EventBuffer::buffer_info)
         .def(py::init<size_t>(), "Constructor", py::arg("size") = 0)
+        .def("resize", &EventBuffer::resize, py::arg("size"),
+             "resizes the buffer to the specified size\n"
+             "\n"
+             "   :size: the new size of the buffer")
         .def("numpy", &EventBuffer::numpy, py::arg("copy") = false,
              "Converts to a numpy array\n"
              "\n",

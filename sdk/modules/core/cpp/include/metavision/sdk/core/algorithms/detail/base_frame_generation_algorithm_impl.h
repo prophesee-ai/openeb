@@ -101,6 +101,7 @@ void BaseFrameGenerationAlgorithm::generate_frame_from_events(EventIt it_begin, 
         frame.setTo(bg_color[0]);
         for (auto it = it_begin; it != it_end; ++it)
             frame.at<uint8_t>(it->y, it->x) = off_on_colors[it->p][0];
+
     } else if (flags & Parameters::RGB || flags & Parameters::BGR) {
         frame.setTo(_bg_color3);
         for (auto it = it_begin; it != it_end; ++it)

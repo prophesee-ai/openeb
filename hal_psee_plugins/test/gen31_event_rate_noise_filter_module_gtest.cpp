@@ -18,6 +18,7 @@
 #include "metavision/hal/device/device_discovery.h"
 #include "metavision/hal/device/device.h"
 #include "metavision/hal/utils/hal_exception.h"
+#include "metavision/hal/utils/detail/warning_supression.h"
 #include "metavision/hal/facilities/i_hw_identification.h"
 #include "metavision/hal/facilities/i_event_rate_activity_filter_module.h"
 #include "metavision/hal/facilities/i_events_stream.h"
@@ -79,19 +80,54 @@ TEST_F_WITH_CAMERA(Gen31EventRateNoiseFilterModule_GTest, i_event_rate_gen31_eve
     // GIVEN Valid values for the event rate threshold
     // WHEN setting each of them
     // THEN The value set in the sensor is the correct one
-    ASSERT_TRUE(ev_rate_->set_event_rate_threshold(min_event_rate_threshold_kev_s_));
-    ASSERT_NEAR(min_event_rate_threshold_kev_s_, ev_rate_->get_event_rate_threshold(), expected_max_error_kev_s);
-    ASSERT_TRUE(ev_rate_->set_event_rate_threshold(max_event_rate_threshold_kev_s_));
-    ASSERT_NEAR(max_event_rate_threshold_kev_s_, ev_rate_->get_event_rate_threshold(), expected_max_error_kev_s);
-    ASSERT_TRUE(ev_rate_->set_event_rate_threshold(in_range_event_rate_threshold_kev_s_));
-    ASSERT_NEAR(in_range_event_rate_threshold_kev_s_, ev_rate_->get_event_rate_threshold(), expected_max_error_kev_s);
+    ASSERT_TRUE(ev_rate_->set_thresholds({min_event_rate_threshold_kev_s_, 0, 0, 0}));
+    ASSERT_NEAR(min_event_rate_threshold_kev_s_, ev_rate_->get_thresholds().lower_bound_start,
+                expected_max_error_kev_s);
+    ASSERT_TRUE(ev_rate_->set_thresholds({max_event_rate_threshold_kev_s_, 0, 0, 0}));
+    ASSERT_NEAR(max_event_rate_threshold_kev_s_, ev_rate_->get_thresholds().lower_bound_start,
+                expected_max_error_kev_s);
+    ASSERT_TRUE(ev_rate_->set_thresholds({in_range_event_rate_threshold_kev_s_, 0, 0, 0}));
+    ASSERT_NEAR(in_range_event_rate_threshold_kev_s_, ev_rate_->get_thresholds().lower_bound_start,
+                expected_max_error_kev_s);
 
     // GIVEN Invalid values for the event rate threshold
     // WHEN setting each of them
     // THEN The value set in the sensor is not changed (equal to the last set)
-    const auto currently_time_window = ev_rate_->get_event_rate_threshold();
-    ASSERT_FALSE(ev_rate_->set_event_rate_threshold(lower_out_of_range_time_window));
-    ASSERT_EQ(currently_time_window, ev_rate_->get_event_rate_threshold());
-    ASSERT_FALSE(ev_rate_->set_event_rate_threshold(greater_out_of_range_time_window));
-    ASSERT_EQ(currently_time_window, ev_rate_->get_event_rate_threshold());
+    const auto currently_time_window_new = ev_rate_->get_thresholds().lower_bound_start;
+    ASSERT_FALSE(ev_rate_->set_thresholds({lower_out_of_range_time_window, 0, 0, 0}));
+    ASSERT_EQ(currently_time_window_new, ev_rate_->get_thresholds().lower_bound_start);
+    ASSERT_FALSE(ev_rate_->set_thresholds({greater_out_of_range_time_window, 0, 0, 0}));
+    ASSERT_EQ(currently_time_window_new, ev_rate_->get_thresholds().lower_bound_start);
+}
+
+TEST_F_WITH_CAMERA(Gen31EventRateNoiseFilterModule_GTest, i_event_rate_gen31_event_rate_threshold_deprecated,
+                   camera_params(camera_param().integrator("Prophesee").generation("3.1"))) {
+    open();
+
+    constexpr uint32_t lower_out_of_range_time_window   = 0;
+    constexpr uint32_t greater_out_of_range_time_window = max_event_rate_threshold_kev_s_ + 1;
+
+    // Compute expected error as we converting kev/s in ev/us and the latter one is rounded
+    uint32_t expected_max_error_kev_s = std::abs(in_range_event_rate_threshold_kev_s_ -
+                                                 1000 * std::round(in_range_event_rate_threshold_kev_s_ / 1000.));
+
+    // GIVEN Valid values for the event rate threshold
+    // WHEN setting each of them
+    // THEN The value set in the sensor is the correct one
+    SUPRESS_DEPRECATION_WARNING(
+        ASSERT_TRUE(ev_rate_->set_event_rate_threshold(min_event_rate_threshold_kev_s_));
+        ASSERT_NEAR(min_event_rate_threshold_kev_s_, ev_rate_->get_event_rate_threshold(), expected_max_error_kev_s);
+        ASSERT_TRUE(ev_rate_->set_event_rate_threshold(max_event_rate_threshold_kev_s_));
+        ASSERT_NEAR(max_event_rate_threshold_kev_s_, ev_rate_->get_event_rate_threshold(), expected_max_error_kev_s);
+        ASSERT_TRUE(ev_rate_->set_event_rate_threshold(in_range_event_rate_threshold_kev_s_)); ASSERT_NEAR(
+            in_range_event_rate_threshold_kev_s_, ev_rate_->get_event_rate_threshold(), expected_max_error_kev_s););
+
+    // GIVEN Invalid values for the event rate threshold
+    // WHEN setting each of them
+    // THEN The value set in the sensor is not changed (equal to the last set)
+    SUPRESS_DEPRECATION_WARNING(const auto currently_time_window_deprecated = ev_rate_->get_event_rate_threshold();
+                                ASSERT_FALSE(ev_rate_->set_event_rate_threshold(lower_out_of_range_time_window));
+                                ASSERT_EQ(currently_time_window_deprecated, ev_rate_->get_event_rate_threshold());
+                                ASSERT_FALSE(ev_rate_->set_event_rate_threshold(greater_out_of_range_time_window));
+                                ASSERT_EQ(currently_time_window_deprecated, ev_rate_->get_event_rate_threshold()););
 }

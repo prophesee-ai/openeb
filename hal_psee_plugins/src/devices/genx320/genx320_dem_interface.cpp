@@ -48,7 +48,7 @@ std::tuple<uint32_t, uint32_t, bool> GenX320DemInterface::GenX320PixelMask::get_
     if (std::get<0>(coord) != -1) {
         return std::make_tuple(std::get<0>(coord), std::get<1>(coord), valid);
     } else {
-        return std::make_tuple(-1, -1, false);
+        return std::make_tuple(0, 0, false);
     }
 }
 

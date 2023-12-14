@@ -251,26 +251,25 @@ To compile OpenEB, you will need to install some extra tools:
       * Select "C++ build tools", make sure Windows 10 SDK is checked, and add English Language Pack
     * For development, you can also download and run [Visual Studio Installer](https://visualstudio.microsoft.com/downloads/)    
  * install [vcpkg](https://github.com/microsoft/vcpkg) that will be used for installing dependencies:
-    * download and extract [vcpkg version 2022.03.10](https://github.com/microsoft/vcpkg/archive/refs/tags/2022.03.10.zip)
+    * download and extract [vcpkg version 2023.11.20](https://github.com/microsoft/vcpkg/archive/refs/tags/2023.11.20.zip)
     * `cd <VCPKG_SRC_DIR>`
     * `bootstrap-vcpkg.bat`
-  * install the libraries by running `vcpkg.exe install --triplet x64-windows libusb eigen3 boost opencv glfw3 glew gtest dirent hdf5[cpp,threadsafe,tools,zlib]`
+  * install the libraries by running `vcpkg.exe install --triplet x64-windows libusb boost opencv dirent gtest glew glfw3 hdf5[cpp,threadsafe,tools,zlib]`
     * Note that to avoid using `--triplet x64-windows`, which informs vcpkg to install packages for a x64-windows target,
       you can run `setx VCPKG_DEFAULT_TRIPLET x64-windows` (you need to close the command line and re-open it to ensure that this variable is set)
   * Finally, download and install [ffmpeg](https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full.7z) and add the `bin` directory to your PATH.
 
 Note that if you are using vcpkg for various projects or multiple versions of OpenEB, you might want to optimize the
 number of vcpkg install you manage. To do so, you will need the versions of the libraries we require.
-Those can be found in the [vcpkg repository](https://github.com/microsoft/vcpkg/tree/2022.03.10/versions) but we list them here for convenience:
-  * libusb: 1.0.24
-  * eigen3: 3.4.0
-  * boost: 1.78.0
-  * opencv: 4.5.5
-  * glfw3: 3.3.6
+Those can be found in the [vcpkg repository](https://github.com/microsoft/vcpkg/tree/2023.11.20/versions) but we list them here for convenience:
+  * libusb: 1.0.26
+  * boost: 1.83.0
+  * opencv: 4.8.0
+  * dirent: 1.24.0
+  * gtest: 1.14.0
   * glew: 2.2.0
-  * gtest: 1.11.0
-  * dirent: 1.23.2
-  * hdf5: 1.12.1
+  * glfw3: 3.3.8
+  * hdf5: 1.14.2
 
 #### Installing Python and libraries
 

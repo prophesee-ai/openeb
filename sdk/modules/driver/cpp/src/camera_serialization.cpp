@@ -152,7 +152,11 @@ public:
 
         auto *nfl_state = state_.mutable_event_rate_noise_filter_state();
         nfl_state->set_enabled(module->is_enabled());
-        nfl_state->set_event_rate_threshold(module->get_event_rate_threshold());
+
+        // Please change the name and logic of `EventRateNoiseFilterState::set_event_rate_threshold`.
+        // To ensure it properly supports all of the values of a `threshold` struct.
+        uint32_t threshold = module->get_thresholds().lower_bound_start;
+        nfl_state->set_event_rate_threshold(threshold);
     }
 
     void operator()(const I_EventTrailFilterModule *module) {
@@ -210,6 +214,17 @@ public:
             window_state->set_width(w.width);
             window_state->set_y(w.y);
             window_state->set_height(w.height);
+        }
+
+        std::vector<bool> cols;
+        std::vector<bool> rows;
+        if (module->get_lines(cols, rows)) {
+            for (bool c : cols) {
+                roi_state->add_columns(c);
+            }
+            for (bool r : rows) {
+                roi_state->add_rows(r);
+            }
         }
     }
 
@@ -366,9 +381,16 @@ public:
         if (nfl_state.optional_enabled_case() == DeviceSerialization::EventRateNoiseFilterState::kEnabled) {
             module->enable(nfl_state.enabled());
         }
+
         if (nfl_state.optional_event_rate_threshold_case() ==
             DeviceSerialization::EventRateNoiseFilterState::kEventRateThreshold) {
-            module->set_event_rate_threshold(nfl_state.event_rate_threshold());
+            // Please change the logic and name of `EventRateNoiseFilterState::event_rate_threshold()` to use new naming
+            // convention
+            const auto th_lower_start = nfl_state.event_rate_threshold();
+
+            // 0u is used because logic of `EventRateNoiseFilterState::event_rate_threshold()` does not yet allow for
+            // multiple threshold values.
+            module->set_thresholds({th_lower_start, 0u, 0u, 0u});
         }
     }
 
@@ -468,6 +490,19 @@ public:
                                      roi_state.window(i).height());
             }
             module->set_windows(windows);
+        }
+
+        if (roi_state.columns_size() > 0 && roi_state.rows_size() > 0) {
+            std::vector<bool> cols;
+            for (int i = 0; i < roi_state.columns_size(); ++i) {
+                cols.push_back(roi_state.columns(i));
+            }
+
+            std::vector<bool> rows;
+            for (int i = 0; i < roi_state.rows_size(); ++i) {
+                rows.push_back(roi_state.rows(i));
+            }
+            module->set_lines(cols, rows);
         }
 
         if (roi_state.optional_enabled_case() == DeviceSerialization::RegionOfInterestState::kEnabled) {

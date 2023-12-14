@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
     std::string fourcc;
 
     const std::string program_desc(
-        "Application to generate a video from a RAW or HDF5 file.\n\n"
+        "Tool to generate a video from a RAW or HDF5 file.\n\n"
         "The frame rate of the output video (display rate) is fixed to 30.\n"
         "The frame rate to generate the frames from the events (generation rate) is driven by the slow motion factor "
         "(-s option): slow motion factor = generation rate / display rate\n"
@@ -113,7 +113,7 @@ int main(int argc, char *argv[]) {
 
     recorder.start();
 
-    // Set up frame generator
+    // Set up frame generator for CD events
     Metavision::PeriodicFrameGenerationAlgorithm frame_generation(geometry.width(), geometry.height());
     bool has_cd = false;
     try {
@@ -131,6 +131,7 @@ int main(int argc, char *argv[]) {
         });
     } catch (...) {}
 
+    // Set up frame converter for Histo3D frames
     try {
         auto &histo_module = camera.frame_histo();
         Metavision::RawEventFrameConverter frame_converter(geometry.height(), geometry.width(), 2);
@@ -152,6 +153,7 @@ int main(int argc, char *argv[]) {
         });
     } catch (...) {}
 
+    // Set up frame converter for Diff3D frames
     try {
         auto &diff_module = camera.frame_diff();
         Metavision::RawEventFrameConverter frame_converter(geometry.height(), geometry.width(), 1);
@@ -205,7 +207,7 @@ int main(int argc, char *argv[]) {
         case cv::Error::StsOutOfRange: {
             if (std::string(e.what()).find("chunk size is out of bounds") != std::string::npos) {
                 MV_LOG_ERROR()
-                    << "There was an error while saving the video : output file is too large, try converting the "
+                    << "There was an error while saving the video: output file is too large. Try converting the "
                        "sequence with a smaller slow motion factor.";
                 return 1;
             }

@@ -16,6 +16,8 @@
 
 namespace Metavision {
 
+class TzLibUSBBoardCommand;
+
 class TzUnknownDevice : public TzDevice {
 public:
     TzUnknownDevice(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent);

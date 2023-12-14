@@ -259,6 +259,11 @@ void PluginLoader::load_plugins() {
     }
 }
 
+void PluginLoader::unload_plugins() {
+    folders_.clear();
+    libraries_.clear();
+}
+
 void PluginLoader::insert_plugin(const std::string &name, const std::string &library_path) {
     if (!name.empty() && !library_path.empty()) {
         auto library = std::make_unique<Library>(get_plugin_entry_point(), name, library_path);

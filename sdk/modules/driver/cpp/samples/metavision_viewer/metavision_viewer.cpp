@@ -45,6 +45,81 @@ int processUI(int delay_ms) {
     return key;
 }
 
+struct RoiControl {
+    bool use_windows; // Whether to set ROIs through windows or lines
+    std::vector<bool> cols;
+    std::vector<bool> rows;
+    std::vector<Metavision::Roi::Window> windows;
+    Metavision::I_ROI::Mode mode;
+    cv::Point mouse_down_coord; // Coordinates of initial pixel while left mouse button is held down
+    bool need_refresh; // Whether ROIs need to be updated on the device
+    const std::size_t max_windows;
+
+    RoiControl(int width, int height, std::size_t max_supported_windows) :
+        cols(width, 0), rows(height, 0), max_windows(max_supported_windows), mode(Metavision::I_ROI::Mode::ROI) {
+        reset();
+    }
+
+    void reset() {
+        std::fill(cols.begin(), cols.end(), false);
+        std::fill(rows.begin(), rows.end(), false);
+        windows.clear();
+        mouse_down_coord.x = -1;
+        need_refresh = false;
+    }
+};
+
+void receiveMouseEvent(int event, int x, int y, int flags, void *userdata) {
+    RoiControl *roi_ctrl = reinterpret_cast<RoiControl *>(userdata);
+
+    switch (event) {
+    case cv::EVENT_LBUTTONDOWN:
+        if (roi_ctrl->mouse_down_coord.x < 0) {
+            roi_ctrl->mouse_down_coord.x = x;
+            roi_ctrl->mouse_down_coord.y = y;
+        }
+        break;
+    case cv::EVENT_LBUTTONUP:
+        if (roi_ctrl->mouse_down_coord.x < 0) {
+            break;
+        }
+
+        // Just a click from the user, ignore it
+        if (roi_ctrl->mouse_down_coord.x == x && roi_ctrl->mouse_down_coord.y == y) {
+            roi_ctrl->mouse_down_coord.x = -1;
+            break;
+        }
+
+        {
+            const int start_x = std::min(roi_ctrl->mouse_down_coord.x, x);
+            const int end_x = std::max(roi_ctrl->mouse_down_coord.x, x);
+            const int start_y = std::min(roi_ctrl->mouse_down_coord.y, y);
+            const int end_y = std::max(roi_ctrl->mouse_down_coord.y, y);
+
+            if (roi_ctrl->use_windows) {
+                if (roi_ctrl->windows.size() >= roi_ctrl->max_windows) {
+                    roi_ctrl->windows.clear();
+                }
+                roi_ctrl->windows.push_back({start_x, start_y, end_x - start_x + 1, end_y - start_y + 1});
+            } else {
+                for (int i = start_x; i <= end_x; ++i) {
+                    roi_ctrl->cols[i] = true;
+                }
+
+                for (int i = start_y; i <= end_y; ++i) {
+                    roi_ctrl->rows[i] = true;
+                }
+            }
+            roi_ctrl->need_refresh = true;
+        }
+
+        roi_ctrl->mouse_down_coord.x = -1;
+        break;
+    default:
+        break;
+    }
+}
+
 namespace {
 std::atomic<bool> signal_caught{false};
 
@@ -75,7 +150,8 @@ int main(int argc, char *argv[]) {
                                   "Press 'o' to toggle the on screen display.\n"
                                   "Press 'l' to load the camera state from the input camera config file.\n"
                                   "Press 's' to save the camera state to the output camera config file.\n"
-                                  "Press 'r' to toggle the hardware ROI given as input.\n"
+                                  "Press 'r' to toggle the hardware ROI mode (window mode or lines mode, default: window mode).\n"
+                                  "Press 'R' to toggle the ROI/RONI mode.\n"
                                   "Press 'e' to toggle the ERC module (if available).\n"
                                   "Press '+' to increase the ERC threshold (if available).\n"
                                   "Press '-' to decrease the ERC threshold (if available).\n"
@@ -230,6 +306,14 @@ int main(int argc, char *argv[]) {
                 frame.copyTo(cd_frame);
             });
 
+        unsigned int max_roi_windows = 0;
+        try {
+            max_roi_windows = camera.roi().get_facility()->get_max_supported_windows_count();
+        } catch (...) {}
+        RoiControl roi_ctrl(geometry.width(), geometry.height(), max_roi_windows);
+        roi_ctrl.need_refresh = roi.size() != 0;
+        roi_ctrl.use_windows = true;
+
         // Setup CD frame display
         std::string cd_window_name("CD Events");
         cv::namedWindow(cd_window_name, CV_GUI_EXPANDED);
@@ -239,6 +323,7 @@ int main(int argc, char *argv[]) {
     (CV_MAJOR_VERSION == 4 && (CV_MINOR_VERSION * 100 + CV_SUBMINOR_VERSION) >= 102)
         cv::setWindowProperty(cd_window_name, cv::WND_PROP_TOPMOST, 1);
 #endif
+        cv::setMouseCallback(cd_window_name, receiveMouseEvent, &roi_ctrl);
 
         // Setup camera CD callback to update the frame generator and event rate estimator
         int cd_events_cb_id =
@@ -253,7 +338,6 @@ int main(int argc, char *argv[]) {
         camera.start();
 
         bool recording     = false;
-        bool is_roi_set    = true;
         bool osc_available = false;
         bool osc_ready     = false;
         bool osd           = true;
@@ -290,6 +374,17 @@ int main(int argc, char *argv[]) {
                     }
                     cv::imshow(cd_window_name, cd_frame);
                 }
+            }
+
+            if (roi_ctrl.need_refresh) {
+                try {
+                    if (roi_ctrl.use_windows) {
+                        camera.roi().set(roi_ctrl.windows);
+                    } else {
+                        camera.roi().set(roi_ctrl.cols, roi_ctrl.rows);
+                    }
+                } catch (...) {}
+                roi_ctrl.need_refresh = false;
             }
 
             // Wait for a pressed key for 33ms, that means that the display is refreshed at 30 FPS
@@ -357,19 +452,39 @@ int main(int argc, char *argv[]) {
                 break;
             }
             case 'r': {
-                if (roi.size() == 0) {
-                    break;
-                }
-                if (!is_roi_set) {
-                    camera.roi().set({roi[0], roi[1], roi[2], roi[3]});
-                    MV_LOG_INFO() << "ROI: enabled";
+                roi_ctrl.use_windows = !roi_ctrl.use_windows;
+                if (roi_ctrl.use_windows) {
+                    MV_LOG_INFO() << "ROI: window mode";
                 } else {
-                    camera.roi().unset();
-                    MV_LOG_INFO() << "ROI: disabled";
+                    MV_LOG_INFO() << "ROI: lines mode";
                 }
-                is_roi_set = !is_roi_set;
+                roi_ctrl.reset();
+                try {
+                    if (camera.roi().get_facility()->is_enabled()) {
+                        camera.roi().unset();
+                    }
+                } catch (...) {
+                    MV_LOG_INFO() << "No ROI facility available";
+                }
                 break;
             }
+            case 'R': {
+                if (roi_ctrl.mode == Metavision::I_ROI::Mode::ROI) {
+                    MV_LOG_INFO() << "Switching to RONI mode";
+                    roi_ctrl.mode = Metavision::I_ROI::Mode::RONI;
+                } else {
+                    MV_LOG_INFO() << "Switching to ROI mode";
+                    roi_ctrl.mode = Metavision::I_ROI::Mode::ROI;
+                }
+
+                if (camera.roi().get_facility()->is_enabled()) {
+                    camera.roi().unset();
+                }
+                camera.roi().get_facility()->set_mode(roi_ctrl.mode);
+                roi_ctrl.need_refresh = true;
+                break;
+            }
+
             case 'e': {
                 try {
                     camera.erc_module().enable(!camera.erc_module().is_enabled());

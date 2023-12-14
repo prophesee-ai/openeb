@@ -20,7 +20,7 @@ add_library(hal_sample_plugin_obj OBJECT
     ${CMAKE_CURRENT_SOURCE_DIR}/src/sample_plugin.cpp
 )
 
-# The following line is needed becase when linking a shared library to an object one,
+# The following line is needed because when linking a shared library to an object one,
 # the object library needs to be compiled with -fPIC
 # cf https://stackoverflow.com/questions/50600708/combining-cmake-object-libraries-with-shared-libraries
 set_target_properties(hal_sample_plugin_obj

@@ -64,6 +64,8 @@ public:
 
     std::vector<I_ROI::Window> get_windows() const;
 
+    bool get_lines(std::vector<bool> &cols, std::vector<bool> &rows) const override;
+
 private:
     /// @brief Implementation of `set_windows`
     /// @param windows A vector of windows to set

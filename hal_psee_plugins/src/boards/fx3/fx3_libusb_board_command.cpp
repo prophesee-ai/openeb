@@ -23,8 +23,6 @@
 
 namespace Metavision {
 
-std::mutex Fx3LibUSBBoardCommand::protect_libusb_submit_;
-
 Fx3LibUSBBoardCommand::Fx3LibUSBBoardCommand() = default;
 
 std::string Fx3LibUSBBoardCommand::get_serial() {

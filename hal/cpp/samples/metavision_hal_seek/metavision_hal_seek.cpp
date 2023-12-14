@@ -161,14 +161,13 @@ int main(int argc, char **argv) {
         if (seek_ts >= 0) {
             MV_LOG_INFO() << "Seeking to position" << seek_ts;
             display.setTo(color_bg);
-            long buffer_size_bytes;
             Metavision::timestamp ts_reached;
             const auto status = i_eventsstream->seek(seek_ts, ts_reached);
             if (status == Metavision::I_EventsStream::SeekStatus::Success) {
                 i_eventsstreamdecoder->reset_timestamp(ts_reached);
                 while (i_eventsstream->wait_next_buffer() > 0) {
-                    auto buffer = i_eventsstream->get_latest_raw_data(buffer_size_bytes);
-                    i_eventsstreamdecoder->decode(buffer, buffer + buffer_size_bytes);
+                    auto buffer = i_eventsstream->get_latest_raw_data();
+                    i_eventsstreamdecoder->decode(buffer->data(), buffer->data() + buffer->size());
                     if (i_eventsstreamdecoder->get_last_timestamp() > seek_ts + accumulation_time) {
                         break;
                     }

@@ -30,6 +30,7 @@ public:
     virtual bool enable(bool state) override;
     virtual bool is_enabled() const override;
     virtual void write_ROI(const std::vector<unsigned int> &vroiparams) override;
+    virtual bool write_ROI_windows(const std::vector<Window> &windows) override;
 
 private:
     void reset_to_full_roi();

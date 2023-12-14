@@ -155,6 +155,10 @@ if(NOT ANDROID)
     )
 endif(NOT ANDROID)
 
+if(HAS_V4L2)
+    list(APPEND lib_camera_obj_list metavision_hal_v4l2_protocol_obj)
+endif(HAS_V4L2)
+
 if(HAL_SAPHIR_SUPPORT)
     list(APPEND lib_camera_obj_list
         metavision_hal_saphir_camera_obj

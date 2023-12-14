@@ -55,6 +55,7 @@ void export_roi_filter_algorithm(py::module &);
 void export_shared_cd_events_buffer_producer(py::module &);
 void export_stream_logger_algorithm(py::module &);
 void export_timesurface_producer_algorithm(py::module &);
+void export_rolling_event_cd_buffer(py::module &);
 } // namespace Metavision
 
 PYBIND11_MODULE(MODULE_NAME, m) {
@@ -90,4 +91,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     Metavision::export_shared_cd_events_buffer_producer(m);
     Metavision::export_stream_logger_algorithm(m);
     Metavision::export_timesurface_producer_algorithm(m);
+
+    // 4. Export utils
+    Metavision::export_rolling_event_cd_buffer(m);
 }

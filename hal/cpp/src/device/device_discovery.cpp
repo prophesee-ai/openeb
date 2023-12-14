@@ -54,13 +54,12 @@ enum CameraType {
 };
 std::string CameraTypeLabels[] = {"remote", "local", "any"};
 
-Metavision::PluginLoader plugin_loader;
+static Metavision::PluginLoader plugin_loader;
+static bool plugins_loaded                 = false;
+static char *last_plugin_path              = nullptr;
+static const char *last_plugin_search_mode = nullptr;
 
 Metavision::PluginLoader::PluginList get_plugins() {
-    static bool loaded                         = false;
-    static char *last_plugin_path              = nullptr;
-    static const char *last_plugin_search_mode = nullptr;
-
     MV_HAL_LOG_TRACE() << "Loading plugins";
 
     char *plugin_path              = getenv("MV_HAL_PLUGIN_PATH");
@@ -76,7 +75,7 @@ Metavision::PluginLoader::PluginList get_plugins() {
         plugin_search_mode = "DEFAULT";
     }
 
-    if (loaded && (!plugin_path || strcmp(plugin_path, last_plugin_path) == 0) &&
+    if (plugins_loaded && (!plugin_path || strcmp(plugin_path, last_plugin_path) == 0) &&
         (last_plugin_search_mode && strcmp(plugin_search_mode, last_plugin_search_mode) == 0)) {
         MV_HAL_LOG_TRACE()
             << "  MV_HAL_PLUGIN_PATH did not change and plugins are already loaded, no need to reload plugins";
@@ -146,16 +145,16 @@ Metavision::PluginLoader::PluginList get_plugins() {
         if (plugin_list.empty()) {
             MV_HAL_LOG_WARNING() << "    no plugin found";
         } else if (!has_camera_discovery && !has_file_discovery) {
-            MV_HAL_LOG_WARNING() << "    no plugin provides either camera or file discovery functionnality";
+            MV_HAL_LOG_WARNING() << "    no plugin provides either camera or file discovery functionality";
         } else if (!has_camera_discovery) {
-            MV_HAL_LOG_TRACE() << "    no plugin provides camera discovery functionnality";
+            MV_HAL_LOG_TRACE() << "    no plugin provides camera discovery functionality";
         } else if (!has_file_discovery) {
-            MV_HAL_LOG_TRACE() << "    no plugin provides file discovery functionnality";
+            MV_HAL_LOG_TRACE() << "    no plugin provides file discovery functionality";
         }
     } else {
         MV_HAL_LOG_TRACE() << "  Found" << plugin_list.size() << "plugins";
     }
-    loaded = true;
+    plugins_loaded = true;
 
     return plugin_loader.get_plugin_list();
 }
@@ -591,6 +590,13 @@ std::unique_ptr<Device> DeviceDiscovery::open_stream(std::unique_ptr<std::istrea
     }
 
     return nullptr;
+}
+
+void DeviceDiscovery::unload_plugins() {
+    plugins_loaded          = false;
+    last_plugin_path        = nullptr;
+    last_plugin_search_mode = nullptr;
+    plugin_loader.unload_plugins();
 }
 
 } // namespace Metavision

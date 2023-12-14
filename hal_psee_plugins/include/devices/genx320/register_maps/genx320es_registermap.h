@@ -879,6 +879,12 @@ static RegmapElement GenX320ESRegisterMap[] = {
     {R, {"gpo_global_ctrl", 0x083C}},
     {F, {"enable", 0, 1, 0x0}},
 
+    {R, {"mem_bank/bank_select", 0xF800}},
+    {F, {"bank", 0, 16, 0x0}},
+    {F, {"select", 28, 2, 0x0}},
+    
+    {R, {"bank_mem0", 0xF900}},
+
     {R, {"bias/bias_pr_hv0", 0x1000}},
     {F, {"bias_ctl", 0, 7, 0x3D}},
     {F, {"unused0", 7, 1, 0x0}},
@@ -4319,6 +4325,199 @@ static RegmapElement GenX320ESRegisterMap[] = {
 
     {R, {"mbx/misc", 0xF010}},
     {F, {"misc", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem0", 0xF900}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem1", 0xF904}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem2", 0xF908}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem3", 0xF90C}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem4", 0xF910}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem5", 0xF914}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem6", 0xF918}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem7", 0xF91C}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem8", 0xF920}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem9", 0xF924}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem10", 0xF928}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem11", 0xF92C}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem12", 0xF930}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem13", 0xF934}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem14", 0xF938}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem15", 0xF93C}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem16", 0xF940}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem17", 0xF944}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem18", 0xF948}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem19", 0xF94C}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem20", 0xF950}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem21", 0xF954}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem22", 0xF958}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem23", 0xF95C}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem24", 0xF960}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem25", 0xF964}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem26", 0xF968}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem27", 0xF96C}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem28", 0xF970}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem29", 0xF974}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem30", 0xF978}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem31", 0xF97C}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem32", 0xF980}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem33", 0xF984}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem34", 0xF988}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem35", 0xF98C}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem36", 0xF990}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem37", 0xF994}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem38", 0xF998}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem39", 0xF99C}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem40", 0xF9A0}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem41", 0xF9A4}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem42", 0xF9A8}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem43", 0xF9AC}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem44", 0xF9B0}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem45", 0xF9B4}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem46", 0xF9B8}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem47", 0xF9BC}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem48", 0xF9C0}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem49", 0xF9C4}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem50", 0xF9C8}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem51", 0xF9CC}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem52", 0xF9D0}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem53", 0xF9D4}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem54", 0xF9D8}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem55", 0xF9DC}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem56", 0xF9E0}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem57", 0xF9E4}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem58", 0xF9E8}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem59", 0xF9EC}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem60", 0xF9F0}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem61", 0xF9F4}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem62", 0xF9F8}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
+    {R, {"mem_bank/bank_mem63", 0xF9FC}},
+    {F, {"mem_data", 0, 32, 0x0}},
+
     // clang-format on
 };
 

@@ -9,9 +9,9 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-#include <GL/glew.h>
 #include <unordered_map>
 
+#include "metavision/sdk/ui/utils/opengl_api.h"
 #include "metavision/sdk/ui/detail/texture_utils.h"
 
 namespace Metavision {
@@ -24,20 +24,17 @@ static std::unordered_map<TextureFormat, int> to_gl_internal_format = {
     {TextureFormat::Gray, GL_R8}, {TextureFormat::RGB, GL_RGB8}, {TextureFormat::RGBA, GL_RGBA8}};
 
 static std::unordered_map<TextureFormat, int> to_gl_format = {
-    {TextureFormat::Gray, GL_RED}, {TextureFormat::RGB, GL_BGR}, {TextureFormat::RGBA, GL_BGRA}};
+    {TextureFormat::Gray, GL_RED}, {TextureFormat::RGB, GL_RGB}, {TextureFormat::RGBA, GL_RGBA}};
 
 unsigned int initialize_texture(const TextureOptions &options) {
     unsigned int tex_id;
 
     glGenTextures(1, &tex_id);
     glBindTexture(GL_TEXTURE_2D, tex_id);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, to_gl_filter.at(options.minify_filter));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, to_gl_filter.at(options.magnify_filter));
-
-    const float const_bkg_color[4] = {0, 0, 0, 0};
-    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, const_bkg_color);
 
     const int width  = static_cast<int>(options.width);
     const int height = static_cast<int>(options.height);
@@ -65,7 +62,7 @@ unsigned int initialize_texture(int width, int height, bool is_gray) {
 static std::unordered_map<int, int> cv_to_gl_internal_format = {
     {CV_8UC1, GL_R8}, {CV_8UC3, GL_RGB8}, {CV_8UC4, GL_RGBA8}};
 
-static std::unordered_map<int, int> cv_to_gl_format = {{CV_8UC1, GL_RED}, {CV_8UC3, GL_BGR}, {CV_8UC4, GL_BGRA}};
+static std::unordered_map<int, int> cv_to_gl_format = {{CV_8UC1, GL_RED}, {CV_8UC3, GL_RGB}, {CV_8UC4, GL_RGBA}};
 
 void upload_texture(const cv::Mat &img, const unsigned int &tex_id) {
     glBindTexture(GL_TEXTURE_2D, tex_id);

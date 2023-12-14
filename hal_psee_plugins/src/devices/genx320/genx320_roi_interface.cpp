@@ -59,4 +59,8 @@ std::vector<I_ROI::Window> GenX320RoiInterface::get_windows() const {
     return driver_->get_windows();
 }
 
+bool GenX320RoiInterface::get_lines(std::vector<bool> &cols, std::vector<bool> &rows) const {
+    return driver_->get_lines(cols, rows);
+}
+
 } // namespace Metavision

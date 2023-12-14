@@ -10,13 +10,13 @@
  **********************************************************************************************************************/
 
 #include <thread>
-#include <GLFW/glfw3.h>
 
+#include "metavision/sdk/ui/utils/base_window.h"
 #include "metavision/sdk/ui/utils/event_loop.h"
 
 namespace Metavision {
 void EventLoop::poll_and_dispatch(std::int64_t sleep_time_ms) {
-    glfwPollEvents();
+    BaseWindow::poll_pending_events();
 
     std::this_thread::sleep_for(std::chrono::milliseconds(sleep_time_ms));
 }

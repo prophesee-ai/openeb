@@ -12,7 +12,7 @@
 #ifndef METAVISION_SDK_UI_EVENT_H
 #define METAVISION_SDK_UI_EVENT_H
 
-#include "GLFW/glfw3.h"
+#include "metavision/sdk/ui/utils/opengl_api.h"
 
 namespace Metavision {
 

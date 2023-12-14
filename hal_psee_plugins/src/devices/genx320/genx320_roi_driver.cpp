@@ -109,6 +109,22 @@ unsigned int &GenX320RoiDriver::Grid::get_vector(const unsigned int &vector_id, 
     }
 }
 
+unsigned int GenX320RoiDriver::Grid::get_vector(const unsigned int &vector_id, const unsigned int &row) const {
+    std::stringstream ss;
+
+    if (row >= rows_) {
+        ss << "Row index " << row << " out of range for LL ROI grid (" << columns_ << "x" << rows_ << ")";
+        MV_HAL_LOG_ERROR() << ss.str();
+        throw HalException(HalErrorCode::InvalidArgument, ss.str());
+    } else if (vector_id >= columns_) {
+        ss << "Vector index " << vector_id << " out of range for LL ROI grid (" << columns_ << "x" << rows_ << ")";
+        MV_HAL_LOG_ERROR() << ss.str();
+        throw HalException(HalErrorCode::InvalidArgument, ss.str());
+    } else {
+        return grid_[row * columns_ + vector_id];
+    }
+}
+
 void GenX320RoiDriver::Grid::set_vector(const unsigned int &vector_id, const unsigned int &row,
                                         const unsigned int &val) {
     std::stringstream ss;
@@ -133,7 +149,8 @@ std::filesystem::path GenX320RoiDriver::default_calibration_path() {
 
 GenX320RoiDriver::GenX320RoiDriver(int width, int height, const std::shared_ptr<RegisterMap> &regmap,
                                    const std::string &sensor_prefix, const DeviceConfig &config) :
-    register_map_(regmap), sensor_prefix_(sensor_prefix), mode_(I_ROI::Mode::ROI), roi_window_cnt_(0), grid_(10, 320) {
+    register_map_(regmap), sensor_prefix_(sensor_prefix), mode_(I_ROI::Mode::ROI), roi_window_cnt_(0), grid_(10, 320),
+    device_width_(width), device_height_(height) {
     set_driver_mode(GenX320RoiDriver::DriverMode::MASTER);
     reset_to_full_roi();
     if (!config.get<bool>("ignore_active_pixel_calibration_data", false)) {
@@ -268,6 +285,7 @@ bool GenX320RoiDriver::set_windows(const std::vector<I_ROI::Window> &windows) {
             vfield{{"roi_win_start_y", y_min}, {"roi_win_end_p1_y", y_max}});
     }
 
+    is_lines_ = false;
     return true;
 }
 
@@ -303,6 +321,38 @@ bool GenX320RoiDriver::set_lines(const std::vector<bool> &cols, const std::vecto
             }
         }
     }
+
+    is_lines_ = true;
+    return true;
+}
+
+bool GenX320RoiDriver::get_lines(std::vector<bool> &cols, std::vector<bool> &rows) const {
+    if (!is_lines_) {
+        return false;
+    }
+
+    if (cols.size() != static_cast<size_t>(device_width_)) {
+        cols = std::vector<bool>(device_width_);
+    }
+    std::fill(cols.begin(), cols.end(), false);
+
+    if (rows.size() != static_cast<size_t>(device_height_)) {
+        rows = std::vector<bool>(device_height_);
+    }
+    std::fill(rows.begin(), rows.end(), false);
+
+    for (unsigned int y = 0; y < 320; ++y) {
+        for (unsigned int vect_id = 0; vect_id < 10; ++vect_id) {
+            unsigned int vect_val = grid_.get_vector(vect_id, y);
+            for (unsigned int i = 0; i < 32; ++i) {
+                if (vect_val & (1U << i)) {
+                    cols[32 * vect_id + i] = true;
+                    rows[y] = true;
+                }
+            }
+        }
+    }
+
     return true;
 }
 
@@ -379,6 +429,10 @@ bool GenX320RoiDriver::enable(bool state) {
 
 std::vector<I_ROI::Window> GenX320RoiDriver::get_windows() const {
     std::vector<I_ROI::Window> roi_win_list;
+
+    if (is_lines_) {
+        return std::vector<I_ROI::Window>();
+    }
 
     for (unsigned int i = 0; i < roi_window_cnt_; i++) {
         std::string win_x_coord = "roi_win_x" + std::to_string(i);

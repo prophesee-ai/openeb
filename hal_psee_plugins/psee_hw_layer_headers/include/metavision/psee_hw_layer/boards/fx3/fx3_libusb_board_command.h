@@ -117,9 +117,6 @@ private:
 
     std::mutex thread_safety_;
 
-    static std::mutex protect_libusb_submit_; // mutex used to protect libusb_submit as if polling thread is already
-                                              // running (2nd cam) the starting of async transferts
-
     static void get_all_serial(std::shared_ptr<LibUSBContext> libusb_ctx, ListSerial &lserial);
 
     Fx3LibUSBBoardCommand(std::shared_ptr<LibUSBDevice> dev);

@@ -70,9 +70,8 @@ protected:
 
         while (nb_buffers_to_process > 0) {
             if (events_stream->wait_next_buffer()) {
-                long rawbytes = 0;
-                auto raw_data = events_stream->get_latest_raw_data(rawbytes);
-                events_stream_decoder->decode(raw_data, raw_data + rawbytes);
+                auto raw_data = events_stream->get_latest_raw_data();
+                events_stream_decoder->decode(raw_data->data(), raw_data->data() + raw_data->size());
                 nb_buffers_to_process--;
             }
         }

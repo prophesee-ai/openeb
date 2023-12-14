@@ -61,13 +61,13 @@ public:
     /// @return true if the input value was correctly set (i.e. it falls in the range of acceptable values for the
     /// sensor)
     [[deprecated("This function is deprecated starting with version 4.4.0. Please use "
-                 "set_lower/upper_bound_threshold_start/stop() instead.")]] virtual bool
+                 "set_thresholds() instead.")]] virtual bool
         set_event_rate_threshold(uint32_t threshold_Kev_s) = 0;
 
     /// @brief Gets the event rate threshold in Kevt/s below which no events are streamed
     /// @return Event rate threshold in Kevt/s
     [[deprecated("This function is deprecated starting with version 4.4.0. Please use "
-                 "get_lower/upper_bound_threshold_start/stop() instead.")]] virtual uint32_t
+                 "get_thresholds() instead.")]] virtual uint32_t
         get_event_rate_threshold() const = 0;
 
     /// @brief Gets band pass filter hysteresis thresholds supported by the sensor.

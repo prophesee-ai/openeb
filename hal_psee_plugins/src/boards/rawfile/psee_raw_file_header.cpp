@@ -32,6 +32,7 @@ namespace {
 static const std::string format_key           = "format";
 static const std::string geometry_key         = "geometry";
 static const std::string sensor_gen_key       = "sensor_generation";
+static const std::string sensor_name_key      = "sensor_name";
 static const std::string system_id_key        = "system_ID";
 static const std::string subsystem_id_key     = "subsystem_ID";
 static const std::string firmware_version_key = "firmware_version";
@@ -103,27 +104,36 @@ void PseeRawFileHeader::set_sensor_info(const I_HW_Identification::SensorInfo &s
     std::stringstream ss;
     ss << sensor.major_version_ << "." << sensor.minor_version_;
     set_field(sensor_gen_key, ss.str());
+    // Latest sensors don't fit in the major.minor pattern, store directly their name
+    set_field(sensor_name_key, sensor.name_);
 }
 
 I_HW_Identification::SensorInfo PseeRawFileHeader::get_sensor_info() const {
-    std::string sensor_str                      = get_field(sensor_gen_key);
-    I_HW_Identification::SensorInfo sensor_info;
+    std::string generation_str = get_field(sensor_gen_key);
+    I_HW_Identification::SensorInfo sensor_info("");
+
     try {
         std::string str;
-        std::istringstream sensor(sensor_str);
+        std::istringstream sensor(generation_str);
         std::getline(sensor, str, '.');
         sensor_info.major_version_ = std::stoi(str);
         std::getline(sensor, str, '.');
         sensor_info.minor_version_ = std::stoi(str);
+    } catch (std::exception &e) {}
 
+    sensor_info.name_ = get_field(sensor_name_key);
+    if (sensor_info.name_.empty()) {
+        // If the name was not in the header, build one from the sensor generation
         if (sensor_info.major_version_ == 4 && sensor_info.minor_version_ == 2) {
+            // Gen 4.2 was used to describe IMX636
             sensor_info.name_ = "IMX636";
         } else {
+            // Call the sensor Gen x.y (0.0 if we couldn't parse the generation)
             std::stringstream ss;
             ss << "Gen" << sensor_info.major_version_ << "." << sensor_info.minor_version_;
             sensor_info.name_ = ss.str();
         }
-    } catch (std::exception &e) {}
+    }
     return sensor_info;
 }
 
@@ -189,18 +199,16 @@ void PseeRawFileHeader::check_header() {
         {SYSTEM_CCAM4_GEN3_REV_B, {{3, 0, "Gen3.0"}, StreamFormat("EVT2;height=480;width=640")}},
         {SYSTEM_CCAM4_GEN3_REV_B_EVK, {{3, 0, "Gen3.0"}, StreamFormat("EVT2;height=480;width=640")}},
         {SYSTEM_CCAM4_GEN3_REV_B_EVK_BRIDGE, {{3, 0, "Gen3.0"}, StreamFormat("EVT2;height=480;width=640")}},
-        {SYSTEM_CCAM5_GEN31, {{3, 1, "Gen3.0"}, StreamFormat("EVT2;height=480;width=640")}},
+        {SYSTEM_CCAM5_GEN31, {{3, 1, "Gen3.1"}, StreamFormat("EVT2;height=480;width=640")}},
         {SYSTEM_CCAM5_GEN4, {{4, 0, "Gen4.0"}, StreamFormat("EVT3;height=720;width=1280")}},
         {SYSTEM_CCAM5_GEN4_FIXED_FRAME, {{4, 0, "Gen4.0"}, StreamFormat("EVT3;height=720;width=1280")}},
         {SYSTEM_VISIONCAM_GEN3, {{3, 0, "Gen3.0"}, StreamFormat("EVT2;height=480;width=640")}},
         {SYSTEM_VISIONCAM_GEN3_EVK, {{3, 0, "Gen3.0"}, StreamFormat("EVT2;height=480;width=640")}},
         {SYSTEM_VISIONCAM_GEN31, {{3, 1, "Gen3.1"}, StreamFormat("EVT2;height=480;width=640")}},
         {SYSTEM_VISIONCAM_GEN31_EVK, {{3, 1, "Gen3.1"}, StreamFormat("EVT2;height=480;width=640")}},
-        {SYSTEM_CX3_CCAM5_GEN4, {{4, 0, "Gen4.0"}, StreamFormat("EVT3;height=720;width=1280")}},
         {SYSTEM_EVK2_GEN31, {{3, 1, "Gen3.1"}, StreamFormat("EVT2;height=480;width=640")}},
         {SYSTEM_EVK2_GEN4, {{4, 0, "Gen4.0"}, StreamFormat("EVT2;height=720;width=1280")}},
         {SYSTEM_EVK2_GEN41, {{4, 1, "Gen4.1"}, StreamFormat("EVT2;height=720;width=1280")}},
-        {SYSTEM_EVK3_GEN31_EVT2, {{3, 1, "Gen3.1"}, StreamFormat("EVT2;height=480;width=640")}},
         {SYSTEM_EVK3_GEN31_EVT3, {{3, 1, "Gen3.1"}, StreamFormat("EVT3;height=480;width=640")}},
         {SYSTEM_EVK3_GEN41, {{4, 1, "Gen4.1"}, StreamFormat("EVT3;height=720;width=1280")}},
         {SYSTEM_EVK2_IMX636, {{4, 2, "IMX636"}, StreamFormat("EVT3;height=720;width=1280")}},

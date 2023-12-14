@@ -175,7 +175,6 @@ bool LivePrivate::process_impl() {
 template<typename TimingProfilerType>
 bool LivePrivate::process_impl(TimingProfilerType *profiler) {
     int res             = 0;
-    long int n_rawbytes = 0;
 
     {
         typename TimingProfilerType::TimedOperation t("Polling", profiler);
@@ -186,21 +185,19 @@ bool LivePrivate::process_impl(TimingProfilerType *profiler) {
         return false;
     } else if (res > 0) {
         typename TimingProfilerType::TimedOperation t("Processing", profiler);
-        I_EventsStream::RawData *ev_buffer, *ev_buffer_end;
-        ev_buffer     = i_events_stream_->get_latest_raw_data(n_rawbytes);
-        ev_buffer_end = ev_buffer + n_rawbytes;
+        auto ev_buffer = i_events_stream_->get_latest_raw_data();
 
         const bool has_decode_callbacks = index_manager_.counter_map_.tag_count(CallbackTagIds::DECODE_CALLBACK_TAG_ID);
         // Pointcloud is not handled by Camera object. Always do decoding for pointclouds.
         if (has_decode_callbacks || device_->get_facility<I_EventFrameDecoder<PointCloud>>()) {
-            i_decoder_->decode(ev_buffer, ev_buffer_end);
-            t.setNumProcessedElements(n_rawbytes / i_decoder_->get_raw_event_size_bytes());
+            i_decoder_->decode(ev_buffer->data(), ev_buffer->data() + ev_buffer->size());
+            t.setNumProcessedElements(ev_buffer->size() / i_decoder_->get_raw_event_size_bytes());
         }
 
         // ... then we call the raw buffer callback so that a user has access to some info (e.g last
         // decoded timestamp) when the raw callback is called
         for (auto &cb : raw_data_->get_pimpl().get_cbs()) {
-            cb(ev_buffer, n_rawbytes);
+            cb(ev_buffer->data(), ev_buffer->size());
         }
     }
 

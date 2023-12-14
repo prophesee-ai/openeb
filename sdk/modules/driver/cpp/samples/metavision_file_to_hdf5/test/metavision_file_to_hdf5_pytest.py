@@ -176,6 +176,24 @@ def pytestcase_test_metavision_file_to_hdf5_non_existing_input_file():
     assert "not an existing file" in output
 
 
+def pytestcase_test_metavision_file_to_hdf5_recursive_mode_no_pattern(dataset_dir):
+    """
+    Checks that metavision_file_to_hdf5 returns an error when using recursive mode and not specifying a filename pattern
+    """
+
+    filename = "gen31_timer.hdf5"
+    filename_full = os.path.join(dataset_dir, "openeb", filename)
+
+    cmd = "./metavision_file_to_hdf5 -i {} -r".format(filename_full)
+    output, error_code = pytest_tools.run_cmd_setting_mv_log_file(cmd)
+
+    # Assert app returned error
+    assert error_code != 0
+
+    # And now check that the error came from the fact that the filename pattern is missing
+    assert "Error: please specify a file pattern for the recursive conversion" in output
+
+
 def pytestcase_test_metavision_file_to_hdf5_missing_input_args():
     """
     Checks that metavision_file_to_hdf5 returns an error when not passing required input args
@@ -206,7 +224,7 @@ def pytestcase_test_metavision_file_to_hdf5_input_file_already_hdf5(dataset_dir)
     assert error_code != 0
 
     # And now check that the error came from the fact that the input file could not be read
-    assert "Error : input file has HDF5 extension" in output
+    assert "Error: output file is the same as input file" in output
 
 
 def pytestcase_test_metavision_file_to_hdf5_on_gen31_raw_recording(dataset_dir):

@@ -208,16 +208,12 @@ bool build_and_try_writing_bookmarks(Device &device, I_EventsStream::Index &inde
             MV_HAL_LOG_TRACE() << "Still building index for" << raw_file_name << "...";
         }
 
-        long read_size_bytes;
-        auto buffer           = file_events_stream->get_latest_raw_data(read_size_bytes);
-        const auto buffer_end = buffer + read_size_bytes;
-
+        auto buffer       = file_events_stream->get_latest_raw_data();
         // Decode the buffer events per events
-        for (; buffer < buffer_end; current_byte_offset += raw_event_size_bytes) {
+        for (size_t idx = 0; idx < buffer->size();
+             idx += raw_event_size_bytes, current_byte_offset += raw_event_size_bytes) {
             // Decode single event
-            auto next = buffer + raw_event_size_bytes;
-            decoder->decode(buffer, next);
-            buffer = next;
+            decoder->decode(buffer->data() + idx, buffer->data() + idx + raw_event_size_bytes);
 
             // Wait for timestamp shift to be computed before logging any bookmark
             if (!ts_shift_computed) {
@@ -626,24 +622,55 @@ short I_EventsStream::wait_next_buffer() {
 }
 
 I_EventsStream::RawData *I_EventsStream::get_latest_raw_data(long &size) {
-    std::lock_guard<std::mutex> lock(new_buffer_safety_);
+    DataTransfer::BufferPtr local_ptr;
+    {
+        std::lock_guard<std::mutex> lock(new_buffer_safety_);
 
-    if (available_buffers_.empty()) {
-        // If no new buffer available yet
-        size = 0;
-        return nullptr;
+        if (available_buffers_.empty()) {
+            // If no new buffer available yet
+            size = 0;
+            return nullptr;
+        }
+
+        // Keep a reference to returned buffer to ensure validity until next call to this function
+        returned_buffer_ = available_buffers_.front();
+        size             = returned_buffer_->size();
+        available_buffers_.pop();
+        local_ptr = returned_buffer_;
     }
 
-    // Keep a reference to returned buffer to ensure validity until next call to this function
-    returned_buffer_ = available_buffers_.front();
-    size             = returned_buffer_->size();
-    available_buffers_.pop();
-
-    std::lock_guard<std::mutex> log_lock(log_raw_safety_);
-    if (log_raw_data_) {
-        log_raw_data_->write(reinterpret_cast<char *>(returned_buffer_->data()), size * sizeof(RawData));
+    {
+        std::lock_guard<std::mutex> log_lock(log_raw_safety_);
+        if (log_raw_data_) {
+            log_raw_data_->write(reinterpret_cast<char *>(local_ptr->data()), size * sizeof(RawData));
+        }
     }
-    return returned_buffer_->data();
+    return local_ptr->data();
+}
+
+DataTransfer::BufferPtr I_EventsStream::get_latest_raw_data() {
+    DataTransfer::BufferPtr res;
+    {
+        std::lock_guard<std::mutex> lock(new_buffer_safety_);
+
+        if (available_buffers_.empty()) {
+            // If no new buffer available yet
+            return nullptr;
+        }
+
+        // Reset potential reference from last call
+        returned_buffer_.reset();
+        res = available_buffers_.front();
+        available_buffers_.pop();
+    }
+
+    {
+        std::lock_guard<std::mutex> log_lock(log_raw_safety_);
+        if (log_raw_data_) {
+            log_raw_data_->write(reinterpret_cast<char *>(res->data()), res->size() * sizeof(RawData));
+        }
+    }
+    return res;
 }
 
 I_EventsStream::SeekStatus I_EventsStream::seek(timestamp target_ts_us, timestamp &reached_ts_us) {

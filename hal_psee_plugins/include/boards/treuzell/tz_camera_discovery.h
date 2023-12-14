@@ -14,6 +14,7 @@
 
 #include <string>
 
+#include "metavision/psee_hw_layer/boards/treuzell/board_command.h"
 #include "metavision/psee_hw_layer/boards/treuzell/tz_libusb_board_command.h"
 #include "metavision/psee_hw_layer/devices/treuzell/tz_device.h"
 #include "metavision/hal/utils/camera_discovery.h"
@@ -30,9 +31,9 @@ public:
 
     struct DeviceBuilderParameters : public Metavision::DeviceBuilderParameters {
         DeviceBuilderParameters(std::shared_ptr<LibUSBContext> libusb_ctx,
-                                const std::shared_ptr<TzLibUSBBoardCommand> &board_cmd) :
+                                const std::shared_ptr<BoardCommand> &board_cmd) :
             board_cmd(board_cmd), libusb_ctx(libusb_ctx) {}
-        std::shared_ptr<TzLibUSBBoardCommand> board_cmd;
+        std::shared_ptr<BoardCommand> board_cmd;
         std::shared_ptr<LibUSBContext> libusb_ctx;
     };
 
@@ -47,7 +48,7 @@ public:
     void add_usb_id(uint16_t vid, uint16_t pid, uint8_t subclass);
 
 private:
-    std::vector<std::shared_ptr<TzLibUSBBoardCommand>> list_boards() const;
+    std::vector<std::shared_ptr<BoardCommand>> list_boards() const;
     std::shared_ptr<LibUSBContext> libusb_ctx;
     std::unique_ptr<TzDeviceBuilder> builder;
 

@@ -106,11 +106,10 @@ int main(int argc, char *argv[]) {
         }
 
         // Retrieves raw buffer
-        long n_rawbytes    = 0;
-        uint8_t *ev_buffer = i_eventsstream->get_latest_raw_data(n_rawbytes);
+        auto ev_buffer = i_eventsstream->get_latest_raw_data();
 
         // Decode the raw buffer
-        i_decoder->decode(ev_buffer, ev_buffer + n_rawbytes);
+        i_decoder->decode(ev_buffer->data(), ev_buffer->data() + ev_buffer->size());
     }
 
     return 0;

@@ -38,6 +38,7 @@ void OnDemandFrameGenerationAlgorithm::generate(timestamp ts, cv::Mat &frame, bo
            << last_frame_ts_us_ << " and current frame generation is at " << ts << ".";
         throw std::invalid_argument(ss.str());
     }
+
     if (frame.rows != height_ || frame.cols != width_) {
         std::ostringstream ss;
         ss << "Incompatible matrix size. Must be (" << height_ << ", " << width_ << ").";

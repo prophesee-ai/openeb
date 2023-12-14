@@ -59,12 +59,6 @@ public:
     /// @param vroi Vector of ROI to transform to bitword register format
     virtual std::vector<uint32_t> create_ROIs(const std::vector<Window> &vroi);
 
-    /// @brief Sets ROI from bitword (register format)
-    /// @param vroiparams A sensor ROI
-    /// @param is_enabled If true, applies ROI
-    /// @return true on success
-    virtual bool set_ROIs_from_bitword(const std::vector<uint32_t> &vroiparams, bool is_enabled);
-
     /// @brief Sets multiple ROIs from row and column binary maps
     ///
     /// The binary maps (std::vector<bool>) arguments must have the sensor's dimension
@@ -77,6 +71,13 @@ public:
     /// @warning For a pixel to be enabled, it must be enabled on both its row and column
     virtual bool set_lines(const std::vector<bool> &cols, const std::vector<bool> &rows) override;
 
+    /// @brief Get active ROI lines
+    ///
+    /// @param cols Vector of boolean to store active columns
+    /// @param rows Vector of boolean to store active lines
+    /// @return true on success
+    virtual bool get_lines(std::vector<bool> &cols, std::vector<bool> &rows) const override;
+
 protected:
     static std::vector<uint32_t> create_ROIs(const std::vector<Window> &vroi, int device_width, int device_height,
                                              bool x_flipped, int word_size, int x_offset = 0, int y_offset = 0);
@@ -88,6 +89,12 @@ protected:
     std::vector<uint32_t> create_ROIs(const std::vector<bool> &cols_to_enable, const std::vector<bool> &rows_to_enable,
                                       int x_offset = 0, int y_offset = 0);
 
+    std::vector<Window> lines_to_windows(const std::vector<bool> &cols_to_enable, const std::vector<bool> &rows_to_enable);
+
+    void lines_from_windows(const std::vector<Window> &windows, std::vector<bool> &cols, std::vector<bool> &rows) const;
+
+    virtual bool write_ROI_windows(const std::vector<Window> &windows);
+
     /// Returns if x axis is flipped for coding the ROI
     virtual bool roi_x_flipped() const;
 
@@ -97,10 +104,12 @@ protected:
     /// Writes ROI parameters
     virtual void write_ROI(const std::vector<uint32_t> &vroiparams) = 0;
 
-private:
-    int device_height_{0};
-    int device_width_{0};
+    const int device_height_{0};
+    const int device_width_{0};
 
+private:
+
+    bool is_lines;
     std::vector<Window> active_windows_;
 };
 

@@ -45,7 +45,7 @@ std::string ROOT_PREFIX   = "PSEE/IMX636/";
 std::string SENSOR_PREFIX = "";
 } // namespace
 
-TzImx636::TzImx636(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent) :
+TzImx636::TzImx636(std::shared_ptr<Metavision::TzLibUSBBoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent) :
     TzDevice(cmd, dev_id, parent),
     TzIssdDevice(issd_evk3_imx636_sequence),
     TzDeviceWithRegmap(Imx636RegisterMap, Imx636RegisterMapSize, ROOT_PREFIX) {
@@ -56,7 +56,7 @@ TzImx636::TzImx636(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id, s
     lifo_control(true, true, true);
 }
 
-std::shared_ptr<TzDevice> TzImx636::build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id,
+std::shared_ptr<TzDevice> TzImx636::build(std::shared_ptr<Metavision::TzLibUSBBoardCommand> cmd, uint32_t dev_id,
                                           std::shared_ptr<TzDevice> parent) {
     if (can_build(cmd, dev_id)) {
         return std::make_shared<TzImx636>(cmd, dev_id, parent);
@@ -67,7 +67,7 @@ std::shared_ptr<TzDevice> TzImx636::build(std::shared_ptr<TzLibUSBBoardCommand> 
 static TzRegisterBuildMethod method0("psee,ccam5_gen42", TzImx636::build, TzImx636::can_build);
 static TzRegisterBuildMethod method1("psee,ccam5_imx636", TzImx636::build, TzImx636::can_build);
 
-bool TzImx636::can_build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id) {
+bool TzImx636::can_build(std::shared_ptr<Metavision::TzLibUSBBoardCommand> cmd, uint32_t dev_id) {
     bool res = (cmd->read_device_register(dev_id, 0x14)[0] == 0xA0401806);
     res      = res && ((cmd->read_device_register(dev_id, 0xF128)[0] & 3) == 0);
     return res;
@@ -75,9 +75,9 @@ bool TzImx636::can_build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev
 
 void TzImx636::spawn_facilities(DeviceBuilder &device_builder, const DeviceConfig &device_config) {
     device_builder.add_facility(std::make_unique<EventTrailFilter>(
-        std::dynamic_pointer_cast<TzDeviceWithRegmap>(shared_from_this()), get_sensor_info(), SENSOR_PREFIX));
+        register_map, get_sensor_info(), SENSOR_PREFIX));
     device_builder.add_facility(std::make_unique<AntiFlickerFilter>(
-        std::dynamic_pointer_cast<TzDeviceWithRegmap>(shared_from_this()), get_sensor_info(), SENSOR_PREFIX));
+        register_map, get_sensor_info(), SENSOR_PREFIX));
 
     auto erc = device_builder.add_facility(
         std::make_unique<Gen41Erc>(register_map, SENSOR_PREFIX + "erc/", shared_from_this()));

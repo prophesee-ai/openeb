@@ -12,6 +12,9 @@
 #ifndef TZ_DEVICE_BUILDER_H
 #define TZ_DEVICE_BUILDER_H
 
+#include "metavision/hal/utils/device_config.h"
+#include "metavision/hal/utils/device_builder.h"
+
 #include <cstdint>
 #include <memory>
 #include <functional>
@@ -23,6 +26,7 @@ namespace Metavision {
 class TzDevice;
 
 class TzRegisterBuildMethod;
+class TzLibUSBBoardCommand;
 class TzDeviceBuilder {
 public:
     using Build_Fun = std::function<std::shared_ptr<TzDevice>(std::shared_ptr<TzLibUSBBoardCommand>, uint32_t id,

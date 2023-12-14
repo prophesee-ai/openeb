@@ -20,4 +20,7 @@ message RegionOfInterestState {
     }
 
     repeated ROIWindow window = 3;
+
+    repeated bool columns = 4;
+    repeated bool rows = 5;
 }

@@ -55,6 +55,9 @@ class LiveReplayEventsIterator(object):
     def get_size(self):
         return self.iterator.get_size()
 
+    def get_current_time(self):
+        return self.iterator.get_current_time()
+
     def __iter__(self):
         self.clock = time.time()
         for events in self.iterator:

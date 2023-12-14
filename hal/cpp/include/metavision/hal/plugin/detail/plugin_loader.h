@@ -28,6 +28,7 @@ public:
     void insert_folders(const std::vector<std::string> &folders);
 
     void load_plugins();
+    void unload_plugins();
 
     class PluginList;
     PluginList get_plugin_list();

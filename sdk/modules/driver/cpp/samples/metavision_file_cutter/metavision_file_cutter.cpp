@@ -82,7 +82,7 @@ int main(int argc, char *argv[]) {
         try {
             camera.raw_data();
             writer = std::make_unique<Metavision::RAWEventFileWriter>(out_file_path);
-        } catch (Metavision::CameraException &e) {
+        } catch (const Metavision::CameraException &) {
             MV_LOG_ERROR() << "Unable to cut to RAW from a file that does not contain RAW data";
             return 1;
         }
@@ -150,7 +150,7 @@ int main(int argc, char *argv[]) {
                         writer->add_events(ev_begin, ev_end);
                     }
                 });
-        } catch (Metavision::CameraException &e) {}
+        } catch (const Metavision::CameraException &) {}
     }
 
     if (out_file_ext != ".raw") {

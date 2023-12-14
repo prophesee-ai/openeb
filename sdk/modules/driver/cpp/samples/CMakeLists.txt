@@ -7,7 +7,6 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-add_subdirectory_if_exists(metavision_evk3d_viewer)
 add_subdirectory(metavision_file_cutter)
 add_subdirectory(metavision_file_to_csv)
 add_subdirectory(metavision_file_to_dat)
@@ -22,6 +21,7 @@ if (NOT ANDROID)
     # need support for std::filesystem in NDK
     # AK comment here
     add_subdirectory(metavision_active_pixel_detection)
+    add_subdirectory_if_exists(metavision_evk3d_viewer)
 endif (NOT ANDROID)
 
 if (ANDROID)

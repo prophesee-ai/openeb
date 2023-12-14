@@ -109,15 +109,14 @@ TEST_F_WITH_CAMERA(I_ROI_GTest, roi_columns_lines_with_camera) {
             FAIL();
         }
 
-        long n_bytes;
-        auto data = es->get_latest_raw_data(n_bytes);
+        auto buffer = es->get_latest_raw_data();
 
         if (std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - tnow).count() <
             1000000) {
             // Flush first events
             continue;
         }
-        decoder->decode(data, data + n_bytes);
+        decoder->decode(buffer->data(), buffer->data() + buffer->size());
     }
 }
 
@@ -149,14 +148,14 @@ TEST_F_WITH_CAMERA(I_ROI_GTest, roi_rectangle_with_camera) {
         }
 
         long n_bytes;
-        auto data = es->get_latest_raw_data(n_bytes);
+        auto buffer = es->get_latest_raw_data();
 
         if (std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - tnow).count() <
             1000000) {
             // Flush first events
             continue;
         }
-        decoder->decode(data, data + n_bytes);
+        decoder->decode(buffer->data(), buffer->data() + buffer->size());
     }
 }
 
@@ -197,13 +196,13 @@ TEST_F_WITH_CAMERA(I_ROI_GTest, several_roi_rectangle_with_camera) {
         }
 
         long n_bytes;
-        auto data = es->get_latest_raw_data(n_bytes);
+        auto buffer = es->get_latest_raw_data();
 
         if (std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - tnow).count() <
             1000000) {
             // Flush first events
             continue;
         }
-        decoder->decode(data, data + n_bytes);
+        decoder->decode(buffer->data(), buffer->data() + buffer->size());
     }
 }

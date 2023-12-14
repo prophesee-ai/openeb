@@ -256,7 +256,7 @@ int main(int argc, char *argv[]) {
         device->get_facility<Metavision::I_EventRateActivityFilterModule>();
     if (i_event_rate_activity_filter_module) {
         std::cout << "Event rate activity filter: streaming from "
-                  << i_event_rate_activity_filter_module->get_event_rate_threshold() << " Kev/s" << std::endl;
+                  << i_event_rate_activity_filter_module->get_thresholds().lower_bound_start << " Kev/s" << std::endl;
     }
 
     auto tokenize = [](std::string str, std::string separator) {
@@ -360,11 +360,10 @@ int main(int argc, char *argv[]) {
 
             /// [buffer]
             // Here we polled data, so we can launch decoding
-            long n_bytes;
-            uint8_t *raw_data = i_eventsstream->get_latest_raw_data(n_bytes);
+            auto raw_data = i_eventsstream->get_latest_raw_data();
 
             // This will trigger callbacks set on decoders: in our case EventAnalyzer.process_events
-            i_eventsstreamdecoder->decode(raw_data, raw_data + n_bytes);
+            i_eventsstreamdecoder->decode(raw_data->data(), raw_data->data() + raw_data->size());
             /// [buffer]
         }
     });

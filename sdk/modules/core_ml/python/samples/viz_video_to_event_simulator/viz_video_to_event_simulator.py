@@ -48,7 +48,7 @@ def parse_args(only_default_values=False):
     parser.add_argument('--crop_image', action="store_true", help='crop images instead of resizing them.')
     parser.add_argument("--no_display", dest="display", action="store_false", help='disable the graphical return.')
     parser.add_argument("--verbose", action="store_true", help='set to have the speed of the simulator in ev/s')
-    parser.add_argument('-o', "--output", help="if provided, will write the events in the corresponding path")
+    parser.add_argument('-o', "--output", help="if provided, will write the events in a DAT file in the corresponding path")
     parser.add_argument('-fps', '--override_fps', default=0, type=float,
                         help="if positive, overrides the framerate of the input video. Useful for slow motion videos.")
 

@@ -210,8 +210,12 @@ int main(int argc, char *argv[]) {
     bool do_retry = false;
 
     const std::string short_program_desc("Application that detects and masks active pixels\n"
-                                         "Warning: please note that this application is designed for future sensors "
-                                         "and won't work with current ones (Gen31, Gen41 and IMX636)\n\n");
+                                         "Warning: whereas this tool is designed for the GenX320 sensor, "
+                                         "it can be used as well with other sensors (Gen3.1, Gen4.1 and IMX636).\n"
+                                         "In that case, it will allow only to detect the active pixels "
+                                         "by revealing their coordinate (x,y) in the calibration data file.\n"
+                                         "For Gen4.1 and IMX636 sensors the active pixels can then be masked "
+                                         "using the Digital Event Mask sensor feature\n\n");
     const std::vector<std::string> help_messages = {"Press SPACE key to start the acquisition for the chosen duration",
                                                     "and active pixel detection.",
                                                     "Once the detection has been done, you can adjust the threshold",

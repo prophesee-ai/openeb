@@ -9,4 +9,5 @@
 
 if (NOT ANDROID)
     add_subdirectory(metavision_imx636_facility_casting_sample)
+    add_subdirectory(metavision_riscv_logger)
 endif (NOT ANDROID)

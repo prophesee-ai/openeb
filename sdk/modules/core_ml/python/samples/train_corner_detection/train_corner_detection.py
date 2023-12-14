@@ -14,6 +14,7 @@ Corner Detection Training Script
 import argparse
 import numpy as np
 import os
+import platform
 import torch
 
 from pytorch_lightning.loggers import TensorBoardLogger
@@ -77,6 +78,12 @@ def main(raw_args=None):
     print('pl version: ', pl.__version__)
     params.cin = params.event_volume_depth
     params.cout = params.number_of_heatmaps
+
+    if platform.system() == "Windows" and params.num_workers > 0:
+        print('Warning: The num_workers parameter is set to 0 due to a Pytorch multiprocessing \
+               issue(https://discuss.pytorch.org/t/errors-when-using-num-workers-0-in-dataloader/97564/5) !!!')
+        params.num_workers = 0
+
     print(params)
 
     model = CornerDetectionLightningModel(params)

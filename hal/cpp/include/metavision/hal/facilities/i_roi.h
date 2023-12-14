@@ -58,7 +58,7 @@ public:
 
     /// @brief Returns ROI/RONI activation state
     /// @return The ROI/RONI state
-    virtual bool is_enabled() const  = 0;
+    virtual bool is_enabled() const = 0;
 
     /// @brief Window mode
     ///
@@ -102,6 +102,13 @@ public:
     ///
     /// @return The vector of active windows
     virtual std::vector<Window> get_windows() const = 0;
+
+    /// @brief Gets active ROI/RONI lines
+    ///
+    /// @param cols vector to store active columns
+    /// @param rows vector to store active rows
+    /// @return true on success
+    virtual bool get_lines(std::vector<bool> &cols, std::vector<bool> &rows) const = 0;
 
     /// @brief Sets multiple lines and columns from row and column binary maps
     ///

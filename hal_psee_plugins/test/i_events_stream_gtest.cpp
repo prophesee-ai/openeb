@@ -522,11 +522,11 @@ TEST_F_WITH_DATASET(I_EventsStream_GTest, seek_range) {
                 timestamp first_decoded_event_ts_us = decoder->get_last_timestamp();
                 EXPECT_EQ(timestamp(-1), first_decoded_event_ts_us);
                 timestamp last_decoded_event_ts_us;
-                long bytes_polled_count;
                 while (fes->wait_next_buffer() > 0) {
-                    auto data      = fes->get_latest_raw_data(bytes_polled_count);
+                    auto buffer    = fes->get_latest_raw_data();
+                    auto data      = buffer->data();
                     auto data_next = data + decoder->get_raw_event_size_bytes();
-                    auto data_end  = data + bytes_polled_count;
+                    auto data_end  = data + buffer->size();
 
                     for (; first_decoded_event_ts_us == decoder->get_last_timestamp() && data != data_end;
                          data = data_next, data_next += decoder->get_raw_event_size_bytes()) {
@@ -541,8 +541,8 @@ TEST_F_WITH_DATASET(I_EventsStream_GTest, seek_range) {
                 }
                 // -- Then decode the full dataset until the end
                 while (fes->wait_next_buffer() > 0) {
-                    auto data = fes->get_latest_raw_data(bytes_polled_count);
-                    decoder->decode(data, data + bytes_polled_count);
+                    auto buffer = fes->get_latest_raw_data();
+                    decoder->decode(buffer->data(), buffer->data() + buffer->size());
                 }
                 last_decoded_event_ts_us = decoder->get_last_timestamp();
 
@@ -620,14 +620,12 @@ TEST_F_WITH_DATASET(I_EventsStream_GTest, file_index_seek) {
                 // Initialize the decoder (i.e. wait to reach the first decodable event)
                 // This is needed so that the seeking capability is validated
                 bool valid_event = false;
-                long bytes_polled_count;
                 cd_decoder->add_event_buffer_callback([&](auto, auto) { valid_event = true; });
-                uint8_t *data;
                 while (!valid_event) {
                     // Read data from the file
                     ASSERT_TRUE(fes->wait_next_buffer() > 0);
-                    data = fes->get_latest_raw_data(bytes_polled_count);
-                    decoder->decode(data, data + bytes_polled_count);
+                    auto buffer = fes->get_latest_raw_data();
+                    decoder->decode(buffer->data(), buffer->data() + buffer->size());
                 }
 
                 // ------------------------------
@@ -641,10 +639,10 @@ TEST_F_WITH_DATASET(I_EventsStream_GTest, file_index_seek) {
 
                 ASSERT_TRUE(fes->wait_next_buffer() > 0);
                 // Decode a single event and check that the timestamp is correct
-                data = fes->get_latest_raw_data(bytes_polled_count);
+                auto buffer = fes->get_latest_raw_data();
 
                 // The first event decoded must have a timestamp that is equal to the first event's timestamp
-                decoder->decode(data, data + decoder->get_raw_event_size_bytes());
+                decoder->decode(buffer->data(), buffer->data() + decoder->get_raw_event_size_bytes());
                 ASSERT_EQ(decoder->get_last_timestamp(), first_indexed_event_ts_us);
 
                 // ------------------------------
@@ -667,10 +665,10 @@ TEST_F_WITH_DATASET(I_EventsStream_GTest, file_index_seek) {
 
                     // Read data from the file
                     ASSERT_TRUE(fes->wait_next_buffer() > 0);
-                    data = fes->get_latest_raw_data(bytes_polled_count);
+                    buffer = fes->get_latest_raw_data();
 
                     // The first event decoded must have a timestamp that is equal to the reached timestamp
-                    decoder->decode(data, data + decoder->get_raw_event_size_bytes());
+                    decoder->decode(buffer->data(), buffer->data() + decoder->get_raw_event_size_bytes());
                     ASSERT_EQ(decoder->get_last_timestamp(), reached_ts);
                 }
 
@@ -683,10 +681,10 @@ TEST_F_WITH_DATASET(I_EventsStream_GTest, file_index_seek) {
 
                 // Read data from the file
                 ASSERT_TRUE(fes->wait_next_buffer() > 0);
-                data = fes->get_latest_raw_data(bytes_polled_count);
+                buffer = fes->get_latest_raw_data();
 
                 // The first event decoded must have a timestamp that is equal to the reached timestamp
-                decoder->decode(data, data + decoder->get_raw_event_size_bytes());
+                decoder->decode(buffer->data(), buffer->data() + decoder->get_raw_event_size_bytes());
                 ASSERT_EQ(decoder->get_last_timestamp(), reached_ts);
             }
         }
@@ -719,15 +717,14 @@ TEST_F_WITH_DATASET(I_EventsStream_GTest, decode_evt3_nevents_monotonous_timesta
 
     // WHEN we stream and decode data byte by byte
     Metavision::timestamp previous_ts_last = 0;
-    long int bytes_polled_count;
     while (es->wait_next_buffer() >= 0) {
-        auto raw_buffer               = es->get_latest_raw_data(bytes_polled_count);
-        auto raw_buffer_end           = raw_buffer + bytes_polled_count;
+        auto raw_buffer               = es->get_latest_raw_data();
+        auto cur_raw_ptr              = raw_buffer->data();
         auto raw_data_to_decode_count = 1;
-        auto raw_buffer_decode_to     = raw_buffer + raw_data_to_decode_count;
+        auto raw_buffer_decode_to     = cur_raw_ptr + raw_data_to_decode_count;
 
-        for (; raw_buffer < raw_buffer_end;) {
-            decoder->decode(raw_buffer, raw_buffer_decode_to);
+        for (; static_cast<std::size_t>(std::distance(raw_buffer->data(), cur_raw_ptr)) < raw_buffer->size();) {
+            decoder->decode(cur_raw_ptr, raw_buffer_decode_to);
 
             // THEN the timestamps increase monotonously
             Metavision::timestamp current_ts_last = decoder->get_last_timestamp();
@@ -736,8 +733,9 @@ TEST_F_WITH_DATASET(I_EventsStream_GTest, decode_evt3_nevents_monotonous_timesta
                 previous_ts_last = current_ts_last;
             }
 
-            raw_buffer           = raw_buffer_decode_to;
-            raw_buffer_decode_to = std::min(raw_buffer + raw_data_to_decode_count, raw_buffer_end);
+            cur_raw_ptr          = raw_buffer_decode_to;
+            raw_buffer_decode_to = std::min(cur_raw_ptr + raw_data_to_decode_count,
+                                            raw_buffer->data() + raw_buffer->size());
         }
     }
 }
@@ -759,9 +757,8 @@ TEST_WITH_DATASET(EventsStream_GTest, stop_on_recording_does_not_drop_buffers) {
         if (i_eventsstream->wait_next_buffer() < 0) {
             break;
         }
-        long int n_rawbytes                = 0;
-        I_EventsStream::RawData *ev_buffer = i_eventsstream->get_latest_raw_data(n_rawbytes);
-        n_raw += n_rawbytes;
+        auto ev_buffer = i_eventsstream->get_latest_raw_data();
+        n_raw += ev_buffer->size();
         i_eventsstream->stop();
     }
 
@@ -850,8 +847,7 @@ TYPED_TEST(I_EventsStreamT_GTest, test_log) {
     // Encode
     encoder.encode(this->events1_.data(), this->events1_.data() + this->events1_.size());
     encoder.flush();
-    long n_events;
-    this->events_stream_->get_latest_raw_data(n_events);
+    this->events_stream_->get_latest_raw_data();
     this->dt_->trigger_transfer(data);
 
     // REMARK : as of today, in order to log we have to call
@@ -859,7 +855,7 @@ TYPED_TEST(I_EventsStreamT_GTest, test_log) {
     // TODO : remove this following line if we modify the behaviour
     // of log_data (for example if we log when calling add_data or if
     // we log in a separate thread)
-    this->events_stream_->get_latest_raw_data(n_events);
+    this->events_stream_->get_latest_raw_data();
     this->events_stream_->stop_log_raw_data();
 
     // Now open the file and verify what is written :

@@ -7,7 +7,7 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-set(HAL_PSEE_OPEN_PLUGIN_DEVICES gen31 gen41 imx636 imx646 genx320 treuzell
+set(HAL_PSEE_OPEN_PLUGIN_DEVICES gen31 gen41 imx636 imx646 genx320 treuzell v4l2
     CACHE INTERNAL "Hal plugin open sourced devices")
 
 set(HAL_PSEE_CLOSED_PLUGIN_DEVICES saphir sensorlib evk3d 
@@ -21,3 +21,4 @@ endforeach()
 foreach (hal_closed_device ${HAL_PSEE_CLOSED_PLUGIN_DEVICES})
     add_subdirectory_if_exists(${hal_closed_device})
 endforeach()
+

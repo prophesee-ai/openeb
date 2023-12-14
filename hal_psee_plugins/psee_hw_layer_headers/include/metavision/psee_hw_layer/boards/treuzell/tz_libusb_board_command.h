@@ -9,6 +9,7 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
+
 #ifndef METAVISION_HAL_TZ_LIBUSB_BOARD_COMMAND_H
 #define METAVISION_HAL_TZ_LIBUSB_BOARD_COMMAND_H
 
@@ -22,11 +23,12 @@
 #include <memory>
 
 #include "metavision/psee_hw_layer/boards/utils/psee_libusb.h"
+#include "metavision/psee_hw_layer/boards/treuzell/board_command.h"
 
 namespace Metavision {
 
 class TzCtrlFrame;
-class PseeLibUSBDataTransfer;
+class DataTransfer;
 
 struct UsbInterfaceId {
     uint16_t vid;
@@ -35,39 +37,39 @@ struct UsbInterfaceId {
     uint8_t subclass;
 };
 
-// A list of hacks to accomodate known misbehaving systems
+// A list of hacks to accommodate known misbehaving systems
 struct BoardQuirks {
     bool reset_on_destroy;
     bool ignore_size_on_device_prop_answer;
     bool do_not_set_config;
 };
 
-class TzLibUSBBoardCommand {
+class TzLibUSBBoardCommand: public virtual BoardCommand {
 public:
     TzLibUSBBoardCommand() = delete;
     TzLibUSBBoardCommand(std::shared_ptr<LibUSBContext> ctx, libusb_device *dev, libusb_device_descriptor &desc,
                          const std::vector<UsbInterfaceId> &usb_ids);
     ~TzLibUSBBoardCommand();
 
-    long get_board_speed();
+    long get_board_speed() override;
     std::shared_ptr<LibUSBContext> get_libusb_ctx() {
         return libusb_ctx;
     }
 
-    std::string get_serial();
-    std::string get_name();
-    std::string get_manufacturer();
-    time_t get_build_date();
-    uint32_t get_version();
+    std::string get_serial() override;
+    std::string get_name() override;
+    std::string get_manufacturer() override;
+    time_t get_build_date() override;
+    uint32_t get_version() override;
 
-    void transfer_tz_frame(TzCtrlFrame &req);
+    void transfer_tz_frame(TzCtrlFrame &req) override;
 
-    unsigned int get_device_count();
-    std::vector<uint32_t> read_device_register(uint32_t device, uint32_t address, int nval = 1);
-    void write_device_register(uint32_t device, uint32_t address, const std::vector<uint32_t> &val);
+    unsigned int get_device_count() override;
+    std::vector<uint32_t> read_device_register(uint32_t device, uint32_t address, int nval = 1) override;
+    void write_device_register(uint32_t device, uint32_t address, const std::vector<uint32_t> &val) override;
 
     // @brief Create a new DataTransfer object to stream the currently opened device
-    std::unique_ptr<PseeLibUSBDataTransfer> build_data_transfer(uint32_t raw_event_size_bytes);
+    std::unique_ptr<DataTransfer> build_data_transfer(uint32_t raw_event_size_bytes) override;
 
 private:
     bool clear_endpoint();

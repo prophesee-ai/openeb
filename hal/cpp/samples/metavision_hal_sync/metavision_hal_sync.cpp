@@ -217,11 +217,10 @@ int main(int argc, char *argv[]) {
             short ret = i_eventsstream->poll_buffer();
 
             // Here we polled data, so we can launch decoding
-            long n_bytes;
-            uint8_t *raw_data = i_eventsstream->get_latest_raw_data(n_bytes);
+            auto raw_data = i_eventsstream->get_latest_raw_data();
 
             // This will trigger callbacks set on decoders: in our case EventAnalyzer.process_events
-            i_decoder->decode(raw_data, raw_data + n_bytes);
+            i_decoder->decode(raw_data->data(), raw_data->data() + raw_data->size());
         }
     });
 

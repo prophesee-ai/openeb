@@ -15,8 +15,8 @@
 namespace Metavision {
 
 GenX320TzTriggerEvent::GenX320TzTriggerEvent(const std::shared_ptr<RegisterMap> &register_map,
-                                             const std::string &prefix, const std::shared_ptr<TzDevice> tzDev) :
-    register_map_(register_map), prefix_(prefix), tzDev_(tzDev), chan_map_({{Channel::Main, 0}}) {}
+                                             const std::string &prefix) :
+    register_map_(register_map), prefix_(prefix), chan_map_({{Channel::Main, 0}}) {}
 
 bool GenX320TzTriggerEvent::enable(const Channel &channel) {
     auto it = chan_map_.find(channel);

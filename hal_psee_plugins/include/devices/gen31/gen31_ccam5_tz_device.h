@@ -23,6 +23,7 @@ namespace Metavision {
 class DeviceBuilder;
 class DeviceBuilderParameters;
 class DeviceConfig;
+class TzLibUSBBoardCommand;
 
 class TzCcam5Gen31 : public TzPseeFpgaDevice, public TzIssdDevice, public TzMainDevice, public IlluminationProvider {
 public:

@@ -12,6 +12,7 @@
 #ifndef METAVISION_UTILS_PYBIND_SYNC_ALGORITHM_PROCESS_HELPER_H
 #define METAVISION_UTILS_PYBIND_SYNC_ALGORITHM_PROCESS_HELPER_H
 
+#include "metavision/sdk/core/utils/rolling_event_buffer.h"
 #include "metavision/utils/pybind/pod_event_buffer.h"
 
 namespace Metavision {
@@ -71,6 +72,14 @@ void process_events_buffer_sync(Algo &algo, const PODEventBuffer<InputEvent> &in
     out.buffer_.clear();
 
     algo.process_events(in.buffer_.cbegin(), in.buffer_.cend(), std::back_inserter(out.buffer_));
+}
+
+template<typename Algo, typename InputEvent, typename OutputEvent = InputEvent>
+void process_events_rolling_buffer_sync(Algo &algo, const RollingEventBuffer<InputEvent> &in,
+                                        PODEventBuffer<OutputEvent> &out) {
+    out.buffer_.clear();
+
+    algo.process_events(in.cbegin(), in.cend(), std::back_inserter(out.buffer_));
 }
 
 // This should only be used when the number of output events is the same as the number of input events

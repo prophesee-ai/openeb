@@ -11,6 +11,7 @@
 
 #include "devices/treuzell/ti_tmp103.h"
 #include "devices/treuzell/tz_device_builder.h"
+#include "metavision/psee_hw_layer/boards/treuzell/board_command.h"
 #include "metavision/psee_hw_layer/boards/treuzell/tz_libusb_board_command.h"
 
 namespace Metavision {

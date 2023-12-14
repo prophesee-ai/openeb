@@ -27,7 +27,7 @@ class Gen41TzTriggerEvent : public I_TriggerIn {
 public:
     /// @brief Constructor
     Gen41TzTriggerEvent(const std::shared_ptr<RegisterMap> &register_map, const std::string &prefix,
-                        const std::shared_ptr<TzDevice> tzDev);
+                        const std::shared_ptr<TzDevice> tzDev = nullptr);
 
     /// @brief Enables external trigger monitoring
     /// @param channel external trigger channel to enable

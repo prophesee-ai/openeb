@@ -55,6 +55,12 @@ if (USE_PROTOBUF)
             ${PROTO_HDRS_DIRS}
             ${Protobuf_INCLUDE_DIRS}
     )
+
+    # Doesn't exist for all CMake versions
+    if (TARGET protobuf::libprotobuf)
+        set(Protobuf_LIBRARIES protobuf::libprotobuf)
+    endif ()
+
     target_link_libraries(metavision_device_serialization_obj
         PRIVATE
             ${Protobuf_LIBRARIES}

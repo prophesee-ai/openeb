@@ -18,18 +18,49 @@
 
 namespace Metavision {
 
-class TzCx3GenX320 : public TzIssdDevice,
+class TzIssdGenX320Device : public TzIssdDevice {
+public:
+    TzIssdGenX320Device(const Issd &issd, const std::pair<std::string, uint32_t> &env_var);
+    virtual ~TzIssdGenX320Device();
+    bool download_firmware() const;
+    void start_firmware() const;
+    static std::pair<std::string, uint32_t> parse_env(const char *input);
+
+protected:
+    virtual void initialize() override;
+
+private:
+    using Firmware = std::vector<std::pair<uint32_t, uint32_t>>;
+    Firmware firmware_;
+    uint32_t start_address_;
+    static Firmware read_firmware(const std::string &filename);
+
+    static constexpr uint32_t DMEM_ADDR     = (0x00300000UL);
+    static constexpr uint32_t DMEM_SIZE     = (32 * 1024UL);
+    static constexpr uint32_t IMEM_ADDR     = (0x00200000UL);
+    static constexpr uint32_t IMEM_SIZE     = (32 * 1024UL);
+    static constexpr uint32_t MEM_BANK_SIZE = (64UL * sizeof(uint32_t));
+
+    static constexpr uint32_t GENX_MEM_BANK_NONE = (0x0UL);
+    static constexpr uint32_t GENX_MEM_BANK_IMEM = (0x2UL);
+    static constexpr uint32_t GENX_MEM_BANK_DMEM = (0x3UL);
+};
+
+class TzCx3GenX320 : public TzIssdGenX320Device,
                      public TzMainDevice,
                      public TemperatureProvider,
                      public IlluminationProvider,
                      public PixelDeadTimeProvider {
 public:
-    TzCx3GenX320(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent);
+    TzCx3GenX320(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id, const Issd &issd, bool mp_variant,
+                 std::shared_ptr<TzDevice> parent);
     virtual ~TzCx3GenX320();
     static std::shared_ptr<TzDevice> build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id,
                                            std::shared_ptr<TzDevice> parent);
 
     static bool can_build(std::shared_ptr<TzLibUSBBoardCommand>, uint32_t dev_id);
+    static bool can_build_es(std::shared_ptr<TzLibUSBBoardCommand>, uint32_t dev_id);
+    static bool can_build_mp(std::shared_ptr<TzLibUSBBoardCommand>, uint32_t dev_id);
     std::list<StreamFormat> get_supported_formats() const override;
     StreamFormat get_output_format() const override;
     virtual long get_system_id() const;
@@ -37,9 +68,7 @@ public:
     virtual bool set_mode_master();
     virtual bool set_mode_slave();
     virtual I_CameraSynchronization::SyncMode get_mode() const;
-    virtual I_HW_Identification::SensorInfo get_sensor_info() {
-        return {320, 0, "GenX320"};
-    }
+    virtual I_HW_Identification::SensorInfo get_sensor_info();
     long long get_sensor_id();
     virtual int get_temperature();
     virtual int get_illumination();
@@ -55,6 +84,7 @@ private:
     void lifo_control(bool enable, bool cnt_enable);
     std::vector<uint32_t> lifo_acquisition(int expected_wait_time);
     void temperature_init();
+    bool is_mp;
 };
 
 } // namespace Metavision

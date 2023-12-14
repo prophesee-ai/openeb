@@ -17,7 +17,7 @@ endif(NOT CMAKE_BUILD_TYPE)
 
 cmake_minimum_required(VERSION 3.5)
 
-project(metavision VERSION 4.4.0)
+project(metavision VERSION 4.5.0)
 set(PROJECT_VERSION_SUFFIX "")
 
 if(PROJECT_VERSION_SUFFIX STREQUAL "")
@@ -190,6 +190,7 @@ find_package(LibUSB REQUIRED)
 # Boost
 set (boost_components_to_find program_options filesystem timer chrono thread)
 find_package(Boost COMPONENTS ${boost_components_to_find} REQUIRED)
+add_definitions(-DBOOST_BIND_GLOBAL_PLACEHOLDERS) ## needed to get rid of warning `#pragma message: The practice of declaring the Bind placeholders (_1, _2, ...)`
 
 # Python 3 for bindings and pytests
 if (COMPILE_PYTHON3_BINDINGS OR BUILD_TESTING)
@@ -200,7 +201,7 @@ endif ()
 find_package(OpenCV COMPONENTS core highgui imgproc videoio imgcodecs calib3d objdetect REQUIRED)
 
 # HDF5
-if (NOT ANDROID)
+if (NOT ANDROID AND NOT HDF5_DISABLED)
     find_package(HDF5 1.10.2 COMPONENTS CXX)
     if (HDF5_FOUND AND WIN32)
         LIST(APPEND HDF5_DEFINITIONS H5_BUILT_AS_DYNAMIC_LIB)
@@ -433,7 +434,6 @@ add_subdirectory_if_exists(standalone_apps)
 ################################
 if (GENERATE_DOC)
     add_subdirectory(doc)
-    add_subdirectory(appnotes)
 endif (GENERATE_DOC)
 
 # Add script generation at the end, once all other subdirs have been processed

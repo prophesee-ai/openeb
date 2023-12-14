@@ -17,6 +17,8 @@
 
 namespace Metavision {
 
+class TzLibUSBBoardCommand;
+
 class TzPseeVideo : public TzPseeFpgaDevice, public TzMainDevice {
 public:
     TzPseeVideo(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent);

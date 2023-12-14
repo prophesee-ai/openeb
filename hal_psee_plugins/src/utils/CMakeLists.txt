@@ -12,10 +12,10 @@ target_sources(metavision_psee_hw_layer_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/register_map.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/psee_hal_utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/tz_device_control.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/make_decoder.cpp
 )
 
 target_sources(metavision_hal_psee_plugin_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/device_builder_factory.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/make_decoder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/psee_pattern_generator_checker.cpp
 )

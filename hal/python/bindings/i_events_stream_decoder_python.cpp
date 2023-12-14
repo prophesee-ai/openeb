@@ -10,11 +10,16 @@
  **********************************************************************************************************************/
 
 #include <pybind11/numpy.h>
+#include <pybind11/stl.h>
+#include <pybind11/stl_bind.h>
 
 #include "hal_python_binder.h"
 #include "metavision/hal/facilities/i_events_stream_decoder.h"
 #include "metavision/hal/facilities/i_events_stream.h"
 #include "pb_doc_hal.h"
+
+// Needed to avoid copies of vectors of RawData
+PYBIND11_MAKE_OPAQUE(std::vector<Metavision::I_EventsStream::RawData>);
 
 namespace Metavision {
 
@@ -27,6 +32,11 @@ void decode_wrapper(I_EventsStreamDecoder *decoder, py::array_t<I_EventsStream::
                                  " dimensions");
     }
     decoder->decode((I_EventsStream::RawData *)buf.ptr, (I_EventsStream::RawData *)buf.ptr + buf.size);
+}
+
+// Provide this overload to avoid having to convert opaque vectors to py::array_t
+void decode_wrapper_vector(I_EventsStreamDecoder *decoder, std::vector<I_EventsStream::RawData> &buffer) {
+    decoder->decode(buffer.data(), buffer.data() + buffer.size());
 }
 
 } /* anonymous namespace */
@@ -44,6 +54,12 @@ static HALFacilityPythonBinder<I_EventsStreamDecoder> bind(
                  "\n"
                  "Args:\n"
                  "    RawData: Numpy array of Events\n")
+            .def("decode", &decode_wrapper_vector, py::arg("RawData"),
+                 "Decodes raw data. Identifies the events in the buffer and dispatches it to the instance "
+                 "Event Decoder corresponding to each event type\n"
+                 "\n"
+                 "Args:\n"
+                 "    RawData: Array of events\n")
             .def(
                 "add_time_callback",
                 +[](I_EventsStreamDecoder &self, py::object object) {

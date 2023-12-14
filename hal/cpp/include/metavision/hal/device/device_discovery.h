@@ -137,6 +137,10 @@ public:
     /// @param stream_config Configuration describing how to read the stream (see @ref RawFileConfig)
     /// @return A new Device
     static std::unique_ptr<Device> open_stream(std::unique_ptr<std::istream> stream, RawFileConfig &stream_config);
+
+    /// @brief Unloads all the plugins that have been loaded when listing all available sources
+    /// @warning This function should not be called if there is still a device that is being used
+    static void unload_plugins();
 };
 
 } // namespace Metavision

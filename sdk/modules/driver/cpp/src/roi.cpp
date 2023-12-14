@@ -31,6 +31,7 @@ void Roi::set(const std::vector<bool> &cols, const std::vector<bool> &rows) {
             CameraErrorCode::RoiError,
             "When trying to set advanced ROI: input binary map must be of the same size of the sensor's dimension."));
     }
+    pimpl_->enable(true);
 }
 
 void Roi::set(const std::vector<Roi::Window> &rois) {
@@ -39,6 +40,7 @@ void Roi::set(const std::vector<Roi::Window> &rois) {
         windows.push_back({roi.x, roi.y, roi.width, roi.height});
     }
     pimpl_->set_windows(windows);
+    pimpl_->enable(true);
 }
 
 void Roi::unset() {

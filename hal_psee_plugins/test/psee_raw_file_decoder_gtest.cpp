@@ -51,15 +51,15 @@ protected:
 
     PseeRawFileHeader get_default_header() {
         auto header = std::stringstream();
-        header << "\% Date 2014-02-28 13:37:42" << std::endl
-               << "\% system_ID " << dummy_system_id << std::endl
-               << "\% integrator_name " << get_psee_plugin_integrator_name() << std::endl
-               << "\% plugin_name hal_plugin_gen31_fx3" << std::endl
-               << "\% firmware_version 0.0.0" << std::endl
-               << "\% evt 2.0" << std::endl
-               << "\% subsystem_ID " << dummy_sub_system_id_ << std::endl
-               << "\% " << dummy_custom_key_ << " " << dummy_custom_value_ << std::endl
-               << "\% serial_number " << dummy_serial_ << std::endl;
+        header << "% Date 2014-02-28 13:37:42" << std::endl
+               << "% system_ID " << dummy_system_id << std::endl
+               << "% integrator_name " << get_psee_plugin_integrator_name() << std::endl
+               << "% plugin_name hal_plugin_gen31_fx3" << std::endl
+               << "% firmware_version 0.0.0" << std::endl
+               << "% evt 2.0" << std::endl
+               << "% subsystem_ID " << dummy_sub_system_id_ << std::endl
+               << "% " << dummy_custom_key_ << " " << dummy_custom_value_ << std::endl
+               << "% serial_number " << dummy_serial_ << std::endl;
         return PseeRawFileHeader(header);
     }
 
@@ -158,10 +158,9 @@ TEST_F(PseeRawFileDecoder_Gtest, decode_evt2_data_nominal) {
     es->start();
 
     // WHEN we stream and decode the events in the file
-    long int bytes_polled_count;
     while (es->wait_next_buffer() >= 0) {
-        auto raw_buffer = es->get_latest_raw_data(bytes_polled_count);
-        decoder->decode(raw_buffer, raw_buffer + bytes_polled_count);
+        auto raw_buffer = es->get_latest_raw_data();
+        decoder->decode(raw_buffer->data(), raw_buffer->data() + raw_buffer->size());
     }
 
     // THEN We decode the same data CD & triggers that are encoded in the RAW file
@@ -218,16 +217,17 @@ TEST_F(PseeRawFileDecoder_Gtest, decode_evt2_data_random_split_in_buffer) {
     // WHEN we stream and decode events in buffer of random size
     long int bytes_polled_count;
     while (es->wait_next_buffer() >= 0) {
-        auto raw_buffer               = es->get_latest_raw_data(bytes_polled_count);
-        auto raw_buffer_end           = raw_buffer + bytes_polled_count;
-        auto raw_data_to_decode_count = 2 * (bytes_polled_count / 10) +
+        auto raw_buffer               = es->get_latest_raw_data();
+        auto cur_raw_ptr              = raw_buffer->data();
+        auto raw_data_to_decode_count = 2 * (raw_buffer->size() / 10) +
                                         1; // Ensures odd number of bytes so that we have split in middle of raw event
-        auto raw_buffer_decode_to = raw_buffer + raw_data_to_decode_count;
+        auto raw_buffer_decode_to = cur_raw_ptr + raw_data_to_decode_count;
 
-        for (; raw_buffer < raw_buffer_end;) {
-            decoder->decode(raw_buffer, raw_buffer_decode_to);
-            raw_buffer           = raw_buffer_decode_to;
-            raw_buffer_decode_to = std::min(raw_buffer + raw_data_to_decode_count, raw_buffer_end);
+        for (; static_cast<std::size_t>(std::distance(raw_buffer->data(), cur_raw_ptr)) < raw_buffer->size();) {
+            decoder->decode(cur_raw_ptr, raw_buffer_decode_to);
+            cur_raw_ptr          = raw_buffer_decode_to;
+            raw_buffer_decode_to = std::min(cur_raw_ptr + raw_data_to_decode_count,
+                                            raw_buffer->data() + raw_buffer->size());
         }
     }
 
@@ -283,17 +283,17 @@ TEST_F(PseeRawFileDecoder_Gtest, decode_evt2_data_byte_by_byte) {
     es->start();
 
     // WHEN we stream and decode data byte by byte data
-    long int bytes_polled_count;
     while (es->wait_next_buffer() >= 0) {
-        auto raw_buffer               = es->get_latest_raw_data(bytes_polled_count);
-        auto raw_buffer_end           = raw_buffer + bytes_polled_count;
+        auto raw_buffer               = es->get_latest_raw_data();
+        auto cur_raw_ptr              = raw_buffer->data();
         auto raw_data_to_decode_count = 1;
-        auto raw_buffer_decode_to     = raw_buffer + raw_data_to_decode_count;
+        auto raw_buffer_decode_to     = cur_raw_ptr + raw_data_to_decode_count;
 
-        for (; raw_buffer < raw_buffer_end;) {
-            decoder->decode(raw_buffer, raw_buffer_decode_to);
-            raw_buffer           = raw_buffer_decode_to;
-            raw_buffer_decode_to = std::min(raw_buffer + raw_data_to_decode_count, raw_buffer_end);
+        for (; static_cast<std::size_t>(std::distance(raw_buffer->data(), cur_raw_ptr)) < raw_buffer->size();) {
+            decoder->decode(cur_raw_ptr, raw_buffer_decode_to);
+            cur_raw_ptr          = raw_buffer_decode_to;
+            raw_buffer_decode_to = std::min(cur_raw_ptr + raw_data_to_decode_count,
+                                            raw_buffer->data() + raw_buffer->size());
         }
     }
 
@@ -345,10 +345,9 @@ TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_evt21_data_nominal) {
     es->start();
 
     // WHEN we stream and decode the events in the file
-    long int bytes_polled_count;
     while (es->wait_next_buffer() >= 0) {
-        auto raw_buffer = es->get_latest_raw_data(bytes_polled_count);
-        decoder->decode(raw_buffer, raw_buffer + bytes_polled_count);
+        auto raw_buffer = es->get_latest_raw_data();
+        decoder->decode(raw_buffer->data(), raw_buffer->data() + raw_buffer->size());
     }
 
     // THEN We decode the same data CD & triggers that are encoded in the RAW file
@@ -386,18 +385,17 @@ TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_evt21_data_random_split) {
     es->start();
 
     // WHEN we stream and decode events in buffer of random size
-    long int bytes_polled_count;
     while (es->wait_next_buffer() >= 0) {
-        auto raw_buffer               = es->get_latest_raw_data(bytes_polled_count);
-        auto raw_buffer_end           = raw_buffer + bytes_polled_count;
-        auto raw_data_to_decode_count = 2 * (bytes_polled_count / 10) +
+        auto raw_buffer               = es->get_latest_raw_data();
+        auto cur_raw_ptr              = raw_buffer->data();
+        auto raw_data_to_decode_count = 2 * (raw_buffer->size() / 10) +
                                         1; // Ensures odd number of bytes so that we have split in middle of raw event
-        auto raw_buffer_decode_to = raw_buffer + raw_data_to_decode_count;
+        auto raw_buffer_decode_to = cur_raw_ptr + raw_data_to_decode_count;
 
-        for (; raw_buffer < raw_buffer_end;) {
-            decoder->decode(raw_buffer, raw_buffer_decode_to);
-            raw_buffer           = raw_buffer_decode_to;
-            raw_buffer_decode_to = std::min(raw_buffer + raw_data_to_decode_count, raw_buffer_end);
+        for (; static_cast<std::size_t>(std::distance(raw_buffer->data(), cur_raw_ptr)) < raw_buffer->size();) {
+            decoder->decode(cur_raw_ptr, raw_buffer_decode_to);
+            cur_raw_ptr          = raw_buffer_decode_to;
+            raw_buffer_decode_to = std::min(cur_raw_ptr + raw_data_to_decode_count, raw_buffer->data() + raw_buffer->size());
         }
     }
 
@@ -436,17 +434,17 @@ TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_evt21_data_byte_by_byte) {
     es->start();
 
     // WHEN we stream and decode data byte by byte data
-    long int bytes_polled_count;
     while (es->wait_next_buffer() >= 0) {
-        auto raw_buffer               = es->get_latest_raw_data(bytes_polled_count);
-        auto raw_buffer_end           = raw_buffer + bytes_polled_count;
+        auto raw_buffer               = es->get_latest_raw_data();
+        auto cur_raw_ptr              = raw_buffer->data();
         auto raw_data_to_decode_count = 1;
-        auto raw_buffer_decode_to     = raw_buffer + raw_data_to_decode_count;
+        auto raw_buffer_decode_to     = cur_raw_ptr + raw_data_to_decode_count;
 
-        for (; raw_buffer < raw_buffer_end;) {
-            decoder->decode(raw_buffer, raw_buffer_decode_to);
-            raw_buffer           = raw_buffer_decode_to;
-            raw_buffer_decode_to = std::min(raw_buffer + raw_data_to_decode_count, raw_buffer_end);
+        for (; static_cast<std::size_t>(std::distance(raw_buffer->data(), cur_raw_ptr)) < raw_buffer->size();) {
+            decoder->decode(cur_raw_ptr, raw_buffer_decode_to);
+            cur_raw_ptr          = raw_buffer_decode_to;
+            raw_buffer_decode_to = std::min(cur_raw_ptr + raw_data_to_decode_count,
+                                            raw_buffer->data() + raw_buffer->size());
         }
     }
 
@@ -481,15 +479,14 @@ TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_evt21_nevents_monotonous_ti
 
     // WHEN we stream and decode data byte by byte
     Metavision::timestamp previous_ts_last = 0;
-    long int bytes_polled_count;
     while (es->wait_next_buffer() >= 0) {
-        auto raw_buffer               = es->get_latest_raw_data(bytes_polled_count);
-        auto raw_buffer_end           = raw_buffer + bytes_polled_count;
+        auto raw_buffer               = es->get_latest_raw_data();
+        auto cur_raw_ptr              = raw_buffer->data();
         auto raw_data_to_decode_count = 1;
-        auto raw_buffer_decode_to     = raw_buffer + raw_data_to_decode_count;
+        auto raw_buffer_decode_to     = cur_raw_ptr + raw_data_to_decode_count;
 
-        for (; raw_buffer < raw_buffer_end;) {
-            decoder->decode(raw_buffer, raw_buffer_decode_to);
+        for (; static_cast<std::size_t>(std::distance(raw_buffer->data(), cur_raw_ptr)) < raw_buffer->size();) {
+            decoder->decode(cur_raw_ptr, raw_buffer_decode_to);
 
             // THEN the timestamps increase monotonously
             Metavision::timestamp current_ts_last = decoder->get_last_timestamp();
@@ -498,8 +495,9 @@ TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_evt21_nevents_monotonous_ti
                 previous_ts_last = current_ts_last;
             }
 
-            raw_buffer           = raw_buffer_decode_to;
-            raw_buffer_decode_to = std::min(raw_buffer + raw_data_to_decode_count, raw_buffer_end);
+            cur_raw_ptr          = raw_buffer_decode_to;
+            raw_buffer_decode_to = std::min(cur_raw_ptr + raw_data_to_decode_count,
+                                            raw_buffer->data() + raw_buffer->size());
         }
     }
 }
@@ -535,10 +533,9 @@ TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_evt21_legacy_data_nominal) 
     es->start();
 
     // WHEN we stream and decode the events in the file
-    long int bytes_polled_count;
     while (es->wait_next_buffer() >= 0) {
-        auto raw_buffer = es->get_latest_raw_data(bytes_polled_count);
-        decoder->decode(raw_buffer, raw_buffer + bytes_polled_count);
+        auto raw_buffer = es->get_latest_raw_data();
+        decoder->decode(raw_buffer->data(), raw_buffer->data() + raw_buffer->size());
     }
 
     // THEN We decode the same data CD & triggers that are encoded in the RAW file
@@ -576,18 +573,17 @@ TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_evt21_legacy_data_random_sp
     es->start();
 
     // WHEN we stream and decode events in buffer of random size
-    long int bytes_polled_count;
     while (es->wait_next_buffer() >= 0) {
-        auto raw_buffer               = es->get_latest_raw_data(bytes_polled_count);
-        auto raw_buffer_end           = raw_buffer + bytes_polled_count;
-        auto raw_data_to_decode_count = 2 * (bytes_polled_count / 10) +
+        auto raw_buffer               = es->get_latest_raw_data();
+        auto cur_raw_ptr              = raw_buffer->data();
+        auto raw_data_to_decode_count = 2 * (raw_buffer->size() / 10) +
                                         1; // Ensures odd number of bytes so that we have split in middle of raw event
-        auto raw_buffer_decode_to = raw_buffer + raw_data_to_decode_count;
+        auto raw_buffer_decode_to = cur_raw_ptr + raw_data_to_decode_count;
 
-        for (; raw_buffer < raw_buffer_end;) {
-            decoder->decode(raw_buffer, raw_buffer_decode_to);
-            raw_buffer           = raw_buffer_decode_to;
-            raw_buffer_decode_to = std::min(raw_buffer + raw_data_to_decode_count, raw_buffer_end);
+        for (; static_cast<std::size_t>(std::distance(raw_buffer->data(), cur_raw_ptr)) < raw_buffer->size();) {
+            decoder->decode(cur_raw_ptr, raw_buffer_decode_to);
+            cur_raw_ptr          = raw_buffer_decode_to;
+            raw_buffer_decode_to = std::min(cur_raw_ptr + raw_data_to_decode_count, raw_buffer->data() + raw_buffer->size());
         }
     }
 
@@ -626,17 +622,17 @@ TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_evt21_legacy_data_byte_by_b
     es->start();
 
     // WHEN we stream and decode data byte by byte data
-    long int bytes_polled_count;
     while (es->wait_next_buffer() >= 0) {
-        auto raw_buffer               = es->get_latest_raw_data(bytes_polled_count);
-        auto raw_buffer_end           = raw_buffer + bytes_polled_count;
+        auto raw_buffer               = es->get_latest_raw_data();
+        auto cur_raw_ptr              = raw_buffer->data();
         auto raw_data_to_decode_count = 1;
-        auto raw_buffer_decode_to     = raw_buffer + raw_data_to_decode_count;
+        auto raw_buffer_decode_to     = cur_raw_ptr + raw_data_to_decode_count;
 
-        for (; raw_buffer < raw_buffer_end;) {
-            decoder->decode(raw_buffer, raw_buffer_decode_to);
-            raw_buffer           = raw_buffer_decode_to;
-            raw_buffer_decode_to = std::min(raw_buffer + raw_data_to_decode_count, raw_buffer_end);
+        for (; static_cast<std::size_t>(std::distance(raw_buffer->data(), cur_raw_ptr)) < raw_buffer->size();) {
+            decoder->decode(cur_raw_ptr, raw_buffer_decode_to);
+            cur_raw_ptr          = raw_buffer_decode_to;
+            raw_buffer_decode_to = std::min(cur_raw_ptr + raw_data_to_decode_count,
+                                            raw_buffer->data() + raw_buffer->size());
         }
     }
 
@@ -671,15 +667,14 @@ TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_evt21_legacy_nevents_monoto
 
     // WHEN we stream and decode data byte by byte
     Metavision::timestamp previous_ts_last = 0;
-    long int bytes_polled_count;
     while (es->wait_next_buffer() >= 0) {
-        auto raw_buffer               = es->get_latest_raw_data(bytes_polled_count);
-        auto raw_buffer_end           = raw_buffer + bytes_polled_count;
+        auto raw_buffer               = es->get_latest_raw_data();
+        auto cur_raw_ptr              = raw_buffer->data();
         auto raw_data_to_decode_count = 1;
-        auto raw_buffer_decode_to     = raw_buffer + raw_data_to_decode_count;
+        auto raw_buffer_decode_to     = cur_raw_ptr + raw_data_to_decode_count;
 
-        for (; raw_buffer < raw_buffer_end;) {
-            decoder->decode(raw_buffer, raw_buffer_decode_to);
+        for (; static_cast<std::size_t>(std::distance(raw_buffer->data(), cur_raw_ptr)) < raw_buffer->size();) {
+            decoder->decode(cur_raw_ptr, raw_buffer_decode_to);
 
             // THEN the timestamps increase monotonously
             Metavision::timestamp current_ts_last = decoder->get_last_timestamp();
@@ -688,8 +683,9 @@ TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_evt21_legacy_nevents_monoto
                 previous_ts_last = current_ts_last;
             }
 
-            raw_buffer           = raw_buffer_decode_to;
-            raw_buffer_decode_to = std::min(raw_buffer + raw_data_to_decode_count, raw_buffer_end);
+            cur_raw_ptr          = raw_buffer_decode_to;
+            raw_buffer_decode_to = std::min(cur_raw_ptr + raw_data_to_decode_count,
+                                            raw_buffer->data() + raw_buffer->size());
         }
     }
 }
@@ -724,10 +720,9 @@ TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_evt3_data_nominal) {
     es->start();
 
     // WHEN we stream and decode the events in the file
-    long int bytes_polled_count;
     while (es->wait_next_buffer() >= 0) {
-        auto raw_buffer = es->get_latest_raw_data(bytes_polled_count);
-        decoder->decode(raw_buffer, raw_buffer + bytes_polled_count);
+        auto raw_buffer = es->get_latest_raw_data();
+        decoder->decode(raw_buffer->data(), raw_buffer->data() + raw_buffer->size());
     }
 
     // THEN We decode the same data CD & triggers that are encoded in the RAW file
@@ -764,18 +759,17 @@ TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_evt3_data_random_split) {
     es->start();
 
     // WHEN we stream and decode events in buffer of random size
-    long int bytes_polled_count;
     while (es->wait_next_buffer() >= 0) {
-        auto raw_buffer               = es->get_latest_raw_data(bytes_polled_count);
-        auto raw_buffer_end           = raw_buffer + bytes_polled_count;
-        auto raw_data_to_decode_count = 2 * (bytes_polled_count / 10) +
+        auto raw_buffer               = es->get_latest_raw_data();
+        auto cur_raw_ptr              = raw_buffer->data();
+        auto raw_data_to_decode_count = 2 * (raw_buffer->size() / 10) +
                                         1; // Ensures odd number of bytes so that we have split in middle of raw event
-        auto raw_buffer_decode_to = raw_buffer + raw_data_to_decode_count;
+        auto raw_buffer_decode_to = cur_raw_ptr + raw_data_to_decode_count;
 
-        for (; raw_buffer < raw_buffer_end;) {
-            decoder->decode(raw_buffer, raw_buffer_decode_to);
-            raw_buffer           = raw_buffer_decode_to;
-            raw_buffer_decode_to = std::min(raw_buffer + raw_data_to_decode_count, raw_buffer_end);
+        for (; static_cast<std::size_t>(std::distance(raw_buffer->data(), cur_raw_ptr)) < raw_buffer->size();) {
+            decoder->decode(cur_raw_ptr, raw_buffer_decode_to);
+            cur_raw_ptr           = raw_buffer_decode_to;
+            raw_buffer_decode_to = std::min(cur_raw_ptr + raw_data_to_decode_count, raw_buffer->data() + raw_buffer->size());
         }
     }
 
@@ -813,17 +807,17 @@ TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_evt3_data_byte_by_byte) {
     es->start();
 
     // WHEN we stream and decode data byte by byte data
-    long int bytes_polled_count;
     while (es->wait_next_buffer() >= 0) {
-        auto raw_buffer               = es->get_latest_raw_data(bytes_polled_count);
-        auto raw_buffer_end           = raw_buffer + bytes_polled_count;
+        auto raw_buffer               = es->get_latest_raw_data();
+        auto cur_raw_ptr              = raw_buffer->data();
         auto raw_data_to_decode_count = 1;
-        auto raw_buffer_decode_to     = raw_buffer + raw_data_to_decode_count;
+        auto raw_buffer_decode_to     = cur_raw_ptr + raw_data_to_decode_count;
 
-        for (; raw_buffer < raw_buffer_end;) {
-            decoder->decode(raw_buffer, raw_buffer_decode_to);
-            raw_buffer           = raw_buffer_decode_to;
-            raw_buffer_decode_to = std::min(raw_buffer + raw_data_to_decode_count, raw_buffer_end);
+        for (; static_cast<std::size_t>(std::distance(raw_buffer->data(), cur_raw_ptr)) < raw_buffer->size();) {
+            decoder->decode(cur_raw_ptr, raw_buffer_decode_to);
+            cur_raw_ptr          = raw_buffer_decode_to;
+            raw_buffer_decode_to = std::min(cur_raw_ptr + raw_data_to_decode_count,
+                                            raw_buffer->data() + raw_buffer->size());
         }
     }
 
@@ -857,15 +851,14 @@ TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_evt3_nevents_monotonous_tim
 
     // WHEN we stream and decode data byte by byte
     Metavision::timestamp previous_ts_last = 0;
-    long int bytes_polled_count;
     while (es->wait_next_buffer() >= 0) {
-        auto raw_buffer               = es->get_latest_raw_data(bytes_polled_count);
-        auto raw_buffer_end           = raw_buffer + bytes_polled_count;
+        auto raw_buffer               = es->get_latest_raw_data();
+        auto cur_raw_ptr              = raw_buffer->data();
         auto raw_data_to_decode_count = 1;
-        auto raw_buffer_decode_to     = raw_buffer + raw_data_to_decode_count;
+        auto raw_buffer_decode_to     = cur_raw_ptr + raw_data_to_decode_count;
 
-        for (; raw_buffer < raw_buffer_end;) {
-            decoder->decode(raw_buffer, raw_buffer_decode_to);
+        for (; static_cast<std::size_t>(std::distance(raw_buffer->data(), cur_raw_ptr)) < raw_buffer->size();) {
+            decoder->decode(cur_raw_ptr, raw_buffer_decode_to);
 
             // THEN the timestamps increase monotonously
             Metavision::timestamp current_ts_last = decoder->get_last_timestamp();
@@ -874,8 +867,9 @@ TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_evt3_nevents_monotonous_tim
                 previous_ts_last = current_ts_last;
             }
 
-            raw_buffer           = raw_buffer_decode_to;
-            raw_buffer_decode_to = std::min(raw_buffer + raw_data_to_decode_count, raw_buffer_end);
+            cur_raw_ptr          = raw_buffer_decode_to;
+            raw_buffer_decode_to = std::min(cur_raw_ptr + raw_data_to_decode_count,
+                                            raw_buffer->data() + raw_buffer->size());
         }
     }
 }
@@ -916,10 +910,9 @@ TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_evt3_erc_count_evts) {
     es->start();
 
     // WHEN we stream and decode the events in the file
-    long int bytes_polled_count;
     while (es->wait_next_buffer() >= 0) {
-        auto raw_buffer = es->get_latest_raw_data(bytes_polled_count);
-        decoder->decode(raw_buffer, raw_buffer + bytes_polled_count);
+        auto raw_buffer = es->get_latest_raw_data();
+        decoder->decode(raw_buffer->data(), raw_buffer->data() + raw_buffer->size());
     }
 
     // THEN We decode the same data CD incoming count events that are encoded in the RAW file
@@ -954,10 +947,9 @@ TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_histo3d_nominal) {
     es->start();
 
     // WHEN we stream and decode the events in the file
-    long int bytes_polled_count;
     while (es->wait_next_buffer() >= 0) {
-        auto raw_buffer = es->get_latest_raw_data(bytes_polled_count);
-        histo_decoder->decode(raw_buffer, raw_buffer + bytes_polled_count);
+        auto raw_buffer = es->get_latest_raw_data();
+        histo_decoder->decode(raw_buffer->data(), raw_buffer->data() + raw_buffer->size());
     }
 
     // THEN We decode the same data Histogram that are encoded in the RAW file
@@ -991,10 +983,9 @@ TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_histo3d_padding_nominal) {
     es->start();
 
     // WHEN we stream and decode the events in the file
-    long int bytes_polled_count;
     while (es->wait_next_buffer() >= 0) {
-        auto raw_buffer = es->get_latest_raw_data(bytes_polled_count);
-        histo_decoder->decode(raw_buffer, raw_buffer + bytes_polled_count);
+        auto raw_buffer = es->get_latest_raw_data();
+        histo_decoder->decode(raw_buffer->data(), raw_buffer->data() + raw_buffer->size());
     }
 
     // THEN We decode the same data Histogram that are encoded in the RAW file
@@ -1028,10 +1019,9 @@ TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_diff3d_nominal) {
     es->start();
 
     // WHEN we stream and decode the events in the file
-    long int bytes_polled_count;
     while (es->wait_next_buffer() >= 0) {
-        auto raw_buffer = es->get_latest_raw_data(bytes_polled_count);
-        diff_decoder->decode(raw_buffer, raw_buffer + bytes_polled_count);
+        auto raw_buffer = es->get_latest_raw_data();
+        diff_decoder->decode(raw_buffer->data(), raw_buffer->data() + raw_buffer->size());
     }
 
     // THEN We decode the same data Diff that are encoded in the RAW file
@@ -1068,10 +1058,9 @@ TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_aer8_data_nominal) {
     es->start();
 
     // WHEN we stream and decode the events in the file
-    long int bytes_polled_count;
     while (es->wait_next_buffer() >= 0) {
-        auto raw_buffer = es->get_latest_raw_data(bytes_polled_count);
-        decoder->decode(raw_buffer, raw_buffer + bytes_polled_count);
+        auto raw_buffer = es->get_latest_raw_data();
+        decoder->decode(raw_buffer->data(), raw_buffer->data() + raw_buffer->size());
     }
 
     // THEN We decode the same data CD & triggers that are encoded in the RAW file
@@ -1108,18 +1097,18 @@ TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_aer8_data_random_split) {
     es->start();
 
     // WHEN we stream and decode events in buffer of random size
-    long int bytes_polled_count;
     while (es->wait_next_buffer() >= 0) {
-        auto raw_buffer               = es->get_latest_raw_data(bytes_polled_count);
-        auto raw_buffer_end           = raw_buffer + bytes_polled_count;
-        auto raw_data_to_decode_count = 2 * (bytes_polled_count / 10) +
+        auto raw_buffer               = es->get_latest_raw_data();
+        auto cur_raw_ptr              = raw_buffer->data();
+        auto raw_data_to_decode_count = 2 * (raw_buffer->size() / 10) +
                                         1; // Ensures odd number of bytes so that we have split in middle of raw event
-        auto raw_buffer_decode_to = raw_buffer + raw_data_to_decode_count;
+        auto raw_buffer_decode_to = cur_raw_ptr + raw_data_to_decode_count;
 
-        for (; raw_buffer < raw_buffer_end;) {
-            decoder->decode(raw_buffer, raw_buffer_decode_to);
-            raw_buffer           = raw_buffer_decode_to;
-            raw_buffer_decode_to = std::min(raw_buffer + raw_data_to_decode_count, raw_buffer_end);
+        for (; static_cast<std::size_t>(std::distance(raw_buffer->data(), cur_raw_ptr)) < raw_buffer->size();) {
+            decoder->decode(cur_raw_ptr, raw_buffer_decode_to);
+            cur_raw_ptr          = raw_buffer_decode_to;
+            raw_buffer_decode_to = std::min(cur_raw_ptr + raw_data_to_decode_count,
+                                            raw_buffer->data() + raw_buffer->size());
         }
     }
 
@@ -1157,17 +1146,17 @@ TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_aer8_data_byte_by_byte) {
     es->start();
 
     // WHEN we stream and decode data byte by byte data
-    long int bytes_polled_count;
     while (es->wait_next_buffer() >= 0) {
-        auto raw_buffer               = es->get_latest_raw_data(bytes_polled_count);
-        auto raw_buffer_end           = raw_buffer + bytes_polled_count;
+        auto raw_buffer               = es->get_latest_raw_data();
+        auto cur_raw_ptr              = raw_buffer->data();
         auto raw_data_to_decode_count = 1;
-        auto raw_buffer_decode_to     = raw_buffer + raw_data_to_decode_count;
+        auto raw_buffer_decode_to     = cur_raw_ptr + raw_data_to_decode_count;
 
-        for (; raw_buffer < raw_buffer_end;) {
-            decoder->decode(raw_buffer, raw_buffer_decode_to);
-            raw_buffer           = raw_buffer_decode_to;
-            raw_buffer_decode_to = std::min(raw_buffer + raw_data_to_decode_count, raw_buffer_end);
+        for (; static_cast<std::size_t>(std::distance(raw_buffer->data(), cur_raw_ptr)) < raw_buffer->size();) {
+            decoder->decode(cur_raw_ptr, raw_buffer_decode_to);
+            cur_raw_ptr          = raw_buffer_decode_to;
+            raw_buffer_decode_to = std::min(cur_raw_ptr + raw_data_to_decode_count,
+                                            raw_buffer->data() + raw_buffer->size());
         }
     }
 
@@ -1205,10 +1194,9 @@ TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_aer4_data_nominal) {
     es->start();
 
     // WHEN we stream and decode the events in the file
-    long int bytes_polled_count;
     while (es->wait_next_buffer() >= 0) {
-        auto raw_buffer = es->get_latest_raw_data(bytes_polled_count);
-        decoder->decode(raw_buffer, raw_buffer + bytes_polled_count);
+        auto raw_buffer = es->get_latest_raw_data();
+        decoder->decode(raw_buffer->data(), raw_buffer->data() + raw_buffer->size());
     }
 
     // THEN We decode the same data CD & triggers that are encoded in the RAW file
@@ -1245,18 +1233,18 @@ TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_aer4_data_random_split) {
     es->start();
 
     // WHEN we stream and decode events in buffer of random size
-    long int bytes_polled_count;
     while (es->wait_next_buffer() >= 0) {
-        auto raw_buffer               = es->get_latest_raw_data(bytes_polled_count);
-        auto raw_buffer_end           = raw_buffer + bytes_polled_count;
-        auto raw_data_to_decode_count = 2 * (bytes_polled_count / 10) +
+        auto raw_buffer               = es->get_latest_raw_data();
+        auto cur_raw_ptr              = raw_buffer->data();
+        auto raw_data_to_decode_count = 2 * (raw_buffer->size() / 10) +
                                         1; // Ensures odd number of bytes so that we have split in middle of raw event
-        auto raw_buffer_decode_to = raw_buffer + raw_data_to_decode_count;
+        auto raw_buffer_decode_to     = cur_raw_ptr + raw_data_to_decode_count;
 
-        for (; raw_buffer < raw_buffer_end;) {
-            decoder->decode(raw_buffer, raw_buffer_decode_to);
-            raw_buffer           = raw_buffer_decode_to;
-            raw_buffer_decode_to = std::min(raw_buffer + raw_data_to_decode_count, raw_buffer_end);
+        for (; static_cast<std::size_t>(std::distance(raw_buffer->data(), cur_raw_ptr)) < raw_buffer->size();) {
+            decoder->decode(cur_raw_ptr, raw_buffer_decode_to);
+            cur_raw_ptr          = raw_buffer_decode_to;
+            raw_buffer_decode_to = std::min(cur_raw_ptr + raw_data_to_decode_count,
+                                            raw_buffer->data() + raw_buffer->size());
         }
     }
 
@@ -1294,17 +1282,17 @@ TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_aer4_data_byte_by_byte) {
     es->start();
 
     // WHEN we stream and decode data byte by byte data
-    long int bytes_polled_count;
     while (es->wait_next_buffer() >= 0) {
-        auto raw_buffer               = es->get_latest_raw_data(bytes_polled_count);
-        auto raw_buffer_end           = raw_buffer + bytes_polled_count;
+        auto raw_buffer               = es->get_latest_raw_data();
+        auto cur_raw_ptr              = raw_buffer->data();
         auto raw_data_to_decode_count = 1;
-        auto raw_buffer_decode_to     = raw_buffer + raw_data_to_decode_count;
+        auto raw_buffer_decode_to     = cur_raw_ptr + raw_data_to_decode_count;
 
-        for (; raw_buffer < raw_buffer_end;) {
-            decoder->decode(raw_buffer, raw_buffer_decode_to);
-            raw_buffer           = raw_buffer_decode_to;
-            raw_buffer_decode_to = std::min(raw_buffer + raw_data_to_decode_count, raw_buffer_end);
+        for (; static_cast<std::size_t>(std::distance(raw_buffer->data(), cur_raw_ptr)) < raw_buffer->size();) {
+            decoder->decode(cur_raw_ptr, raw_buffer_decode_to);
+            cur_raw_ptr          = raw_buffer_decode_to;
+            raw_buffer_decode_to = std::min(cur_raw_ptr + raw_data_to_decode_count,
+                                            raw_buffer->data() + raw_buffer->size());
         }
     }
 
@@ -1340,10 +1328,9 @@ TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_mtr_nominal) {
     es->start();
 
     // WHEN we stream and decode the events in the file
-    long int bytes_polled_count;
     while (es->wait_next_buffer() >= 0) {
-        auto raw_buffer = es->get_latest_raw_data(bytes_polled_count);
-        mtr_decoder->decode(raw_buffer, raw_buffer + bytes_polled_count);
+        auto raw_buffer = es->get_latest_raw_data();
+        mtr_decoder->decode(raw_buffer->data(), raw_buffer->data() + raw_buffer->size());
     }
 
     // THEN We decode the same MTR data that are encoded in the RAW file
@@ -1378,10 +1365,9 @@ TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_mtru_nominal) {
     es->start();
 
     // WHEN we stream and decode the events in the file
-    long int bytes_polled_count;
     while (es->wait_next_buffer() >= 0) {
-        auto raw_buffer = es->get_latest_raw_data(bytes_polled_count);
-        mtr_decoder->decode(raw_buffer, raw_buffer + bytes_polled_count);
+        auto raw_buffer = es->get_latest_raw_data();
+        mtr_decoder->decode(raw_buffer->data(), raw_buffer->data() + raw_buffer->size());
     }
 
     // THEN We decode the same MTR data that are encoded in the RAW file

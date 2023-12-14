@@ -74,6 +74,12 @@ struct DummyROI : public I_ROI {
         return true;
     }
 
+    bool get_lines(std::vector<bool> &cols, std::vector<bool> &rows) const override {
+        cols = cols_;
+        rows = rows_;
+        return true;
+    }
+
     bool set_windows_impl(const std::vector<Window> &windows) override {
         windows_ = windows;
         return true;
@@ -649,7 +655,8 @@ public:
     }
 
     virtual bool set_event_rate_threshold(uint32_t threshold) override {
-        threshold_ = threshold;
+        threshold_                    = threshold;
+        thresholds_.lower_bound_start = threshold;
         return true;
     }
 
@@ -662,6 +669,7 @@ public:
     }
 
     virtual bool set_thresholds(const thresholds &thresholds_ev_s) override {
+        threshold_  = thresholds_ev_s.lower_bound_start;
         thresholds_ = thresholds_ev_s;
         return true;
     }
@@ -681,7 +689,7 @@ public:
 private:
     bool enabled_          = false;
     uint32_t threshold_    = 1000;
-    thresholds thresholds_ = {300000, 280000, 800000000, 800000000};
+    thresholds thresholds_ = {300'000, 2'800'000, 500'000'000, 800'000'000};
 };
 
 struct DummyCameraDiscovery : public CameraDiscovery {

@@ -68,22 +68,12 @@ if (COMPILE_PYTHON3_BINDINGS)
     endif()
     foreach (_python_version ${PYBIND11_PYTHON_VERSIONS})
         # this is the extension we need to set for the python bindings module
-        if(CMAKE_CROSSCOMPILING)
-            # When cross compiling, we cannot run the python interpreter as it might be compiled for a different architecture.
-            # Therefore we ask for the user to have already set the library extension suffix.
-            if(NOT DEFINED PYTHON_${_python_version}_MODULE_EXTENSION)
-                message(FATAL_ERROR "CMake variable 'PYTHON_${_python_version}_MODULE_EXTENSION' needs to be defined. " 
-                                    "One can run '$ python3-config --extension-suffix' on your targeted platform to get the actual value (eg. '.cpython-36m-x86_64-linux-gnu.so').
-                ")
-            endif()
-        else()
-            execute_process(            
-                COMMAND "${PYTHON_${_python_version}_EXECUTABLE}" "-c" 
-                        "from distutils import sysconfig as s; print(s.get_config_var('EXT_SUFFIX') or s.get_config_var('SO'));"
-                OUTPUT_VARIABLE PYTHON_${_python_version}_MODULE_EXTENSION
-                OUTPUT_STRIP_TRAILING_WHITESPACE
-            )
-        endif(CMAKE_CROSSCOMPILING)
+        execute_process(            
+            COMMAND "${PYTHON_${_python_version}_EXECUTABLE}" "-c" 
+                    "from distutils import sysconfig as s; print(s.get_config_var('EXT_SUFFIX') or s.get_config_var('SO'));"
+            OUTPUT_VARIABLE PYTHON_${_python_version}_MODULE_EXTENSION
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
 
         # this is the path where we install our python modules for cpack DEB (system) packages ...
         execute_process(
@@ -99,7 +89,7 @@ if (COMPILE_PYTHON3_BINDINGS)
         )
         file(TO_CMAKE_PATH "${PYTHON_${_python_version}_SYSTEM_SITE_PACKAGES}" PYTHON_${_python_version}_SYSTEM_SITE_PACKAGES) 
         # ... it must be relative
-        string(REGEX REPLACE "^/usr/" "" PYTHON_${_python_version}_SYSTEM_SITE_PACKAGES "${PYTHON_${_python_version}_SYSTEM_SITE_PACKAGES}")
+        string(REGEX REPLACE "^${STAGING_DIR_NATIVE}/usr/" "" PYTHON_${_python_version}_SYSTEM_SITE_PACKAGES "${PYTHON_${_python_version}_SYSTEM_SITE_PACKAGES}")
 
         # this is the path where we install our python modules in the local system install tree
         if (PYTHON3_SITE_PACKAGES)
@@ -121,7 +111,10 @@ if (COMPILE_PYTHON3_BINDINGS)
                 OUTPUT_STRIP_TRAILING_WHITESPACE
             )
             file(TO_CMAKE_PATH "${PYTHON_${_python_version}_LOCAL_SITE_PACKAGES}" PYTHON_${_python_version}_LOCAL_SITE_PACKAGES) 
+            # ... it must be relative
+            string(REGEX REPLACE "^${STAGING_DIR_NATIVE}/usr/" "" PYTHON_${_python_version}_LOCAL_SITE_PACKAGES "${PYTHON_${_python_version}_LOCAL_SITE_PACKAGES}")
         endif (PYTHON3_SITE_PACKAGES)
+        string(REGEX REPLACE "^${STAGING_DIR_NATIVE}/usr/" "" PYTHON_${_python_version}_LOCAL_SITE_PACKAGES "${PYTHON_${_python_version}_LOCAL_SITE_PACKAGES}")
     endforeach ()
 
     # this variable is used to create all python versions packages variables for cpack

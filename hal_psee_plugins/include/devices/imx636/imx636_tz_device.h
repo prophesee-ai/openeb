@@ -20,6 +20,7 @@
 namespace Metavision {
 
 class Gen41Erc;
+class TzLibUSBBoardCommand;
 
 class TzImx636 : public TzIssdDevice,
                  public IlluminationProvider,

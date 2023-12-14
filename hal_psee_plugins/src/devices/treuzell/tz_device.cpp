@@ -115,7 +115,7 @@ StreamFormat TzDevice::set_output_format(const std::string &format_name) {
         cmd->transfer_tz_frame(format);
         return StreamFormat(format.get_strings()[0]);
     } catch (const std::system_error &e) { MV_HAL_LOG_TRACE() << name << "did not set output format:" << e.what(); }
-    /* spare the implementation of set_output_format when supporting only one format */
+    // spare the implementation of set_output_format when supporting only one format
     return get_output_format();
 }
 

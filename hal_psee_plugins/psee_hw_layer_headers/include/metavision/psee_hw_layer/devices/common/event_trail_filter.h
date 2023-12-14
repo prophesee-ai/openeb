@@ -24,7 +24,7 @@ namespace Metavision {
 
 class EventTrailFilter : public I_EventTrailFilterModule {
 public:
-    EventTrailFilter(const std::shared_ptr<TzDeviceWithRegmap> &dev, const I_HW_Identification::SensorInfo &sensor_info,
+    EventTrailFilter(const std::shared_ptr<RegisterMap> &dev, const I_HW_Identification::SensorInfo &sensor_info,
                      const std::string &sensor_prefix);
 
     virtual std::set<Type> get_available_types() const override;
@@ -38,7 +38,7 @@ public:
     virtual uint32_t get_min_supported_threshold() const override;
 
 private:
-    std::shared_ptr<TzDeviceWithRegmap> dev_;
+    std::shared_ptr<RegisterMap> register_map_;
 
     static constexpr uint32_t THESHOLD_MS_DEFAULT = 10;
     static constexpr Type FILTERING_TYPE_DEFAULT  = Type::TRAIL;
@@ -54,7 +54,6 @@ private:
 
     std::map<const int, std::map<const std::string, const int>> threshold_params_;
 
-    RegisterMap &regmap();
 };
 
 } // namespace Metavision

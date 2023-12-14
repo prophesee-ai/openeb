@@ -26,8 +26,8 @@ namespace Metavision {
 TzCameraDiscovery::TzCameraDiscovery() :
     libusb_ctx(std::make_shared<LibUSBContext>()), builder(std::make_unique<TzDeviceBuilder>()) {}
 
-std::vector<std::shared_ptr<TzLibUSBBoardCommand>> TzCameraDiscovery::list_boards() const {
-    std::vector<std::shared_ptr<TzLibUSBBoardCommand>> boards;
+std::vector<std::shared_ptr<BoardCommand>> TzCameraDiscovery::list_boards() const {
+    std::vector<std::shared_ptr<BoardCommand>> boards;
     libusb_device **devs;
 
     ssize_t cnt = libusb_get_device_list(libusb_ctx->ctx(), &devs); // get the list of devices
@@ -95,7 +95,7 @@ bool TzCameraDiscovery::discover(DeviceBuilder &device_builder, const std::strin
             MV_HAL_LOG_WARNING() << "Your EVK camera" << serial
                                  << "isn't connected in USB3. Please check your connection.";
         }
-        return builder->build_devices(board, device_builder, config);
+        return builder->build_devices(std::dynamic_pointer_cast<TzLibUSBBoardCommand>(board), device_builder, config);
     }
     return false;
 }

@@ -65,7 +65,7 @@ protected:
 };
 
 static const std::vector<SystemId> offline_supported_system_ids{
-    {SystemId::SYSTEM_CCAM3_GEN3, SystemId::SYSTEM_CCAM3_GEN31, SystemId::SYSTEM_EVK3_GEN31_EVT2,
+    {SystemId::SYSTEM_CCAM3_GEN3, SystemId::SYSTEM_CCAM3_GEN31, SystemId::SYSTEM_CCAM5_GEN31,
      SystemId::SYSTEM_EVK3_GEN31_EVT3, SystemId::SYSTEM_EVK2_GEN31, SystemId::SYSTEM_CCAM4_GEN3,
      SystemId::SYSTEM_CCAM4_GEN3_EVK, SystemId::SYSTEM_CCAM4_GEN3_REV_B, SystemId::SYSTEM_CCAM4_GEN3_REV_B_EVK,
      SystemId::SYSTEM_CCAM4_GEN3_REV_B_EVK_BRIDGE, SystemId::SYSTEM_VISIONCAM_GEN3, SystemId::SYSTEM_VISIONCAM_GEN3_EVK,
@@ -89,9 +89,9 @@ TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_succeeds_without_integrato
     std::unique_ptr<Device> device;
     for (const long system_id : offline_supported_system_ids) {
         auto header = std::stringstream();
-        header << "\% Date 2014-02-28 13:37:42" << std::endl
-               << "\% system_ID " << system_id << std::endl
-               << "\% serial_number 00001337" << std::endl;
+        header << "% Date 2014-02-28 13:37:42" << std::endl
+               << "% system_ID " << system_id << std::endl
+               << "% serial_number 00001337" << std::endl;
         write_header(RawFileHeader(header));
         ASSERT_NO_THROW(device = DeviceDiscovery::open_raw_file(rawfile_to_log_path_));
 
@@ -107,10 +107,10 @@ TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_succeeds_with_integrator_a
     std::unique_ptr<Device> device;
     for (const long system_id : offline_supported_system_ids) {
         auto header = std::stringstream();
-        header << "\% Date 2014-02-28 13:37:42" << std::endl
-               << "\% system_ID " << system_id << std::endl
-               << "\% integrator_name Prophesee" << std::endl
-               << "\% serial_number 00001337" << std::endl;
+        header << "% Date 2014-02-28 13:37:42" << std::endl
+               << "% system_ID " << system_id << std::endl
+               << "% integrator_name Prophesee" << std::endl
+               << "% serial_number 00001337" << std::endl;
         write_header(RawFileHeader(header));
         ASSERT_NO_THROW(device = DeviceDiscovery::open_raw_file(rawfile_to_log_path_));
         I_HW_Identification *hw_id = device->get_facility<I_HW_Identification>();
@@ -138,7 +138,7 @@ TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_succeeds_with_no_integrato
         case SystemId::SYSTEM_VISIONCAM_GEN31_EVK:
             plugin_name = "hal_plugin_gen31_fx3";
             break;
-        case SystemId::SYSTEM_EVK3_GEN31_EVT2:
+        case SystemId::SYSTEM_CCAM5_GEN31:
         case SystemId::SYSTEM_EVK3_GEN31_EVT3:
             plugin_name = "hal_plugin_gen31_evk3";
             break;
@@ -163,10 +163,10 @@ TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_succeeds_with_no_integrato
         }
 
         auto header = std::stringstream();
-        header << "\% Date 2014-02-28 13:37:42" << std::endl
-               << "\% system_ID " << system_id << std::endl
-               << "\% plugin_name " << plugin_name << std::endl
-               << "\% serial_number 00001337" << std::endl;
+        header << "% Date 2014-02-28 13:37:42" << std::endl
+               << "% system_ID " << system_id << std::endl
+               << "% plugin_name " << plugin_name << std::endl
+               << "% serial_number 00001337" << std::endl;
         write_header(RawFileHeader(header));
         ASSERT_NO_THROW(device = DeviceDiscovery::open_raw_file(rawfile_to_log_path_));
     }
@@ -176,10 +176,10 @@ TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_fails_with_bad_integrator_
     std::unique_ptr<Device> device;
     for (const long system_id : offline_supported_system_ids) {
         auto header = std::stringstream();
-        header << "\% Date 2014-02-28 13:37:42" << std::endl
-               << "\% system_ID " << system_id << std::endl
-               << "\% integrator_name _aZ0$fooBar@%!" << std::endl
-               << "\% serial_number 00001337" << std::endl;
+        header << "% Date 2014-02-28 13:37:42" << std::endl
+               << "% system_ID " << system_id << std::endl
+               << "% integrator_name _aZ0$fooBar@%!" << std::endl
+               << "% serial_number 00001337" << std::endl;
         write_header(RawFileHeader(header));
         ASSERT_THROW(device = DeviceDiscovery::open_raw_file(rawfile_to_log_path_), HalException);
     }
@@ -191,11 +191,11 @@ TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_fails_with_bad_integrator_
     // integrator, and the header doesn't explicitely specify the data format
     for (const long system_id : offline_supported_system_ids) {
         auto header = std::stringstream();
-        header << "\% Date 2014-02-28 13:37:42" << std::endl
-               << "\% system_ID " << system_id << std::endl
-               << "\% integrator_name _aZ0$fooBar@%!" << std::endl
-               << "\% plugin_name _aZ0$fooBar@%!" << std::endl
-               << "\% serial_number 00001337" << std::endl;
+        header << "% Date 2014-02-28 13:37:42" << std::endl
+               << "% system_ID " << system_id << std::endl
+               << "% integrator_name _aZ0$fooBar@%!" << std::endl
+               << "% plugin_name _aZ0$fooBar@%!" << std::endl
+               << "% serial_number 00001337" << std::endl;
         write_header(RawFileHeader(header));
         ASSERT_THROW(device = DeviceDiscovery::open_raw_file(rawfile_to_log_path_), HalException);
     }
@@ -204,9 +204,9 @@ TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_fails_with_bad_integrator_
 TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_success_with_supported_system_ids) {
     for (const long system_id : offline_supported_system_ids) {
         auto header = std::stringstream();
-        header << "\% Date 2014-02-28 13:37:42" << std::endl
-               << "\% system_ID " << system_id << std::endl
-               << "\% serial_number 00001337" << std::endl;
+        header << "% Date 2014-02-28 13:37:42" << std::endl
+               << "% system_ID " << system_id << std::endl
+               << "% serial_number 00001337" << std::endl;
         write_header(RawFileHeader(header));
 
         std::unique_ptr<Device> device;
@@ -241,7 +241,7 @@ TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_success_with_supported_sys
             ASSERT_EQ(4, decoder->get_raw_event_size_bytes());
             break;
         case SystemId::SYSTEM_CCAM3_GEN31:
-        case SystemId::SYSTEM_EVK3_GEN31_EVT2:
+        case SystemId::SYSTEM_CCAM5_GEN31:
         case SystemId::SYSTEM_EVK2_GEN31:
         case SystemId::SYSTEM_VISIONCAM_GEN31:
         case SystemId::SYSTEM_VISIONCAM_GEN31_EVK:
@@ -293,7 +293,7 @@ TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_with_geometry_and_format) 
     // Just test VGA EVT2 and HD EVT3, should have a reasonable code coverage
     {
         auto header = std::stringstream();
-        header << "\% format EVT3" << std::endl << "\% geometry 1280x720" << std::endl;
+        header << "% format EVT3" << std::endl << "% geometry 1280x720" << std::endl;
         write_header(RawFileHeader(header));
         std::unique_ptr<Device> device;
         ASSERT_NO_THROW(device = DeviceDiscovery::open_raw_file(rawfile_to_log_path_));
@@ -318,7 +318,7 @@ TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_with_geometry_and_format) 
     }
     {
         auto header = std::stringstream();
-        header << "\% format EVT2" << std::endl << "\% geometry 640x480" << std::endl;
+        header << "% format EVT2" << std::endl << "% geometry 640x480" << std::endl;
         write_header(RawFileHeader(header));
         std::unique_ptr<Device> device;
         ASSERT_NO_THROW(device = DeviceDiscovery::open_raw_file(rawfile_to_log_path_));
@@ -345,7 +345,7 @@ TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_with_geometry_and_format) 
 
 TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_with_unknown_format) {
     auto header = std::stringstream();
-    header << "\% format UNSUPPORTED_FORMAT" << std::endl << "\% geometry 1280x720" << std::endl;
+    header << "% format UNSUPPORTED_FORMAT" << std::endl << "% geometry 1280x720" << std::endl;
     write_header(RawFileHeader(header));
     std::unique_ptr<Device> device;
     ASSERT_THROW(device = DeviceDiscovery::open_raw_file(rawfile_to_log_path_), HalException);
@@ -354,9 +354,9 @@ TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_with_unknown_format) {
 TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_doesnt_have_board_facilities) {
     for (const long system_id : offline_supported_system_ids) {
         auto header = std::stringstream();
-        header << "\% Date 2014-02-28 13:37:42" << std::endl
-               << "\% system_ID " << system_id << std::endl
-               << "\% serial_number 00001337" << std::endl;
+        header << "% Date 2014-02-28 13:37:42" << std::endl
+               << "% system_ID " << system_id << std::endl
+               << "% serial_number 00001337" << std::endl;
         write_header(RawFileHeader(header));
 
         std::unique_ptr<Device> device;
@@ -377,10 +377,10 @@ TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_succeeds_with_evt_converte
     // MetavisionESP::evt_converter removed redundant information, but kept a unique set of fields
     std::unique_ptr<Device> device;
     auto header = std::stringstream();
-    header << "\% format EVT3" << std::endl
-           << "\% integrator_name Prophesee" << std::endl
-           << "\% plugin_name hal_plugin_gen41_evk2" << std::endl
-           << "\% system_ID 39" << std::endl;
+    header << "% format EVT3" << std::endl
+           << "% integrator_name Prophesee" << std::endl
+           << "% plugin_name hal_plugin_gen41_evk2" << std::endl
+           << "% system_ID 39" << std::endl;
     write_header(RawFileHeader(header));
     ASSERT_NO_THROW(device = DeviceDiscovery::open_raw_file(rawfile_to_log_path_));
     I_HW_Identification *hw_id = device->get_facility<I_HW_Identification>();
@@ -403,14 +403,14 @@ TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_succeeds_with_evt_converte
 TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_succeeds_with_saphir_bringup) {
     std::unique_ptr<Device> device;
     auto header = std::stringstream();
-    header << "\% date 2022-07-14 13:37:00" << std::endl
-           << "\% firmware_version 0.0.0" << std::endl
-           << "\% format EVT21" << std::endl
-           << "\% geometry 1792x1792" << std::endl
-           << "\% integrator_name Prophesee" << std::endl
-           << "\% plugin_name hal_plugin_sensorlib_tz" << std::endl
-           << "\% sensor_generation 0.0" << std::endl
-           << "\% system_ID 0" << std::endl;
+    header << "% date 2022-07-14 13:37:00" << std::endl
+           << "% firmware_version 0.0.0" << std::endl
+           << "% format EVT21" << std::endl
+           << "% geometry 1792x1792" << std::endl
+           << "% integrator_name Prophesee" << std::endl
+           << "% plugin_name hal_plugin_sensorlib_tz" << std::endl
+           << "% sensor_generation 0.0" << std::endl
+           << "% system_ID 0" << std::endl;
     write_header(RawFileHeader(header));
     ASSERT_NO_THROW(device = DeviceDiscovery::open_raw_file(rawfile_to_log_path_));
     I_HW_Identification *hw_id = device->get_facility<I_HW_Identification>();
@@ -433,10 +433,10 @@ TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_succeeds_with_saphir_bring
 TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_succeeds_with_hal_info_and_format) {
     std::unique_ptr<Device> device;
     auto header = std::stringstream();
-    header << "\% camera_integrator_name Prophesee" << std::endl
-           << "\% format EVT3;width=1920;height=1200" << std::endl
-           << "\% plugin_integrator_name Prophesee" << std::endl
-           << "\% plugin_name hal_plugin_prophesee" << std::endl;
+    header << "% camera_integrator_name Prophesee" << std::endl
+           << "% format EVT3;width=1920;height=1200" << std::endl
+           << "% plugin_integrator_name Prophesee" << std::endl
+           << "% plugin_name hal_plugin_prophesee" << std::endl;
     write_header(RawFileHeader(header));
     ASSERT_NO_THROW(device = DeviceDiscovery::open_raw_file(rawfile_to_log_path_));
 
@@ -457,9 +457,9 @@ TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_succeeds_with_hal_info_and
 TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_does_not_work_with_unsupported_id) {
     for (const long system_id : offline_unsupported_system_ids) {
         auto header = std::stringstream();
-        header << "\% Date 2014-02-28 13:37:42" << std::endl
-               << "\% system_ID " << system_id << std::endl
-               << "\% serial_number 00001337" << std::endl;
+        header << "% Date 2014-02-28 13:37:42" << std::endl
+               << "% system_ID " << system_id << std::endl
+               << "% serial_number 00001337" << std::endl;
         write_header(RawFileHeader(header));
 
         std::unique_ptr<Device> device;

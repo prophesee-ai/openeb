@@ -13,6 +13,7 @@
 
 #include "metavision/utils/pybind/py_array_to_cv_mat.h"
 #include "metavision/sdk/core/algorithms/base_frame_generation_algorithm.h"
+#include "metavision/sdk/core/utils/rolling_event_buffer.h"
 #include "metavision/sdk/base/events/event_cd.h"
 #include "pb_doc_core.h"
 
@@ -20,8 +21,8 @@ namespace Metavision {
 
 namespace { // anonymous
 
-void static_generate_frame_helper(const py::array_t<EventCD> &events, py::array &frame, uint32_t accumulation_time_us,
-                                  const Metavision::ColorPalette &palette) {
+void generate_frame_from_event_array(const py::array_t<EventCD> &events, py::array &frame,
+                                     uint32_t accumulation_time_us, const Metavision::ColorPalette &palette) {
     cv::Mat img_cv;
     Metavision::py_array_to_cv_mat(frame, img_cv, true);
 
@@ -34,6 +35,15 @@ void static_generate_frame_helper(const py::array_t<EventCD> &events, py::array 
     auto *in_ptr = static_cast<EventCD *>(info.ptr);
     BaseFrameGenerationAlgorithm::generate_frame_from_events(in_ptr, in_ptr + nelem, img_cv, accumulation_time_us,
                                                              palette);
+}
+
+void generate_frame_from_event_rolling_buffer(const RollingEventBuffer<EventCD> &events, py::array &frame,
+                                              uint32_t accumulation_time_us, const Metavision::ColorPalette &palette) {
+    cv::Mat img_cv;
+    Metavision::py_array_to_cv_mat(frame, img_cv, true);
+
+    BaseFrameGenerationAlgorithm::generate_frame_from_events(events.cbegin(), events.cend(), img_cv,
+                                                             accumulation_time_us, palette);
 }
 
 py::tuple Vec3b_to_tuple(const cv::Vec3b &color) {
@@ -82,24 +92,29 @@ void set_colors_helper(BaseFrameGenerationAlgorithm &algo, const std::vector<uin
 } // anonymous namespace
 
 void export_base_frame_generation_algorithm(py::module &m) {
+    static constexpr char generate_doc_str[] =
+        "Stand-alone (static) method to generate a frame from events\n"
+        "\n"
+        "   All events in the interval ]t - dt, t] are used where t the timestamp of the last event in "
+        "the buffer, and dt is accumulation_time_us. If accumulation_time_us is kept to 0, all input events are "
+        "used.\n"
+        "   If there is no events, a frame filled with the background color will be generated\n"
+        "\n"
+        "   :events: Numpy structured array whose fields are ('x', 'y', 'p', 't'). Note that this order is "
+        "mandatory\n"
+        "   :frame: Pre-allocated frame that will be filled with CD events. It must have the same geometry as the "
+        "input"
+        " event source, and the color corresponding to the given palette (3 channels by default)\n"
+        "   :accumulation_time_us: Time range of events to update the frame with (in us). 0 to use all events.\n"
+        "   :palette: The Prophesee's color palette to use";
+
     py::class_<BaseFrameGenerationAlgorithm>(m, "BaseFrameGenerationAlgorithm")
-        .def_static(
-            "generate_frame", &static_generate_frame_helper, py::arg("events"), py::arg("frame"),
-            py::arg("accumulation_time_us") = 0, py::arg("palette") = BaseFrameGenerationAlgorithm::default_palette(),
-            "Stand-alone (static) method to generate a frame from events\n"
-            "\n"
-            "   All events in the interval ]t - dt, t] are used where t the timestamp of the last event in "
-            "the buffer, and dt is accumulation_time_us. If accumulation_time_us is kept to 0, all input events are "
-            "used.\n"
-            "   If there is no events, a frame filled with the background color will be generated\n"
-            "\n"
-            "   :events: Numpy structured array whose fields are ('x', 'y', 'p', 't'). Note that this order is "
-            "mandatory\n"
-            "   :frame: Pre-allocated frame that will be filled with CD events. It must have the same geometry as the "
-            "input"
-            " event source, and the color corresponding to the given palette (3 channels by default)\n"
-            "   :accumulation_time_us: Time range of events to update the frame with (in us). 0 to use all events.\n"
-            "   :palette: The Prophesee's color palette to use")
+        .def_static("generate_frame", &generate_frame_from_event_array, py::arg("events"), py::arg("frame"),
+                    py::arg("accumulation_time_us") = 0,
+                    py::arg("palette")              = BaseFrameGenerationAlgorithm::default_palette(), generate_doc_str)
+        .def_static("generate_frame", &generate_frame_from_event_rolling_buffer, py::arg("events"), py::arg("frame"),
+                    py::arg("accumulation_time_us") = 0,
+                    py::arg("palette")              = BaseFrameGenerationAlgorithm::default_palette(), generate_doc_str)
         .def_static(
             "bg_color_default", []() { return Vec3b_to_tuple(BaseFrameGenerationAlgorithm::bg_color_default()); },
             pybind_doc_core["Metavision::BaseFrameGenerationAlgorithm::bg_color_default"])

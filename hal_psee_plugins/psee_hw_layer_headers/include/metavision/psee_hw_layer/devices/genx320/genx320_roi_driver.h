@@ -34,6 +34,7 @@ public:
         void clear();
         void set_vector(const unsigned int &vector_id, const unsigned int &row, const unsigned int &val);
         unsigned int &get_vector(const unsigned int &vector_id, const unsigned int &row);
+        unsigned int get_vector(const unsigned int &vector_id, const unsigned int &row) const;
         void set_pixel(const unsigned int &column, const unsigned int &row, const bool &enable);
 
         /// @brief Returns the grid as a string
@@ -135,6 +136,7 @@ public:
     void reset_to_full_roi();
 
     std::vector<I_ROI::Window> get_windows() const;
+    bool get_lines(std::vector<bool> &cols, std::vector<bool> &rows) const;
     void print_windows_config();
 
     Grid get_grid() const;
@@ -150,6 +152,7 @@ private:
     DriverMode driver_mode_;
     I_ROI::Mode mode_;
 
+    bool is_lines_;
     Grid grid_;
     I_ROI::Window main_window_;
     unsigned int roi_window_cnt_;

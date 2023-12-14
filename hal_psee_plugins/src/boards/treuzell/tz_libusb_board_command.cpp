@@ -342,7 +342,7 @@ void TzLibUSBBoardCommand::write_device_register(uint32_t device, uint32_t addre
         throw std::system_error(TZ_PROPERTY_MISMATCH, TzError(), "address mismatch");
 }
 
-std::unique_ptr<PseeLibUSBDataTransfer> TzLibUSBBoardCommand::build_data_transfer(uint32_t raw_event_size_bytes) {
+std::unique_ptr<DataTransfer> TzLibUSBBoardCommand::build_data_transfer(uint32_t raw_event_size_bytes) {
     return std::make_unique<PseeLibUSBDataTransfer>(dev_, bEpCommAddress, raw_event_size_bytes);
 }
 

@@ -13,9 +13,23 @@
 
 #include "metavision/sdk/base/utils/sdk_log.h"
 #include "metavision/sdk/ui/utils/base_glfw_window.h"
+#include "metavision/sdk/ui/utils/opengl_api.h"
 
 namespace Metavision {
 namespace detail {
+
+void set_glfw_windows_hints() {
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#if _USE_OPENGL_ES3_
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+    glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
+#else
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+#endif
+}
 
 struct GLFWContext {
     GLFWContext() {
@@ -24,25 +38,22 @@ struct GLFWContext {
         if (!glfwInit())
             throw std::runtime_error("Impossible to initialize glfw.");
 
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#ifdef __APPLE__
-        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-
+        set_glfw_windows_hints();
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+
         auto window = glfwCreateWindow(10, 10, "init", nullptr, nullptr);
         if (!window)
             throw std::runtime_error("Impossible to create a glfw window");
 
         glfwMakeContextCurrent(window);
 
-        if (glewInit() != GLEW_OK)
-            throw std::runtime_error("Impossible to initialize GL extensions");
+        if (glewInit() != GLEW_OK) {
+            throw std::runtime_error("Impossible to initialize GL extensions with GLEW");
+        }
 
         glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
         glfwMakeContextCurrent(nullptr);
+
         glfwDestroyWindow(window);
     }
 
@@ -68,18 +79,7 @@ BaseGLFWWindow::BaseGLFWWindow(const std::string &title, int width, int height) 
         detail::is_glfw_initialized_ = true;
     }
 
-#ifdef __APPLE__
-    glsl_version_ = "#version 150";
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#else
-    glsl_version_ = "#version 330";
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#endif
+    detail::set_glfw_windows_hints();
 
     glfw_window_ = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
     glfwDefaultWindowHints();
@@ -107,6 +107,10 @@ bool BaseGLFWWindow::should_close() const {
 void BaseGLFWWindow::set_close_flag() {
     if (glfw_window_)
         glfwSetWindowShouldClose(glfw_window_, GLFW_TRUE);
+}
+
+void BaseGLFWWindow::poll_pending_events() {
+    glfwPollEvents();
 }
 
 } // namespace Metavision
