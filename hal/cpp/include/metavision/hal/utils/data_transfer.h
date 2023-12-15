@@ -20,6 +20,7 @@
 #include <functional>
 
 #include "metavision/sdk/base/utils/object_pool.h"
+#include "metavision/hal/utils/buffer_allocator.h"
 
 namespace Metavision {
 
@@ -35,8 +36,11 @@ public:
     /// Alias for the type of the data transferred
     using Data = uint8_t;
 
+    /// Alias for the memory allocator for the data buffers
+    using Allocator = BufferAllocator<Data>;
+
     /// Alias for the type of the internal buffer of data
-    using Buffer = std::vector<Data>;
+    using Buffer = std::vector<Data, Allocator>;
 
     /// Alias for the object handling the buffers pool
     using BufferPool = SharedObjectPool<Buffer>;
