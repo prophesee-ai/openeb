@@ -23,7 +23,7 @@ public:
     TzIssdGenX320Device(const Issd &issd, const std::pair<std::string, uint32_t> &env_var);
     virtual ~TzIssdGenX320Device();
     bool download_firmware() const;
-    void start_firmware() const;
+    void start_firmware(bool is_mp) const;
     static std::pair<std::string, uint32_t> parse_env(const char *input);
 
 protected:

@@ -141,15 +141,37 @@ bool TzIssdGenX320Device::download_firmware() const {
     }
     return false;
 }
-void TzIssdGenX320Device::start_firmware() const {
-    if (((DMEM_ADDR <= start_address_) && (start_address_ < DMEM_ADDR + DMEM_SIZE)) ||
-        ((IMEM_ADDR <= start_address_) && (start_address_ < IMEM_ADDR + IMEM_SIZE))) {
-        MV_HAL_LOG_TRACE() << "Start Risc-V execution at 0x" << std::hex << start_address_;
-        // Currently the CPU will always start at 0x200200 (default address) suposing that ROMMODE IO is in low state
-        (*register_map)["mbx/cpu_start_en"]["cpu_start_en"].write_value(1);
+void TzIssdGenX320Device::start_firmware(bool is_mp) const {
+    if (is_mp) {
+        unsigned int retries = 0;
+
+        (*register_map)["mbx/cmd_ptr"]["cmd_ptr"].write_value(0x70200200);
+
+        while (retries < 10) {
+            if (((*register_map)["mbx/cmd_ptr"]["cmd_ptr"].read_value() & 0xff000000) == 0) {
+                MV_HAL_LOG_TRACE() << "Jump to IMEM successfull";
+                break;
+            } else {
+                std::this_thread::sleep_for(std::chrono::microseconds(100));
+            }
+            retries++;
+        }
+
+        if (retries == 10) {
+            MV_HAL_LOG_ERROR() << "Failed to jump to IMEM";
+        }
 
     } else {
-        MV_HAL_LOG_ERROR() << "Start address 0x" << std::hex << start_address_ << std::dec << " is not valid.";
+        if (((DMEM_ADDR <= start_address_) && (start_address_ < DMEM_ADDR + DMEM_SIZE)) ||
+            ((IMEM_ADDR <= start_address_) && (start_address_ < IMEM_ADDR + IMEM_SIZE))) {
+            MV_HAL_LOG_TRACE() << "Start Risc-V execution at 0x" << std::hex << start_address_;
+            // Currently the CPU will always start at 0x200200 (default address) assuming that ROMMODE IO is in low
+            // state
+            (*register_map)["mbx/cpu_start_en"]["cpu_start_en"].write_value(1);
+
+        } else {
+            MV_HAL_LOG_ERROR() << "Start address 0x" << std::hex << start_address_ << std::dec << " is not valid.";
+        }
     }
 }
 
@@ -158,7 +180,7 @@ void TzIssdGenX320Device::initialize() {
     TzIssdDevice::initialize();
 
     if (download_firmware() == true)
-        start_firmware();
+        start_firmware(false);
 }
 std::pair<std::string, uint32_t> TzIssdGenX320Device::parse_env(const char *input) {
     uint32_t outputValue = 0x200200;
@@ -192,7 +214,7 @@ TzCx3GenX320::TzCx3GenX320(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t d
     // Beware the firmware has not been loaded during the initialize operation performed
     // in the parent class TzIssdDevice
     if (download_firmware() == true)
-        start_firmware();
+        start_firmware(is_mp);
     sync_mode_ = I_CameraSynchronization::SyncMode::STANDALONE;
     iph_mirror_control(true);
     temperature_init();

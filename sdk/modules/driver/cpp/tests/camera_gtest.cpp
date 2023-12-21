@@ -1478,9 +1478,6 @@ TEST_F(Camera_Gtest, should_load_serialized_state) {
         camera.get_device().get_facility<I_LL_Biases>()->set("c", 4);
 
         // NFL
-        // Only the first value can be tested due to a limitation of the
-        // `EventRateNoiseFilterState::set_event_rate_threshold()` logic which only stores a single value for the
-        // threshold. This has to be changed in the future, so the full range of values can be tested.
         camera.get_device().get_facility<I_EventRateActivityFilterModule>()->set_thresholds({144'398, 0u, 0u, 0u});
         camera.get_device().get_facility<I_EventRateActivityFilterModule>()->enable(true);
 
@@ -1556,10 +1553,6 @@ TEST_F(Camera_Gtest, should_load_serialized_state) {
         EXPECT_EQ(4, camera.get_device().get_facility<I_LL_Biases>()->get("c"));
 
         // NFL
-        // Only the first value sadly can be compared and has to be the same as the one used in
-        // `get_event_rate_threshold()` due to a limitation of the `EventRateNoiseFilterState::event_rate_threshold()`
-        // logic which only returns a single value for the threshold. This has to be changed in the future, so the full
-        // range of values can be tested.
         EXPECT_EQ(
             144'398,
             camera.get_device().get_facility<I_EventRateActivityFilterModule>()->get_thresholds().lower_bound_start);

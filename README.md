@@ -133,7 +133,7 @@ python3 -m pip install "numba==0.56.3" "profilehooks==1.12.0" "pytorch_lightning
 
 ### Compilation
 
- 1. Retrieve the code: `git clone https://github.com/prophesee-ai/openeb.git --branch 4.5.0`.
+ 1. Retrieve the code: `git clone https://github.com/prophesee-ai/openeb.git --branch 4.5.1`.
     (If you choose to download an archive of OpenEB from GitHub rather than cloning the repository,
     you need to ensure that you select a ``Full.Source.Code.*`` archive instead of using
     the automatically generated ``Source.Code.*`` archives. This is because the latter do not include
@@ -174,7 +174,7 @@ or you can deploy the OpenEB files in the system path (`/usr/local/lib`, `/usr/l
     sudo cmake --build . --target install
     ```
 
-    Note that you ou can also deploy the OpenEB files (applications, samples, libraries etc.) in a directory of your choice by using
+    Note that you can also deploy the OpenEB files (applications, samples, libraries etc.) in a directory of your choice by using
     the `CMAKE_INSTALL_PREFIX` variable (`-DCMAKE_INSTALL_PREFIX=<OPENEB_INSTALL_DIR>`) when generating the makefiles
     in step 3. Similarly, you can configure the directory where the Python packages will be deployed using the
     `PYTHON3_SITE_PACKAGES` variable (`-DPYTHON3_SITE_PACKAGES=<PYTHON3_PACKAGES_INSTALL_DIR>`).
@@ -325,7 +325,7 @@ python -m pip install "numba==0.56.3" "profilehooks==1.12.0" "pytorch_lightning=
 First, retrieve the codebase:
 
 ```bash
-git clone https://github.com/prophesee-ai/openeb.git --branch 4.5.0
+git clone https://github.com/prophesee-ai/openeb.git --branch 4.5.1
 ```
 
 Note that if you choose to download an archive of OpenEB from GitHub rather than cloning the repository,

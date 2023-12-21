@@ -45,11 +45,13 @@ const std::vector<RegisterOperation> issd_genx320mp_cx3_init = {
     RegisterOperation::Write(0x0000F010, 0x00002710),
     RegisterOperation::Write(0x0000F008, 0x10000002),
     RegisterOperation::Write(0x0000F008, 0xC31057D4),
+    RegisterOperation::Write(0x0000B000, 0x10008803),
+    RegisterOperation::Write(0x0000B024, 0x80003E80),
     RegisterOperation::Write(0x00001208, 0x00000030),
     RegisterOperation::Delay(200),
     RegisterOperation::Write(0x00001104, 0x01010019),
     RegisterOperation::Write(0x00001128, 0x01010019),
-    RegisterOperation::Write(0x0000110C, 0x01010014),
+    RegisterOperation::Write(0x0000110C, 0x01010015),
     RegisterOperation::Write(0x00001130, 0x01010014),
     RegisterOperation::Write(0x00001000, 0x0301003D),
     RegisterOperation::Write(0x00001004, 0x0301001D),
@@ -69,7 +71,7 @@ const std::vector<RegisterOperation> issd_genx320mp_cx3_init = {
 const std::vector<RegisterOperation> issd_genx320mp_cx3_start = {
     // DIGITAL START sequence -- begin
     // DIGITAL: MIPI enable
-    RegisterOperation::Write(0x0000B000, 0x1000C001),
+    RegisterOperation::Write(0x0000B000, 0x10008803),
     // DIGITAL: RO exit LowPower + timebase enable
     RegisterOperation::Write(0x00009028, 0x00000000),
     RegisterOperation::WriteField(0x00009008, 0x00000195, 0x00000001),
@@ -77,7 +79,7 @@ const std::vector<RegisterOperation> issd_genx320mp_cx3_start = {
     // ANALOG START sequence -- begin
     RegisterOperation::Delay(1),
     RegisterOperation::Write(0x0000002C, 0x0022C724),
-    RegisterOperation::Write(0x00000000, 0x00000402),
+    RegisterOperation::Write(0x00000000, 0x00000C02),
     RegisterOperation::Delay(1),
     // ANALOG START sequence -- end
 };
@@ -94,7 +96,7 @@ const std::vector<RegisterOperation> issd_genx320mp_cx3_stop = {
     // DIGITAL: Timebase disable
     RegisterOperation::WriteField(0x00009008, 0x00000194, 0x00000001),
     // DIGITAL: MIPI DPHY disable
-    RegisterOperation::Write(0x0000B000, 0x1000C000),
+    RegisterOperation::Write(0x0000B000, 0x10008804),
     // DIGITAL STOP sequence -- end
 };
 
@@ -103,25 +105,25 @@ const std::vector<RegisterOperation> issd_genx320mp_cx3_destroy = {
     RegisterOperation::Delay(1),
     // Disabling the PMU...
     RegisterOperation::Write(0x00000070, 0x0000051C),
-    RegisterOperation::Write(0x0000A004, 0x00000054),
-    RegisterOperation::Write(0x0000A008, 0x00000084),
+    RegisterOperation::Write(0x0000A004, 0x00600054),
+    RegisterOperation::Write(0x0000A008, 0x00600084),
     RegisterOperation::Write(0x0000005C, 0x00000080),
     RegisterOperation::Write(0x0000005C, 0x00000080),
-    RegisterOperation::Write(0x0000A01C, 0x0007601C),
-    RegisterOperation::Write(0x0000A000, 0x00000400),
+    RegisterOperation::Write(0x0000A01C, 0x0013601C),
+    RegisterOperation::Write(0x0000A000, 0x00040400),
     // Disabling the PMU...done!
     RegisterOperation::Delay(1),
     // ANALOG DESTROY sequence -- end
     // DIGITAL DESTROY sequence -- begin
     // DIGITAL: MIPI DPHY and PLL Power Down
-    RegisterOperation::Write(0x0000B030, 0x00000000),
-    RegisterOperation::Write(0x0000B00C, 0x00000006),
+    RegisterOperation::Write(0x0000B030, 0x00000013),
+    RegisterOperation::Write(0x0000B00C, 0x00000102),
     RegisterOperation::Write(0x0000B030, 0x00000010),
     RegisterOperation::Write(0x0000B00C, 0x00000002),
-    RegisterOperation::Write(0x0000A01C, 0x0007601C),
+    RegisterOperation::Write(0x0000A01C, 0x0003601C),
     RegisterOperation::Write(0x0000004C, 0x00204E20),
     RegisterOperation::Write(0x0000B030, 0x00000000),
-    RegisterOperation::Write(0x0000A01C, 0x0007601C),
+    RegisterOperation::Write(0x0000A01C, 0x0003601C),
     RegisterOperation::Write(0x0000A000, 0x00000400),
     RegisterOperation::Write(0x00000204, 0x00000E75),
     RegisterOperation::Write(0x00000204, 0x00000E74),

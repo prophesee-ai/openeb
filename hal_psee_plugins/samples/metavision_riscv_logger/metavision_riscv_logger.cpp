@@ -36,8 +36,11 @@ uint32_t mbx_read_uint32(Metavision::I_HW_Register *regs) {
 int main(int argc, char *argv[]) {
     std::string serial;
 
-    const std::string program_desc("The source code of this application demonstrates how to receive log messages "
-                                   "from an application embedded in the sensor.\n");
+    const std::string program_desc(
+        "This sample shows how to receive log messages from an application embedded in the sensor.\n"
+        "To use it, define the environment variable MV_FLAGS_RISCV_FW_PATH containing the PATH of a .hex file."
+        "We provide an example (hello_world.hex) that is delivered along with the C++ sample source code.\n");
+
     po::options_description options_desc("Options");
     // clang-format off
     options_desc.add_options()

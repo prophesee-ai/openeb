@@ -153,9 +153,7 @@ public:
         auto *nfl_state = state_.mutable_event_rate_noise_filter_state();
         nfl_state->set_enabled(module->is_enabled());
 
-        // Please change the name and logic of `EventRateNoiseFilterState::set_event_rate_threshold`.
-        // To ensure it properly supports all of the values of a `threshold` struct.
-        uint32_t threshold = module->get_thresholds().lower_bound_start;
+        auto threshold = module->get_thresholds().lower_bound_start;
         nfl_state->set_event_rate_threshold(threshold);
     }
 
@@ -384,12 +382,7 @@ public:
 
         if (nfl_state.optional_event_rate_threshold_case() ==
             DeviceSerialization::EventRateNoiseFilterState::kEventRateThreshold) {
-            // Please change the logic and name of `EventRateNoiseFilterState::event_rate_threshold()` to use new naming
-            // convention
             const auto th_lower_start = nfl_state.event_rate_threshold();
-
-            // 0u is used because logic of `EventRateNoiseFilterState::event_rate_threshold()` does not yet allow for
-            // multiple threshold values.
             module->set_thresholds({th_lower_start, 0u, 0u, 0u});
         }
     }
