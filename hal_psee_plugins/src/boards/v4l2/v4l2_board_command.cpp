@@ -27,19 +27,8 @@
 #include "boards/v4l2/v4l2_device.h"
 #include "boards/v4l2/v4l2_data_transfer.h"
 #include "metavision/psee_hw_layer/boards/v4l2/v4l2_board_command.h"
-#include "boards/treuzell/treuzell_command_definition.h"
-#include "metavision/psee_hw_layer/boards/treuzell/tz_control_frame.h"
-#include "devices/utils/device_system_id.h"
 #include "metavision/hal/utils/hal_exception.h"
 #include "utils/psee_hal_plugin_error_code.h"
-
-#ifdef USE_JAVA_BINDINGS
-#include "is_usb_java.h"
-#endif
-
-#define PSEE_EVK_PROTOCOL 0
-
-#define TZ_MAX_ANSWER_SIZE 1024
 
 namespace Metavision {
 
