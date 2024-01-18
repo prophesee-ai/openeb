@@ -18,6 +18,7 @@
 #include <linux/videodev2.h>
 
 #include "boards/v4l2/v4l2_data_transfer.h"
+#include "boards/v4l2/dma_buf_heap.h"
 
 #include "metavision/hal/utils/hal_log.h"
 
@@ -35,6 +36,21 @@ V4l2DataTransfer::V4l2DataTransfer(int fd, uint32_t raw_event_size_bytes) :
                                                         Allocator(Allocator::ImplPtr(new V4l2MmapAllocator(fd)))),
                  allow_buffer_drop),
     memtype_(V4L2_MEMORY_MMAP),
+    fd_(dup(fd)) {
+    auto res = request_buffers(device_buffer_number);
+    if (res.count != device_buffer_number)
+        throw std::system_error(ENOMEM, std::generic_category(), "Unexepected amount of V4L2 buffers allocated");
+}
+
+V4l2DataTransfer::V4l2DataTransfer(int fd, uint32_t raw_event_size_bytes, const std::string &heap_path,
+                                   const std::string &heap_name) :
+    DataTransfer(raw_event_size_bytes,
+                 // To create device_buffer_number std::vectors from a heap, using DMABUF
+                 DataTransfer::BufferPool::make_bounded(device_buffer_number,
+                                                        Allocator(Allocator::ImplPtr(new DmabufAllocator(
+                                                            fd, std::make_unique<DmaBufHeap>(heap_path, heap_name))))),
+                 allow_buffer_drop),
+    memtype_(V4L2_MEMORY_DMABUF),
     fd_(dup(fd)) {
     auto res = request_buffers(device_buffer_number);
     if (res.count != device_buffer_number)

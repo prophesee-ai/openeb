@@ -13,14 +13,20 @@
 #define METAVISION_HAL_PSEE_PLUGINS_V4L2_DATA_TRANSFER_H
 
 #include "metavision/hal/utils/data_transfer.h"
+#include <map>
 
 namespace Metavision {
 using V4l2Buffer         = struct v4l2_buffer;
 using V4l2RequestBuffers = struct v4l2_requestbuffers;
 
+class DmaBufHeap;
+
 class V4l2DataTransfer : public DataTransfer {
 public:
+    // Constructor using MMAP buffers
     V4l2DataTransfer(int fd, uint32_t raw_event_size_bytes);
+    // Constructor using DMABUF buffers
+    V4l2DataTransfer(int fd, uint32_t raw_event_size_bytes, const std::string &heap_path, const std::string &heap_name);
     ~V4l2DataTransfer();
 
 private:
@@ -69,6 +75,22 @@ private:
         std::vector<void *> mapping_;
         size_t buffer_size_;
         const int fd_;
+    };
+
+    class DmabufAllocator : public V4l2Allocator {
+        void *allocate(size_t n, size_t data_size) override;
+        void deallocate(void *p, size_t n, size_t data_size) override;
+        void fill_v4l2_buffer(void *, V4l2Buffer &) const override;
+
+    public:
+        DmabufAllocator(int fd, std::unique_ptr<DmaBufHeap> &&);
+        ~DmabufAllocator() override;
+
+    private:
+        // The mapping between buffer fds and their memory mapping
+        std::map<void *, int> mapping_;
+        // Dmabuf heap where the memory is allocated
+        std::unique_ptr<DmaBufHeap> dmabuf_heap_;
     };
     void fill_v4l2_buffer(BufferPtr &, V4l2Buffer &) const;
 };
