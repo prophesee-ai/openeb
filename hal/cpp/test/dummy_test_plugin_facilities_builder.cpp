@@ -40,6 +40,7 @@
 #include <metavision/hal/utils/camera_discovery.h>
 
 #include "dummy_test_plugin_facilities.h"
+#include "dummy_datatransfer.h"
 
 using namespace Metavision;
 
@@ -93,12 +94,6 @@ struct DummyROI : public I_ROI {
     Mode mode_;
     std::vector<Window> windows_;
     std::vector<bool> rows_, cols_;
-};
-
-struct DummyDataTransfer : public DataTransfer {
-    DummyDataTransfer() : DataTransfer(1) {}
-
-    virtual void run_impl() override {}
 };
 
 struct DummyFileHWIdentification : public I_HW_Identification {
