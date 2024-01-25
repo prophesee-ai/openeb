@@ -60,8 +60,20 @@ void V4l2DataTransfer::DmabufAllocator::deallocate(void *p, size_t n, size_t dat
 }
 
 void V4l2DataTransfer::DmabufAllocator::fill_v4l2_buffer(void *vaddr, V4l2Buffer &buf) const {
+    buf.m.fd = fd(vaddr);
+}
+
+void V4l2DataTransfer::DmabufAllocator::begin_cpu_access(void *vaddr) const {
+    dmabuf_heap_->cpu_sync_start(fd(vaddr));
+}
+
+void V4l2DataTransfer::DmabufAllocator::end_cpu_access(void *vaddr) const {
+    dmabuf_heap_->cpu_sync_stop(fd(vaddr));
+}
+
+int V4l2DataTransfer::DmabufAllocator::fd(void *vaddr) const {
     auto it = mapping_.find(vaddr);
     if (it == mapping_.end())
         throw std::system_error(EINVAL, std::generic_category(), "Requested fd of a non-Dmabuf buffer");
-    buf.m.fd = it->second;
+    return it->second;
 }

@@ -145,6 +145,9 @@ void V4l2DataTransfer::run_impl() {
 
         MV_HAL_LOG_DEBUG() << "Grabbed buffer" << buf.index << "of:" << buf.bytesused << "Bytes.";
 
+        // Advertise CPU operations to allow cache maintenance
+        begin_cpu_access(queued_buffers_[buf.index]);
+
         // Get the vector corresponding to this buffer and transfer the data
         queued_buffers_[buf.index]->resize(buf.bytesused);
 
@@ -155,6 +158,9 @@ void V4l2DataTransfer::run_impl() {
         // buf is filled with the info of the dequeued buffer
         // update it with next information
         fill_v4l2_buffer(next, buf);
+
+        // Advertise end of CPU operations to allow cache maintenance
+        end_cpu_access(next);
 
         // Queue the next buffer to keep the device running
         if (ioctl(fd_, VIDIOC_QBUF, &buf) < 0) {
@@ -172,6 +178,14 @@ void V4l2DataTransfer::stop_impl() {
         queued_buffers_[i].reset();
 }
 
+V4l2DataTransfer::V4l2Allocator &V4l2DataTransfer::v4l2_alloc(BufferPtr &buf) const {
+    // The std::vectors in BufferPool are built with a V4l2Allocator, which can do this work
+    V4l2Allocator *alloc = dynamic_cast<V4l2Allocator *>(buf->get_allocator().get_impl().get());
+    if (!alloc)
+        throw std::system_error(EPERM, std::generic_category(), "Impl is expected to be V4l2Allocator");
+    return *alloc;
+}
+
 // Fills the V4L2 descriptor with the buffer info. This information depends on the Allocator implementation
 // For instance in MMAP the buffer is mapped to an index of the device
 // But on DMABUF, the buffer is mapped to a standalone file descriptor
@@ -185,11 +199,16 @@ void V4l2DataTransfer::fill_v4l2_buffer(BufferPtr &buf, V4l2Buffer &v4l2_buf) co
     if (!buf->data())
         buf->reserve(buf->get_allocator().max_size());
 
-    // The std::vectors in BufferPool are built with a V4l2Allocator, which can do this work
-    V4l2Allocator *alloc = dynamic_cast<V4l2Allocator *>(buf->get_allocator().get_impl().get());
-    if (!alloc)
-        throw std::system_error(EPERM, std::generic_category(), "Impl is expected to be V4l2Allocator");
-    alloc->fill_v4l2_buffer(buf->data(), v4l2_buf);
+    v4l2_alloc(buf).fill_v4l2_buffer(buf->data(), v4l2_buf);
+}
+
+// Call the cache maintenance that fits the memory type
+void V4l2DataTransfer::begin_cpu_access(BufferPtr &buf) const {
+    v4l2_alloc(buf).begin_cpu_access(buf->data());
+}
+
+void V4l2DataTransfer::end_cpu_access(BufferPtr &buf) const {
+    v4l2_alloc(buf).end_cpu_access(buf->data());
 }
 
 V4l2DataTransfer::V4l2Allocator::V4l2Allocator(int videodev_fd) {

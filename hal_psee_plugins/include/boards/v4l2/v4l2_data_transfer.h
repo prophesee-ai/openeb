@@ -58,6 +58,8 @@ private:
         }
         // Get a descriptor usable with V4L2 API from a data pointer
         virtual void fill_v4l2_buffer(void *, V4l2Buffer &) const = 0;
+        virtual void begin_cpu_access(void *) const {}
+        virtual void end_cpu_access(void *) const {}
     };
 
     class V4l2MmapAllocator : public V4l2Allocator {
@@ -81,6 +83,8 @@ private:
         void *allocate(size_t n, size_t data_size) override;
         void deallocate(void *p, size_t n, size_t data_size) override;
         void fill_v4l2_buffer(void *, V4l2Buffer &) const override;
+        void begin_cpu_access(void *) const override;
+        void end_cpu_access(void *) const override;
 
     public:
         DmabufAllocator(int fd, std::unique_ptr<DmaBufHeap> &&);
@@ -91,8 +95,15 @@ private:
         std::map<void *, int> mapping_;
         // Dmabuf heap where the memory is allocated
         std::unique_ptr<DmaBufHeap> dmabuf_heap_;
+        // A helper to get the fd from a pointer
+        int fd(void *) const;
     };
+
+    // A helper to get the right allocator, and calls to its methods
+    V4l2Allocator &v4l2_alloc(BufferPtr &) const;
     void fill_v4l2_buffer(BufferPtr &, V4l2Buffer &) const;
+    void begin_cpu_access(BufferPtr &) const;
+    void end_cpu_access(BufferPtr &) const;
 };
 
 } // namespace Metavision
