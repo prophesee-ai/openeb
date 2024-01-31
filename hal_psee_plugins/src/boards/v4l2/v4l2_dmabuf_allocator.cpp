@@ -30,29 +30,29 @@ V4l2DataTransfer::DmabufAllocator::DmabufAllocator(int fd, std::unique_ptr<DmaBu
 
 V4l2DataTransfer::DmabufAllocator::~DmabufAllocator() {}
 
-void *V4l2DataTransfer::DmabufAllocator::allocate(size_t n, size_t data_size) {
+V4l2DataTransfer::Data *V4l2DataTransfer::DmabufAllocator::allocate(size_t n) {
     void *vaddr;
 
-    if (n > max_size(data_size))
+    if (n > max_size())
         throw std::length_error("Trying to allocate more than the V4L2 buffer length");
 
     // Alloc a new buffer in the DMA buffer heap
-    auto dmabuf_fd = dmabuf_heap_->alloc(n * data_size);
+    auto dmabuf_fd = dmabuf_heap_->alloc(n * sizeof(Data));
 
     // Map it in the program memory
-    vaddr = mmap(NULL, n * data_size, PROT_READ | PROT_WRITE, MAP_SHARED, dmabuf_fd, 0);
+    vaddr = mmap(NULL, n * sizeof(Data), PROT_READ | PROT_WRITE, MAP_SHARED, dmabuf_fd, 0);
     if (vaddr == MAP_FAILED)
         throw std::system_error(errno, std::generic_category(), "Could not mmap DMABUF buffer");
 
     // Save the mapping
     mapping_[vaddr] = dmabuf_fd;
 
-    return vaddr;
+    return V4l2DataTransfer::Allocator::pointer(vaddr);
 }
 
-void V4l2DataTransfer::DmabufAllocator::deallocate(void *p, size_t n, size_t data_size) {
+void V4l2DataTransfer::DmabufAllocator::deallocate(Data *p, size_t n) {
     // remove buffer mapping in userspace
-    munmap((void *)p, n * data_size);
+    munmap((void *)p, n * sizeof(Data));
     // free it in the DmaHeap
     dmabuf_heap_->free(mapping_[p]);
     // Drop the map entry

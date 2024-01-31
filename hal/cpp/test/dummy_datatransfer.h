@@ -18,7 +18,7 @@
 
 struct DummyDataTransfer : public Metavision::DataTransfer {
     using Allocator = Metavision::DataTransfer::Allocator;
-    class DummyAllocator : public Allocator::Impl {};
+    class DummyAllocator : public Allocator::DefaultAllocator {};
 
     DummyDataTransfer() :
         Metavision::DataTransfer(1, BufferPool::make_bounded(4, Allocator(Allocator::ImplPtr(new DummyAllocator())))) {}

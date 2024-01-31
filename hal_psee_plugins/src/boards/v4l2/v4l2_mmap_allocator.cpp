@@ -31,12 +31,12 @@ V4l2DataTransfer::V4l2MmapAllocator::~V4l2MmapAllocator() {
     close(fd_);
 }
 
-void *V4l2DataTransfer::V4l2MmapAllocator::allocate(size_t n, size_t datasize) {
+V4l2DataTransfer::Data *V4l2DataTransfer::V4l2MmapAllocator::allocate(size_t n) {
     void *vaddr;
     V4l2Buffer buffer;
     int buffer_index;
 
-    if (n > max_size(datasize))
+    if (n > max_size())
         throw std::length_error("Trying to expand allocation beyond V4L2 buffer length");
 
     // Look for a free buffer
@@ -63,10 +63,10 @@ void *V4l2DataTransfer::V4l2MmapAllocator::allocate(size_t n, size_t datasize) {
     // Save the mapping, implicitely making the buffer used.
     mapping_[buffer_index] = vaddr;
 
-    return mapping_[buffer_index];
+    return DataTransfer::Allocator::pointer(vaddr);
 }
 
-void V4l2DataTransfer::V4l2MmapAllocator::deallocate(void *p, size_t n, size_t data_size) {
+void V4l2DataTransfer::V4l2MmapAllocator::deallocate(Data *p, size_t n) {
     // Mark the buffer as unused
     for (int i = 0; i < device_buffer_number; i++)
         if (mapping_[i] == p)

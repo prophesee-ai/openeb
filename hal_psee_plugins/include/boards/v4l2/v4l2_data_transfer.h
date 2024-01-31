@@ -53,8 +53,8 @@ private:
         }
 
     public:
-        size_t max_size(size_t data_size) const noexcept override {
-            return buffer_size_ / data_size;
+        size_t max_size() const noexcept override {
+            return buffer_size_ / sizeof(Data);
         }
         // Get a descriptor usable with V4L2 API from a data pointer
         virtual void fill_v4l2_buffer(void *, V4l2Buffer &) const = 0;
@@ -63,8 +63,8 @@ private:
     };
 
     class V4l2MmapAllocator : public V4l2Allocator {
-        void *allocate(size_t n, size_t data_size) override;
-        void deallocate(void *p, size_t n, size_t data_size) override;
+        Data *allocate(size_t n) override;
+        void deallocate(Data *p, size_t n) override;
         void fill_v4l2_buffer(void *, V4l2Buffer &) const override;
 
     public:
@@ -80,8 +80,8 @@ private:
     };
 
     class DmabufAllocator : public V4l2Allocator {
-        void *allocate(size_t n, size_t data_size) override;
-        void deallocate(void *p, size_t n, size_t data_size) override;
+        Data *allocate(size_t n) override;
+        void deallocate(Data *p, size_t n) override;
         void fill_v4l2_buffer(void *, V4l2Buffer &) const override;
         void begin_cpu_access(void *) const override;
         void end_cpu_access(void *) const override;

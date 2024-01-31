@@ -16,29 +16,38 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <system_error>
+#include <vector>
 
 namespace Metavision {
 
 namespace BufferAllocatorInternal {
 /// @brief a class that manages BufferAllocator<T> allocations, in a type-agnostic way to allow rebinding
 ///
+template<typename T>
 class Allocator {
 public:
-    virtual void *allocate(size_t n, size_t data_size) {
-        void *p = calloc(n, data_size);
-        if (!p)
-            throw std::system_error(errno, std::generic_category());
-        return p;
-    }
-    virtual void deallocate(void *p, size_t n, size_t data_size) {
-        free(p);
-    }
-    virtual size_t max_size(size_t data_size) const noexcept {
-        return SIZE_MAX / data_size;
-    }
-    // Since we will delete it through smart_ptr<Buffer>, we must be sure to call the actual destructor
-    // implementation
+    virtual T *allocate(size_t n)            = 0;
+    virtual void deallocate(T *p, size_t n)  = 0;
+    virtual size_t max_size() const noexcept = 0;
     virtual ~Allocator() {}
+};
+
+template<typename T>
+class VectorAllocator : public Allocator<T> {
+    using AllocatorType = typename std::vector<T>::allocator_type;
+    AllocatorType allocator;
+
+public:
+    virtual T *allocate(size_t n) override {
+        return allocator.allocate(n);
+    }
+    virtual void deallocate(T *p, size_t n) override {
+        return allocator.deallocate(p, n);
+    }
+    virtual size_t max_size() const noexcept override {
+        return allocator.max_size();
+    }
+    virtual ~VectorAllocator() {}
 };
 } // namespace BufferAllocatorInternal
 
@@ -75,7 +84,7 @@ public:
 
 public:
     // Default constuctor, default construction is fine
-    BufferAllocator() : impl_(std::make_shared<Impl>()) {}
+    BufferAllocator() : impl_(std::make_shared<DefaultAllocator>()) {}
     // Copy constuctor, called when a vector is built with an Allocator
     BufferAllocator(const BufferAllocator &orig) : impl_(orig.impl_) {}
     // Move constructor, move the internal state
@@ -90,15 +99,15 @@ public:
 
 public:
     pointer allocate(size_type n) {
-        return reinterpret_cast<pointer>(impl_->allocate(n, sizeof(Data)));
+        return reinterpret_cast<pointer>(impl_->allocate(n));
     }
 
     void deallocate(pointer p, size_type n) {
-        impl_->deallocate(reinterpret_cast<void *>(p), n, sizeof(Data));
+        impl_->deallocate(p, n);
     }
 
     size_type max_size() const noexcept {
-        return impl_->max_size(sizeof(Data));
+        return impl_->max_size();
     }
 
     template<class U, class... Args>
@@ -111,7 +120,9 @@ public:
     }
 
 public:
-    using Impl = BufferAllocatorInternal::Allocator;
+    using Impl             = BufferAllocatorInternal::Allocator<Data>;
+    using DefaultAllocator = BufferAllocatorInternal::VectorAllocator<Data>;
+
     // The goal of this design is to manage Buffer Allocation from reserved memory (e.g. contiguous memory).
     // The implementation could be a unique_ptr to a state containing a reference or a shared pointer to the
     // memory pool, plus information regarding the current allocation
