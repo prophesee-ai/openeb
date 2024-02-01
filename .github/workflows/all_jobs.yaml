@@ -13,35 +13,26 @@ env:
   python_executable: "C:/hostedtoolcache/windows/Python/3.8.10/x64/python.exe" #Cmake needs this to find python on windows
 
 jobs:
-  job1:
-    name: Ubuntu 20
+
+  container-test-job:
     runs-on: ubuntu-20.04
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get -y update && sudo apt-get install -y sudo apt-utils wget cmake build-essential \
-          libglew-dev git g++ libusb-1.0-0-dev libgtest-dev libgmock-dev libssl-dev python3.8 \
-          python3-pip python3-distutils xvfb libglfw3 libglfw3-dev libglew-dev libopencv-dev ffmpeg \
-          libboost-dev libboost-program-options-dev libboost-filesystem-dev libboost-timer-dev \
-          libprotobuf-dev protobuf-compiler \
-          libboost-chrono-dev libboost-thread-dev zip unzip git-lfs libhdf5-dev hdf5-tools
-          pip install $numpy_version pytest opencv-python==4.5.5.64 torch==1.13.1 scipy sk-video==1.1.10 numba==0.56.3 h5py protobuf==3.20.3 command_runner kornia==0.6.8 pytorch_lightning==1.8.6 pytorch_msssim==0.2.1
-
-      - name: Build pybind and gtest
-        run: |
-          openebfolder=${PWD}
-          cd ..
-          wget https://github.com/pybind/pybind11/archive/v$pybind_version.zip
-          unzip v$pybind_version.zip
-          cd pybind11-$pybind_version/
-          mkdir build && cd build
-          cmake .. -DPYBIND11_TEST=OFF
-          cmake --build . --config Release --parallel 4
-          sudo make install
-
+    - name: Build Docker image
+      run: docker build -t openeb -f .github/workflows/Dockerfile.OpenEB .
+  
+  job1:
+    name: Ubuntu 20
+    needs: container-test-job
+    runs-on: ubuntu-20.04
+    container:
+      image: openeb:ubuntu-20.04
+    steps:
       - name: Build openEB
         run: |
           mkdir build && cd build

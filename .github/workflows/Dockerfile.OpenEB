@@ -1,0 +1,49 @@
+# This is the command to build the Docker image for Ubuntu 20.04
+# 'docker build --build-arg UBUNTU_VERSION=20.04 -t openeb:ubuntu-20.04 .'
+# If you want to build for Ubuntu 22.04, replace "20.04" to "22.04"
+
+ARG UBUNTU_VERSION=20.04
+FROM ubuntu:${UBUNTU_VERSION}
+
+ENV DEBIAN_FRONTEND "noninteractive"
+ENV TZ "Europe/Paris"
+
+# Install dependencies
+RUN apt-get update && apt-get -y install \
+    apt-utils \
+    build-essential \
+    software-properties-common \
+    wget \
+    unzip \
+    curl \
+    git \
+    cmake \
+    libopencv-dev \
+    libboost-all-dev \
+    libusb-1.0-0-dev \
+    libprotobuf-dev \
+    protobuf-compiler \
+    libhdf5-dev \
+    hdf5-tools \
+    libglew-dev \
+    libglfw3-dev \
+    libcanberra-gtk-module \
+    ffmpeg \
+    libgtest-dev \
+    libgmock-dev \
+    python3-pip \
+    python3-distutils \
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN python3 -m pip install pip --upgrade \
+    && python3 -m pip install "opencv-python==4.5.5.64" "sk-video==1.1.10" "fire==0.4.0" "numpy==1.23.4" "h5py==3.7.0" pandas scipy jupyter jupyterlab matplotlib "ipywidgets==7.6.5" pytest command_runner "numba==0.56.3" "profilehooks==1.12.0" "pytorch_lightning==1.8.6" "tqdm==4.63.0" "kornia==0.6.8" \
+    && rm -rf ~/.cache/pip/*
+    
+RUN wget https://github.com/pybind/pybind11/archive/v2.6.0.zip \
+    && unzip v2.6.0.zip \
+    && cd pybind11-2.6.0 \
+    && mkdir build && cd build \
+    && cmake .. -DPYBIND11_TEST=OFF \
+    && cmake --build . \
+    && cmake --build . --target install \
