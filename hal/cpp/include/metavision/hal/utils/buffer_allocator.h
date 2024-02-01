@@ -45,7 +45,7 @@ public:
 /// @brief An allocator meant for the DataTransfer Buffers
 ///
 /// The base behavior is the one from std::allocator, but it is written so that it may be overriden, in first intent to
-/// map driver-allocated buffers into the std::vector used as DataTransfer buffers, keeping the benefit of iterarors
+/// map driver-allocated buffers into the std::vector used as DataTransfer buffers, keeping the benefit of iterators
 /// and other commodities offered by vector
 template<typename Data>
 class BufferAllocator {
