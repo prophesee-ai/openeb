@@ -12,27 +12,25 @@ env:
   #Windows variables
   python_executable: "C:/hostedtoolcache/windows/Python/3.8.10/x64/python.exe" #Cmake needs this to find python on windows
 
-jobs:
-
-  container-test-job:
-    runs-on: ubuntu-20.04
-    steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v2
-    
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Build Docker image
-      run: docker build -t openeb -f .github/workflows/Dockerfile.OpenEB .
-  
+jobs:  
   job1:
     name: Ubuntu 20
-    needs: container-test-job
     runs-on: ubuntu-20.04
-    container:
-      image: openeb:ubuntu-20.04
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and Push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: .github/workflows/Dockerfile.OpenEB 
+          push: false
+          tags: openeb:ubuntu-20.04
+
       - name: Build openEB
         run: |
           mkdir build && cd build
