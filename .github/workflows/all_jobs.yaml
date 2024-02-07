@@ -50,6 +50,7 @@ jobs:
 
       - name: Build openEB
         run: |
+          apt-get update && apt-get -y install git-lfs
           cmake -B _build_ -DBUILD_TESTING=ON
           cmake --build _build_ --config Release --parallel `nproc`
 
