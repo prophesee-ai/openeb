@@ -39,11 +39,9 @@ RUN apt-get update && apt-get -y install \
 RUN python3 -m pip install pip --upgrade \
     && python3 -m pip install "opencv-python==4.5.5.64" "sk-video==1.1.10" "fire==0.4.0" "numpy==1.23.4" "h5py==3.7.0" pandas scipy jupyter jupyterlab matplotlib "ipywidgets==7.6.5" pytest command_runner "numba==0.56.3" "profilehooks==1.12.0" "pytorch_lightning==1.8.6" "tqdm==4.63.0" "kornia==0.6.8" \
     && rm -rf ~/.cache/pip/*
-    
-RUN wget https://github.com/pybind/pybind11/archive/v2.6.0.zip \
-    && unzip v2.6.0.zip \
-    && cd pybind11-2.6.0 \
-    && mkdir build && cd build \
-    && cmake .. -DPYBIND11_TEST=OFF \
-    && cmake --build . \
-    && cmake --build . --target install \
+
+RUN wget -O /tmp/pybind11.zip https://github.com/pybind/pybind11/archive/v2.6.0.zip \
+    && unzip /tmp/pybind11.zip -d /opt \
+    && cmake -S /opt/pybind11-2.6.0 -B /tmp/pybind11_build -DPYBIND11_TEST=OFF \
+    && cmake --build /tmp/pybind11_build --target install -j`nproc` \
+    && rm -rf /tmp/pybind11*

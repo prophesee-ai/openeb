@@ -34,7 +34,7 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: .
-        file: .github/workflows/Dockerfile.OpenEB 
+        file: utils/containers/Dockerfile.OpenEB 
         push: true
         build-args: UBUNTU_VERSION=20.04
         tags: prophesee/openeb:ubuntu-20.04
@@ -89,7 +89,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: .github/workflows/Dockerfile.OpenEB 
+          file: utils/containers/Dockerfile.OpenEB
           push: true
           build-args: UBUNTU_VERSION=22.04
           tags: prophesee/openeb:ubuntu-22.04
