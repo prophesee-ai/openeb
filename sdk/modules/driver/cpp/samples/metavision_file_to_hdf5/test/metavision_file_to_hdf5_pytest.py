@@ -111,6 +111,7 @@ def run_file_to_hdf5_on_recording_and_check_result(
 
         # Get data
         triggers = f["EXT_TRIGGER"]["events"]
+
         assert triggers.size == number_trigger_expected
 
         # Check first 10 events :
@@ -211,7 +212,7 @@ def pytestcase_test_metavision_file_to_hdf5_missing_input_args():
 
 def pytestcase_test_metavision_file_to_hdf5_input_file_already_hdf5(dataset_dir):
     """
-    Checks that metavision_file_to_hdf5 returns an error when passing a HDF5 file as input
+    Checks that metavision_file_to_hdf5 returns an error when passing an HDF5 file as input
     """
 
     filename = "gen31_timer.hdf5"

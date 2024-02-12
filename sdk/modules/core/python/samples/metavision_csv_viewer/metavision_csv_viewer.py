@@ -36,9 +36,9 @@ def parse_args():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-i', '--input-csv-file', dest='input_path', type=str,
                         help="Path to input CSV file.", required=True)
-    parser.add_argument('--width', dest='width', type=int, default=640,
+    parser.add_argument('--width', dest='width', type=int, default=1280,
                         help="Width of the sensor associated to the CSV file.")
-    parser.add_argument('--height', dest='height', type=int, default=480,
+    parser.add_argument('--height', dest='height', type=int, default=720,
                         help="Height of the sensor associated to the CSV file.")
     args = parser.parse_args()
     return args
@@ -49,6 +49,21 @@ def main():
     args = parse_args()
 
     print("Code sample demonstrating how to use Metavision SDK to display events from a CSV file.")
+
+    # Parse CSV header starting with '%' if any
+    n_header_lines = 0
+    with open(args.input_path) as input_file:
+        while True:
+            line = input_file.readline()
+            if not line.startswith("%"):
+                break
+            n_header_lines += 1
+            if line[:10]=="%geometry:": # "%geometry:<width>,<height>"
+                dimensions = [int(str) for str in line[10:].split(",")]
+                if len(dimensions)==2:
+                    args.width = dimensions[0]
+                    args.height = dimensions[1]
+                    print(f"Parsed input stream dimensions from CSV header: width={args.width}, height={args.height}")
 
     # Event Frame Generator
     event_frame_gen = PeriodicFrameGenerationAlgorithm(args.width, args.height, accumulation_time_us)
@@ -72,7 +87,7 @@ def main():
 
         # Parse CSV using Pandas
         reader = pd.read_csv(args.input_path, delimiter=',', chunksize=events_chunksize, header=None, names=[
-                             'x', 'y', 'p', 't'], dtype={'x': np.ushort, 'y': np.ushort, 'p': np.short, 't': np.longlong})
+                             'x', 'y', 'p', 't'], dtype={'x': np.ushort, 'y': np.ushort, 'p': np.short, 't': np.longlong}, skiprows=n_header_lines)
         events_buf = EventCDBuffer(events_chunksize)
         np_evs = events_buf.numpy()
         # Read CSV by chunks

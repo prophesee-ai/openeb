@@ -34,7 +34,7 @@ void Viewer::setup_camera() {
     camera_ = Metavision::Camera();
 
     // Live camera.
-    if (parameters_.in_raw_file.empty()) {
+    if (parameters_.event_file_path.empty()) {
         camera_ = Metavision::Camera::from_first_available();
 
         // Set biases if file specified.
@@ -44,7 +44,7 @@ void Viewer::setup_camera() {
     }
     // RAW file.
     else {
-        camera_ = Metavision::Camera::from_file(parameters_.in_raw_file);
+        camera_ = Metavision::Camera::from_file(parameters_.event_file_path);
     }
 
     // Get sensor size
@@ -74,12 +74,12 @@ void Viewer::start() {
     setup_camera();
     camera_.start();
 
-    bool live = parameters_.in_raw_file.empty();
+    bool live = parameters_.event_file_path.empty();
     view_.reset(new CameraView(camera_, event_buffer_, parameters_, live));
 }
 
 bool Viewer::update() {
-    if (parameters_.in_raw_file.empty() && parameters_.show_biases) {
+    if (parameters_.event_file_path.empty() && parameters_.show_biases) {
         // Handle specific case of trying to set biases when using an IMX636 or a GenX320 camera
         if ((camera_.generation().version_major() == 4 && camera_.generation().version_minor() == 2) ||
             (camera_.generation().version_major() == 320 && camera_.generation().version_minor() == 0)) {
@@ -116,7 +116,7 @@ bool Viewer::update() {
                 view_.reset(new AnalysisView(*view_));
             }
         } else {
-            bool live = parameters_.in_raw_file.empty();
+            bool live = parameters_.event_file_path.empty();
             if (live) {
                 // When using a live camera, recreate it from scratch at start
                 // and reset the timestamp

@@ -9,8 +9,8 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-// This application demonstrates how to use Metavision SDK Core pipeline utility and SDK Driver to convert a file
-// to HDF5 file.
+// This application demonstrates how to use Metavision SDK Core pipeline utility and SDK Driver to convert
+// an event file to an HDF5 file.
 
 #include <chrono>
 #include <cstdio>
@@ -34,7 +34,7 @@ int convert_file_to_hdf5(const std::filesystem::path &in_file_path, const std::f
         MV_LOG_ERROR() << "Error: output file: '" << out_hdf5_file_path << "'";
         return 1;
     }
-    if (!std::filesystem::exists(out_hdf5_file_path.parent_path())) {
+    if (!out_hdf5_file_path.parent_path().empty() && !std::filesystem::exists(out_hdf5_file_path.parent_path())) {
         std::filesystem::create_directories(out_hdf5_file_path.parent_path());
     }
 
@@ -66,11 +66,11 @@ int convert_file_to_hdf5(const std::filesystem::path &in_file_path, const std::f
     // Gets the wrapped camera from the stage to extract sensor's resolution
     Metavision::Camera &cam = cam_stage.camera();
 
-    // Build a HDF5 file writer
+    // Build an HDF5 file writer
     Metavision::HDF5EventFileWriter hdf5_writer(out_hdf5_file_path.string());
     hdf5_writer.add_metadata_map_from_camera(cam);
 
-    // 1) Stage that will write CD events to a HDF5 file
+    // 1) Stage that will write CD events to an HDF5 file
     auto cd_stage_ptr = std::make_unique<Metavision::Stage>();
     cd_stage_ptr->set_consuming_callback([&hdf5_writer](const boost::any &data) {
         try {
@@ -80,7 +80,7 @@ int convert_file_to_hdf5(const std::filesystem::path &in_file_path, const std::f
     });
     p.add_stage(std::move(cd_stage_ptr), cam_stage);
 
-    // 2) Stage that will write external triggers events to a HDF5 file
+    // 2) Stage that will write external triggers events to an HDF5 file
     try {
         cam.ext_trigger().add_callback(
             [&cam_stage](const Metavision::EventExtTrigger *begin, const Metavision::EventExtTrigger *end) {
@@ -134,7 +134,7 @@ int main(int argc, char *argv[]) {
     // clang-format off
     options_desc.add_options()
         ("help,h", "Produce help message.")
-        ("input-path,i", po::value<std::filesystem::path>(&in_path)->required(), "Path to input file or folder.")
+        ("input-path,i", po::value<std::filesystem::path>(&in_path)->required(), "Path to input event file or folder.")
         ("output-path,o", po::value<std::filesystem::path>(&out_path)->default_value(""), "Path to output file or folder. If not specified, will use the same as input.")
         ("recursive,r", po::bool_switch(&recursive_mode), "If specified, iterate over all files in the specified folder and sub-folders.")
         ("filename-pattern,p", po::value<std::string>(&filename_pattern), "Regex to match filenames to be converted, required in recursive mode.")

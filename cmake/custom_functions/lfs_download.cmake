@@ -40,7 +40,7 @@ function(lfs_download)
             while (NOT success AND retries GREATER 0)
                 execute_process(
                     COMMAND git lfs pull --include "${file_or_dir_to_download_comma_separated}"
-                    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
                     OUTPUT_VARIABLE OUTPUT
                     ERROR_VARIABLE ERROR
                     RESULT_VARIABLE RESULT

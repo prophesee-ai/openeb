@@ -30,7 +30,7 @@ void export_generic_header(py::module &m) {
                  for (const auto &pair : dict) {
                      try {
                          header->set_field(pair.first.cast<std::string>(), pair.second.cast<std::string>());
-                     } catch (const py::cast_error &e) {
+                     } catch (const py::cast_error &) {
                          std::cerr << "Error while building a RawFileHeader from a dictionary: the input dictionary "
                                       "must contain only string type for both keys and values. Failed to add field "
                                       "to header."

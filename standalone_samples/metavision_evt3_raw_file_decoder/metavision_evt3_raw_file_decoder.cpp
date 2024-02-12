@@ -11,9 +11,11 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <vector>
 #include <string>
 #include <cstdint>
+#include <chrono>
 
 namespace Metavision {
 namespace Evt3 {
@@ -117,6 +119,12 @@ using timestamp_t = uint64_t; // Type for timestamp, in microseconds
 } // namespace Evt3
 } // namespace Metavision
 
+/// @brief Structure containing metadata describing the input file
+struct Metadata {
+    int sensor_width  = 1280,
+        sensor_height = 720; // Sensor width & height, by default assume PSEE Gen4 geometry (largest geometry)
+};
+
 int main(int argc, char *argv[]) {
     // Check input arguments validity
     if (argc < 3) {
@@ -127,8 +135,9 @@ int main(int argc, char *argv[]) {
         std::cerr << "Trigger output file will be written only if given as input" << std::endl;
         std::cerr << std::endl << "Example : " << std::string(argv[0]) << " input_file.raw cd_output.csv" << std::endl;
         std::cerr << std::endl;
-        std::cerr << "The CD CSV file will have the format : x,y,polarity,timestamp" << std::endl;
-        std::cerr << "The Trigger output CSV file will have the format : value,id,timestamp" << std::endl;
+        std::cerr << "The CD CSV file header will have the format : %geometry:width,height" << std::endl;
+        std::cerr << "The CD CSV file contents will have the format : x,y,polarity,timestamp" << std::endl;
+        std::cerr << "The Trigger CSV file contents will have the format : value,id,timestamp" << std::endl;
         return 1;
     }
 
@@ -158,16 +167,58 @@ int main(int argc, char *argv[]) {
         write_triggers = true;
     }
 
-    // Skip the header of the input file, if present :
-    int line_first_char = input_file.peek();
-    while (line_first_char == '%') {
-        std::string line;
-        std::getline(input_file, line);
-        if (line == "% end") {
+    // Parse the header of the input file, if present, and store sensor geometry
+    Metadata metadata;
+    while (input_file.peek() == '%') {
+        std::string header_line;
+        std::getline(input_file, header_line);
+        if (header_line == "% end") {
             break;
+        } else if (header_line.substr(0, 9) == "% format ") {
+            std::istringstream sf(header_line.substr(9));
+            std::string format_name;
+            std::getline(sf, format_name, ';');
+            if (format_name != "EVT3") {
+                std::cerr << "Error : detected non-EVT3 input file '" << argv[1] << "'" << std::endl;
+                return 1;
+            }
+            while (!sf.eof()) {
+                std::string option;
+                std::getline(sf, option, ';');
+                {
+                    std::string name, value;
+                    std::istringstream so(option);
+                    std::getline(so, name, '=');
+                    std::getline(so, value, '=');
+                    if (name == "width") {
+                        metadata.sensor_width = std::stoi(value);
+                    } else if (name == "height") {
+                        metadata.sensor_height = std::stoi(value);
+                    }
+                }
+            }
+        } else if (header_line.substr(0, 11) == "% geometry ") {
+            std::istringstream sg(header_line.substr(11));
+            std::string sw, sh;
+            std::getline(sg, sw, 'x');
+            std::getline(sg, sh);
+            metadata.sensor_width  = std::stoi(sw);
+            metadata.sensor_height = std::stoi(sh);
+        } else if (header_line.substr(0, 6) == "% evt ") {
+            if (header_line.substr(6) != "3.0") {
+                std::cerr << "Error : detected non-EVT3 input file '" << argv[1] << "'" << std::endl;
+                return 1;
+            }
         }
-        line_first_char = input_file.peek();
-    };
+    }
+
+    // If parsed from input metadata, write sensor geometry as header of CD CSV output
+    if (metadata.sensor_width > 0 && metadata.sensor_height > 0) {
+        cd_output_file << "%geometry:" << metadata.sensor_width << "," << metadata.sensor_height << std::endl;
+    }
+
+    // Start chrono
+    const auto tp_start = std::chrono::system_clock::now();
 
     // Vector where we'll read the raw data
     static constexpr uint32_t WORDS_TO_READ = 1000000; // Number of words to read at a time
@@ -350,5 +401,11 @@ int main(int argc, char *argv[]) {
             trigg_str.clear();
         }
     }
+
+    // Display processing time
+    const auto tp_end       = std::chrono::system_clock::now();
+    const double duration_s = std::chrono::duration_cast<std::chrono::microseconds>(tp_end - tp_start).count() / 1e6;
+    std::cout << "Decoded '" << argv[1] << "' in " << duration_s << " s" << std::endl;
+
     return 0;
 }

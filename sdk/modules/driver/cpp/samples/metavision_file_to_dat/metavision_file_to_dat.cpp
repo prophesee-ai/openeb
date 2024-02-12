@@ -9,7 +9,7 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-// This application demonstrates how to use Metavision SDK Driver to convert a file to DAT file.
+// This application demonstrates how to use Metavision SDK Driver to convert a RAW or HDF5 event file to a DAT file.
 
 #include <iostream>
 #include <functional>
@@ -26,15 +26,15 @@
 namespace po = boost::program_options;
 
 int main(int argc, char *argv[]) {
-    std::string in_file_path;
+    std::string event_file_path;
 
-    const std::string program_desc("Application to convert a file to DAT file.\n");
+    const std::string program_desc("Application to convert a RAW or HDF5 event file to a DAT file.\n");
 
     po::options_description options_desc("Options");
     // clang-format off
     options_desc.add_options()
         ("help,h", "Produce help message.")
-        ("input-file,i", po::value<std::string>(&in_file_path)->required(), "Path to input file.")
+        ("input-event-file,i", po::value<std::string>(&event_file_path)->required(), "Path to input event file (RAW or HDF5).")
     ;
     // clang-format on
 
@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
     Metavision::Camera camera;
 
     try {
-        camera = Metavision::Camera::from_file(in_file_path, Metavision::FileConfigHints().real_time_playback(false));
+        camera = Metavision::Camera::from_file(event_file_path, Metavision::FileConfigHints().real_time_playback(false));
     } catch (Metavision::CameraException &e) {
         MV_LOG_ERROR() << e.what();
         return 1;
@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
     const unsigned short height = camera.geometry().height();
 
     // get the base of the input filename and the path
-    const std::string output_base = std::regex_replace(in_file_path, std::regex("\\.[^.]*$"), "");
+    const std::string output_base = std::regex_replace(event_file_path, std::regex("\\.[^.]*$"), "");
 
     // setup feedback to be provided on processing progression
     using namespace std::chrono_literals;

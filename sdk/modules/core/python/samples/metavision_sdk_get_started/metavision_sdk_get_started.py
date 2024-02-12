@@ -25,8 +25,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Metavision SDK Get Started sample.',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
-        '-i', '--input-raw-file', dest='input_path', default="",
-        help="Path to input RAW file. If not specified, the live stream of the first available camera is used. "
+        '-i', '--input-event-file', dest='event_file_path', default="",
+        help="Path to input event file (RAW or HDF5). If not specified, the camera live stream is used. "
         "If it's a camera serial number, it will try to open that camera instead.")
     args = parser.parse_args()
     return args
@@ -36,8 +36,8 @@ def main():
     """ Main """
     args = parse_args()
 
-    # Events iterator on Camera or RAW file
-    mv_iterator = EventsIterator(input_path=args.input_path, delta_t=1000)
+    # Events iterator on Camera or event file
+    mv_iterator = EventsIterator(input_path=args.event_file_path, delta_t=1000)
     height, width = mv_iterator.get_size()  # Camera Geometry
 
     # Window - Graphical User Interface
@@ -92,7 +92,7 @@ def main():
         duration_seconds = global_max_t / 1.0e6
         print(f"There were {global_counter} events in total.")
         print(f"The total duration was {duration_seconds:.2f} seconds.")
-        if duration_seconds >= 1:  # No need to print this statistics if the video was too short
+        if duration_seconds >= 1:  # No need to print this statistics if the total duration was too short
             print(f"There were {global_counter / duration_seconds :.2f} events per second on average.")
 
 

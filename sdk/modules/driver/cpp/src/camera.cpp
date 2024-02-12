@@ -651,7 +651,7 @@ bool Camera::save(const std::string &path) const {
     if (!ofs.is_open()) {
         throw CameraException(CameraErrorCode::CouldNotOpenFile,
                               "Could not open file '" + path +
-                                  "' to save a camera to. Make sure it is a valid filename and that you have "
+                                  "' to save camera settings to. Make sure it is a valid filename and that you have "
                                   "permissions to write it.");
     }
 
@@ -664,7 +664,7 @@ bool Camera::load(const std::string &path) {
     if (!ifs.is_open()) {
         throw CameraException(CameraErrorCode::CouldNotOpenFile,
                               "Could not open file '" + path +
-                                  "' to load a camera from. Make sure it is a valid filename and that you have "
+                                  "' to load camera settings from. Make sure it is a valid filename and that you have "
                                   "permissions to read it.");
     }
 

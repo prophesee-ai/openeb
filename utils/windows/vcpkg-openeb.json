@@ -1,0 +1,29 @@
+{
+    "dependencies": [
+        "libusb",
+        "boost",
+        "opencv",
+        "dirent",
+        "gtest",
+        "pybind11",
+        "glew",
+        "glfw3",
+        { "name" : "hdf5" , "features" : ["cpp","threadsafe","tools","zlib"] },
+        "protobuf"
+    ],
+    "vcpkg-configuration" : {
+        "default-registry": {
+            "kind": "git",
+            "repository": "https://github.com/Microsoft/vcpkg",
+            "baseline": "a42af01b72c28a8e1d7b48107b33e4f286a55ef6"
+        },
+        "registries": [
+            {
+                 "kind": "git",
+                 "repository": "https://github.com/Microsoft/vcpkg",
+                 "baseline": "76d4836f3b1e027758044fdbdde91256b0f0955d",
+                 "packages": [ "boost*", "boost-*"]
+            }
+        ]
+    }
+}

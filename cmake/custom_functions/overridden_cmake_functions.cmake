@@ -271,10 +271,21 @@ if (WIN32)
         # forwards the call to the vcpkg version (which will eventually call the cmake original one)
         add_library_vcpkg(${ARGN})
         if (NOT LIB_ARGS_OBJECT AND NOT LIB_ARGS_IMPORTED AND NOT LIB_ARGS_ALIAS)
-            # if we are builing a DLL, let's add a resources.rc to embed some details (version, etc.)
+            # If we are building a DLL, let's add a resources.rc to embed some details (version, etc.).
+            # To allow Metavision to be used as a submodule, we need to use the PROJECT_SOURCE_DIR variable to indicate
+            # the path to the template of this resource file.
+            # However, the value of this variable will change when this function is used inside Metavision's internal
+            # submodules (e.g. hdf5). To workaround this problem, we make the assumption that this function won't be
+            # called first by Metavision's internal submodules and we initialize this variable in a cache the first time
+            # it is executed.
+            if(NOT DEFINED RESOURCES_FILE_TEMPLATE_PATH)
+                set(RESOURCES_FILE_TEMPLATE_PATH ${PROJECT_SOURCE_DIR}/utils/windows/resources.rc.in CACHE STRING
+                        "Path to the template of DLLs' resource file")
+            endif ()
+
             set (rc_file_path ${GENERATE_FILES_DIRECTORY}/resources/resources.${ARGV0}.rc)
             set (dll_filename "${ARGV0}")
-            configure_file(${CMAKE_SOURCE_DIR}/utils/windows/resources.rc.in ${rc_file_path})
+            configure_file(${RESOURCES_FILE_TEMPLATE_PATH} ${rc_file_path})
             target_sources(${ARGV0} PRIVATE ${rc_file_path})
         endif ()
     endfunction ()

@@ -80,7 +80,7 @@ def generate_image_homography(rvec, tvec, nt, depth, K, Kinv):
         tvec (np.array): translation vector
         nt (np.array): normal to camera
         depth (float): depth
-        K (np.array): intrisic matrix
+        K (np.array): intrinsic matrix
         Kinv (np.array): inverse intrinsic matrix
     """
     H = generate_homography(rvec, tvec, nt, depth)
@@ -241,8 +241,8 @@ def get_flow(rvec1, tvec1, rvec2, tvec2, nt, depth, K, Kinv, height, width):
         tvec2 (np.array): translation vector 2
         nt (np.array): plane normal
         depth (float): depth from camera
-        K (np.array): intrisic matrix
-        Kinv (np.array): inverse intrisic matrix
+        K (np.array): intrinsic matrix
+        Kinv (np.array): inverse intrinsic matrix
         height (int): height of image
         width (int): width of image
         infinite (bool): plan is infinite or not

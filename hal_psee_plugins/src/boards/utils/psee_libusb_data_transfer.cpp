@@ -155,8 +155,8 @@ PseeLibUSBDataTransfer::UserParamForAsyncBulkCallback::UserParamForAsyncBulkCall
     const std::shared_ptr<LibUSBDevice> &dev, PseeLibUSBDataTransfer &libusb_data_transfer) :
     dev_(dev), libusb_data_transfer_(libusb_data_transfer) {
     buf_      = libusb_data_transfer.get_buffer();
-    transfer_ = libusb_data_transfer.contruct_async_bulk_transfer(buf_->data(), libusb_data_transfer.packet_size_,
-                                                                  async_bulk_cb, this, timeout_);
+    transfer_ = libusb_data_transfer.construct_async_bulk_transfer(buf_->data(), libusb_data_transfer.packet_size_,
+                                                                   async_bulk_cb, this, timeout_);
 }
 
 PseeLibUSBDataTransfer::UserParamForAsyncBulkCallback::~UserParamForAsyncBulkCallback() {
@@ -273,9 +273,9 @@ void PseeLibUSBDataTransfer::prepare_async_bulk_transfer(libusb_transfer *transf
     transfer->flags &= ~LIBUSB_TRANSFER_FREE_TRANSFER;
 }
 
-libusb_transfer *PseeLibUSBDataTransfer::contruct_async_bulk_transfer(unsigned char *buf, int packet_size,
-                                                                      libusb_transfer_cb_fn async_bulk_cb,
-                                                                      void *user_data, unsigned int timeout) {
+libusb_transfer *PseeLibUSBDataTransfer::construct_async_bulk_transfer(unsigned char *buf, int packet_size,
+                                                                       libusb_transfer_cb_fn async_bulk_cb,
+                                                                       void *user_data, unsigned int timeout) {
     if (!dev_) {
         return nullptr;
     }
@@ -318,7 +318,7 @@ void PseeLibUSBDataTransfer::flush() {
                 break;
             }
         } while (bytes_cnt > 0);
-    } catch (const std::system_error &e) {}
+    } catch (const std::system_error &) {}
 
     MV_HAL_LOG_TRACE() << "Total of " << total_flush << " bytes flushed";
 }

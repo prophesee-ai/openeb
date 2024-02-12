@@ -77,7 +77,7 @@ std::unique_ptr<I_Geometry> StreamFormat::geometry() const {
         if (!width || !height) {
             throw std::invalid_argument("Format is missing a valid geometry");
         }
-    } catch (std::out_of_range &e) {
+    } catch (const std::out_of_range &) {
         // Here we catch throws on map::at
         throw std::invalid_argument("Format has no geometry");
     }

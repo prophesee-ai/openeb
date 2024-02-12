@@ -75,7 +75,7 @@ bool parse_command_line(int argc, const char *argv[], Parameters &app_params) {
         ("output-avi-framerate,f", po::value<int>(&app_params.out_avi_fps)->default_value(25), "Frame rate of the output AVI file.")
         ("output-raw-basename,o",  po::value<std::string>(&app_params.out_raw_basename)->default_value((docs_path / "out").string()),
             "Path and base name of the output RAW file for exporting. Each file will have the name <path>/<basename>_<date>.raw, where <date> represents the day and time the file was recorded.")
-        ("input-raw-file,i",       po::value<std::string>(&app_params.in_raw_file), "Path to input RAW file. If not specified, the camera live stream is used.")
+        ("input-event-file,i",     po::value<std::string>(&app_params.event_file_path), "Path to input event file (RAW or HDF5). If not specified, the camera live stream is used.")
     ;
     // clang-format on
 
