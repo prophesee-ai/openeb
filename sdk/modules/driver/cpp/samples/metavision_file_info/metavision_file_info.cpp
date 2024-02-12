@@ -9,7 +9,7 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-// Example of using Metavision SDK Driver API to get information about a file.
+// Example of using Metavision SDK Driver API to get information about an event file.
 
 #include <iostream>
 #include <iomanip>
@@ -67,13 +67,13 @@ std::string human_readable_time(Metavision::timestamp t) {
 int main(int argc, char *argv[]) {
     std::string in_file_path;
 
-    const std::string program_desc("Application to get information about a file\n");
+    const std::string program_desc("Application to get information about an event file\n");
 
     po::options_description options_desc("Options");
     // clang-format off
     options_desc.add_options()
         ("help,h", "Produce help message.")
-        ("input-file,i", po::value<std::string>(&in_file_path)->required(), "Path to input file.")
+        ("input-event-file,i", po::value<std::string>(&in_file_path)->required(), "Path to input event file (RAW, DAT or HDF5).")
         ;
     // clang-format on
 

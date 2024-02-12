@@ -50,9 +50,9 @@ private:
     std::atomic<uint32_t> active_bulks_transfers_{0};
 
     // USB Commands
-    libusb_transfer *contruct_async_bulk_transfer(unsigned char *buf, int packet_size,
-                                                  libusb_transfer_cb_fn async_bulk_cb, void *user_data,
-                                                  unsigned int timeout);
+    libusb_transfer *construct_async_bulk_transfer(unsigned char *buf, int packet_size,
+                                                   libusb_transfer_cb_fn async_bulk_cb, void *user_data,
+                                                   unsigned int timeout);
     static void free_async_bulk_transfer(libusb_transfer *transfer);
     static int submit_transfer(libusb_transfer *transfer);
     void prepare_async_bulk_transfer(libusb_transfer *transfer, unsigned char *buf, int packet_size,

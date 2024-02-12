@@ -40,7 +40,7 @@ void DataSynchronizerFromTriggers::index_triggers(ExtTriggerIterator trigger_it,
     std::lock_guard<std::mutex> lock(triggers_updated_mutex_);
     for (; trigger_it != trigger_it_end; ++trigger_it, ++indexed_trigger_inserter_it) {
         // Consider the trigger only if polarity matches the reference one
-        if (trigger_it->p != parameters_.reference_polarity_) {
+        if (trigger_it->p != (parameters_.reference_polarity_ ? 1 : 0)) {
             continue;
         }
 

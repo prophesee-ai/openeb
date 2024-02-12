@@ -167,7 +167,6 @@ TEST_F(HalSamplePlugin_GTest, record_and_read_back) {
         });
     i_events_stream->start();
     short ret = i_events_stream->wait_next_buffer();
-    long n_bytes(0);
     while (ret > 0) { // To be sure to record something
         auto raw_data = i_events_stream->get_latest_raw_data();
         i_eventsstreamdecoder->decode(raw_data->data(), raw_data->data() + raw_data->size());

@@ -12,6 +12,22 @@
 import os
 from metavision_utils import shell_tools, os_tools
 
+def load_cd_csv_contents_ignoring_header(input_cd_csv_path):
+    """Loads the contents of a CD CSV file, ignoring header lines starting with a '%' character"""
+    # Count number of header lines to skip
+    n_header_lines = 0
+    with open(input_cd_csv_path, 'r') as f:
+        while True:
+            line = f.readline()
+            if not line.startswith("%"):
+                break
+            n_header_lines += 1
+    # Now open the files, skip the headers and return the rest of their content
+    with open(input_cd_csv_path, 'r') as f:
+        for i in range(0,n_header_lines):
+            f.readline()
+        cd_csv_contents = f.read()
+    return cd_csv_contents
 
 def decode_encode_decode_and_compare(input_raw_path, contains_triggers=False):
     """"Decodes file with standalone sample and encode it back. Then decodes the encoded file and compare this output
@@ -62,10 +78,8 @@ def decode_encode_decode_and_compare(input_raw_path, contains_triggers=False):
         assert os.path.exists(triggers_csv_from_encoded)
 
     # STEP 4: compare the 2 outputs
-    with open(cd_csv_from_input, 'r') as f:
-        cd_csv_from_input_contents = f.read()
-    with open(cd_csv_from_encoded, 'r') as f:
-        cd_csv_from_encoded_contents = f.read()
+    cd_csv_from_input_contents = load_cd_csv_contents_ignoring_header(cd_csv_from_input)
+    cd_csv_from_encoded_contents = load_cd_csv_contents_ignoring_header(cd_csv_from_encoded)
     assert cd_csv_from_input_contents != ""  # To make sure to actually test something
     assert cd_csv_from_input_contents == cd_csv_from_encoded_contents
     if (contains_triggers):

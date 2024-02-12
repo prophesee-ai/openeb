@@ -7,16 +7,11 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-include(CheckLanguage)
-
 set(cuda_source_files convert_event_frame.cu convert_event_frame.h)
 set(sample metavision_event_frame_gpu_loading)
 set(source_files ${sample}.cpp)
 
-check_language(CUDA)
 if (CMAKE_CUDA_COMPILER)
-    enable_language(CUDA)
-
     add_library(cuda_event_frame_convert STATIC ${cuda_source_files})
     set_target_properties(cuda_event_frame_convert PROPERTIES CUDA_SEPARABLE_COMPILATION ON CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 

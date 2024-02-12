@@ -134,7 +134,7 @@ bool check_magic_number_presence(std::ifstream &input_index_file) {
     const auto start_pos = input_index_file.tellg();
     // Seek to last bookmark pos
     input_index_file.clear();
-    if (!input_index_file.seekg(-BookmarkPackedSize, std::ios::end)) {
+    if (!input_index_file.seekg(-static_cast<std::streamoff>(BookmarkPackedSize), std::ios::end)) {
         return false;
     }
 

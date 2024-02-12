@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <functional>
+
 #ifdef HAS_HDF5
 #include <H5Cpp.h>
 #include <hdf5_ecf/ecf_codec.h>
@@ -80,17 +81,22 @@ public:
     }
 
     bool sync() {
-        hsize_t dims[1] = {offset_ + pos_};
-        dset_.extend(dims);
         hsize_t offset[1] = {offset_};
         size_t num_bytes_in_chunk;
+
         if (encoding_cb_) {
+            hsize_t dims[1] = {offset_ + pos_};
+            dset_.extend(dims);
+
             num_bytes_in_chunk = encoding_cb_(events_.data(), events_.data() + pos_, outbuf_.data());
             if (H5Dwrite_chunk(dset_.getId(), H5P_DEFAULT, 0, offset, num_bytes_in_chunk, outbuf_.data()) < 0) {
                 return false;
             }
         } else {
-            num_bytes_in_chunk = pos_ * sizeof(EventType);
+            hsize_t dims[1] = {offset_ + pos_};
+            dset_.extend(dims);
+
+            num_bytes_in_chunk = chunk_size_ * sizeof(EventType);
             if (H5Dwrite_chunk(dset_.getId(), H5P_DEFAULT, 0, offset, num_bytes_in_chunk, events_.data()) < 0) {
                 return false;
             }
@@ -174,8 +180,10 @@ public:
         hsize_t dims[1] = {offset_ + pos_};
         dset_.extend(dims);
         hsize_t offset[1]         = {offset_};
-        size_t num_bytes_in_chunk = pos_ * sizeof(Index);
-        if (H5Dwrite_chunk(dset_.getId(), H5P_DEFAULT, 0, offset, num_bytes_in_chunk, indexes_.data()) < 0) {
+        size_t num_bytes_in_chunk = chunk_size_ * sizeof(Index);
+
+        auto error_code = H5Dwrite_chunk(dset_.getId(), H5P_DEFAULT, 0, offset, num_bytes_in_chunk, indexes_.data());
+        if (error_code < 0) {
             return false;
         }
         return true;
@@ -253,10 +261,10 @@ public:
         cd_event_ds_prop.setChunk(1, chunk_dims);
         cd_event_ds_prop.setFilter(H5Z_FILTER_ECF, H5Z_FLAG_OPTIONAL, 0, nullptr);
 
+        H5::DataSpace cd_index_ds(1, dims, maxdims);
         H5::CompType cd_index_dt(sizeof(Index));
         cd_index_dt.insertMember("id", HOFFSET(Index, id), H5::PredType::NATIVE_ULLONG);
         cd_index_dt.insertMember("ts", HOFFSET(Index, ts), H5::PredType::NATIVE_LLONG);
-        H5::DataSpace cd_index_ds(1, dims, maxdims);
         H5::DSetCreatPropList cd_index_ds_prop;
         cd_index_ds_prop.setChunk(1, chunk_dims);
 
@@ -396,7 +404,7 @@ public:
 };
 
 HDF5EventFileWriter::HDF5EventFileWriter(const std::string &path,
-                                           const std::unordered_map<std::string, std::string> &metadata_map) :
+                                         const std::unordered_map<std::string, std::string> &metadata_map) :
     EventFileWriter(path), pimpl_(new Private(*this, path, metadata_map)) {}
 
 HDF5EventFileWriter::~HDF5EventFileWriter() {

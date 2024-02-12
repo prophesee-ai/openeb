@@ -30,7 +30,6 @@ std::string read_registry_subkey_hklm(LPCSTR subkey, LPCSTR registry_value_name)
     std::string result("");
 
     HKEY hKeyExt;
-    DWORD dwDisposition;
     long ret = RegOpenKeyEx(HKEY_LOCAL_MACHINE, subkey, 0, KEY_QUERY_VALUE, &hKeyExt);
 
     if (ret == ERROR_SUCCESS) {

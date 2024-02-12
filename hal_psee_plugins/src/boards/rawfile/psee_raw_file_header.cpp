@@ -119,7 +119,7 @@ I_HW_Identification::SensorInfo PseeRawFileHeader::get_sensor_info() const {
         sensor_info.major_version_ = std::stoi(str);
         std::getline(sensor, str, '.');
         sensor_info.minor_version_ = std::stoi(str);
-    } catch (std::exception &e) {}
+    } catch (const std::exception &) {}
 
     sensor_info.name_ = get_field(sensor_name_key);
     if (sensor_info.name_.empty()) {

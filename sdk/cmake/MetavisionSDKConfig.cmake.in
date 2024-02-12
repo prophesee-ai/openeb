@@ -345,16 +345,16 @@ endforeach()
 ############################################################################
 
 function(_find_MetavisionSDK_component component_name)
-    # The configuration files for the components are to be looked for in path ${MetavisionSDK_COMPONENTS_CONFIG_PATH}/${_comp},
+    # The configuration files for the components are to be looked for in path ${MetavisionSDK_COMPONENTS_CONFIG_PATH}/${component_name},
     # and their config file is named "MetavisionSDK_${_comp}Config.cmake", so we can use the cmake built-in function find_package()
     # to check if we can find the component
-    _get_MetavisionSDK_component_filepath("${_comp}" DIRECTORY MetavisionSDK_${_comp}_DIR)
-    find_package(MetavisionSDK_${_comp}
+    _get_MetavisionSDK_component_filepath("${component_name}" DIRECTORY MetavisionSDK_${component_name}_DIR)
+    find_package(MetavisionSDK_${component_name}
                  NO_DEFAULT_PATH
                  QUIET)
-    set(MetavisionSDK_${_comp}_FOUND ${MetavisionSDK_${_comp}_FOUND} PARENT_SCOPE)
-    set(MetavisionSDK_${_comp}_VERSION ${MetavisionSDK_${_comp}_VERSION} PARENT_SCOPE)
-    set(MetavisionSDK_${_comp}_REASON_NOT_FOUND ${MetavisionSDK_${_comp}_REASON_NOT_FOUND} PARENT_SCOPE)
+    set(MetavisionSDK_${component_name}_FOUND ${MetavisionSDK_${component_name}_FOUND} PARENT_SCOPE)
+    set(MetavisionSDK_${component_name}_VERSION ${MetavisionSDK_${component_name}_VERSION} PARENT_SCOPE)
+    set(MetavisionSDK_${component_name}_REASON_NOT_FOUND ${MetavisionSDK_${component_name}_REASON_NOT_FOUND} PARENT_SCOPE)
 endfunction(_find_MetavisionSDK_component)
 
 # Find required components

@@ -58,7 +58,7 @@ std::vector<TzDeviceBuilder::Build_Fun> TzDeviceBuilder::get_build_fun(std::shar
             TzDeviceStringsCtrlFrame name(TZ_PROP_DEVICE_NAME, dev_id);
             cmd->transfer_tz_frame(name);
             name_str = name.get_strings()[0];
-        } catch (const std::system_error &e2) { name_str = "device" + std::to_string(dev_id); }
+        } catch (const std::system_error &) { name_str = "device" + std::to_string(dev_id); }
     } catch (const std::system_error &e) {
         // On some old devices (treuzell-kernel 1.4.0, cx3 3.0.0), a compatibility string was used as name
         try {
@@ -66,7 +66,7 @@ std::vector<TzDeviceBuilder::Build_Fun> TzDeviceBuilder::get_build_fun(std::shar
             cmd->transfer_tz_frame(name);
             compat_str = name.get_strings();
             name_str   = name.get_strings()[0];
-        } catch (const std::system_error &e2) {
+        } catch (const std::system_error &) {
             MV_HAL_LOG_WARNING() << "Failed to get compatibility string from treuzell device" << dev_id << e.what();
             return build_fun;
         }

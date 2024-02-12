@@ -17,7 +17,7 @@ endif(NOT CMAKE_BUILD_TYPE)
 
 cmake_minimum_required(VERSION 3.5)
 
-project(metavision VERSION 4.5.1)
+project(metavision VERSION 4.5.2)
 set(PROJECT_VERSION_SUFFIX "")
 
 if(PROJECT_VERSION_SUFFIX STREQUAL "")
@@ -62,10 +62,10 @@ set(GENERATE_FILES_DIRECTORY ${CMAKE_BINARY_DIR}/generated)
 file(MAKE_DIRECTORY ${GENERATE_FILES_DIRECTORY})
 
 # Update CMAKE_MODULE_PATH
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules) # For find_packages()
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/custom_functions) # For defining custom cmake functions
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/custom_targets) # For defining custom cmake targets
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/cpack) # For cpack
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules) # For find_packages()
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/custom_functions) # For defining custom cmake functions
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/custom_targets) # For defining custom cmake targets
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/cpack) # For cpack
 
 include(CMakeDependentOption)
 include(overridden_cmake_functions)
@@ -101,6 +101,12 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF )
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+include(CheckLanguage)
+check_language(CUDA)
+if (CMAKE_CUDA_COMPILER)
+    enable_language(CUDA)
+endif (CMAKE_CUDA_COMPILER)
 
 ################################################### Platform specific
 
@@ -364,7 +370,7 @@ include(add_library_version_header)
 include(add_cpack_component)
 
 if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/cmake/custom_targets_metavision_sdk")
-    list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/custom_targets_metavision_sdk)
+    list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/custom_targets_metavision_sdk)
     include(create_metavision_sdk_source_archives)
 endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/cmake/custom_targets_metavision_sdk")
 

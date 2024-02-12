@@ -23,8 +23,8 @@ namespace po = boost::program_options;
 
 int main(int argc, char *argv[]) {
     std::string serial;
-    std::string biases_file;
-    std::string in_file_path;
+    std::string cam_config_path;
+    std::string event_file_path;
     uint32_t delta_ts;
 
     const std::string short_program_desc(
@@ -34,10 +34,10 @@ int main(int argc, char *argv[]) {
     // clang-format off
     options_desc.add_options()
         ("help,h", "Produce help message.")
-        ("serial,s",          po::value<std::string>(&serial),"Serial ID of the camera. This flag is incompatible with flag '--input-file'.")
-        ("input-file,i",      po::value<std::string>(&in_file_path), "Path to input file. If not specified, the camera live stream is used.")
-        ("biases,b",          po::value<std::string>(&biases_file), "Path to a biases file. If not specified, the camera will be configured with the default biases.")
-        ("accumulation-time,a", po::value<uint32_t>(&delta_ts)->default_value(10000), "Accumulation time for which to display the Time Surface.")
+        ("serial,s",              po::value<std::string>(&serial),"Serial ID of the camera. This flag is incompatible with flag '--input-event-file'.")
+        ("input-event-file,i",    po::value<std::string>(&event_file_path), "Path to input event file (RAW or HDF5). If not specified, the camera live stream is used.")
+        ("input-camera-config,j", po::value<std::string>(&cam_config_path), "Path to a JSON file containing camera config settings to restore a camera state. Only works for live cameras.")
+        ("accumulation-time,a",   po::value<uint32_t>(&delta_ts)->default_value(10000), "Accumulation time for which to display the Time Surface.")
     ;
     // clang-format on
 
@@ -61,15 +61,15 @@ int main(int argc, char *argv[]) {
     Metavision::Camera camera;
 
     // if the filename is set, then read from the file
-    if (!in_file_path.empty()) {
+    if (!event_file_path.empty()) {
         if (!serial.empty()) {
-            MV_LOG_ERROR() << "Options --serial and --input-file are not compatible.";
+            MV_LOG_ERROR() << "Options --serial and --input-event-file are not compatible.";
             return 1;
         }
 
         try {
             camera =
-                Metavision::Camera::from_file(in_file_path, Metavision::FileConfigHints().real_time_playback(true));
+                Metavision::Camera::from_file(event_file_path, Metavision::FileConfigHints().real_time_playback(true));
 
         } catch (Metavision::CameraException &e) {
             MV_LOG_ERROR() << e.what();
@@ -84,8 +84,8 @@ int main(int argc, char *argv[]) {
                 camera = Metavision::Camera::from_first_available();
             }
 
-            if (biases_file != "") {
-                camera.biases().set_from_file(biases_file);
+            if (!cam_config_path.empty()) {
+                camera.load(cam_config_path);
             }
         } catch (Metavision::CameraException &e) {
             MV_LOG_ERROR() << e.what();

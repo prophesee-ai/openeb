@@ -54,11 +54,15 @@ public:
     /// Processing policies that define the state to rely on to call the asynchronous process (process_async).
     ///
     /// N_EVENTS: event count processing policy. Relies on the number of events processed.
+    ///
     /// N_US: time slice processing policy. Relies on the timestamp of the input events. A time slice T holds events
     /// between [(n-1)*T; n*T[.
+    ///
     /// MIXED: a mix between N_US and N_EVENTS processing policy. In this policy, the time slice has priority over the
     /// events count.
+    ///
     /// SYNC: synchronous condition. process_async is called at the end of the process_events method.
+    ///
     /// EXTERNAL: Relies on an external condition. process_async is called at each flush call.
     enum class Processing { N_EVENTS, N_US, MIXED, SYNC, EXTERNAL };
 

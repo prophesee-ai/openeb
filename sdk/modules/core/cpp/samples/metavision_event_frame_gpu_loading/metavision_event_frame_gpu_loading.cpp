@@ -74,7 +74,7 @@ static float *process_event_frame_on_gpu(const Metavision::RawEventFrameDiff &di
 }
 
 int main(int argc, char *argv[]) {
-    std::string in_file_path;
+    std::string event_file_path;
     std::string output_dir;
 
     const std::string program_desc("Sample preprocessing Raw event frame on a GPU using CUDA");
@@ -83,8 +83,8 @@ int main(int argc, char *argv[]) {
     // clang-format off
     options_desc.add_options()
         ("help,h", "Produce help message.")
-        ("input-file,i",     po::value<std::string>(&in_file_path)->required(), "Path to input file.")
-        ("output-dir,o",     po::value<std::string>(&output_dir)->required(), "Output directory to store frames.");
+        ("input-event-file,i", po::value<std::string>(&event_file_path)->required(), "Path to input event file (RAW or HDF5).")
+        ("output-dir,o",       po::value<std::string>(&output_dir)->required(), "Output directory to store frames.");
     // clang-format on
     po::variables_map vm;
     po::store(po::command_line_parser(argc, argv).options(options_desc).run(), vm);
@@ -117,7 +117,7 @@ int main(int argc, char *argv[]) {
     Metavision::Camera camera;
 
     try {
-        camera = Metavision::Camera::from_file(in_file_path, Metavision::FileConfigHints().real_time_playback(false));
+        camera = Metavision::Camera::from_file(event_file_path, Metavision::FileConfigHints().real_time_playback(false));
     } catch (Metavision::CameraException &e) {
         MV_LOG_ERROR() << e.what();
         return 1;

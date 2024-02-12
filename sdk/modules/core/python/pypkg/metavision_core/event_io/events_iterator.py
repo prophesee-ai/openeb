@@ -19,8 +19,8 @@ import numpy as np
 
 class EventsIterator(object):
     """
-    EventsIterator is a small convenience class to iterate through either a camera, a DAT file, a RAW file
-    or a H5 file containing events.
+    EventsIterator is a small convenience class to iterate through either a camera, a RAW file,
+    an HDF5 event file or a DAT file.
 
     Note that, as every Python iterator, you can consume an EventsIterator only once.
 

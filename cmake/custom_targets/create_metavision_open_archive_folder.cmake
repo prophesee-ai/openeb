@@ -35,7 +35,7 @@ list(APPEND HAL_OPEN_PLUGIN_FILES ${HAL_OPEN_PLUGIN_INCLUDES} ${HAL_OPEN_PLUGIN_
 list_transform_prepend (HAL_OPEN_PLUGIN_FILES hal_psee_plugins/)
 
 # Add the files and folders needed to compile open :
-foreach (file_or_dir CMakeLists.txt licensing/LICENSE_OPEN .gitignore conftest.py pytest.ini cmake standalone_samples hal ${HAL_OPEN_PLUGIN_FILES} utils/python/metavision_utils utils/cpp utils/scripts utils/windows/resources.rc.in utils/CMakeLists.txt sdk/cmake sdk/CMakeLists.txt sdk/modules/CMakeLists.txt)
+foreach (file_or_dir CMakeLists.txt licensing/LICENSE_OPEN .gitignore conftest.py pytest.ini cmake standalone_samples hal ${HAL_OPEN_PLUGIN_FILES} utils/python/metavision_utils utils/cpp utils/scripts utils/windows/resources.rc.in utils/windows/vcpkg-openeb.json utils/CMakeLists.txt sdk/cmake sdk/CMakeLists.txt sdk/modules/CMakeLists.txt)
     if (EXISTS "${PROJECT_SOURCE_DIR}/${file_or_dir}")
         get_filename_component(dest "${OUTPUT_DIR}/${file_or_dir}" DIRECTORY)
         file(COPY "${PROJECT_SOURCE_DIR}/${file_or_dir}"
@@ -51,6 +51,14 @@ file(COPY "${PROJECT_SOURCE_DIR}/utils/github_actions/openeb/"
 )
 file(COPY "${PROJECT_SOURCE_DIR}/utils/github_actions/openeb/mergify.yml"
      DESTINATION "${OUTPUT_DIR}/.github"
+)
+
+file(COPY "${PROJECT_SOURCE_DIR}/utils/jenkins/windows/vcpkg.json"
+     DESTINATION "${OUTPUT_DIR}/utils/windows"
+)
+
+file(COPY "${PROJECT_SOURCE_DIR}/utils/jenkins/containers/Dockerfile.OpenEB"
+     DESTINATION "${OUTPUT_DIR}/utils/containers"
 )
 
 # Remove SDK targets

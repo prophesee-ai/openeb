@@ -134,7 +134,7 @@ int main(int argc, char *argv[]) {
 
     std::string serial;
     std::string biases_file;
-    std::string in_file_path;
+    std::string event_file_path;
     std::string in_cam_config_path;
     std::string out_file_path;
     std::string out_cam_config_path;
@@ -143,13 +143,14 @@ int main(int argc, char *argv[]) {
     bool do_retry = false;
 
     const std::string short_program_desc(
-        "Simple viewer to stream events from a file or device, using the SDK driver API.\n");
+        "Simple viewer to stream events from an event file or a device, using the SDK driver API.\n");
     std::string long_program_desc(short_program_desc +
+                                  "Define a region using the cursor (click and drag) to set a Region of Interest (ROI)\n"
                                   "Press SPACE key while running to record or stop recording raw data\n"
                                   "Press 'q' or Escape key to leave the program.\n"
                                   "Press 'o' to toggle the on screen display.\n"
-                                  "Press 'l' to load the camera state from the input camera config file.\n"
-                                  "Press 's' to save the camera state to the output camera config file.\n"
+                                  "Press 'l' to load the camera settings from the input camera config file.\n"
+                                  "Press 's' to save the camera settings to the output camera config file.\n"
                                   "Press 'r' to toggle the hardware ROI mode (window mode or lines mode, default: window mode).\n"
                                   "Press 'R' to toggle the ROI/RONI mode.\n"
                                   "Press 'e' to toggle the ERC module (if available).\n"
@@ -161,13 +162,13 @@ int main(int argc, char *argv[]) {
     // clang-format off
     options_desc.add_options()
         ("help,h", "Produce help message.")
-        ("serial,s",             po::value<std::string>(&serial),"Serial ID of the camera. This flag is incompatible with flag '--input-file'.")
-        ("input-file,i",         po::value<std::string>(&in_file_path), "Path to input file. If not specified, the camera live stream is used.")
-        ("input-camera-config",  po::value<std::string>(&in_cam_config_path), "Path to a file containing camera config settings to restore a camera state. Only works for live cameras.")
-        ("biases,b",             po::value<std::string>(&biases_file), "Path to a biases file. If not specified, the camera will be configured with the default biases.")
-        ("output-file,o",        po::value<std::string>(&out_file_path)->default_value("data.raw"), "Path to an output file used for data recording. Default value is 'data.raw'. It also works when reading data from a file.")
-        ("output-camera-config", po::value<std::string>(&out_cam_config_path)->default_value("settings.json"), "Path to a file that will contain the camera state. Default value is 'settings.json'. Only works for live camera.")
-        ("roi,r",                po::value<std::vector<uint16_t>>(&roi)->multitoken(), "Hardware ROI to set on the sensor in the format [x y width height].")
+        ("serial,s",              po::value<std::string>(&serial),"Serial ID of the camera. This flag is incompatible with flag '--input-event-file'.")
+        ("input-event-file,i",    po::value<std::string>(&event_file_path), "Path to input event file (RAW, DAT or HDF5). If not specified, the camera live stream is used.")
+        ("input-camera-config,j", po::value<std::string>(&in_cam_config_path), "Path to a JSON file containing camera config settings to restore a camera state. Only works for live cameras.")
+        ("biases,b",              po::value<std::string>(&biases_file), "Path to a biases file. If not specified, the camera will be configured with the default biases.")
+        ("output-file,o",         po::value<std::string>(&out_file_path)->default_value("data.raw"), "Path to an output file used for data recording. Default value is 'data.raw'. It also works when reading data from a file.")
+        ("output-camera-config",  po::value<std::string>(&out_cam_config_path)->default_value("settings.json"), "Path to a JSON file where to save the camera config settings. Default value is 'settings.json'. Only works for live camera.")
+        ("roi,r",                 po::value<std::vector<uint16_t>>(&roi)->multitoken(), "Hardware ROI to set on the sensor in the format [x y width height].")
     ;
     // clang-format on
 
@@ -188,7 +189,7 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    if (!in_file_path.empty()) {
+    if (!event_file_path.empty()) {
         long_program_desc += "\nIf available, you can also:\n"
                              "Press 'b' key to seek backward 1s\n"
                              "Press 'f' key to seek forward 1s\n";
@@ -197,8 +198,8 @@ int main(int argc, char *argv[]) {
     MV_LOG_INFO() << long_program_desc;
 
     if (vm.count("roi")) {
-        if (!in_file_path.empty()) {
-            MV_LOG_ERROR() << "Options --roi and --input-file are not compatible.";
+        if (!event_file_path.empty()) {
+            MV_LOG_ERROR() << "Options --roi and --input-event-file are not compatible.";
             return 1;
         }
         if (roi.size() != 4) {
@@ -212,15 +213,15 @@ int main(int argc, char *argv[]) {
         bool camera_is_opened = false;
 
         // If the filename is set, then read from the file
-        if (!in_file_path.empty()) {
+        if (!event_file_path.empty()) {
             if (!serial.empty()) {
-                MV_LOG_ERROR() << "Options --serial and --input-file are not compatible.";
+                MV_LOG_ERROR() << "Options --serial and --input-event-file are not compatible.";
                 return 1;
             }
 
             try {
                 Metavision::FileConfigHints hints;
-                camera           = Metavision::Camera::from_file(in_file_path, hints);
+                camera           = Metavision::Camera::from_file(event_file_path, hints);
                 camera_is_opened = true;
             } catch (Metavision::CameraException &e) { MV_LOG_ERROR() << e.what(); }
             // Otherwise, set the input source to a camera
@@ -242,9 +243,6 @@ int main(int argc, char *argv[]) {
                     camera.biases().set_from_file(biases_file);
                 }
 
-                if (!roi.empty()) {
-                    camera.roi().set({roi[0], roi[1], roi[2], roi[3]});
-                }
                 camera_is_opened = true;
             } catch (Metavision::CameraException &e) { MV_LOG_ERROR() << e.what(); }
         }
@@ -280,7 +278,7 @@ int main(int argc, char *argv[]) {
         });
 
         // Get the geometry of the camera
-        auto &geometry = camera.geometry(); // Get the geometry of the camera
+        const auto &geometry = camera.geometry();
 
         // Setup CD event rate estimator
         double avg_rate, peak_rate;
@@ -311,8 +309,13 @@ int main(int argc, char *argv[]) {
             max_roi_windows = camera.roi().get_facility()->get_max_supported_windows_count();
         } catch (...) {}
         RoiControl roi_ctrl(geometry.width(), geometry.height(), max_roi_windows);
-        roi_ctrl.need_refresh = roi.size() != 0;
         roi_ctrl.use_windows = true;
+        if (roi.size() != 0) {
+            roi_ctrl.need_refresh = true;
+            roi_ctrl.windows.push_back({roi[0], roi[1], roi[2], roi[3]});
+        } else {
+            roi_ctrl.need_refresh = false;
+        }
 
         // Setup CD frame display
         std::string cd_window_name("CD Events");
@@ -342,7 +345,7 @@ int main(int argc, char *argv[]) {
         bool osc_ready     = false;
         bool osd           = true;
 
-        if (!in_file_path.empty()) {
+        if (!event_file_path.empty()) {
             try {
                 camera.offline_streaming_control().is_ready();
                 osc_available = true;
@@ -350,7 +353,7 @@ int main(int argc, char *argv[]) {
         }
 
         while (!signal_caught && camera.is_running()) {
-            if (!in_file_path.empty() && osc_available) {
+            if (!event_file_path.empty() && osc_available) {
                 try {
                     osc_ready = camera.offline_streaming_control().is_ready();
                 } catch (Metavision::CameraException &e) { MV_LOG_ERROR() << e.what(); }

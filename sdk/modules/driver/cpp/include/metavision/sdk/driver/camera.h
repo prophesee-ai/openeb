@@ -169,10 +169,12 @@ public:
 
     /// @brief Initializes a camera instance from the first available camera plugged on the system
     ///
-    /// Open the first available camera following at first EMBEDDED and then USB order.\n
+    /// Open the first available camera following at first EMBEDDED and then USB order.
+    ///
     /// Please note that remote cameras will not be opened with this function. To do that,
     /// please specify the @ref OnlineSourceType and use the @ref from_source function,
-    /// or else specify the serial number and use the @ref from_serial function.\n
+    /// or else specify the serial number and use the @ref from_serial function.
+    ///
     /// Serial numbers and types of available sources can be found with @ref list_online_sources function.
     ///
     /// @throw CameraException in case of initialization failure.
@@ -180,10 +182,12 @@ public:
 
     /// @brief Initializes a camera instance from the first available camera plugged on the system
     ///
-    /// Open the first available camera following at first EMBEDDED and then USB order.\n
+    /// Open the first available camera following at first EMBEDDED and then USB order.
+    ///
     /// Please note that remote cameras will not be opened with this function. To do that,
     /// please specify the @ref OnlineSourceType and use the @ref from_source function,
-    /// or else specify the serial number and use the @ref from_serial function.\n
+    /// or else specify the serial number and use the @ref from_serial function.
+    ///
     /// Serial numbers and types of available sources can be found with @ref list_online_sources function.
     ///
     /// @throw CameraException in case of initialization failure.
@@ -193,8 +197,10 @@ public:
 
     /// @brief Initializes a camera instance from an @ref OnlineSourceType and a source index
     ///
-    /// Open the source_index camera of online input_source_type if available from @ref list_online_sources"".\n
-    /// By default, it opens the first available camera listed by @ref list_online_sources of type input_source_type.\n
+    /// Open the source_index camera of online input_source_type if available from @ref list_online_sources.
+    ///
+    /// By default, it opens the first available camera listed by @ref list_online_sources of type input_source_type.
+    ///
     /// Serial numbers and types of available sources can be found with @ref list_online_sources function.
     /// @throw CameraException if the camera corresponding to the input source type and the source index has not been
     /// found.
@@ -206,12 +212,13 @@ public:
 
     /// @brief Initializes a camera instance from an @ref OnlineSourceType and a source index
     ///
-    /// Open the source_index camera of online input_source_type if available from @ref list_online_sources"".\n
-    /// By default, it opens the first available camera listed by @ref list_online_sources of type input_source_type.\n
+    /// Open the source_index camera of online input_source_type if available from @ref list_online_sources.
+    ///
+    /// By default, it opens the first available camera listed by @ref list_online_sources of type input_source_type.
+    ///
     /// Serial numbers and types of available sources can be found with @ref list_online_sources function.
     /// @throw CameraException if the camera corresponding to the input source type and the source index has not been
     /// found.
-    ///
     /// @param input_source_type @ref OnlineSourceType
     /// @param config Configuration used to open the camera
     /// @param source_index Index of the source in the list of available online sources
@@ -221,7 +228,8 @@ public:
 
     /// @brief Initializes a camera instance from a 'serial' number
     ///
-    /// Serial numbers of available sources can be found by with @ref list_online_sources function.\n
+    /// Serial numbers of available sources can be found by with @ref list_online_sources function.
+    ///
     /// If 'serial' is an empty string, the function works as the main constructor.
     ///
     /// @throw CameraException if the camera with the input serial number has not been found.
@@ -297,7 +305,6 @@ public:
     ///
     /// When a camera runtime error occurs, the camera thread is left and events are no longer sent.
     /// You are notified by this callback whenever this happens.
-    ///
     /// @throw CameraException if the camera has not been initialized.
     /// @param error_callback The error callback to call
     /// @return ID of the added callback
@@ -325,7 +332,6 @@ public:
     CallbackId add_status_change_callback(StatusChangeCallback status_change_callback);
 
     /// @brief Removes a previously registered callback
-    ///
     /// @param callback_id Callback ID
     /// @return true if the callback has been unregistered correctly, false otherwise.
     bool remove_status_change_callback(CallbackId callback_id);
@@ -348,9 +354,9 @@ public:
 
     /// @brief Starts the camera from the given input source
     ///
-    /// It will start polling events from the source and calling specified events callbacks.\n
-    /// It has no effect if the start function has been already called and not the @ref stop function.
+    /// It will start polling events from the source and calling specified events callbacks.
     ///
+    /// It has no effect if the start function has been already called and not the @ref stop function.
     /// @throw CameraException if the camera has not been initialized.
     /// @sa @ref CD::add_callback
     /// @sa @ref ExtTrigger::add_callback
@@ -360,16 +366,15 @@ public:
 
     /// @brief Checks if the camera is running or there are data remaining from an offline source
     ///
-    /// If the source is online, it always returns true unless the @ref stop function has been called.\n
-    /// If the input is offline (from a file), it returns false whenever no data are remaining in the input file.
+    /// If the source is online, it always returns true unless the @ref stop function has been called.
     ///
+    /// If the input is offline (from a file), it returns false whenever no data are remaining in the input file.
     /// @return true if the camera is running or there are data remaining from an offline source, false otherwise.
     bool is_running();
 
     /// @brief Stops polling events from the camera or from the file
     ///
     /// Stops ongoing streaming.
-    ///
     /// @throw CameraException if the camera has not been initialized.
     /// @return true if the camera instance has been stopped successfully, false otherwise. If the camera was not
     /// running, this function returns false.
@@ -377,18 +382,19 @@ public:
 
     /// @brief Records data from camera to a file at the specified path
     ///
-    /// The function creates a new file at the given @p file_path or overwrites the already existing file.\n
+    /// The function creates a new file at the given @p file_path or overwrites the already existing file.
+    ///
     /// In case of an offline input source, the function can be used to split the file and record only a portion of it.
     /// @throw CameraException if the camera has not been initialized.
-    /// @warning Calling this function will overwrite the file at the path @p file_path if it already exists.\n
+    /// @warning Calling this function will overwrite the file at the path @p file_path if it already exists.
     /// @note This functions is the recommended way to save recording with SDK driver.
     /// It uses a separate thread to write the file for efficiency, so it will not slow down the decoding thread
-    /// as opposed to \ref I_EventsStream::log_raw_data and \ref I_EventsStream::stop_log_raw_data
-    /// It also enables writing to supported formats other than RAW file, altough the writing speed will probably
+    /// as opposed to @ref I_EventsStream::log_raw_data and @ref I_EventsStream::stop_log_raw_data
+    /// It also enables writing to supported formats other than RAW file, although the writing speed will probably
     /// decrease for those formats
     /// It can also be called several times with different paths to record the stream to multiple files at the same time
     /// @note For more control over the way the data is recorded and to select with precision which events
-    /// will be recorded, you may directly use the API provided by \ref EventFileWriter and its inherited classes
+    /// will be recorded, you may directly use the API provided by @ref EventFileWriter and its inherited classes
     /// For more information, refer to the metavision_file_cutter sample
     /// @param file_path Path to the file containing the recorded data
     /// @return true if recording could be started, false otherwise
@@ -396,8 +402,9 @@ public:
 
     /// @brief Stops recording data from camera to the specified path
     ///
-    /// This function stops recording data to the file at the given @p file_path.\n
-    /// If the @p file_path is empty, all recordings of the current camera stream are stopped.\n
+    /// This function stops recording data to the file at the given @p file_path.
+    ///
+    /// If the @p file_path is empty, all recordings of the current camera stream are stopped.
     /// @param file_path Path to the file containing the recorded data. If empty, all ongoing recordings are stopped.
     /// @throw CameraException if the camera has not been initialized.
     /// @return true if recording could be stopped, false otherwise
@@ -422,15 +429,13 @@ public:
     /// @warning If no event decoding callback has been set, this functions returns -1
     timestamp get_last_timestamp() const;
 
-    /// @brief Saves the camera to a given file
-    ///
-    /// @param path The path of the file to save the camera to
+    /// @brief Saves the camera settings to a given file
+    /// @param path The path of the file to save the camera settings to
     /// @return true on success
     bool save(const std::string &path) const;
 
-    /// @brief Loads the camera from a given file
-    ///
-    /// @param path The path of the file to load the camera from
+    /// @brief Loads the camera settings from a given file
+    /// @param path The path of the file to load the camera settings from
     /// @return true on success
     bool load(const std::string &path);
 
@@ -468,14 +473,12 @@ private:
 };
 
 /// @brief Saves the camera to a given stream
-///
 /// @param os The output stream in which the camera will be saved
 /// @param camera The camera to save
 /// @return The modified output stream
 std::ostream &operator<<(std::ostream &os, const Camera &camera);
 
 /// @brief Loads the camera from a given stream
-///
 /// @param is The input stream from which the camera will be loaded
 /// @param camera The camera to load
 /// @return The modified input stream

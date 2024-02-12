@@ -66,7 +66,7 @@ if (Protobuf_FOUND)
 endif()
 
 target_include_directories(gtest_metavision_sdk_driver PRIVATE
-    ${CMAKE_SOURCE_DIR}/sdk/modules/driver/cpp/src/include
+    ${PROJECT_SOURCE_DIR}/sdk/modules/driver/cpp/src/include
     ${GENERATE_FILES_DIRECTORY}
 )
 

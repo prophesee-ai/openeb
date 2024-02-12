@@ -7,7 +7,7 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-install(FILES metavision_raw_to_csv.py
-        DESTINATION share/metavision/sdk/core/python_samples/metavision_raw_to_csv
+install(FILES metavision_file_to_csv.py
+        DESTINATION share/metavision/sdk/core/python_samples/metavision_file_to_csv
         COMPONENT metavision-sdk-core-python-samples
 )

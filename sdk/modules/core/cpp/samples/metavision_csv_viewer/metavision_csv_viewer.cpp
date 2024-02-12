@@ -16,6 +16,7 @@
 #include <iostream>
 #include <functional>
 #include <fstream>
+#include <optional>
 #include <boost/program_options.hpp>
 #include <metavision/sdk/base/utils/log.h>
 #include <metavision/sdk/core/pipeline/pipeline.h>
@@ -35,7 +36,12 @@ class CSVReadingStage : public Metavision::BaseStage {
 public:
     CSVReadingStage(const std::string &filename) : ifs_(filename) {
         if (!ifs_.is_open()) {
+            MV_LOG_ERROR() << "Unable to open " << filename;
             throw std::runtime_error("Unable to open " + filename);
+        }
+        if (!parse_csv_header()) {
+            MV_LOG_ERROR() << "Error while parsing header of " << filename;
+            throw std::runtime_error("Error while parsing header of " + filename);
         }
 
         cur_cd_buffer_ = cd_buffer_pool_.acquire();
@@ -87,7 +93,49 @@ public:
     }
     /// [PIPELINE_USAGE_READ_END]
 
+    std::optional<int> get_width() const {
+        return width_;
+    }
+    std::optional<int> get_height() const {
+        return height_;
+    }
+
 private:
+    bool read_cd_csv_header_line() {
+        std::string line;
+        if (std::getline(ifs_, line)) {
+            std::istringstream iss(line);
+            std::string key, value;
+            std::vector<std::string> values;
+            iss.ignore(1); // ignore leading '%'
+            std::getline(iss, key, ':');
+            while (std::getline(iss, value, ',')) {
+                values.push_back(value);
+            }
+            if (key == "geometry") {
+                if (values.size() == 2) {
+                    width_  = std::stoi(values[0]);
+                    height_ = std::stoi(values[1]);
+                } else {
+                    MV_LOG_ERROR() << "Ignoring invalid header line for key geometry, expected "
+                                      "\"%geometry:<width>,<height>\", got: \""
+                                   << line << "\"";
+                }
+            }
+        }
+        return ifs_.good();
+    }
+
+    bool parse_csv_header() {
+        while (ifs_.peek() == '%') {
+            if (!read_cd_csv_header_line()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    std::optional<int> width_, height_;
     std::atomic<bool> done_;
     std::thread reading_thread_;
     std::ifstream ifs_;
@@ -111,8 +159,8 @@ int main(int argc, char *argv[]) {
     options_desc.add_options()
         ("help,h", "Produce help message.")
         ("input-csv-file,i", po::value<std::string>(&in_csv_file_path)->required(), "Path to input CSV file")
-        ("width",            po::value<int>(&width)->default_value(640), "Width of the sensor associated to the CSV file")
-        ("height",           po::value<int>(&height)->default_value(480), "Height of the sensor associated to the CSV file")
+        ("width",            po::value<int>(&width)->default_value(1280), "Width of the sensor associated to the CSV file")
+        ("height",           po::value<int>(&height)->default_value(720), "Height of the sensor associated to the CSV file")
         ;
     // clang-format on
 
@@ -142,7 +190,14 @@ int main(int argc, char *argv[]) {
     Metavision::Pipeline p(true);
 
     // 0) Stage producing events from a CSV file
-    auto &csv_stage = p.add_stage(std::make_unique<CSVReadingStage>(in_csv_file_path));
+    auto csv_reader = std::make_unique<CSVReadingStage>(in_csv_file_path);
+    if (auto width_opt = csv_reader->get_width()) {
+        width = *width_opt;
+    }
+    if (auto height_opt = csv_reader->get_height()) {
+        height = *height_opt;
+    }
+    auto &csv_stage = p.add_stage(std::move(csv_reader));
 
     // 1) Stage generating a frame with events previously produced using accumulation time of 10ms
     auto &frame_stage = p.add_stage(std::make_unique<Metavision::FrameGenerationStage>(width, height, 10), csv_stage);

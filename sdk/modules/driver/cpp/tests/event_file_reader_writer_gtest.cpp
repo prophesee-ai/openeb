@@ -954,7 +954,7 @@ TEST_F(HDF5EventFileWriter_Gtest, simple_write_triggers) {
         HDF5EventFileReader reader(tmp_file_);
         size_t num_calls = 0;
         reader.add_read_callback([&num_calls](const EventExtTrigger *begin, const EventExtTrigger *end) {
-            ASSERT_EQ(1, std::distance(begin, end));
+            ASSERT_EQ(1, std::distance(begin, end)); 
             ASSERT_EQ(0, begin->p);
             ASSERT_EQ(0, begin->t);
             ASSERT_EQ(0, begin->id);
@@ -1060,6 +1060,7 @@ TEST_F(HDF5EventFileWriter_Gtest, write_first_ts_is_big) {
         H5::DataSpace ds = dset.getSpace();
         hsize_t dims[1];
         ds.getSimpleExtentDims(dims, nullptr);
+
         ASSERT_EQ(expected_indexes.size(), dims[0]);
 
         std::vector<Index> indexes(dims[0]);
@@ -1127,14 +1128,18 @@ TEST_F(HDF5EventFileWriter_Gtest, random_writes) {
         while (reader.read()) {
             std::this_thread::yield();
         }
+        
         ASSERT_EQ(expected_events_cd.size(), events_cd.size());
+
         for (size_t i = 0; i < expected_events_cd.size(); ++i) {
             ASSERT_EQ(expected_events_cd[i].x, events_cd[i].x);
             ASSERT_EQ(expected_events_cd[i].y, events_cd[i].y);
             ASSERT_EQ(expected_events_cd[i].p, events_cd[i].p);
             ASSERT_EQ(expected_events_cd[i].t, events_cd[i].t);
         }
+
         ASSERT_EQ(expected_events_trigger.size(), events_trigger.size());
+        
         for (size_t i = 0; i < expected_events_trigger.size(); ++i) {
             ASSERT_EQ(expected_events_trigger[i].p, events_trigger[i].p);
             ASSERT_EQ(expected_events_trigger[i].id, events_trigger[i].id);

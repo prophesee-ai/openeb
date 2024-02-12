@@ -24,8 +24,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Metavision Time Surface sample.',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
-        '-i', '--input-raw-file', dest='input_path', default="",
-        help="Path to input RAW file. If not specified, the live stream of the first available camera is used. "
+        '-i', '--input-event-file', dest='event_file_path', default="",
+        help="Path to input event file (RAW or HDF5). If not specified, the camera live stream is used. "
         "If it's a camera serial number, it will try to open that camera instead.")
     args = parser.parse_args()
     return args
@@ -37,12 +37,12 @@ def main():
 
     last_processed_timestamp = 0
 
-    # Events iterator on Camera or RAW file
-    mv_iterator = EventsIterator(input_path=args.input_path, delta_t=10000)
+    # Events iterator on Camera or event file
+    mv_iterator = EventsIterator(input_path=args.event_file_path, delta_t=10000)
     height, width = mv_iterator.get_size()  # Camera Geometry
 
     # Helper iterator to emulate realtime
-    if not is_live_camera(args.input_path):
+    if not is_live_camera(args.event_file_path):
         mv_iterator = LiveReplayEventsIterator(mv_iterator)
 
     # Window - Graphical User Interface

@@ -230,7 +230,6 @@ TEST_F(ThreadedProcess_GTest, calling_stop_without_abort_prevents_adding_new_tas
 TEST_F(ThreadedProcess_GTest, calling_stop_does_not_run_pending_tasks) {
     // GIVEN a threaded process
     Metavision::ThreadedProcess threaded_process;
-    bool tester;
     std::condition_variable proceed_cond;
     std::mutex proceed_mutex;
     bool proceed{false};

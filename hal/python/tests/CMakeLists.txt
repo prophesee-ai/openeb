@@ -11,7 +11,7 @@ get_pybind_pythonpath(PYTHON3_PYTHON_PATH)
 
 add_pytest(NAME metavision-hal-python-bindings-test 
     PATH ${CMAKE_CURRENT_SOURCE_DIR} 
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
     HAL_PLUGIN_PATH "${PROJECT_BINARY_DIR}/hal/cpp/test/plugins"
     PYTHONPATH ${PYTHON3_PYTHON_PATH}
 )

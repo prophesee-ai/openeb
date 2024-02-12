@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
     //////////////////////////////////////////////
     // Parse command line options
     //////////////////////////////////////////////
-    std::string in_file_path, out_file_path, out_video_path;
+    std::string event_file_path, out_file_path, out_video_path;
     bool enable_histo, enable_diff, diff_allow_rollover, histo_packed, disable_display;
     unsigned int histo_bit_size_neg, histo_bit_size_pos, diff_bit_size;
     int nevents;
@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
     // clang-format off
     options_desc.add_options()
         ("help,h", "Produce help message.")
-        ("input-file,i", po::value<std::string>(&in_file_path)->required(), "Path to input file.")
+        ("input-event-file,i", po::value<std::string>(&event_file_path)->required(), "Path to input file.")
         ("output-file,o", po::value<std::string>(&out_file_path)->default_value(""), "If specified, path to the event frame RAW file to be generated from the input event stream.")
         ("output-video,v", po::value<std::string>(&out_video_path)->default_value(""), "If specified, path to the video to be generated from the visualization.")
         ("period,p", po::value<Metavision::timestamp>(&period_us)->default_value(10000), "Period for the generation of the event frames, in us. If negative, only event numbers will be used.")
@@ -114,7 +114,7 @@ int main(int argc, char *argv[]) {
     // Instantiate Camera object from provided recording
     Metavision::Camera camera;
     try {
-        camera = Metavision::Camera::from_file(in_file_path, Metavision::FileConfigHints().real_time_playback(true));
+        camera = Metavision::Camera::from_file(event_file_path, Metavision::FileConfigHints().real_time_playback(true));
 
     } catch (Metavision::CameraException &e) {
         MV_LOG_ERROR() << e.what();

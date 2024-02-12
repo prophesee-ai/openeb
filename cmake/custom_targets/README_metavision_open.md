@@ -120,9 +120,9 @@ Make sure that you install a version of CUDA that is compatible with your GPUs b
 
 Note that, at the moment, we don't support [OpenCL](https://www.khronos.org/opencl/) and AMD GPUs.
 
-Then, you will need to install [PyTorch 1.13.1](https://pytorch.org/get-started/locally/).
-Retrieve and execute the pip command from the installation guide.
-If the latest Pytorch version doesn't match, please consider looking  into the [previous versions section](<https://pytorch.org/get-started/previous-versions/>).
+Then, you need to install [PyTorch 1.13.1](https://pytorch.org).
+Retrieve and execute the pip command of version 1.13.1 from
+the [previous versions install guide section](<https://pytorch.org/get-started/previous-versions/#v1131>).
 
 Then install some extra Python libraries:
 
@@ -133,7 +133,7 @@ python3 -m pip install "numba==0.56.3" "profilehooks==1.12.0" "pytorch_lightning
 
 ### Compilation
 
- 1. Retrieve the code: `git clone https://github.com/prophesee-ai/openeb.git --branch 4.5.1`.
+ 1. Retrieve the code: `git clone https://github.com/prophesee-ai/openeb.git --branch 4.5.2`.
     (If you choose to download an archive of OpenEB from GitHub rather than cloning the repository,
     you need to ensure that you select a ``Full.Source.Code.*`` archive instead of using
     the automatically generated ``Source.Code.*`` archives. This is because the latter do not include
@@ -255,8 +255,6 @@ To compile OpenEB, you will need to install some extra tools:
     * `cd <VCPKG_SRC_DIR>`
     * `bootstrap-vcpkg.bat`
   * install the libraries by running `vcpkg.exe install --triplet x64-windows libusb boost opencv dirent gtest glew glfw3 hdf5[cpp,threadsafe,tools,zlib]`
-    * Note that to avoid using `--triplet x64-windows`, which informs vcpkg to install packages for a x64-windows target,
-      you can run `setx VCPKG_DEFAULT_TRIPLET x64-windows` (you need to close the command line and re-open it to ensure that this variable is set)
   * Finally, download and install [ffmpeg](https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full.7z) and add the `bin` directory to your PATH.
 
 Note that if you are using vcpkg for various projects or multiple versions of OpenEB, you might want to optimize the
@@ -310,9 +308,9 @@ To use Machine Learning features, you need to install some additional dependenci
 First, if you have some Nvidia hardware with GPUs, you can optionally install [CUDA (11.6 or 11.7)](https://developer.nvidia.com/cuda-downloads)
 and [cuDNN](https://docs.nvidia.com/deeplearning/cudnn/install-guide/index.html) to leverage them with pytorch and libtorch.
 
-Then, you will need to install [PyTorch 1.13.1](https://pytorch.org/get-started/locally/).
-Retrieve and execute the pip command from the installation guide.
-If the latest Pytorch version doesn't match, please consider looking  into the [previous versions section](<https://pytorch.org/get-started/previous-versions/>).
+Then, you need to install [PyTorch 1.13.1](https://pytorch.org).
+Retrieve and execute the pip command of version 1.13.1 from
+the [previous versions install guide section](<https://pytorch.org/get-started/previous-versions/#v1131>).
 
 Then install some extra Python libraries:
 
@@ -325,7 +323,7 @@ python -m pip install "numba==0.56.3" "profilehooks==1.12.0" "pytorch_lightning=
 First, retrieve the codebase:
 
 ```bash
-git clone https://github.com/prophesee-ai/openeb.git --branch 4.5.1
+git clone https://github.com/prophesee-ai/openeb.git --branch 4.5.2
 ```
 
 Note that if you choose to download an archive of OpenEB from GitHub rather than cloning the repository,
@@ -339,7 +337,7 @@ a necessary submodule.
 Open a command prompt inside the `openeb` folder (absolute path to this directory is called `OPENEB_SRC_DIR` in next sections) and do as follows:
 
  1. Create and open the build directory, where temporary files will be created: `mkdir build && cd build`
- 2. Generate the makefiles using CMake: `cmake -A x64 -DCMAKE_TOOLCHAIN_FILE=<OPENEB_SRC_DIR>\cmake\toolchains\vcpkg.cmake -DVCPKG_DIRECTORY=<VCPKG_SRC_DIR> ..`.
+ 2. Generate the makefiles using CMake: `cmake .. -A x64 -DCMAKE_TOOLCHAIN_FILE=<OPENEB_SRC_DIR>\cmake\toolchains\vcpkg.cmake -DVCPKG_DIRECTORY=<VCPKG_SRC_DIR>`.
     Note that the value passed to the parameter `-DCMAKE_TOOLCHAIN_FILE` must be an absolute path, not a relative one. 
  3. Compile: `cmake --build . --config Release --parallel 4`
  
@@ -357,41 +355,49 @@ or you can deploy the OpenEB files (applications, samples, libraries etc.) in a 
     
 * Option 2 - deploying in a directory of your choice
 
-  * To deploy OpenEB, configure the target folder (`OPENEB_INSTALL_DIR`) with `CMAKE_INSTALL_PREFIX` variable
-    and the directory where the Python packages will be deployed (`PYTHON3_PACKAGES_INSTALL_DIR`) using the `PYTHON3_SITE_PACKAGES` variable
-    when generating the solution in step 2:
+  * To deploy SDK Pro in the default folder (`C:\Program Files\Prophesee`), execute this command 
+    (your console should be launched as an administrator):
 
+    ```bash 
+    cmake --build . --config Release --target install
+    ```
+
+  * To deploy OpenEB in another folder, you should generate the solution again (step 2 above)
+    with the additional variable `CMAKE_INSTALL_PREFIX` having the value of your target folder (`OPENEB_INSTALL_DIR`).
+
+    Similarly, to specify where the Python packages will be deployed (``PYTHON3_PACKAGES_INSTALL_DIR``), you should use
+    the `PYTHON3_SITE_PACKAGES` variable.
+
+    Here is an example of a command customizing those two folders:
+    
     ```bash
-    cmake -A x64 -DCMAKE_TOOLCHAIN_FILE=<OPENEB_SRC_DIR>\cmake\toolchains\vcpkg.cmake -DVCPKG_DIRECTORY=<VCPKG_SRC_DIR> -DCMAKE_INSTALL_PREFIX=<OPENEB_INSTALL_DIR> -DPYTHON3_SITE_PACKAGES=<PYTHON3_PACKAGES_INSTALL_DIR> -DBUILD_TESTING=OFF ..
+    cmake .. -A x64 -DCMAKE_TOOLCHAIN_FILE=<OPENEB_SRC_DIR>\cmake\toolchains\vcpkg.cmake -DVCPKG_DIRECTORY=<VCPKG_SRC_DIR> -DCMAKE_INSTALL_PREFIX=<OPENEB_INSTALL_DIR> -DPYTHON3_SITE_PACKAGES=<PYTHON3_PACKAGES_INSTALL_DIR> -DBUILD_TESTING=OFF
     ```
     
-  *  You can now launch the actual compilation and installation of the OpenEB files (your console should be launched as an administrator) :
+    After this command, you should launch the actual compilation and installation of OpenEB 
+    (your console should be launched as an administrator):
 
     ```bash
     cmake --build . --config Release --parallel 4
     cmake --build . --config Release --target install
     ```
+
+  * You also need to manually edit some environment variables:
+
+    * append `<OPENEB_INSTALL_DIR>\bin` to `PATH` (`C:\Program Files\Prophesee\bin` if you used default configuration)
+    * append `<OPENEB_INSTALL_DIR>\lib\metavision\hal\plugins` to `MV_HAL_PLUGIN_PATH` (`C:\Program Files\Prophesee\lib\metavision\hal\plugins` if you used default configuration)
+    * append `<OPENEB_INSTALL_DIR>\lib\hdf5\plugin` to `HDF5_PLUGIN_PATH` (`C:\Program Files\Prophesee\lib\hdf5\plugin` if you used default configuration)
+    * append `<PYTHON3_PACKAGES_INSTALL_DIR>` to `PYTHONPATH` (not needed if you used default configuration)
     
-  * You also need to edit the `PATH`, `HDF5_PLUGIN_PATH` and `PYTHONPATH` environment variables:
-
-    * append `<OPENEB_INSTALL_DIR>\bin` to the `PATH`
-    * append `<OPENEB_INSTALL_DIR>\lib\hdf5\plugin` to the `HDF5_PLUGIN_PATH`
-    * append `<PYTHON3_PACKAGES_INSTALL_DIR>` to the `PYTHONPATH`
-
-  * If you did not customize the install folders when generating the solution, the `PYTHONPATH` environment variable needs
-    not be modified and the `OPENEB_INSTALL_DIR` can be replaced by `C:\Program Files\Prophesee` in the previous instructions.
-
 
 #### Compilation using MS Visual Studio
 
 Open a command prompt inside the `openeb` folder (absolute path to this directory is called `OPENEB_SRC_DIR` in next sections) and do as follows:
 
  1. Create and open the build directory, where temporary files will be created: `mkdir build && cd build`
- 2. Generate the Visual Studio files using CMake: `cmake -G "Visual Studio 17 2022" -A x64 -DCMAKE_TOOLCHAIN_FILE=<OPENEB_SRC_DIR>\cmake\toolchains\vcpkg.cmake -DVCPKG_DIRECTORY=<VCPKG_SRC_DIR> ..` (adapt to your Visual Studio version).
+ 2. Generate the Visual Studio files using CMake: `cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_TOOLCHAIN_FILE=<OPENEB_SRC_DIR>\cmake\toolchains\vcpkg.cmake -DVCPKG_DIRECTORY=<VCPKG_SRC_DIR>` (adapt to your Visual Studio version).
     Note that the value passed to the parameter `-DCMAKE_TOOLCHAIN_FILE` must be an absolute path, not a relative one.
  3. Open the solution file `metavision.sln`, select the `Release` configuration and build the `ALL_BUILD` project.
-
-
 
 Once the compilation is done, you can choose to work directly from the `build` folder
 or you can deploy the OpenEB files (applications, samples, libraries etc.) in a directory of your choice.
@@ -417,10 +423,12 @@ for the cameras to be available on Windows. To do so, follow this procedure:
 
 ```bash
 wdi-simple.exe -n "EVK" -m "Prophesee" -v 0x04b4 -p 0x00f4
-wdi-simple.exe -n "EVK" -m "Prophesee" -v 0x03fd -p 0x5832 -i 00
 wdi-simple.exe -n "EVK" -m "Prophesee" -v 0x04b4 -p 0x00f5
 wdi-simple.exe -n "EVK" -m "Prophesee" -v 0x04b4 -p 0x00f3
 ```
+
+If you own an EVK2 or an RDK2, there are a few additional steps to complete that are detailed in our online documentation
+in the [Camera Plugin section of the OpenEB install guide](https://docs.prophesee.ai/stable/installation/windows_openeb.html#camera-plugins).
 
 If you are using a third-party camera, you need to follow the instructions provided by the camera vendor
 to install the driver and the camera plugin. Make sure that you reference the location of the plugin in
@@ -453,18 +461,16 @@ Running the test suite is a sure-fire way to ensure you did everything well with
 
         ```
         cd <OPENEB_SRC_DIR>/build
-        cmake -A x64 -DCMAKE_TOOLCHAIN_FILE=<OPENEB_SRC_DIR>\cmake\toolchains\vcpkg.cmake -DVCPKG_DIRECTORY=<VCPKG_SRC_DIR> -DBUILD_TESTING=ON ..
+        cmake .. -A x64 -DCMAKE_TOOLCHAIN_FILE=<OPENEB_SRC_DIR>\cmake\toolchains\vcpkg.cmake -DVCPKG_DIRECTORY=<VCPKG_SRC_DIR> -DBUILD_TESTING=ON
         ```
     2. Compile: `cmake --build . --config Release --parallel 4`
 
 
    * Compilation using MS Visual Studio
 
-    1. Generate the Visual Studio files using CMake (adapt the command to your Visual Studio version):
+    1. Generate the Visual Studio files using CMake (adapt the command to your Visual Studio version and note that `-DCMAKE_TOOLCHAIN_FILE` must be absolute path, not a relative one):
 
-        `cmake -G "Visual Studio 17 2022" -A x64 -DCMAKE_TOOLCHAIN_FILE=<OPENEB_SRC_DIR>\cmake\toolchains\vcpkg.cmake -DVCPKG_DIRECTORY=<VCPKG_SRC_DIR> -DBUILD_TESTING=ON ..`
-
-        Note that the value passed to the parameter `-DCMAKE_TOOLCHAIN_FILE` must be an absolute path, not a relative one.
+        `cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_TOOLCHAIN_FILE=<OPENEB_SRC_DIR>\cmake\toolchains\vcpkg.cmake -DVCPKG_DIRECTORY=<VCPKG_SRC_DIR> -DBUILD_TESTING=ON`
 
     2. Open the solution file `metavision.sln`, select the `Release` configuration and build the `ALL_BUILD` project.
 
