@@ -53,7 +53,7 @@ class EventBaseReader(object):
         self._ev_count = (self._end - self._start) // self._ev_size
         self.current_time = 0
         if self._ev_count == 0:
-            print("WARNING: The events file is empty!!!")
+            print("WARNING: The event file is empty!!!")
             self.done = True
             self.duration_s = 0
         else:

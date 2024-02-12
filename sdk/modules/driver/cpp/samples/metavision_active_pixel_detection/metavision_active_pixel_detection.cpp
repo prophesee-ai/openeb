@@ -200,7 +200,7 @@ int main(int argc, char *argv[]) {
 
     const auto default_calib_output_path = Metavision::GenX320RoiDriver::default_calibration_path();
     std::string serial;
-    std::string biases_file_path;
+    std::string cam_config_path;
     std::string calib_output_path;
     const double default_duration = 0.1;
     double duration;
@@ -242,11 +242,11 @@ int main(int argc, char *argv[]) {
     // clang-format off
     options_desc.add_options()
         ("help,h", "Produce help message.")
-        ("serial,s",          po::value<std::string>(&serial),"Serial ID of the camera. If not provided, the first available camera will be used.")
-        ("biases,b",          po::value<std::string>(&biases_file_path), "Path to a biases file. If not specified, the camera will be configured with the default biases.")
-        ("duration,d",        po::value<double>(&duration)->default_value(default_duration),"Duration in second of the calibration, the pixels will be analyzed during this period.")
-        ("min-event-count,n", po::value<int>(&min_event_count)->default_value(default_min_event_count),"Minimum number of events to be acquired before starting the calibration.")
-        ("output-calib,o",    po::value<std::string>(&calib_output_path)->default_value(default_calib_output_path.generic_string()), "Path to an output file used to save the result of the active pixels detection.\n"
+        ("serial,s",              po::value<std::string>(&serial),"Serial ID of the camera. If not provided, the first available camera will be used.")
+        ("input-camera-config,j", po::value<std::string>(&cam_config_path), "Path to a JSON file containing camera config settings to restore a camera state. Only works for live cameras.")
+        ("duration,d",            po::value<double>(&duration)->default_value(default_duration),"Duration in second of the calibration, the pixels will be analyzed during this period.")
+        ("min-event-count,n",     po::value<int>(&min_event_count)->default_value(default_min_event_count),"Minimum number of events to be acquired before starting the calibration.")
+        ("output-calib,o",        po::value<std::string>(&calib_output_path)->default_value(default_calib_output_path.generic_string()), "Path to an output file used to save the result of the active pixels detection.\n"
                                                                                                                                           "The default path should be used if the calibration should be applied automatically when the camera starts.\n"
                                                                                                                                           "A custom path can be used to save the calibration data, but it won't be automatically loaded and applied when the camera starts.")
     ;
@@ -301,8 +301,8 @@ int main(int argc, char *argv[]) {
                 camera = Metavision::Camera::from_first_available(config);
             }
 
-            if (biases_file_path != "") {
-                camera.biases().set_from_file(biases_file_path);
+            if (!cam_config_path.empty()) {
+                camera.load(cam_config_path);
             }
 
             camera_is_opened = true;

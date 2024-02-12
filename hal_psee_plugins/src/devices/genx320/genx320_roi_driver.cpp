@@ -416,7 +416,7 @@ bool GenX320RoiDriver::enable(bool state) {
             (*register_map_)[sensor_prefix_ + "roi_win_x0"].write_value(
                 vfield{{"roi_win_start_x", main_window_.x}, {"roi_win_end_p1_x", main_window_.x + main_window_.width}});
             (*register_map_)[sensor_prefix_ + "roi_win_y0"].write_value(vfield{
-                {"roi_win_start_y", main_window_.y}, {"roi_win_end_p1_y", main_window_.x + main_window_.height}});
+                {"roi_win_start_y", main_window_.y}, {"roi_win_end_p1_y", main_window_.y + main_window_.height}});
 
             apply_windows(roi_window_cnt_);
         } else {

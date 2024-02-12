@@ -124,7 +124,7 @@ int main(int argc, char *argv[]) {
     const double length_in_seconds = event_analyzer.global_max_t / 1000000.0;
     std::cout << "There were " << event_analyzer.global_counter << " events in total." << std::endl;
     std::cout << "The total duration was " << length_in_seconds << " seconds." << std::endl;
-    if (length_in_seconds >= 1) { // no need to print this statistics if the video was too short
+    if (length_in_seconds >= 1) { // no need to print this statistics if the total duration was too short
         std::cout << "There were " << event_analyzer.global_counter / length_in_seconds
                   << " events per second on average." << std::endl;
     }

@@ -9,8 +9,8 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-// This code sample demonstrates how to use Metavision SDK Driver to convert an event-based
-// file to a CSV formatted event-based file.
+// This code sample demonstrates how to use Metavision SDK Driver to convert an event file
+// to a CSV formatted event file.
 
 #include <fstream>
 #include <thread>
@@ -41,7 +41,7 @@ private:
 namespace po = boost::program_options;
 
 int main(int argc, char *argv[]) {
-    std::string in_file_path;
+    std::string event_file_path;
     std::string out_file_path;
 
     const std::string program_desc(
@@ -52,8 +52,8 @@ int main(int argc, char *argv[]) {
     // clang-format off
     options_desc.add_options()
         ("help,h", "Produce help message.")
-        ("input-file,i", po::value<std::string>(&in_file_path)->required(), "Path to the input file.")
-        ("output-file,o", po::value<std::string>(&out_file_path)->default_value(""), "Path to the output file.")
+        ("input-event-file,i", po::value<std::string>(&event_file_path)->required(), "Path to the input event file.")
+        ("output-file,o", po::value<std::string>(&out_file_path)->default_value(""), "Path to the output CSV file.")
         ;
     // clang-format on
 
@@ -76,14 +76,14 @@ int main(int argc, char *argv[]) {
 
     // get the base of the input filename and the path
     if (out_file_path.empty()) {
-        const std::string output_base = std::regex_replace(in_file_path, std::regex("\\.[^.]*$"), "");
+        const std::string output_base = std::regex_replace(event_file_path, std::regex("\\.[^.]*$"), "");
         out_file_path                 = output_base + ".csv";
     }
 
     // open the file that was passed
     Metavision::Camera cam;
     try {
-        cam = Metavision::Camera::from_file(in_file_path, Metavision::FileConfigHints().real_time_playback(false));
+        cam = Metavision::Camera::from_file(event_file_path, Metavision::FileConfigHints().real_time_playback(false));
     } catch (Metavision::CameraException &e) {
         MV_LOG_ERROR() << e.what();
         return 1;

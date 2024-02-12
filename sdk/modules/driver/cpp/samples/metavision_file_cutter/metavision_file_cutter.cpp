@@ -32,8 +32,8 @@ int main(int argc, char *argv[]) {
     // clang-format off
     options_desc.add_options()
         ("help,h", "Produce help message.")
-        ("input-file,i",    po::value<std::string>(&in_file_path)->required(), "Path to input file.")
-        ("output-file,o",   po::value<std::string>(&out_file_path)->required(), "Path to output file.")
+        ("input-event-file,i", po::value<std::string>(&in_file_path)->required(), "Path to input file.")
+        ("output-file,o",      po::value<std::string>(&out_file_path)->required(), "Path to output file.")
         ("start,s",   po::value<double>(&start)->required(), "The start of the required sequence in seconds.")
         ("end,e",     po::value<double>(&end)->required(), "The end of the required sequence in seconds.")
         ;

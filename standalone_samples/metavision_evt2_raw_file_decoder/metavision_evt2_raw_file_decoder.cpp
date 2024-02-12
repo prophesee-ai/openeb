@@ -11,16 +11,18 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <vector>
 #include <string>
 #include <cstdint>
+#include <chrono>
 
 namespace Metavision {
 namespace Evt2 {
 
 enum class EventTypes : uint8_t {
-    CD_LOW        = 0x00, // CD event, decrease in illumination (polarity '0')
-    CD_HIGH       = 0x01, // CD event, increase in illumination (polarity '1')
+    CD_OFF        = 0x00, // CD OFF event, decrease in illumination (polarity '0')
+    CD_ON         = 0x01, // CD ON event, increase in illumination (polarity '1')
     EVT_TIME_HIGH = 0x08, // Encodes the higher portion of the timebase (range 33 to 6). Since it encodes the 28 higher
                           // bits over the 34 used to encode a timestamp, it has a resolution of 64us (= 2^(34-28)) and
                           // it can encode time values from 0us to 17179869183us (~ 4h46m20s). After
@@ -43,7 +45,7 @@ struct RawEventCD {
     unsigned int y : 11;        // Pixel Y coordinate
     unsigned int x : 11;        // Pixel X coordinate
     unsigned int timestamp : 6; // Least significant bits of the event time ba
-    unsigned int type : 4;      // Event type : EventTypes::CD_LOW or EventTypes::CD_HIGH
+    unsigned int type : 4;      // Event type : EventTypes::CD_OFF or EventTypes::CD_ON
 };
 struct RawEventExtTrigger {
     unsigned int value : 1; // Trigger current value (edge polarity):
@@ -61,6 +63,12 @@ using timestamp_t = uint64_t; // Type for timestamp, in microseconds
 } // namespace Evt2
 } // namespace Metavision
 
+/// @brief Structure containing metadata describing the input file
+struct Metadata {
+    int sensor_width  = -1,
+        sensor_height = -1; // Sensor width & height
+};
+
 int main(int argc, char *argv[]) {
     // Check input arguments validity
     if (argc < 3) {
@@ -71,8 +79,9 @@ int main(int argc, char *argv[]) {
         std::cerr << "Trigger output file will be written only if given as input" << std::endl;
         std::cerr << std::endl << "Example : " << std::string(argv[0]) << " input_file.raw cd_output.csv" << std::endl;
         std::cerr << std::endl;
-        std::cerr << "The CD CSV file will have the format : x,y,polarity,timestamp" << std::endl;
-        std::cerr << "The Trigger output CSV file will have the format : value,id,timestamp" << std::endl;
+        std::cerr << "The CD CSV file header will have the format : %geometry:width,height" << std::endl;
+        std::cerr << "The CD CSV file contents will have the format : x,y,polarity,timestamp" << std::endl;
+        std::cerr << "The Trigger CSV file contents will have the format : value,id,timestamp" << std::endl;
         return 1;
     }
 
@@ -102,16 +111,58 @@ int main(int argc, char *argv[]) {
         write_triggers = true;
     }
 
-    // Skip the header of the input file, if present :
-    int line_first_char = input_file.peek();
-    while (line_first_char == '%') {
-        std::string line;
-        std::getline(input_file, line);
-        if (line == "% end") {
+    // Parse the header of the input file, if present, and store sensor geometry
+    Metadata metadata;
+    while (input_file.peek() == '%') {
+        std::string header_line;
+        std::getline(input_file, header_line);
+        if (header_line == "% end") {
             break;
+        } else if (header_line.substr(0, 9) == "% format ") {
+            std::istringstream sf(header_line.substr(9));
+            std::string format_name;
+            std::getline(sf, format_name, ';');
+            if (format_name != "EVT2") {
+                std::cerr << "Error : detected non-EVT2 input file '" << argv[1] << "'" << std::endl;
+                return 1;
+            }
+            while (!sf.eof()) {
+                std::string option;
+                std::getline(sf, option, ';');
+                {
+                    std::string name, value;
+                    std::istringstream so(option);
+                    std::getline(so, name, '=');
+                    std::getline(so, value, '=');
+                    if (name == "width") {
+                        metadata.sensor_width = std::stoi(value);
+                    } else if (name == "height") {
+                        metadata.sensor_height = std::stoi(value);
+                    }
+                }
+            }
+        } else if (header_line.substr(0, 11) == "% geometry ") {
+            std::istringstream sg(header_line.substr(11));
+            std::string sw, sh;
+            std::getline(sg, sw, 'x');
+            std::getline(sg, sh);
+            metadata.sensor_width  = std::stoi(sw);
+            metadata.sensor_height = std::stoi(sh);
+        } else if (header_line.substr(0, 6) == "% evt ") {
+            if (header_line.substr(6) != "2.0") {
+                std::cerr << "Error : detected non-EVT2 input file '" << argv[1] << "'" << std::endl;
+                return 1;
+            }
         }
-        line_first_char = input_file.peek();
-    };
+    }
+
+    // If parsed from input metadata, write sensor geometry as header of CD CSV output
+    if (metadata.sensor_width > 0 && metadata.sensor_height > 0) {
+        cd_output_file << "%geometry:" << metadata.sensor_width << "," << metadata.sensor_height << std::endl;
+    }
+
+    // Start chrono
+    const auto tp_start = std::chrono::system_clock::now();
 
     // Vector where we'll read the raw data
     static constexpr uint32_t WORDS_TO_READ = 1000000; // Number of words to read at a time
@@ -147,7 +198,7 @@ int main(int argc, char *argv[]) {
         for (; current_word != last_word; ++current_word) {
             Metavision::Evt2::EventTypes type = static_cast<Metavision::Evt2::EventTypes>(current_word->type);
             switch (type) {
-            case Metavision::Evt2::EventTypes::CD_LOW: {
+            case Metavision::Evt2::EventTypes::CD_OFF: {
                 // CD events, decrease in illumination (polarity '0')
                 Metavision::Evt2::RawEventCD *ev_cd = reinterpret_cast<Metavision::Evt2::RawEventCD *>(current_word);
                 Metavision::Evt2::timestamp_t t     = current_time_base + ev_cd->timestamp;
@@ -160,7 +211,7 @@ int main(int argc, char *argv[]) {
                 cd_str += std::to_string(ev_cd->x) + "," + std::to_string(ev_cd->y) + ",0," + std::to_string(t) + "\n";
                 break;
             }
-            case Metavision::Evt2::EventTypes::CD_HIGH: {
+            case Metavision::Evt2::EventTypes::CD_ON: {
                 // CD events, increase in illumination (polarity '1')
                 Metavision::Evt2::RawEventCD *ev_cd = reinterpret_cast<Metavision::Evt2::RawEventCD *>(current_word);
                 Metavision::Evt2::timestamp_t t     = current_time_base + ev_cd->timestamp;
@@ -247,6 +298,11 @@ int main(int argc, char *argv[]) {
             trigg_str.clear();
         }
     }
+
+    // Display processing time
+    const auto tp_end       = std::chrono::system_clock::now();
+    const double duration_s = std::chrono::duration_cast<std::chrono::microseconds>(tp_end - tp_start).count() / 1e6;
+    std::cout << "Decoded '" << argv[1] << "' in " << duration_s << " s" << std::endl;
 
     return 0;
 }

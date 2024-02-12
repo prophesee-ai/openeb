@@ -51,7 +51,7 @@ void Gen41ROICommand::write_ROI(const std::vector<unsigned int> &vroiparams) {
     uint32_t param_ind     = 0;
     uint32_t col_td_ind, row_td_ind;
     roi_save_ = vroiparams;
-    uint32_t td_roi_x00_addr, td_roi_x39_addr, td_roi_x40_addr;
+    uint32_t td_roi_x00_addr, td_roi_x39_addr;
     uint32_t td_roi_y00_addr, td_roi_y22_addr;
 
     td_roi_x00_addr = (*register_map_)[sensor_prefix_ + "roi/td_roi_x00"].get_address();
@@ -62,7 +62,7 @@ void Gen41ROICommand::write_ROI(const std::vector<unsigned int> &vroiparams) {
     uint32_t xsize  = ((td_roi_x39_addr - td_roi_x00_addr) / roi_step) + 1;
     uint32_t ysize  = ((td_roi_y22_addr - td_roi_y00_addr) / roi_step) + 1;
     if (vroiparams.size() != (xsize + ysize)) {
-        MV_HAL_LOG_WARNING() << "Error setting roi for Gen 41 sensor.";
+        MV_HAL_LOG_WARNING() << "Error setting ROI.";
     }
 
     // setting x registers
@@ -103,39 +103,38 @@ bool Gen41ROICommand::enable(bool state) {
 }
 
 bool Gen41ROICommand::write_ROI_windows(const std::vector<Window> &windows) {
-     if (windows.empty()) {
-         return true;
-     }
+    if (windows.empty()) {
+        return true;
+    }
 
-     // Only one ROI supported in window mode
-     auto &window = windows[0];
+    // Only one ROI supported in window mode
+    auto &window = windows[0];
 
-     if (mode_ == Mode::ROI) {
-         (*register_map_)[sensor_prefix_ + "roi_win_start_addr"]["roi_win_start_x"].write_value(window.x);
-         (*register_map_)[sensor_prefix_ + "roi_win_start_addr"]["roi_win_start_y"].write_value(window.y);
-         (*register_map_)[sensor_prefix_ + "roi_win_end_addr"]["roi_win_end_x"].write_value(window.x + window.width);
-         (*register_map_)[sensor_prefix_ + "roi_win_end_addr"]["roi_win_end_y"].write_value(window.y + window.height);
+    if (mode_ == Mode::ROI) {
+        (*register_map_)[sensor_prefix_ + "roi_win_start_addr"]["roi_win_start_x"].write_value(window.x);
+        (*register_map_)[sensor_prefix_ + "roi_win_start_addr"]["roi_win_start_y"].write_value(window.y);
+        (*register_map_)[sensor_prefix_ + "roi_win_end_addr"]["roi_win_end_x"].write_value(window.x + window.width);
+        (*register_map_)[sensor_prefix_ + "roi_win_end_addr"]["roi_win_end_y"].write_value(window.y + window.height);
 
-         (*register_map_)[sensor_prefix_ + "roi_win_ctrl"]["roi_master_en"].write_value(1);
-         while (!(*register_map_)[sensor_prefix_ + "roi_win_ctrl"]["roi_win_done"].read_value()) {
-         }
-     } else {
-         // RONI window mode doesn't behave as expected, so use lines to setup a proper RONI window
-         std::vector<bool> cols(device_width_, true);
-         std::vector<bool> rows(device_height_, true);
+        (*register_map_)[sensor_prefix_ + "roi_win_ctrl"]["roi_master_en"].write_value(1);
+        while (!(*register_map_)[sensor_prefix_ + "roi_win_ctrl"]["roi_win_done"].read_value()) {}
+    } else {
+        // RONI window mode doesn't behave as expected, so use lines to setup a proper RONI window
+        std::vector<bool> cols(device_width_, true);
+        std::vector<bool> rows(device_height_, true);
 
-         for (int i = window.x; i < window.x + window.width; ++i) {
-             cols[i] = false;
-         }
-         for (int i = window.y; i < window.y + window.height; ++i) {
-             rows[i] = false;
-         }
+        for (int i = window.x; i < window.x + window.width; ++i) {
+            cols[i] = false;
+        }
+        for (int i = window.y; i < window.y + window.height; ++i) {
+            rows[i] = false;
+        }
 
-         auto windows = lines_to_windows(cols, rows);
-         write_ROI(create_ROIs(windows));
-     }
+        auto windows = lines_to_windows(cols, rows);
+        write_ROI(create_ROIs(windows));
+    }
 
-     return true;
+    return true;
 }
 
 bool Gen41ROICommand::is_enabled() const {

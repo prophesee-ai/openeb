@@ -12,6 +12,22 @@
 import os
 from metavision_utils import shell_tools, os_tools, pytest_tools
 
+def load_cd_csv_contents_ignoring_header(input_cd_csv_path):
+    """Loads the contents of a CD CSV file, ignoring header lines starting with a '%' character"""
+    # Count number of header lines to skip
+    n_header_lines = 0
+    with open(input_cd_csv_path, 'r') as f:
+        while True:
+            line = f.readline()
+            if not line.startswith("%"):
+                break
+            n_header_lines += 1
+    # Now open the files, skip the headers and return the rest of their content
+    with open(input_cd_csv_path, 'r') as f:
+        for i in range(0,n_header_lines):
+            f.readline()
+        cd_csv_contents = f.read()
+    return cd_csv_contents
 
 def run_standalone_decoder_and_compare_to_hal_implementation(filename_full, format_event):
     """"Run standalone apps and compare its output with the app implemented with hal
@@ -42,11 +58,8 @@ def run_standalone_decoder_and_compare_to_hal_implementation(filename_full, form
     assert error_code == 0, "******\nError while executing cmd '{}':{}\n******".format(cmd, output)
     assert os.path.exists(hal_output_file)
 
-    # Now open the files and store their content :
-    with open(standalone_output_file, 'r') as f:
-        standalone_output = f.read()
-
-    with open(hal_output_file, 'r') as f:
-        hal_output = f.read()
+    # Now load the files contents, ignoring headers
+    standalone_output = load_cd_csv_contents_ignoring_header(standalone_output_file)
+    hal_output = load_cd_csv_contents_ignoring_header(hal_output_file)
 
     assert standalone_output == hal_output

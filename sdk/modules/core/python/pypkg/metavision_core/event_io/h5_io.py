@@ -146,7 +146,7 @@ class H5EventsReader(object):
 
 class HDF5EventsReader(object):
     """
-    Reads & Seeks into a hdf5 file of compressed event packets.
+    Reads & Seeks into an HDF5 file of compressed event packets.
 
     Args:
         src_name (str): input path

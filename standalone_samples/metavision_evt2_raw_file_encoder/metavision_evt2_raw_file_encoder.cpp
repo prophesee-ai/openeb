@@ -15,13 +15,16 @@
 #include <string>
 #include <sstream>
 #include <cstdint>
+#include <iomanip>
+#include <ctime>
+#include <chrono>
 
 namespace Metavision {
 namespace Evt2 {
 
 enum class EventTypes : uint8_t {
-    CD_LOW        = 0x00, // CD event, decrease in illumination (polarity '0')
-    CD_HIGH       = 0x01, // CD event, increase in illumination (polarity '1')
+    CD_OFF        = 0x00, // OFF CD event, decrease in illumination (polarity '0')
+    CD_ON         = 0x01, // ON CD event, increase in illumination (polarity '1')
     EVT_TIME_HIGH = 0x08, // Encodes the higher portion of the timebase (bits 33..6). Since it encodes the 28 higher
                           // bits over the 34 used to encode a timestamp, it has a resolution of 64us (= 2^(34-28)) and
                           // it can encode time values from 0us to 17179869183us (~ 4h46m20s). After
@@ -44,7 +47,7 @@ struct RawEventCD {
     unsigned int y : 11;        // Pixel Y coordinate
     unsigned int x : 11;        // Pixel X coordinate
     unsigned int timestamp : 6; // Least significant bits of the event timestamp (bits 5..0)
-    unsigned int type : 4;      // Event type: EventTypes::CD_LOW or EventTypes::CD_HIGH
+    unsigned int type : 4;      // Event type: EventTypes::CD_OFF or EventTypes::CD_ON
 };
 
 struct RawEventExtTrigger {
@@ -62,6 +65,7 @@ using Timestamp = uint64_t; // Type for timestamp, in microseconds
 
 /// @brief Class that reads CD events from a CSV file and encodes them in EVT2 format
 struct EventCDEncoder {
+public:
     /// @brief Column position in the sensor at which the event happened
     unsigned short x;
 
@@ -78,24 +82,29 @@ struct EventCDEncoder {
     /// @brief Timestamp at which the event happened (in us)
     Timestamp t;
 
+private:
+    /// @brief Vector used to parse CSV input lines
+    std::vector<std::string> tokens_;
+
+public:
     /// @brief Reads next line of CSV file
     /// @param ifs Stream to the input file to read
     bool read_next_line(std::ifstream &ifs) {
         std::string line;
         if (std::getline(ifs, line)) {
             std::istringstream iss(line);
-            std::vector<std::string> tokens;
+            tokens_.clear();
             std::string token;
             while (std::getline(iss, token, ',')) {
-                tokens.push_back(token);
+                tokens_.push_back(token);
             }
-            if (tokens.size() != 4) {
+            if (tokens_.size() != 4) {
                 std::cerr << "Invalid line for CD event: <" << line << ">" << std::endl;
             } else {
-                x = static_cast<unsigned short>(std::stoul(tokens[0]));
-                y = static_cast<unsigned short>(std::stoul(tokens[1]));
-                p = static_cast<short>(std::stoi(tokens[2]));
-                t = std::stoll(tokens[3]);
+                x = static_cast<unsigned short>(std::stoul(tokens_[0]));
+                y = static_cast<unsigned short>(std::stoul(tokens_[1]));
+                p = static_cast<short>(std::stoi(tokens_[2]));
+                t = std::stoll(tokens_[3]);
                 return true;
             }
         }
@@ -109,12 +118,13 @@ struct EventCDEncoder {
         raw_cd_event->x          = x;
         raw_cd_event->y          = y;
         raw_cd_event->timestamp  = t;
-        raw_cd_event->type = p ? static_cast<uint8_t>(EventTypes::CD_HIGH) : static_cast<uint8_t>(EventTypes::CD_LOW);
+        raw_cd_event->type = p ? static_cast<uint8_t>(EventTypes::CD_ON) : static_cast<uint8_t>(EventTypes::CD_OFF);
     }
 };
 
 /// @brief Class that reads Trigger events from a CSV file and encodes them in EVT2 format
 struct EventTriggerEncoder {
+public:
     /// Polarity representing the change of contrast (1: positive, 0: negative)
     short p;
 
@@ -124,23 +134,28 @@ struct EventTriggerEncoder {
     /// ID of the external trigger
     short id;
 
+private:
+    /// @brief Vector used to parse CSV input lines
+    std::vector<std::string> tokens_;
+
+public:
     /// @brief Reads next line of CSV file
     /// @param ifs Stream to the input file to read
     bool read_next_line(std::ifstream &ifs) {
         std::string line;
         if (std::getline(ifs, line)) {
             std::istringstream iss(line);
-            std::vector<std::string> tokens;
+            tokens_.clear();
             std::string token;
             while (std::getline(iss, token, ',')) {
-                tokens.push_back(token);
+                tokens_.push_back(token);
             }
-            if (tokens.size() != 3) {
+            if (tokens_.size() != 3) {
                 std::cerr << "Invalid line for Trigger event: <" << line << ">" << std::endl;
             } else {
-                p  = static_cast<short>(std::stoi(tokens[0]));
-                id = static_cast<short>(std::stoi(tokens[1]));
-                t  = std::stoll(tokens[2]);
+                p  = static_cast<short>(std::stoi(tokens_[0]));
+                id = static_cast<short>(std::stoi(tokens_[1]));
+                t  = std::stoll(tokens_[2]);
                 return true;
             }
         }
@@ -186,6 +201,46 @@ private:
 } // namespace Evt2
 } // namespace Metavision
 
+/// @brief Structure containing metadata describing the input file
+struct Metadata {
+    int sensor_width  = 1280,
+        sensor_height = 720; // Sensor width & height, by default assume PSEE Gen4 geometry (largest geometry)
+};
+
+bool read_cd_csv_header_line(std::ifstream &ifs, Metadata &metadata) {
+    std::string line;
+    if (std::getline(ifs, line)) {
+        std::istringstream iss(line);
+        std::string key, value;
+        std::vector<std::string> values;
+        iss.ignore(1); // ignore leading '%'
+        std::getline(iss, key, ':');
+        while (std::getline(iss, value, ',')) {
+            values.push_back(value);
+        }
+        if (key == "geometry") {
+            if (values.size() == 2) {
+                metadata.sensor_width  = std::stoi(values[0]);
+                metadata.sensor_height = std::stoi(values[1]);
+            } else {
+                std::cerr
+                    << "Ignoring invalid header line for key geometry, expected \"%geometry:<width>,<height>\", got: \""
+                    << line << "\"" << std::endl;
+            }
+        }
+    }
+    return ifs.good();
+}
+
+bool read_cd_csv_header(std::ifstream &ifs, Metadata &metadata) {
+    while (ifs.peek() == '%') {
+        if (!read_cd_csv_header_line(ifs, metadata)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 int main(int argc, char *argv[]) {
     // Check input arguments validity
     if (argc < 3) {
@@ -223,13 +278,22 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    // Check presence of header in input CD CSV file and if present, parse sensor geometry
+    Metadata metadata;
+    if (input_cd_file.peek() == '%') {
+        if (!read_cd_csv_header(input_cd_file, metadata)) {
+            std::cerr << "Error: error while reading csv header" << std::endl;
+            return 1;
+        }
+    }
+
     // Write header: we write the header corresponding to Prophesee EVK3 Gen41 device (largest geometry)
-    output_raw_file << "% Date 2020-09-04 13:14:05" << std::endl;
-    output_raw_file << "% evt 2.0" << std::endl;
-    output_raw_file << "% firmware_version 3.3.0" << std::endl;
+    const std::time_t tt      = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    const struct std::tm *ptm = std::localtime(&tt);
+    output_raw_file << "% date " << std::put_time(ptm, "%Y-%m-%d %H:%M:%S") << std::endl;
+    output_raw_file << "% format EVT2;width=" << metadata.sensor_width << ";height=" << metadata.sensor_height
+                    << std::endl;
     output_raw_file << "% integrator_name Prophesee" << std::endl;
-    output_raw_file << "% plugin_name hal_plugin_gen41_evk3" << std::endl;
-    output_raw_file << "% system_ID 48" << std::endl;
     output_raw_file << "% end" << std::endl;
 
     // Initialize encoders
@@ -241,6 +305,9 @@ int main(int argc, char *argv[]) {
         std::cerr << "Error: no events in input file(s)" << std::endl;
         return 1;
     }
+
+    // Start chrono
+    const auto tp_start = std::chrono::system_clock::now();
 
     // Create a buffer where to store the encoded data before writing them in the output file
     static constexpr size_t kSizeBuffer = 1000;
@@ -312,6 +379,11 @@ int main(int argc, char *argv[]) {
                               std::distance(raw_events.data(), raw_events_current_ptr) *
                                   sizeof(Metavision::Evt2::RawEvent));
     }
+
+    // Display processing time
+    const auto tp_end       = std::chrono::system_clock::now();
+    const double duration_s = std::chrono::duration_cast<std::chrono::microseconds>(tp_end - tp_start).count() / 1e6;
+    std::cout << "Encoded '" << argv[1] << "' in " << duration_s << " s" << std::endl;
 
     return 0;
 }

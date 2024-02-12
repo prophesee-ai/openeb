@@ -301,7 +301,7 @@ int main(int argc, char *argv[]) {
                 auto crop = tokenize(crop_region_coord, ",");
                 if (crop.size() < 4) {
                     throw std::runtime_error{
-                        "Failed to parse Crop Region coords (<startX>,<startY>,<endX>,<endY>[,<reset_orig>])"};
+                        "Failed to parse Crop Region coordinates (<startX>,<startY>,<endX>,<endY>[,<reset_orig>])"};
                 }
                 bool reset_orig = crop.size() == 5 ? crop[4] : false;
                 digital_crop->set_window_region({crop[0], crop[1], crop[2], crop[3]}, reset_orig);
@@ -363,7 +363,9 @@ int main(int argc, char *argv[]) {
             auto raw_data = i_eventsstream->get_latest_raw_data();
 
             // This will trigger callbacks set on decoders: in our case EventAnalyzer.process_events
-            i_eventsstreamdecoder->decode(raw_data->data(), raw_data->data() + raw_data->size());
+            if (raw_data) {
+                i_eventsstreamdecoder->decode(raw_data->data(), raw_data->data() + raw_data->size());
+            }
             /// [buffer]
         }
     });

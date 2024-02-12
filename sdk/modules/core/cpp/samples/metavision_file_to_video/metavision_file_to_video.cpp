@@ -33,7 +33,7 @@ void remove_file(const std::string &filepath) {
 }
 
 int main(int argc, char *argv[]) {
-    std::string in_file_path;
+    std::string in_event_file_path;
     std::string out_video_file_path;
 
     uint32_t accumulation_time;
@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
     // clang-format off
     options_desc.add_options()
         ("help,h", "Produce help message.")
-        ("input-file,i",     po::value<std::string>(&in_file_path)->required(), "Path to input file.")
+        ("input-event-file,i",   po::value<std::string>(&in_event_file_path)->required(), "Path to input event file (RAW or HDF5).")
         ("output-video-file,o",  po::value<std::string>(&out_video_file_path), "Path to output AVI file. If not provided, the base name of the input file will be used. The output video fps is fixed to 30.")
         ("accumulation-time,a",  po::value<uint32_t>(&accumulation_time)->default_value(10000), "Accumulation time (in us).")
         ("slow-motion-factor,s", po::value<double>(&slow_motion_factor)->default_value(1.), "Slow motion factor (or fast for value lower than 1) to apply to generate the video.")
@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
 
     // Use the input filename as the output video name, if the output video name is empty
     if (out_video_file_path.empty()) {
-        out_video_file_path = std::regex_replace(in_file_path, std::regex("\\.[^.]*$"), ".avi");
+        out_video_file_path = std::regex_replace(in_event_file_path, std::regex("\\.[^.]*$"), ".avi");
     }
 
     if (slow_motion_factor <= 0) {
@@ -94,7 +94,7 @@ int main(int argc, char *argv[]) {
     Metavision::Camera camera;
 
     try {
-        camera = Metavision::Camera::from_file(in_file_path, Metavision::FileConfigHints().real_time_playback(false));
+        camera = Metavision::Camera::from_file(in_event_file_path, Metavision::FileConfigHints().real_time_playback(false));
     } catch (Metavision::CameraException &e) {
         MV_LOG_ERROR() << e.what();
         return 1;

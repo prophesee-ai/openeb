@@ -16,7 +16,7 @@
 struct Parameters {
     // Input.
     std::string in_bias_file;
-    std::string in_raw_file;
+    std::string event_file_path;
 
     // Parameters for the exported files.
     std::string out_bias_file;

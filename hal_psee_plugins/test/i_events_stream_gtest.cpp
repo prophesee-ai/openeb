@@ -324,7 +324,7 @@ TEST_F_WITH_DATASET(I_EventsStream_GTest, valid_index_file) {
         EXPECT_EQ(ts_shifts[i], index_header.get_field("ts_shift_us"));
 
         index_file.clear();
-        index_file.seekg(-magic_number.size(), std::ios::end);
+        index_file.seekg(-static_cast<int>(magic_number.size()), std::ios::end);
         std::array<char, magic_number.size()> buf;
         ASSERT_TRUE(index_file.read(buf.data(), magic_number.size()));
         for (size_t i = 0; i < magic_number.size(); ++i) {
@@ -733,9 +733,9 @@ TEST_F_WITH_DATASET(I_EventsStream_GTest, decode_evt3_nevents_monotonous_timesta
                 previous_ts_last = current_ts_last;
             }
 
-            cur_raw_ptr          = raw_buffer_decode_to;
-            raw_buffer_decode_to = std::min(cur_raw_ptr + raw_data_to_decode_count,
-                                            raw_buffer->data() + raw_buffer->size());
+            cur_raw_ptr = raw_buffer_decode_to;
+            raw_buffer_decode_to =
+                std::min(cur_raw_ptr + raw_data_to_decode_count, raw_buffer->data() + raw_buffer->size());
         }
     }
 }
