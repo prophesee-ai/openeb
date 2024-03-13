@@ -60,10 +60,16 @@ add_dependencies(gtest_metavision_sdk_driver hal_dummy_test_plugin)
 # current binary dir).
 target_compile_definitions(gtest_metavision_sdk_driver PRIVATE HAL_DUMMY_TEST_PLUGIN="${CMAKE_CURRENT_BINARY_DIR}/../../../../../hal/cpp/test/plugins")
 
-find_package(Protobuf)
-if (Protobuf_FOUND)
-    target_compile_definitions(gtest_metavision_sdk_driver PRIVATE HAS_PROTOBUF)
-endif()
+if(USE_PROTOBUF)
+    find_package(Protobuf CONFIG QUIET)
+    if (NOT Protobuf_FOUND)
+        find_package(Protobuf)
+    endif(NOT Protobuf_FOUND)
+
+    if (Protobuf_FOUND)
+      target_compile_definitions(gtest_metavision_sdk_driver PRIVATE HAS_PROTOBUF)
+    endif()
+endif(USE_PROTOBUF)
 
 target_include_directories(gtest_metavision_sdk_driver PRIVATE
     ${PROJECT_SOURCE_DIR}/sdk/modules/driver/cpp/src/include
