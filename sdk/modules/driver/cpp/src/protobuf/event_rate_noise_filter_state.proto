@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-package DeviceSerialization;
-
-message EventRateNoiseFilterState {
-    oneof optional_enabled { bool enabled = 1; }
-    oneof optional_event_rate_threshold { uint32 event_rate_threshold = 2; }
-}

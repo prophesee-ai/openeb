@@ -71,14 +71,15 @@ static HALGenericPythonBinder bind([](auto &module) {
             .def_static(
                 "open", &open_with_config_wrapper, py::return_value_policy::take_ownership, py::arg("serial"),
                 py::arg("config"),
-                pybind_doc_hal["Metavision::DeviceDiscovery::open(const std::string &serial, DeviceConfig &config)"])
+                pybind_doc_hal
+                    ["Metavision::DeviceDiscovery::open(const std::string &serial, const DeviceConfig &config)"])
             .def_static("open_raw_file", &open_raw_file_with_only_filename, py::return_value_policy::take_ownership,
                         py::arg("raw_file"),
                         pybind_doc_hal["Metavision::DeviceDiscovery::open_raw_file(const std::string &raw_file)"])
             .def_static("open_raw_file", &open_raw_file_with_config_wrapper, py::return_value_policy::take_ownership,
                         py::arg("raw_file"), py::arg("file_config"),
                         pybind_doc_hal["Metavision::DeviceDiscovery::open_raw_file(const std::string &raw_file, "
-                                       "RawFileConfig &file_config)"])
+                                       "const RawFileConfig &file_config)"])
             .def_static(
                 "list",
                 +[]() {

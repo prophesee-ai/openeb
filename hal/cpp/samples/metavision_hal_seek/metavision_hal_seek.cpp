@@ -164,7 +164,7 @@ int main(int argc, char **argv) {
             Metavision::timestamp ts_reached;
             const auto status = i_eventsstream->seek(seek_ts, ts_reached);
             if (status == Metavision::I_EventsStream::SeekStatus::Success) {
-                i_eventsstreamdecoder->reset_timestamp(ts_reached);
+                i_eventsstreamdecoder->reset_last_timestamp(ts_reached);
                 while (i_eventsstream->wait_next_buffer() > 0) {
                     auto buffer = i_eventsstream->get_latest_raw_data();
                     i_eventsstreamdecoder->decode(buffer->data(), buffer->data() + buffer->size());

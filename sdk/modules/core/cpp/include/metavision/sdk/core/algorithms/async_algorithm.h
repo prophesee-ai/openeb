@@ -166,7 +166,7 @@ private:
 
     /// @brief Function to process directly the events
     template<typename InputIt>
-    inline void process_online(InputIt it_begin, InputIt it_end) {}
+    inline void process_online([[maybe_unused]] InputIt it_begin, [[maybe_unused]] InputIt it_end) {}
 
     /// @brief Function called when the input processing mode condition is met (see @ref Processing).
     /// @param processing_ts The event's timestamp for which the processing condition was met.
@@ -175,12 +175,13 @@ private:
     /// @warning This method can be called while no events have been processed since the last call. This happens when
     /// @ref process_events is called with a buffer of events so recent that it triggers past asynchronous conditions.
     /// It is left to the inherited class to decide whether to process the asynchronous operation or not.
-    void process_async(const timestamp processing_ts, const size_t n_processed_events) {}
+    void process_async([[maybe_unused]] const timestamp processing_ts,
+                       [[maybe_unused]] const size_t n_processed_events) {}
 
     /// @brief Called when the internal states are initialized
     /// @param processing_ts The timestamp of the last async call if the algorithm was
     /// already initialized.
-    void on_init(const timestamp processing_ts) {}
+    void on_init([[maybe_unused]] const timestamp processing_ts) {}
 
     /// @brief Function to get the end iterator for the next processing
     /// @param it_begin Iterator to the next event to process

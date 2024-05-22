@@ -56,11 +56,21 @@ enum class ColorType { Background, Positive, Negative, Auxiliary };
 /// @return The color associated to the given palette and type
 inline const RGBColor &get_color(const ColorPalette &palette, const ColorType &type);
 
+/// @brief Gets a color type name
+/// @param type The color type to get the name of
+/// @return The name associated to the color type
+inline const std::string &colorTypeToName(const ColorType &type);
+
 /// @brief Gets a color given a palette and the color name
 /// @param palette The requested color palette
 /// @param name The requested color name
 /// @return The color associated to the given palette and name
 inline const RGBColor &get_color(const ColorPalette &palette, const std::string &name);
+
+/// @brief Gets the colors of given a palette
+/// @param palette The requested color palette
+/// @return A map of colors associated to the given palette
+inline const std::unordered_map<std::string, RGBColor> &get_colors(const ColorPalette &palette);
 
 /// @brief Converts a RGBColor into a 8-bit BGR color in OpenCV format
 /// @param c A color in RBG colorspace

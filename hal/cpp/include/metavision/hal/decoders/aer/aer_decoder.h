@@ -88,7 +88,7 @@ private:
         }
     }
 
-    bool reset_timestamp_impl(const timestamp &t) override {
+    bool reset_last_timestamp_impl(const timestamp &t) override {
         return false;
     }
 

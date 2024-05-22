@@ -10,6 +10,9 @@
 # Add bindings
 add_subdirectory(bindings)
 
+# Samples
+add_subdirectory(samples)
+
 # Tests
 add_subdirectory(tests)
 
@@ -19,4 +22,5 @@ if (GENERATE_DOC_PYTHON_BINDINGS)
 endif(GENERATE_DOC_PYTHON_BINDINGS)
 
 # Cpack
+add_cpack_component(PUBLIC metavision-hal-python-samples)
 add_python_cpack_components(PUBLIC metavision-hal)

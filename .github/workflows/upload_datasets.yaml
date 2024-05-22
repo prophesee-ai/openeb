@@ -6,7 +6,9 @@ on:
     - cron: "15 2 1 */2 *"
 
 env:
-  dataset_download_address: "https://dataset.prophesee.ai/index.php/s/tiP0wl0r5aW5efL/download"
+  # we are not using an official share URL from KDrive. We found it by analyzing the http requests.
+  # we hope it will continue to work in the future.
+  dataset_download_address: "https://kdrive.infomaniak.com/2/app/975517/share/90b05176-4499-489d-a7a9-96b395df80ab/files/24562/download"
 
 jobs:
   get_artifacts:

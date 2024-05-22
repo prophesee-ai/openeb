@@ -21,4 +21,7 @@ if (GENERATE_DOC)
      add_subdirectory(doc)
 endif (GENERATE_DOC)
 
-add_subdirectory(samples)
+# Samples
+if (BUILD_SAMPLES)
+    add_subdirectory(samples)
+endif (BUILD_SAMPLES)

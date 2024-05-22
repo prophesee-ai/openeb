@@ -13,16 +13,10 @@ target_sources(metavision_psee_hw_layer_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/gen31_roi_command.cpp
 )
 
-target_sources(metavision_hal_gen31_camera_obj PRIVATE
+target_sources(metavision_hal_psee_plugin_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/gen31_pattern_generator_checker.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gen31_pattern_generator.cpp
-)
-
-target_sources(metavision_hal_gen31_evk2_system_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/gen31_evk2_tz_device.cpp
-)
-
-target_sources(metavision_hal_gen31_evk3_system_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/gen31_ccam5_tz_device.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gen31_ccam5_trigger_event.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gen31_ccam5_trigger_out.cpp

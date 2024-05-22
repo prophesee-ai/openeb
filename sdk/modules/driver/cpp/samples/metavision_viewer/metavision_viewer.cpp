@@ -9,7 +9,8 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-// Example of using Metavision SDK Driver API for visualizing events stream.
+// Example of using Metavision SDK Driver API for visualizing events stream, setting ROI and ERC as well as
+// saving and loading the camera settings to and from camera settings files
 
 #include <atomic>
 #include <chrono>

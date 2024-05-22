@@ -44,4 +44,5 @@ target_sources(metavision_device_serialization_obj PRIVATE
 )
 target_include_directories(metavision_device_serialization_obj PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
 )

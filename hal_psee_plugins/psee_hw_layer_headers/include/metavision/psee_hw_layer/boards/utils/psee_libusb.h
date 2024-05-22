@@ -25,13 +25,20 @@ namespace Metavision {
 /// LibUSB error category
 class LibUsbError : public std::error_category {
 public:
+    LibUsbError() {}
+
+    LibUsbError(const LibUsbError &) = delete;
+
     virtual const char *name() const noexcept {
         return "LibUSB";
     }
     virtual std::string message(int err) const {
-        return libusb_error_name(err);
+        return std::string("LibUSB connection error: ") + libusb_error_name(err);
     }
 };
+
+// Returns unique libusb error
+const std::error_category &libusb_error_category();
 
 /* Hereafter follows a partial encapsulation of libusb in C++
  * The goal is to manage with smartpointers the objects that live as long as the camera, and keep the bare libusb

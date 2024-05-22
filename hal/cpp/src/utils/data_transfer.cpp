@@ -9,6 +9,7 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
+#include "metavision/hal/utils/hal_connection_exception.h"
 #include "metavision/hal/utils/hal_exception.h"
 #include "metavision/hal/utils/data_transfer.h"
 
@@ -57,28 +58,34 @@ void DataTransfer::start() {
             cb.second(Status::Started);
         }
 
-        while (!stop_) {
-            {
-                std::unique_lock<std::mutex> lock(suspend_mutex_);
-                suspend_ = false;
-            }
-            {
-                std::unique_lock<std::mutex> lock(running_mutex_);
-                running_ = true;
-            }
-            run_impl();
-
-            if (!suspend_) {
-                break;
-            } else {
+        try {
+            while (!stop_) {
+                {
+                    std::unique_lock<std::mutex> lock(suspend_mutex_);
+                    suspend_ = false;
+                }
                 {
                     std::unique_lock<std::mutex> lock(running_mutex_);
-                    running_ = false;
+                    running_ = true;
                 }
-                running_cond_.notify_all();
+                run_impl();
 
-                std::unique_lock<std::mutex> lock(suspend_mutex_);
-                suspend_cond_.wait(lock, [this] { return !suspend_ || stop_; });
+                if (!suspend_) {
+                    break;
+                } else {
+                    {
+                        std::unique_lock<std::mutex> lock(running_mutex_);
+                        running_ = false;
+                    }
+                    running_cond_.notify_all();
+
+                    std::unique_lock<std::mutex> lock(suspend_mutex_);
+                    suspend_cond_.wait(lock, [this] { return !suspend_ || stop_; });
+                }
+            }
+        } catch (std::exception &e) {
+            for (auto cb : transfer_error_cbs_) {
+                cb.second(std::current_exception());
             }
         }
 
@@ -149,9 +156,17 @@ size_t DataTransfer::add_new_buffer_callback(NewBufferCallback_t cb) {
     return ret;
 }
 
+size_t DataTransfer::add_transfer_error_callback(TransferErrorCallback_t cb) {
+    transfer_error_cbs_[cb_index_] = cb;
+    auto ret                         = cb_index_;
+    ++cb_index_;
+    return ret;
+}
+
 void DataTransfer::remove_callback(size_t cb_id) {
     status_change_cbs_.erase(cb_id);
     new_buffer_cbs_.erase(cb_id);
+    transfer_error_cbs_.erase(cb_id);
 }
 
 uint32_t DataTransfer::get_raw_event_size_bytes() const {

@@ -12,30 +12,32 @@ function(_add_global_alias_library lib alias_lib)
     string(REGEX REPLACE ";" "\\\\;" _CMAKE_PROPERTY_LIST "${_CMAKE_PROPERTY_LIST}")
     string(REGEX REPLACE "\n" ";" _CMAKE_PROPERTY_LIST "${_CMAKE_PROPERTY_LIST}")
     list(REMOVE_DUPLICATES _CMAKE_PROPERTY_LIST)
-    add_library(${alias_lib} SHARED IMPORTED GLOBAL)
-    foreach (_prop ${_CMAKE_PROPERTY_LIST})
-        if (NOT "${_prop}" MATCHES "^(NAME|TYPE)$")
-            set(_props "")
-            if ("${_prop}" MATCHES "<CONFIG>")
-                foreach (_build_type DEBUG RELEASE MINSIZEREL RELWITHDEBINFO)
-                    string(REPLACE "<CONFIG>" "${_build_type}" _prop_tmp "${_prop}")
-                    list(APPEND _props "${_prop_tmp}")
-                endforeach()
-            else()
-                set(_props "${_prop}")
-            endif()
-            foreach (_prop IN LISTS _props)
-                get_target_property(_propval ${lib} "${_prop}")
-                if (_propval)
-                    set_target_properties(${alias_lib} PROPERTIES "${_prop}" "${_propval}")
+    if (NOT TARGET ${alias_lib})
+        add_library(${alias_lib} SHARED IMPORTED GLOBAL)
+        foreach (_prop ${_CMAKE_PROPERTY_LIST})
+            if (NOT "${_prop}" MATCHES "^(NAME|TYPE)$")
+                set(_props "")
+                if ("${_prop}" MATCHES "<CONFIG>")
+                    foreach (_build_type DEBUG RELEASE MINSIZEREL RELWITHDEBINFO)
+                        string(REPLACE "<CONFIG>" "${_build_type}" _prop_tmp "${_prop}")
+                        list(APPEND _props "${_prop_tmp}")
+                    endforeach()
+                else()
+                    set(_props "${_prop}")
                 endif()
-            endforeach()
-        endif()
-    endforeach()
-    if (MSVC)
-        # workaround for a bug in Python on Windows, where the debug lib links to the relase lib file with a relative path
-        set_property(TARGET ${alias_lib} APPEND PROPERTY INTERFACE_LINK_DIRECTORIES "$<$<CONFIG:Debug>:$<TARGET_LINKER_FILE_DIR:${alias_lib}>>")
-    endif ()
+                foreach (_prop IN LISTS _props)
+                    get_target_property(_propval ${lib} "${_prop}")
+                    if (_propval)
+                        set_target_properties(${alias_lib} PROPERTIES "${_prop}" "${_propval}")
+                    endif()
+                endforeach()
+            endif()
+        endforeach()
+        if (MSVC)
+            # workaround for a bug in Python on Windows, where the debug lib links to the relase lib file with a relative path
+            set_property(TARGET ${alias_lib} APPEND PROPERTY INTERFACE_LINK_DIRECTORIES "$<$<CONFIG:Debug>:$<TARGET_LINKER_FILE_DIR:${alias_lib}>>")
+        endif ()
+    endif()
 endfunction()
 
 set(_SAVE_CMAKE_FIND_USE_CMAKE_PATH ${CMAKE_FIND_USE_CMAKE_PATH})
@@ -55,7 +57,7 @@ if (COMPILE_PYTHON3_BINDINGS)
         ")
         foreach(_python_version ${PYBIND11_PYTHON_VERSIONS})
             # FindPython3.cmake stores internal variables relative to the directory in which it is called
-            # If we want to call it multiple times for different python versions, it must be called from 
+            # If we want to call it multiple times for different python versions, it must be called from
             # different folders (see https://gitlab.kitware.com/cmake/cmake/-/issues/21797)
             add_subdirectory(${GENERATE_FILES_DIRECTORY}/python3 ${CMAKE_BINARY_DIR}/cmake/python3/${_python_version})
         endforeach()
@@ -68,8 +70,8 @@ if (COMPILE_PYTHON3_BINDINGS)
     endif()
     foreach (_python_version ${PYBIND11_PYTHON_VERSIONS})
         # this is the extension we need to set for the python bindings module
-        execute_process(            
-            COMMAND "${PYTHON_${_python_version}_EXECUTABLE}" "-c" 
+        execute_process(
+            COMMAND "${PYTHON_${_python_version}_EXECUTABLE}" "-c"
                     "from distutils import sysconfig as s; print(s.get_config_var('EXT_SUFFIX') or s.get_config_var('SO'));"
             OUTPUT_VARIABLE PYTHON_${_python_version}_MODULE_EXTENSION
             OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -82,12 +84,12 @@ if (COMPILE_PYTHON3_BINDINGS)
             # 1-a path that does not contain 'local'
             # 2-a path that contains 'dist-packages'
             # 3-a path that contains 'site-packages'
-            COMMAND "${PYTHON_${_python_version}_EXECUTABLE}" "-c" 
+            COMMAND "${PYTHON_${_python_version}_EXECUTABLE}" "-c"
                     "import site; print(sorted(site.getsitepackages(), key=lambda path: ('local' not in path)*100.0 + ('dist-packages' in path)*10.0 + ('site-packages' in path)*1.0, reverse=True)[0])"
             OUTPUT_VARIABLE PYTHON_${_python_version}_SYSTEM_SITE_PACKAGES
             OUTPUT_STRIP_TRAILING_WHITESPACE
         )
-        file(TO_CMAKE_PATH "${PYTHON_${_python_version}_SYSTEM_SITE_PACKAGES}" PYTHON_${_python_version}_SYSTEM_SITE_PACKAGES) 
+        file(TO_CMAKE_PATH "${PYTHON_${_python_version}_SYSTEM_SITE_PACKAGES}" PYTHON_${_python_version}_SYSTEM_SITE_PACKAGES)
         # ... it must be relative
         string(REGEX REPLACE "^${STAGING_DIR_NATIVE}/usr/" "" PYTHON_${_python_version}_SYSTEM_SITE_PACKAGES "${PYTHON_${_python_version}_SYSTEM_SITE_PACKAGES}")
 
@@ -95,7 +97,7 @@ if (COMPILE_PYTHON3_BINDINGS)
         if (PYTHON3_SITE_PACKAGES)
             # If a PYTHON3_SITE_PACKAGES variable was provided use it
             set(PYTHON_${_python_version}_LOCAL_SITE_PACKAGES ${PYTHON3_SITE_PACKAGES})
-            file(TO_CMAKE_PATH "${PYTHON_${_python_version}_LOCAL_SITE_PACKAGES}" PYTHON_${_python_version}_LOCAL_SITE_PACKAGES) 
+            file(TO_CMAKE_PATH "${PYTHON_${_python_version}_LOCAL_SITE_PACKAGES}" PYTHON_${_python_version}_LOCAL_SITE_PACKAGES)
         else (PYTHON3_SITE_PACKAGES)
             # Otherwise, if no module path is provided, find a proper path to install our modules
             # note : we do not use the PYTHON_SITE_PACKAGES found by pybind11, as it is wrong
@@ -105,12 +107,12 @@ if (COMPILE_PYTHON3_BINDINGS)
                 # 1-the cmake install prefix
                 # 2-a path that contains 'dist-packages'
                 # 3-a path that contains 'site-packages'
-                COMMAND "${PYTHON_${_python_version}_EXECUTABLE}" "-c" 
+                COMMAND "${PYTHON_${_python_version}_EXECUTABLE}" "-c"
                         "import site; print(sorted(site.getsitepackages(), key=lambda path: path.startswith('${CMAKE_INSTALL_PREFIX}')*100.0 + ('dist-packages' in path)*10.0 + ('site-packages' in path)*1.0, reverse=True)[0])"
                 OUTPUT_VARIABLE PYTHON_${_python_version}_LOCAL_SITE_PACKAGES
                 OUTPUT_STRIP_TRAILING_WHITESPACE
             )
-            file(TO_CMAKE_PATH "${PYTHON_${_python_version}_LOCAL_SITE_PACKAGES}" PYTHON_${_python_version}_LOCAL_SITE_PACKAGES) 
+            file(TO_CMAKE_PATH "${PYTHON_${_python_version}_LOCAL_SITE_PACKAGES}" PYTHON_${_python_version}_LOCAL_SITE_PACKAGES)
             # ... it must be relative
             string(REGEX REPLACE "^${STAGING_DIR_NATIVE}/usr/" "" PYTHON_${_python_version}_LOCAL_SITE_PACKAGES "${PYTHON_${_python_version}_LOCAL_SITE_PACKAGES}")
         endif (PYTHON3_SITE_PACKAGES)
@@ -243,11 +245,11 @@ if (COMPILE_PYTHON3_BINDINGS)
         if(NOT DEFINED CMAKE_CXX_VISIBILITY_PRESET)
             set_target_properties(${target_name} PROPERTIES CXX_VISIBILITY_PRESET "hidden")
         endif()
-    
+
         if(NOT DEFINED CMAKE_CUDA_VISIBILITY_PRESET)
             set_target_properties(${target_name} PROPERTIES CUDA_VISIBILITY_PRESET "hidden")
         endif()
-    
+
         # If we don't pass a WITH_SOABI or WITHOUT_SOABI, use our own default handling of extensions
         if(NOT ARG_WITHOUT_SOABI OR NOT "WITH_SOABI" IN_LIST ARG_UNPARSED_ARGUMENTS)
             set_target_properties(${target_name} PROPERTIES PREFIX "" SUFFIX "${PYTHON_${python_version}_MODULE_EXTENSION}")
@@ -256,7 +258,7 @@ if (COMPILE_PYTHON3_BINDINGS)
         if(ARG_NO_EXTRAS)
             return()
         endif()
-        
+
         if(NOT DEFINED CMAKE_INTERPROCEDURAL_OPTIMIZATION)
             if(ARG_THIN_LTO)
                 target_link_libraries(${target_name} PRIVATE pybind11::thin_lto)
@@ -264,22 +266,22 @@ if (COMPILE_PYTHON3_BINDINGS)
                 target_link_libraries(${target_name} PRIVATE pybind11::lto)
             endif()
         endif()
-        
+
         if(NOT MSVC AND NOT ${CMAKE_BUILD_TYPE} MATCHES Debug|RelWithDebInfo)
             # Strip unnecessary sections of the binary on Linux/macOS
             pybind11_strip(${target_name})
         endif()
-        
+
         if(MSVC)
             target_link_libraries(${target_name} PRIVATE pybind11::windows_extras)
         endif()
-        
+
         if(ARG_OPT_SIZE)
             target_link_libraries(${target_name} PRIVATE pybind11::opt_size)
         endif()
 
-        set_target_properties(${target_name} 
-            PROPERTIES 
+        set_target_properties(${target_name}
+            PROPERTIES
                 OUTPUT_NAME "${output_name}"
                 ARCHIVE_OUTPUT_NAME "${target_name}"
                 PDB_NAME "${target_name}"
@@ -395,7 +397,7 @@ if (COMPILE_PYTHON3_BINDINGS)
             if (ARG_SYSTEM OR NOT ARG_LOCAL)
                 install(
                     DIRECTORY "${directory}"
-                    DESTINATION "${PYTHON_${_python_version}_SYSTEM_SITE_PACKAGES}" 
+                    DESTINATION "${PYTHON_${_python_version}_SYSTEM_SITE_PACKAGES}"
                     COMPONENT "${component}" EXCLUDE_FROM_ALL
                     ${_excluded_patterns}
                 )
@@ -404,7 +406,7 @@ if (COMPILE_PYTHON3_BINDINGS)
             if (ARG_LOCAL OR NOT ARG_SYSTEM)
                 install(
                     DIRECTORY "${directory}"
-                    DESTINATION "${PYTHON_${_python_version}_LOCAL_SITE_PACKAGES}" 
+                    DESTINATION "${PYTHON_${_python_version}_LOCAL_SITE_PACKAGES}"
                     COMPONENT "${component}-local-install"
                     ${_excluded_patterns}
                 )
@@ -437,7 +439,7 @@ if (COMPILE_PYTHON3_BINDINGS)
     #      )
     #
     #
-    #  Given a list of components, add the corresponding python versions of the components according to the value of the 
+    #  Given a list of components, add the corresponding python versions of the components according to the value of the
     #  PYBIND11_PYTHON_VERSIONS variable to the list of debian packages to generate. Both PRIVATE and PUBLIC components will be
     #  created when doing "cpack -G DEB", while only the PUBLIC component will be created when building target
     #  "public_deb_packages"
@@ -502,7 +504,7 @@ if (COMPILE_PYTHON3_BINDINGS)
     #     get_pybind_pythonpath(PYBIND_PATH)
     #     # Add ${PYBIND_PATH} to PYTHONPATH
     #
-    function(get_pybind_pythonpath output_var) 
+    function(get_pybind_pythonpath output_var)
         if(WIN32)
             set(pythonpath_value "${PYTHON3_OUTPUT_DIR}/$<CONFIG>")
         else()

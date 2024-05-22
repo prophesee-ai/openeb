@@ -14,6 +14,7 @@
 
 #include <limits>
 #include <ostream>
+#include <cstdint>
 
 #include "metavision/sdk/base/utils/timestamp.h"
 #include "metavision/sdk/base/utils/detail/struct_pack.h"

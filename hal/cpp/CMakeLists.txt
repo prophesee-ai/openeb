@@ -41,7 +41,9 @@ add_subdirectory(lib)
 add_subdirectory(src)
 
 # Samples
-add_subdirectory(samples)
+if (BUILD_SAMPLES)
+    add_subdirectory(samples)
+endif (BUILD_SAMPLES)
 
 # Tests
 if (BUILD_TESTING)

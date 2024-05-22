@@ -9,7 +9,6 @@
 
 from .dat_tools import load_events, count_events, DatWriter  # pylint:disable-all
 from .py_reader import EventDatReader, EventNpyReader
-from .h5_io import H5EventsWriter, H5EventsReader
 from .raw_reader import RawReader
 from .events_iterator import EventsIterator
 from .event_frame_iterator import EventFrameIterator

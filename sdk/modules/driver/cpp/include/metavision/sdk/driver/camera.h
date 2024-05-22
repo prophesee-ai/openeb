@@ -193,7 +193,7 @@ public:
     /// @throw CameraException in case of initialization failure.
     /// @param config Configuration used to open the camera
     /// @overload
-    static Camera from_first_available(DeviceConfig &config);
+    static Camera from_first_available(const DeviceConfig &config);
 
     /// @brief Initializes a camera instance from an @ref OnlineSourceType and a source index
     ///
@@ -224,7 +224,8 @@ public:
     /// @param source_index Index of the source in the list of available online sources
     /// @return @ref Camera instance initialized from the source
     /// @overload
-    static Camera from_source(OnlineSourceType input_source_type, DeviceConfig &config, uint32_t source_index = 0);
+    static Camera from_source(OnlineSourceType input_source_type, const DeviceConfig &config,
+                              uint32_t source_index = 0);
 
     /// @brief Initializes a camera instance from a 'serial' number
     ///
@@ -243,7 +244,7 @@ public:
     /// @param config Configuration used to open the camera
     /// @return @ref Camera instance initialized from the serial number
     /// @overload
-    static Camera from_serial(const std::string &serial, DeviceConfig &config);
+    static Camera from_serial(const std::string &serial, const DeviceConfig &config);
 
     /// @brief Initializes a camera instance from a file
     /// @throw CameraException in case of initialization failure.

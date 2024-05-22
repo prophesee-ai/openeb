@@ -14,6 +14,6 @@ target_sources(metavision_psee_hw_layer_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/event_trail_filter.cpp
 )
 
-target_sources(metavision_hal_psee_video_obj PRIVATE
+target_sources(metavision_hal_psee_plugin_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/evk2_system_control.cpp
 )

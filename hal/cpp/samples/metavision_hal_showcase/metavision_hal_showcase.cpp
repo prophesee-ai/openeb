@@ -38,9 +38,9 @@
 #include <metavision/hal/facilities/i_plugin_software_info.h>
 #include <metavision/hal/facilities/i_trigger_in.h>
 #include <metavision/hal/facilities/i_trigger_out.h>
-#include <metavision/hal/utils/hal_exception.h>
 #include <metavision/sdk/base/events/event_cd.h>
 #include <metavision/sdk/base/events/event_ext_trigger.h>
+#include <metavision/sdk/base/utils/error_utils.h>
 
 class EventAnalyzer {
 public:
@@ -135,7 +135,9 @@ int main(int argc, char *argv[]) {
         } else {
             device = Metavision::DeviceDiscovery::open_raw_file(in_raw_file_path);
         }
-    } catch (Metavision::HalException &e) { std::cout << "Error exception: " << e.what() << std::endl; }
+    } catch (Metavision::BaseException &e) {
+        std::cerr << "Error exception: " << e.what() << std::endl;
+    }
 
     if (!device) {
         std::cerr << "Camera opening failed." << std::endl;
@@ -310,7 +312,7 @@ int main(int argc, char *argv[]) {
                           << crop[3] << "} (reset origin : " << reset_orig << ")\n";
             } catch (std::exception &e) {
                 std::cerr << "Failed to activate Digital Crop :";
-                std::cerr << e.what() << "\n";
+                std::cerr << e.what() << std::endl;
             }
         }
     }

@@ -164,7 +164,7 @@ private:
     /// @warning If time shifting is enabled, the @p timestamp must be in the shifted time reference
     /// @warning After this function has been called with @p timestamp >= 0, it is assumed that the next buffers of
     ///          raw data to decode contain events with timestamps >= @p timestamp
-    bool reset_timestamp_impl(const timestamp &t) override {
+    bool reset_last_timestamp_impl(const timestamp &t) override {
         if (is_time_shifting_enabled() && !time_shifting_set_) {
             return false;
         }

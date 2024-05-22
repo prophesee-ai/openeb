@@ -13,20 +13,11 @@ target_sources(metavision_psee_hw_layer_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/tz_regmap_device.cpp
 )
 
-target_sources(metavision_hal_treuzell_protocol_obj PRIVATE
+target_sources(metavision_hal_psee_plugin_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/tz_device_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/tz_streamer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/tz_issd_device.cpp
-)
-
-target_sources(metavision_hal_treuzell_unknown_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/tz_unknown.cpp
-)
-
-target_sources(metavision_hal_ti_tmp103_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/ti_tmp103.cpp
-)
-
-target_sources(metavision_hal_psee_lab_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/psee_sensor.cpp
 )

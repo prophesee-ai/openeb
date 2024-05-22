@@ -18,8 +18,10 @@ add_subdirectory(lib)
 # Add sources to the library
 add_subdirectory(src)
 
-# Apps and samples
-add_subdirectory(samples)
+# Samples
+if (BUILD_SAMPLES)
+    add_subdirectory(samples)
+endif (BUILD_SAMPLES)
 
 # Documentations
 if (GENERATE_DOC)

@@ -7,7 +7,7 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-target_sources(metavision_hal_fx3_protocol_obj PRIVATE
+target_sources(metavision_hal_psee_plugin_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/utils_fx3_ram_flash.cpp
 )
 

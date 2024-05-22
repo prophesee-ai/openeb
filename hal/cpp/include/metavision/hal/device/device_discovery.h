@@ -118,7 +118,7 @@ public:
     /// opened
     /// @param config Configuration used to build the camera
     /// @return A new Device
-    static std::unique_ptr<Device> open(const std::string &serial, DeviceConfig &config);
+    static std::unique_ptr<Device> open(const std::string &serial, const DeviceConfig &config);
 
     /// @brief Builds a new Device from file
     /// @param raw_file Path to the file to open
@@ -129,14 +129,15 @@ public:
     /// @param raw_file Path to the file to open
     /// @param file_config Configuration describing how to read the file (see @ref RawFileConfig)
     /// @return A new Device
-    static std::unique_ptr<Device> open_raw_file(const std::string &raw_file, RawFileConfig &file_config);
+    static std::unique_ptr<Device> open_raw_file(const std::string &raw_file, const RawFileConfig &file_config);
 
     /// @brief Builds a new Device from a standard input stream
     /// @param stream The input stream to read from. The device takes ownership of the input stream to ensure its
     /// validity during the lifetime of the device object.
     /// @param stream_config Configuration describing how to read the stream (see @ref RawFileConfig)
     /// @return A new Device
-    static std::unique_ptr<Device> open_stream(std::unique_ptr<std::istream> stream, RawFileConfig &stream_config);
+    static std::unique_ptr<Device> open_stream(std::unique_ptr<std::istream> stream,
+                                               const RawFileConfig &stream_config);
 
     /// @brief Unloads all the plugins that have been loaded when listing all available sources
     /// @warning This function should not be called if there is still a device that is being used

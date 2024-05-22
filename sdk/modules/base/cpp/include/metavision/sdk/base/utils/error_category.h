@@ -17,7 +17,9 @@
 
 namespace Metavision {
 
-struct ErrorCategory : public std::error_category {
+struct [[deprecated("'ErrorCategory' struct is deprecated since v4.6.0 and will be removed in future releases, "
+                    "please use derive exceptions from 'BaseException' and provide adapted singleton error category"
+                    " instead.")]] ErrorCategory : public std::error_category {
     ErrorCategory()                      = delete;
     ErrorCategory(const ErrorCategory &) = delete;
     ErrorCategory(int error_code, const std::string &name = "", const std::string &message = "");

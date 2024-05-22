@@ -74,7 +74,7 @@ if (NOT DEFINED METAVISION_ANDROID_ENV_INCLUDED)
 endif (NOT DEFINED METAVISION_ANDROID_ENV_INCLUDED)
 
 if (NOT DEFINED ANDROID_PREBUILT_3RDPARTY_DIR)
-  set(ANDROID_PREBUILT_3RDPARTY_DIR ${CMAKE_CURRENT_LIST_DIR}/../../../../../)
+  set(ANDROID_PREBUILT_3RDPARTY_DIR ${GENERATE_FILES_DIRECTORY}/android/3rdparty/prebuilt)
 endif (NOT DEFINED ANDROID_PREBUILT_3RDPARTY_DIR)
 
 # libusb has no config module, we need to create imported targets by hand
@@ -88,7 +88,6 @@ if (NOT TARGET libusb-1.0)
   # Implicit dependencies
   set_target_properties(libusb-1.0 PROPERTIES INTERFACE_LINK_LIBRARIES log)
 endif (NOT TARGET libusb-1.0)
-
 
 # Boost has no config module, we need to create imported targets by hand
 set(_boost_root ${ANDROID_PREBUILT_3RDPARTY_DIR}/boost-1.69.0)
@@ -186,6 +185,7 @@ endforeach(b_comp)
 # OpenCV comes with its own module, let's use it
 set(_opencv_root ${ANDROID_PREBUILT_3RDPARTY_DIR}/opencv-4.0.1/sdk/native)
 set(OpenCV_DIR ${_opencv_root}/jni)
+
 # .. however the individual targets are static libraries, so we create a fake one that uses
 # libopencv_java which is a shared library as we expect
 include_directories(${ANDROID_OPENCV_INC_DIR})

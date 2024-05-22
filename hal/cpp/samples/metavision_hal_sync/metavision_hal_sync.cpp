@@ -18,7 +18,6 @@
 #include <thread>
 #include <mutex>
 
-#include <metavision/hal/utils/hal_exception.h>
 #include <metavision/hal/facilities/i_camera_synchronization.h>
 #include <metavision/hal/facilities/i_trigger_in.h>
 #include <metavision/hal/facilities/i_trigger_out.h>
@@ -33,6 +32,7 @@
 #include <metavision/hal/facilities/i_events_stream.h>
 #include <metavision/sdk/base/events/event_cd.h>
 #include <metavision/sdk/base/events/event_ext_trigger.h>
+#include <metavision/sdk/base/utils/error_utils.h>
 
 class EventAnalyzer {
 public:
@@ -140,7 +140,9 @@ int main(int argc, char *argv[]) {
     std::unique_ptr<Metavision::Device> device;
     try {
         device = Metavision::DeviceDiscovery::open(serial);
-    } catch (Metavision::HalException &e) { std::cout << "Error exception: " << e.what() << std::endl; }
+    } catch (Metavision::BaseException &e) {
+        std::cerr << "Error exception: " << e.what() << std::endl;
+    }
 
     if (!device) {
         std::cerr << "Camera opening failed." << std::endl;
@@ -220,7 +222,9 @@ int main(int argc, char *argv[]) {
             auto raw_data = i_eventsstream->get_latest_raw_data();
 
             // This will trigger callbacks set on decoders: in our case EventAnalyzer.process_events
-            i_decoder->decode(raw_data->data(), raw_data->data() + raw_data->size());
+            if (raw_data) {
+                i_decoder->decode(raw_data->data(), raw_data->data() + raw_data->size());
+            }
         }
     });
 

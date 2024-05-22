@@ -1478,7 +1478,7 @@ TEST_F(Camera_Gtest, should_load_serialized_state) {
         camera.get_device().get_facility<I_LL_Biases>()->set("c", 4);
 
         // NFL
-        camera.get_device().get_facility<I_EventRateActivityFilterModule>()->set_thresholds({144'398, 0u, 0u, 0u});
+        camera.get_device().get_facility<I_EventRateActivityFilterModule>()->set_thresholds({144'398, 0u, 126u, 312u});
         camera.get_device().get_facility<I_EventRateActivityFilterModule>()->enable(true);
 
         // TriggerIn
@@ -1556,6 +1556,15 @@ TEST_F(Camera_Gtest, should_load_serialized_state) {
         EXPECT_EQ(
             144'398,
             camera.get_device().get_facility<I_EventRateActivityFilterModule>()->get_thresholds().lower_bound_start);
+        EXPECT_EQ(
+            0,
+            camera.get_device().get_facility<I_EventRateActivityFilterModule>()->get_thresholds().lower_bound_stop);
+        EXPECT_EQ(
+            126,
+            camera.get_device().get_facility<I_EventRateActivityFilterModule>()->get_thresholds().upper_bound_start);
+        EXPECT_EQ(
+            312,
+            camera.get_device().get_facility<I_EventRateActivityFilterModule>()->get_thresholds().upper_bound_stop);
 
         EXPECT_TRUE(camera.get_device().get_facility<I_EventRateActivityFilterModule>()->is_enabled());
 
@@ -1591,7 +1600,6 @@ TEST_F(Camera_Gtest, should_load_hand_written_state) {
 #endif
 
     {
-        Camera camera = Camera::from_serial(Camera_Gtest::dummy_serial_);
         std::ofstream ofs(tmpdir_handler_->get_full_path("dummy_camera_state.json"));
         ASSERT_TRUE(ofs.is_open());
 
@@ -1673,7 +1681,6 @@ TEST_F(Camera_Gtest, should_load_hand_written_state) {
 
     // ROI : windows
     {
-        Camera camera = Camera::from_serial(Camera_Gtest::dummy_serial_);
         std::ofstream ofs(tmpdir_handler_->get_full_path("dummy_camera_state.json"));
         ASSERT_TRUE(ofs.is_open());
 
@@ -1709,6 +1716,117 @@ TEST_F(Camera_Gtest, should_load_hand_written_state) {
         EXPECT_EQ(I_ROI::Mode::RONI, roi->get_mode());
         EXPECT_EQ(I_ROI::Window(12, 19, 213, 334), roi->get_windows()[0]);
         EXPECT_EQ(I_ROI::Window(4, 32, 13, 384), roi->get_windows()[1]);
+    }
+
+    // NFL pre metavision 4.6.0
+    {
+        std::ofstream ofs(tmpdir_handler_->get_full_path("dummy_camera_state.json"));
+        ASSERT_TRUE(ofs.is_open());
+
+        ofs << R"({
+  "event_rate_noise_filter_state": {
+    "enabled": true,
+    "event_rate_threshold": 1337
+  }
+})";
+    }
+    {
+        Camera camera = Camera::from_serial(Camera_Gtest::dummy_serial_);
+        EXPECT_TRUE(camera.load(tmpdir_handler_->get_full_path("dummy_camera_state.json")));
+
+        auto *nfl = camera.get_device().get_facility<I_EventRateActivityFilterModule>();
+        EXPECT_TRUE(nfl != nullptr);
+
+        EXPECT_TRUE(nfl->is_enabled());
+        EXPECT_EQ(1337, nfl->get_thresholds().lower_bound_start);
+    }
+
+    // NFL post 4.6.0
+    {
+        std::ofstream ofs(tmpdir_handler_->get_full_path("dummy_camera_state.json"));
+        ASSERT_TRUE(ofs.is_open());
+
+        ofs << R"({
+  "event_rate_activity_filter_state": {
+    "enabled": true,
+    "lower_start_rate_threshold": 666,
+    "lower_stop_rate_threshold": 667,
+    "upper_start_rate_threshold": 668,
+    "upper_stop_rate_threshold": 669
+  }
+})";
+    }
+    {
+        Camera camera = Camera::from_serial(Camera_Gtest::dummy_serial_);
+        EXPECT_TRUE(camera.load(tmpdir_handler_->get_full_path("dummy_camera_state.json")));
+
+        auto *nfl = camera.get_device().get_facility<I_EventRateActivityFilterModule>();
+        EXPECT_TRUE(nfl != nullptr);
+
+        EXPECT_TRUE(nfl->is_enabled());
+        EXPECT_EQ(666, nfl->get_thresholds().lower_bound_start);
+        EXPECT_EQ(667, nfl->get_thresholds().lower_bound_stop);
+        EXPECT_EQ(668, nfl->get_thresholds().upper_bound_start);
+        EXPECT_EQ(669, nfl->get_thresholds().upper_bound_stop);
+    }
+
+    // NFL old & new
+    {
+        std::ofstream ofs(tmpdir_handler_->get_full_path("dummy_camera_state.json"));
+        ASSERT_TRUE(ofs.is_open());
+
+        ofs << R"({
+  "event_rate_activity_filter_state": {
+    "enabled": true,
+    "lower_start_rate_threshold": 666,
+    "lower_stop_rate_threshold": 667,
+    "upper_start_rate_threshold": 668,
+    "upper_stop_rate_threshold": 669
+  },
+  "event_rate_noise_filter_state": {
+    "enabled": true,
+    "event_rate_threshold": 1337
+  }
+})";
+    }
+    {
+        Camera camera = Camera::from_serial(Camera_Gtest::dummy_serial_);
+        EXPECT_TRUE(camera.load(tmpdir_handler_->get_full_path("dummy_camera_state.json")));
+
+        auto *nfl = camera.get_device().get_facility<I_EventRateActivityFilterModule>();
+        EXPECT_TRUE(nfl != nullptr);
+
+        EXPECT_TRUE(nfl->is_enabled());
+        // Make sure values from the old state ("noise_filter") are ignored
+        EXPECT_EQ(666, nfl->get_thresholds().lower_bound_start);
+        EXPECT_EQ(667, nfl->get_thresholds().lower_bound_stop);
+        EXPECT_EQ(668, nfl->get_thresholds().upper_bound_start);
+        EXPECT_EQ(669, nfl->get_thresholds().upper_bound_stop);
+    }
+}
+
+TEST_F(Camera_Gtest, should_throw_loading_invalid_json_state) {
+    const std::string dummy_plugin_test_path(HAL_DUMMY_TEST_PLUGIN);
+    const char *env = getenv("MV_HAL_PLUGIN_PATH");
+
+#ifdef _WIN32
+    std::string s("MV_HAL_PLUGIN_PATH=");
+    s += std::string(env ? env : "") + ";" + dummy_plugin_test_path;
+    _putenv(s.c_str());
+#else
+    std::string s(env ? env : "");
+    s += ":" + dummy_plugin_test_path;
+    setenv("MV_HAL_PLUGIN_PATH", s.c_str(), 1);
+#endif
+
+    {
+        std::ofstream ofs(tmpdir_handler_->get_full_path("dummy_camera_state.json"));
+        ASSERT_TRUE(ofs.is_open());
+        ofs << "not json content";
+    }
+    {
+        Camera camera = Camera::from_serial(Camera_Gtest::dummy_serial_);
+        EXPECT_THROW(camera.load(tmpdir_handler_->get_full_path("dummy_camera_state.json")), CameraException);
     }
 }
 #endif

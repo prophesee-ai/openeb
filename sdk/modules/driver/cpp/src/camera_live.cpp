@@ -37,7 +37,7 @@ namespace detail {
 
 DeviceConfig dummy_config;
 
-LivePrivate::LivePrivate(DeviceConfig *dev_config_ptr) : Private(detail::Config()) {
+LivePrivate::LivePrivate(const DeviceConfig *dev_config_ptr) : Private(detail::Config()) {
     AvailableSourcesList available_systems = Camera::list_online_sources();
     AvailableSourcesList::iterator it;
     if ((it = available_systems.find(OnlineSourceType::EMBEDDED)) != available_systems.end()) {
@@ -53,7 +53,8 @@ LivePrivate::LivePrivate(DeviceConfig *dev_config_ptr) : Private(detail::Config(
     init();
 }
 
-LivePrivate::LivePrivate(OnlineSourceType input_source_type, uint32_t source_index, DeviceConfig *dev_config_ptr) :
+LivePrivate::LivePrivate(OnlineSourceType input_source_type, uint32_t source_index,
+                         const DeviceConfig *dev_config_ptr) :
     Private(detail::Config()) {
     AvailableSourcesList available_systems = Camera::list_online_sources();
     AvailableSourcesList::iterator it;
@@ -70,7 +71,7 @@ LivePrivate::LivePrivate(OnlineSourceType input_source_type, uint32_t source_ind
     init();
 }
 
-LivePrivate::LivePrivate(const std::string &serial, DeviceConfig *dev_config_ptr) : Private(detail::Config()) {
+LivePrivate::LivePrivate(const std::string &serial, const DeviceConfig *dev_config_ptr) : Private(detail::Config()) {
     device_ = DeviceDiscovery::open(serial, dev_config_ptr ? *dev_config_ptr : dummy_config);
     if (!device_) {
         throw CameraException(CameraErrorCode::CameraNotFound, "Camera with serial " + serial + " has not been found.");
@@ -151,7 +152,7 @@ void LivePrivate::start_impl() {
         // it could be the first time we start streaming and feeding events to the decoder, but
         // if it's not the case, we need to reset the decoder state so that new events are not
         // decoded using the current state (which is probably wrong : i.e wrong time base, etc.)
-        i_events_stream_decoder_->reset_timestamp(-1);
+        i_events_stream_decoder_->reset_last_timestamp(-1);
     }
     if (i_events_stream_) {
         i_events_stream_->start();
@@ -174,7 +175,7 @@ bool LivePrivate::process_impl() {
 
 template<typename TimingProfilerType>
 bool LivePrivate::process_impl(TimingProfilerType *profiler) {
-    int res             = 0;
+    int res = 0;
 
     {
         typename TimingProfilerType::TimedOperation t("Polling", profiler);

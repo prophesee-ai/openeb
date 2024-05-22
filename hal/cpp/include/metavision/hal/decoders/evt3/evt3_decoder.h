@@ -53,8 +53,10 @@ public:
             std::shared_ptr<I_EventDecoder<EventERCCounter>>()) :
         I_EventsStreamDecoder(time_shifting_enabled, event_cd_decoder, event_ext_trigger_decoder,
                               erc_count_event_decoder),
-        height_(height),
-        validator(height, width) {}
+        validator(height, width),
+        height_(height) {
+        last_timestamp_.time = 0;
+    }
 
     virtual bool get_timestamp_shift(timestamp &ts_shift) const override {
         ts_shift = timestamp_shift_;
@@ -296,7 +298,7 @@ private:
     ///          The next buffers of raw data to decode should contain events that fully restore the internal state
     ///          of the decoder to a valid state (such as 'EVT_ADDR_Y', 'VECT_BASE_X', etc.) before any other
     ///          type of events can be decoded
-    bool reset_timestamp_impl(const timestamp &t) override {
+    bool reset_last_timestamp_impl(const timestamp &t) override {
         if (is_time_shifting_enabled() && !timestamp_shift_set_) {
             return false;
         }
@@ -353,7 +355,7 @@ private:
             uint64_t time;
         };
     };
-    evt3_timestamp last_timestamp_ = {0};
+    evt3_timestamp last_timestamp_;
 
     bool timestamp_shift_set_  = false;
     bool base_time_set_        = false;

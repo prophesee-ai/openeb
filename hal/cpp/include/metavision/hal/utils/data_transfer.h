@@ -12,6 +12,7 @@
 #ifndef METAVISION_HAL_DATA_TRANSFER_H
 #define METAVISION_HAL_DATA_TRANSFER_H
 
+#include <exception>
 #include <thread>
 #include <vector>
 #include <unordered_map>
@@ -49,6 +50,9 @@ public:
 
     /// Alias for a callback to process transferred buffer of data
     using NewBufferCallback_t = std::function<void(const BufferPtr &)>;
+
+    /// Alias for a callback to process errors that happened during transfer
+    using TransferErrorCallback_t = std::function<void(std::exception_ptr eptr)>;
 
     /// @brief Builds a DataTransfer object
     /// @param raw_event_size_bytes The size of a RAW event in bytes
@@ -99,6 +103,14 @@ public:
     /// @param cb The cb to call when a new buffer is transferred
     /// @return The id of the callback. This id is unique.
     size_t add_new_buffer_callback(NewBufferCallback_t cb);
+
+    /// @brief Adds a callback to process errors that happened during transfer
+    /// @warning This method is not thread safe. You should add/remove the various callback before starting the
+    /// transfers
+    /// @warning It's not allowed to add/remove a callback from the callback itself
+    /// @param cb The cb to call when a new buffer is transferred
+    /// @return The id of the callback. This id is unique.
+    size_t add_transfer_error_callback(TransferErrorCallback_t cb);
 
     /// @brief Removes the callback with input id
     /// @param cb_id The id of the callback to remove
@@ -208,6 +220,7 @@ private:
     BufferPool buffer_pool_;
     std::unordered_map<uint32_t, StatusChangeCallback_t> status_change_cbs_;
     std::unordered_map<uint32_t, NewBufferCallback_t> new_buffer_cbs_;
+    std::unordered_map<uint32_t, TransferErrorCallback_t> transfer_error_cbs_;
     const uint32_t raw_event_size_bytes_;
     std::atomic<bool> stop_{false};
     uint32_t cb_index_{0};

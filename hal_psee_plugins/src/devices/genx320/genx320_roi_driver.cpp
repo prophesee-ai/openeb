@@ -149,11 +149,18 @@ std::filesystem::path GenX320RoiDriver::default_calibration_path() {
 
 GenX320RoiDriver::GenX320RoiDriver(int width, int height, const std::shared_ptr<RegisterMap> &regmap,
                                    const std::string &sensor_prefix, const DeviceConfig &config) :
-    register_map_(regmap), sensor_prefix_(sensor_prefix), mode_(I_ROI::Mode::ROI), roi_window_cnt_(0), grid_(10, 320),
-    device_width_(width), device_height_(height) {
-    set_driver_mode(GenX320RoiDriver::DriverMode::MASTER);
+    register_map_(regmap),
+    sensor_prefix_(sensor_prefix),
+    mode_(I_ROI::Mode::ROI),
+    roi_window_cnt_(0),
+    grid_(10, 320),
+    device_width_(width),
+    device_height_(height) {
     reset_to_full_roi();
+    set_driver_mode(GenX320RoiDriver::DriverMode::IO);
+
     if (!config.get<bool>("ignore_active_pixel_calibration_data", false)) {
+        // /!\ Calibration configuration will disable the default pixel reset IO mode
         auto calib_path = default_calibration_path();
         if (std::filesystem::exists(calib_path)) {
             MV_HAL_LOG_TRACE() << "Found calibration data at" << calib_path;
@@ -205,7 +212,7 @@ void GenX320RoiDriver::apply_grid() {
                            << std::setfill('0') << reg_val;
 
         // Send roi y register access, enabling all D-Latches a current row index
-        (*register_map_)[reg_y_name].write_value(reg_val);
+        (*register_map_)[sensor_prefix_ + reg_y_name].write_value(reg_val);
 
         // Iterate over each columns composed of 32 bits vectors
         for (unsigned int x = 0; x < 10; x++) {
@@ -217,20 +224,20 @@ void GenX320RoiDriver::apply_grid() {
                                << ~grid_.get_vector(x, y);
 
             // Send roi x register access, setting all D-Latches data lanes from given user config on current row.
-            (*register_map_)[reg_x_name].write_value(~grid_.get_vector(x, y));
+            (*register_map_)[sensor_prefix_ + reg_x_name].write_value(~grid_.get_vector(x, y));
         }
 
         // Apply configuration to the hardware by triggering D-Latches toggling of their respective output
-        (*register_map_)["roi_ctrl"]["roi_td_shadow_trigger"].write_value(0);
-        (*register_map_)["roi_ctrl"]["roi_td_shadow_trigger"].write_value(1);
+        (*register_map_)[sensor_prefix_ + "roi_ctrl"]["roi_td_shadow_trigger"].write_value(0);
+        (*register_map_)[sensor_prefix_ + "roi_ctrl"]["roi_td_shadow_trigger"].write_value(1);
 
         // Clear roi y register. Deselect current row
-        (*register_map_)[reg_y_name].write_value(0);
-        (*register_map_)["roi_ctrl"]["roi_td_shadow_trigger"].write_value(0);
-        (*register_map_)["roi_ctrl"]["roi_td_shadow_trigger"].write_value(1);
+        (*register_map_)[sensor_prefix_ + reg_y_name].write_value(0);
+        (*register_map_)[sensor_prefix_ + "roi_ctrl"]["roi_td_shadow_trigger"].write_value(0);
+        (*register_map_)[sensor_prefix_ + "roi_ctrl"]["roi_td_shadow_trigger"].write_value(1);
     }
 
-    (*register_map_)["roi_ctrl"]["roi_td_shadow_trigger"].write_value(0);
+    (*register_map_)[sensor_prefix_ + "roi_ctrl"]["roi_td_shadow_trigger"].write_value(0);
 }
 
 bool GenX320RoiDriver::load_calibration_file(const std::filesystem::path &path) {
@@ -347,7 +354,7 @@ bool GenX320RoiDriver::get_lines(std::vector<bool> &cols, std::vector<bool> &row
             for (unsigned int i = 0; i < 32; ++i) {
                 if (vect_val & (1U << i)) {
                     cols[32 * vect_id + i] = true;
-                    rows[y] = true;
+                    rows[y]                = true;
                 }
             }
         }
@@ -374,6 +381,8 @@ void GenX320RoiDriver::reset_to_full_roi() {
     (*register_map_)[sensor_prefix_ + "roi_win_y0"].write_value(
         vfield{{"roi_win_start_y", default_window.y}, {"roi_win_end_p1_y", default_window.height}});
 
+    set_driver_mode(GenX320RoiDriver::DriverMode::MASTER);
+
     I_ROI::Mode save_mode = mode_;
     mode_                 = I_ROI::Mode::ROI;
     apply_windows(1);
@@ -389,6 +398,10 @@ I_ROI::Mode GenX320RoiDriver::get_roi_mode() const {
     return mode_;
 }
 
+GenX320RoiDriver::DriverMode GenX320RoiDriver::get_driver_mode() const {
+    return driver_mode_;
+}
+
 bool GenX320RoiDriver::set_driver_mode(const GenX320RoiDriver::DriverMode &driver_mode) {
     driver_mode_ = driver_mode;
 
@@ -402,6 +415,11 @@ bool GenX320RoiDriver::set_driver_mode(const GenX320RoiDriver::DriverMode &drive
         (*register_map_)[sensor_prefix_ + "roi_ctrl"]["px_roi_halt_programming"].write_value(0);
         (*register_map_)[sensor_prefix_ + "roi_master_ctrl"].write_value(
             vfield{{"roi_master_en", 1}, {"roi_master_run", 0}});
+    } else if (driver_mode_ == GenX320RoiDriver::DriverMode::IO) {
+        (*register_map_)[sensor_prefix_ + "roi_master_ctrl"]["roi_master_en"].write_value(0);
+        (*register_map_)[sensor_prefix_ + "roi_ctrl"]["roi_td_en"].write_value(1);
+        (*register_map_)[sensor_prefix_ + "roi_ctrl"]["px_roi_halt_programming"].write_value(1);
+        open_all_latches();
     }
 
     return true;
@@ -419,7 +437,7 @@ bool GenX320RoiDriver::enable(bool state) {
                 {"roi_win_start_y", main_window_.y}, {"roi_win_end_p1_y", main_window_.y + main_window_.height}});
 
             apply_windows(roi_window_cnt_);
-        } else {
+        } else if (driver_mode_ == GenX320RoiDriver::DriverMode::LATCH) {
             apply_grid();
         }
     }
@@ -469,6 +487,45 @@ GenX320RoiDriver::Grid GenX320RoiDriver::get_grid() const {
 
 void GenX320RoiDriver::print_grid_config() {
     std::cout << grid_.to_string() << std::endl;
+}
+
+void GenX320RoiDriver::pixel_reset(const bool &enable) {
+    (*register_map_)[sensor_prefix_ + "roi_ctrl"]["px_sw_rstn"].write_value(!enable);
+}
+
+void GenX320RoiDriver::open_all_latches() {
+    std::string reg_y_name;
+    std::string reg_x_name;
+    unsigned int reg_val = 0;
+
+    // Iterate over each columns composed of 32 bits vectors
+    for (unsigned int x = 0; x < 10; x++) {
+        // Compute roi_x register name from column index
+        std::ostringstream reg_id;
+        reg_id << std::setw(2) << std::setfill('0') << x;
+        reg_x_name = "roi/td_roi_x" + reg_id.str();
+
+        // Send roi x register access, enabling all D-Latches data lanes
+        (*register_map_)[sensor_prefix_ + reg_x_name].write_value(0);
+    }
+
+    // Iterate over each rows
+    for (unsigned int y = 0; y < 10; y++) {
+        // Compute roi_y register name from row index
+        std::ostringstream reg_id;
+        reg_id << std::setw(2) << std::setfill('0') << y;
+        reg_y_name = "roi/td_roi_y" + reg_id.str();
+
+        // Send roi y register access, enabling all D-Latches
+        (*register_map_)[sensor_prefix_ + reg_y_name].write_value(0xFFFFFFFF);
+    }
+
+    // Apply configuration to the hardware by triggering D-Latches toggling of their respective output
+    (*register_map_)[sensor_prefix_ + "roi_ctrl"]["roi_td_shadow_trigger"].write_value(0);
+    (*register_map_)[sensor_prefix_ + "roi_ctrl"]["roi_td_shadow_trigger"].write_value(1);
+
+    // Clear trigger
+    (*register_map_)[sensor_prefix_ + "roi_ctrl"]["roi_td_shadow_trigger"].write_value(0);
 }
 
 } // namespace Metavision

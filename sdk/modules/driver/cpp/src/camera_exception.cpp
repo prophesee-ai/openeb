@@ -12,17 +12,16 @@
 #include <string>
 #include <system_error>
 
+#include "metavision/sdk/base/utils/error_code.h"
 #include "metavision/sdk/driver/camera_error_code.h"
 #include "metavision/sdk/driver/internal/camera_error_code_internal.h"
 #include "metavision/sdk/driver/camera_exception.h"
-#include "metavision/sdk/base/utils/error_category.h"
-#include "metavision/sdk/base/utils/error_code.h"
 
 namespace Metavision {
 
 namespace { // anonymous namespace
 
-std::string get_error_message(CameraErrorCodeType error_code, const std::string &additional_info = "") {
+std::string get_error_message(CameraErrorCodeType error_code) {
     std::string msg_to_ret;
 
     switch (error_code) {
@@ -131,18 +130,32 @@ std::string get_error_message(CameraErrorCodeType error_code, const std::string 
         break;
     }
 
-    msg_to_ret = (additional_info.empty() ? "" : (additional_info + "\n")) + msg_to_ret;
     return msg_to_ret;
 }
 } // anonymous namespace
 
-std::error_code make_error_code(int e) {
-    return {e, ErrorCategory(e)};
+class CameraErrorCategory : public std::error_category {
+public:
+    CameraErrorCategory() {}
+    CameraErrorCategory(const CameraErrorCategory &) = delete;
+
+    virtual const char *name() const noexcept override {
+        return "Metavision SDK Driver exception";
+    }
+
+    virtual std::string message(int err) const override {
+        return get_error_message(err);
+    }
+};
+
+const std::error_category &camera_error_category() {
+    // The category singleton
+    static CameraErrorCategory instance;
+    return instance;
 }
 
 CameraException::CameraException(CameraErrorCodeType e, std::string additional_info) :
-    std::system_error(get_public_error_code(e),
-                      ErrorCategory(e, "Metavision SDK Driver exception", get_error_message(e, additional_info))) {}
+    BaseException(e, get_public_error_code(e), camera_error_category(), additional_info) {}
 
 CameraException::CameraException(CameraErrorCodeType e) : CameraException(e, "") {}
 } // namespace Metavision

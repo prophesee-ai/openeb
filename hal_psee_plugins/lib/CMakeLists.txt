@@ -127,66 +127,14 @@ install(FILES ${metavision_psee_hw_layer_config_file} ${metavision_psee_hw_layer
         COMPONENT metavision-hal-prophesee-hw-layer-dev
 )
 
-set(lib_camera_obj_list "")
-
-set(lib_camera_obj_list
-        metavision_hal_gen3_pattern_checkers_obj
-        metavision_hal_gen31_camera_obj
-        metavision_hal_fx3_protocol_obj
-        metavision_hal_treuzell_protocol_obj
-        metavision_hal_treuzell_unknown_obj
-        metavision_hal_psee_video_obj
-        metavision_hal_ti_tmp103_obj
-        metavision_hal_gen31_evk2_system_obj
-        metavision_hal_gen31_evk3_system_obj
-        metavision_hal_gen41_evk2_system_obj
-        metavision_hal_gen41_evk3_system_obj
-        metavision_hal_imx636_evk2_system_obj
-        metavision_hal_imx636_evk3_system_obj
-        metavision_hal_imx646_evk3_system_obj
-        metavision_hal_imx636_rdk2_system_obj
-        metavision_hal_psee_lab_obj
-)
-
-if(NOT ANDROID)
-    # need support for std::filesystem in NDK used GenX320 LowLevel ROI
-    list(APPEND lib_camera_obj_list
-        metavision_hal_genx320_cx3_system_obj
-    )
-endif(NOT ANDROID)
-
-if(HAS_V4L2)
-    list(APPEND lib_camera_obj_list metavision_hal_v4l2_protocol_obj)
-endif(HAS_V4L2)
-
-if(HAL_SAPHIR_SUPPORT)
-    list(APPEND lib_camera_obj_list
-        metavision_hal_saphir_camera_obj
-        metavision_hal_saphir_evk2_system_obj
-     )
-endif(HAL_SAPHIR_SUPPORT)
-
-if(HAL_SENSORLIB_SUPPORT)
-    list(APPEND lib_camera_obj_list
-        metavision_hal_sensorlib_tz_obj
-        metavision_hal_sensorlib_fx3_obj
-     )
-endif(HAL_SENSORLIB_SUPPORT)
-
-if(HAL_EVK3D_SUPPORT)
-    list(APPEND lib_camera_obj_list
-        metavision_hal_evk3d_system_obj
-    )
-endif(HAL_EVK3D_SUPPORT)
-
-
-set(lib_obj_list ${lib_common_obj_list} ${lib_camera_obj_list})
+set(lib_obj_list ${lib_common_obj_list})
 
 foreach(lib_obj ${lib_obj_list})
     add_library(${lib_obj} OBJECT)
     target_link_libraries(${lib_obj}
         PUBLIC
             metavision_hal
+            libusb-1.0
             metavision_psee_hw_layer
     )
     target_include_directories(${lib_obj}
@@ -208,30 +156,11 @@ endforeach()
 add_custom_target(hal_plugins)
 add_dependencies(hal_plugins metavision_psee_hw_layer)
 
-    # Otherwise, all the code for live cameras is compiled
-
-    #########################
-    # Camera lib objects
-    foreach(lib_obj ${lib_camera_obj_list})
-        target_link_libraries(${lib_obj}
-            PUBLIC
-                libusb-1.0
-                metavision_psee_hw_layer
-        )
-    endforeach()
-
 set(hal_psee_plugins_target_file_list)
 
 set(plugin_list
     hal_plugin_prophesee
 )
-
-if(HAL_SENSORLIB_SUPPORT)
-    list(APPEND plugin_list
-        hal_plugin_sensorlib_tz
-        hal_plugin_sensorlib_fx3
-    )
-endif(HAL_SENSORLIB_SUPPORT)
 
 if(POLICY CMP0095)
     # Don't escape RPATH content
@@ -280,18 +209,12 @@ foreach(plugin ${plugin_list})
 
     list(APPEND hal_psee_plugins_target_file_list $<TARGET_FILE:${plugin}>)
 
-    if(plugin STREQUAL "hal_plugin_sensorlib_tz")
-        set(HAL_COPY_PLUGIN_PATH "${HAL_BUILD_PLUGIN_PATH}/sensorlib")
-    elseif(plugin STREQUAL "hal_plugin_sensorlib_fx3")
-        set(HAL_COPY_PLUGIN_PATH "${HAL_BUILD_PLUGIN_PATH}/sensorlib")
-    else()
-        set(HAL_COPY_PLUGIN_PATH "${HAL_BUILD_PLUGIN_PATH}")
-        install(TARGETS ${plugin}
-                LIBRARY DESTINATION "${HAL_INSTALL_PLUGIN_RELATIVE_PATH}" COMPONENT metavision-hal-prophesee-plugins
-                RUNTIME DESTINATION "${HAL_INSTALL_PLUGIN_RELATIVE_PATH}" COMPONENT metavision-hal-prophesee-plugins
-                #ARCHIVE : we don't want to install .lib files for the plugins, it's useless
-        )
-    endif()
+    set(HAL_COPY_PLUGIN_PATH "${HAL_BUILD_PLUGIN_PATH}")
+    install(TARGETS ${plugin}
+            LIBRARY DESTINATION "${HAL_INSTALL_PLUGIN_RELATIVE_PATH}" COMPONENT metavision-hal-prophesee-plugins
+            RUNTIME DESTINATION "${HAL_INSTALL_PLUGIN_RELATIVE_PATH}" COMPONENT metavision-hal-prophesee-plugins
+            #ARCHIVE : we don't want to install .lib files for the plugins, it's useless
+    )
     # instead of setting the RUNTIME/LIBRARY_OUTPUT_DIRECTORY property on the target, we manually copy
     # the library : this will work for linux and windows and avoid the automatic copy of the DLLs the
     # plugin depends on by MSVC
@@ -303,38 +226,7 @@ foreach(plugin ${plugin_list})
 
 endforeach()
 
-# Linkage with generic hal plugin object
-if(HAL_SENSORLIB_SUPPORT)
-    # Linkage with generic hal plugin object
-    target_sources(hal_plugin_sensorlib_tz
-        PRIVATE
-            $<TARGET_OBJECTS:metavision_hal_sensorlib_tz_obj>
-            $<TARGET_OBJECTS:metavision_hal_treuzell_protocol_obj>
-            $<TARGET_OBJECTS:metavision_hal_ti_tmp103_obj>
-    )
-
-    target_link_libraries(hal_plugin_sensorlib_tz
-        PRIVATE
-            metavision_hal_sensorlib_tz_obj
-            metavision_hal_treuzell_protocol_obj
-            metavision_hal_ti_tmp103_obj
-    )
-
-    # Linkage with generic hal plugin object
-    target_sources(hal_plugin_sensorlib_fx3
-        PRIVATE
-            $<TARGET_OBJECTS:metavision_hal_sensorlib_fx3_obj>
-            $<TARGET_OBJECTS:metavision_hal_fx3_protocol_obj>
-    )
-
-    target_link_libraries(hal_plugin_sensorlib_fx3
-        PRIVATE
-            metavision_hal_sensorlib_fx3_obj
-            metavision_hal_fx3_protocol_obj
-    )
-endif(HAL_SENSORLIB_SUPPORT)
-
-foreach(object ${lib_camera_obj_list})
+foreach(object ${lib_common_obj_list})
     # Linkage with generic hal plugin object
     target_sources(hal_plugin_prophesee
         PRIVATE

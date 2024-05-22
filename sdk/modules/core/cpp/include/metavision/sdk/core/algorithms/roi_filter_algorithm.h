@@ -19,8 +19,8 @@
 
 namespace Metavision {
 
-/// @brief Class that only propagates events which are contained in a certain window
-/// of interest defined by the coordinates of the upper left corner and the
+/// @brief Class that only propagates events which are contained in a certain Region
+/// of Interest (ROI) defined by the coordinates of the upper left corner and the
 /// lower right corner
 class RoiFilterAlgorithm {
 public:
@@ -30,8 +30,9 @@ public:
     /// @param x1 X coordinate of the lower right corner of the ROI window
     /// @param y1 Y coordinate of the lower right corner of the ROI window
     /// @param output_relative_coordinates If false, events that passed the ROI filter are expressed in the whole
-    ///                                              image coordinates.
-    ///                                    If true, they are expressed in the ROI coordinates system
+    ///                                    image coordinates.
+    ///                                    If true, they are expressed in the ROI coordinates system (i.e. top left
+    ///                                    of the ROI region is (0,0))
     inline RoiFilterAlgorithm(std::int32_t x0, std::int32_t y0, std::int32_t x1, std::int32_t y1,
                               bool output_relative_coordinates = false);
 

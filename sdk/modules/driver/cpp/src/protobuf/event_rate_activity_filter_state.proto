@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package DeviceSerialization;
+
+message EventRateNoiseFilterState {
+    oneof optional_enabled { bool enabled = 1; }
+    oneof optional_event_rate_threshold { uint32 event_rate_threshold = 2; }
+}
+
+message EventRateActivityFilterState {
+    oneof optional_enabled { bool enabled = 1; }
+    oneof optional_lower_start_rate_threshold { uint32 lower_start_rate_threshold = 2; }
+    oneof optional_lower_stop_rate_threshold { uint32 lower_stop_rate_threshold = 3; }
+    oneof optional_upper_start_rate_threshold { uint32 upper_start_rate_threshold = 4; }
+    oneof optional_upper_stop_rate_threshold { uint32 upper_stop_rate_threshold = 5; }
+}

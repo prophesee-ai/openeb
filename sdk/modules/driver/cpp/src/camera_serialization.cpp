@@ -28,6 +28,8 @@
 #include "metavision/hal/facilities/i_trigger_out.h"
 #include "metavision/hal/utils/hal_exception.h"
 #include "metavision/sdk/base/utils/sdk_log.h"
+#include "metavision/sdk/driver/camera_exception.h"
+#include "metavision/sdk/driver/camera_error_code.h"
 #include "metavision/sdk/driver/internal/camera_serialization.h"
 #include "device_state.pb.h"
 #endif // HAS_PROTOBUF
@@ -150,11 +152,45 @@ public:
             return;
         }
 
-        auto *nfl_state = state_.mutable_event_rate_noise_filter_state();
-        nfl_state->set_enabled(module->is_enabled());
+        const auto supported_thresholds = module->is_thresholds_supported();
+        const auto thresholds = module->get_thresholds();
+        int num_supported = 0;
+        {
+            auto *nfl_state = state_.mutable_event_rate_activity_filter_state();
+            nfl_state->set_enabled(module->is_enabled());
 
-        auto threshold = module->get_thresholds().lower_bound_start;
-        nfl_state->set_event_rate_threshold(threshold);
+            if (supported_thresholds.lower_bound_start == 1) {
+                ++num_supported;
+                nfl_state->set_lower_start_rate_threshold(thresholds.lower_bound_start);
+            }
+            if (supported_thresholds.lower_bound_stop == 1) {
+                ++num_supported;
+                nfl_state->set_lower_stop_rate_threshold(thresholds.lower_bound_stop);
+            }
+            if (supported_thresholds.upper_bound_start == 1) {
+                ++num_supported;
+                nfl_state->set_upper_start_rate_threshold(thresholds.upper_bound_start);
+            }
+            if (supported_thresholds.upper_bound_stop == 1) {
+                ++num_supported;
+                nfl_state->set_upper_stop_rate_threshold(thresholds.upper_bound_stop);
+            }
+        }
+
+        // Serialize state usable by metavision < 4.6.0
+        if (num_supported == 1) {
+            auto *nfl_state = state_.mutable_event_rate_noise_filter_state();
+            nfl_state->set_enabled(module->is_enabled());
+            if (supported_thresholds.lower_bound_start == 1) {
+                nfl_state->set_event_rate_threshold(thresholds.lower_bound_start);
+            } else if (supported_thresholds.lower_bound_stop == 1) {
+                nfl_state->set_event_rate_threshold(thresholds.lower_bound_stop);
+            } else if (supported_thresholds.upper_bound_start == 1) {
+                nfl_state->set_event_rate_threshold(thresholds.upper_bound_start);
+            } else if (supported_thresholds.upper_bound_stop == 1) {
+                nfl_state->set_event_rate_threshold(thresholds.upper_bound_stop);
+            }
+        }
     }
 
     void operator()(const I_EventTrailFilterModule *module) {
@@ -371,6 +407,45 @@ public:
     }
 
     void operator()(I_EventRateActivityFilterModule *module) {
+        if (!module) {
+            return;
+        }
+
+        const auto supported_thresholds = module->is_thresholds_supported();
+
+        if (state_.has_event_rate_activity_filter_state()) {
+            const auto &nfl_state = state_.event_rate_activity_filter_state();
+            if (nfl_state.optional_enabled_case() == DeviceSerialization::EventRateActivityFilterState::kEnabled) {
+                module->enable(nfl_state.enabled());
+            }
+
+            I_EventRateActivityFilterModule::thresholds thresholds = {0, 0, 0, 0};
+            if (nfl_state.optional_lower_start_rate_threshold_case() ==
+                DeviceSerialization::EventRateActivityFilterState::kLowerStartRateThreshold
+                && supported_thresholds.lower_bound_start == 1) {
+                thresholds.lower_bound_start = nfl_state.lower_start_rate_threshold();
+            }
+            if (nfl_state.optional_lower_stop_rate_threshold_case() ==
+                DeviceSerialization::EventRateActivityFilterState::kLowerStopRateThreshold
+                && supported_thresholds.lower_bound_stop == 1) {
+                thresholds.lower_bound_stop = nfl_state.lower_stop_rate_threshold();
+            }
+            if (nfl_state.optional_upper_start_rate_threshold_case() ==
+                DeviceSerialization::EventRateActivityFilterState::kUpperStartRateThreshold
+                && supported_thresholds.upper_bound_start == 1) {
+                thresholds.upper_bound_start = nfl_state.upper_start_rate_threshold();
+            }
+            if (nfl_state.optional_upper_stop_rate_threshold_case() ==
+                DeviceSerialization::EventRateActivityFilterState::kUpperStopRateThreshold
+                && supported_thresholds.upper_bound_stop == 1) {
+                thresholds.upper_bound_stop = nfl_state.upper_stop_rate_threshold();
+            }
+
+            module->set_thresholds(thresholds);
+            return;
+        }
+
+        // State serialized from metavision < 4.6.0
         if (!state_.has_event_rate_noise_filter_state()) {
             return;
         }
@@ -382,8 +457,20 @@ public:
 
         if (nfl_state.optional_event_rate_threshold_case() ==
             DeviceSerialization::EventRateNoiseFilterState::kEventRateThreshold) {
-            const auto th_lower_start = nfl_state.event_rate_threshold();
-            module->set_thresholds({th_lower_start, 0u, 0u, 0u});
+            const auto th = nfl_state.event_rate_threshold();
+
+            I_EventRateActivityFilterModule::thresholds thresholds = {0, 0, 0, 0};
+            // Find best candidate for threshold
+            if (supported_thresholds.lower_bound_start == 1) {
+                thresholds.lower_bound_start = th;
+            } else if (supported_thresholds.upper_bound_start == 1) {
+                thresholds.upper_bound_start = th;
+            } else if (supported_thresholds.lower_bound_stop == 1) {
+                thresholds.lower_bound_stop = th;
+            } else if (supported_thresholds.upper_bound_stop == 1) {
+                thresholds.upper_bound_stop = th;
+            }
+            module->set_thresholds(thresholds);
         }
     }
 
@@ -587,7 +674,13 @@ std::istream &load_device(Device &d, std::istream &is) {
         google::protobuf::util::JsonParseOptions options;
         DeviceSerialization::DeviceState state;
 
-        google::protobuf::util::JsonStringToMessage(str, &state);
+        options.ignore_unknown_fields = true;
+
+        auto parse_status = google::protobuf::util::JsonStringToMessage(str, &state, options);
+        if (!parse_status.ok()) {
+            throw CameraException(CameraErrorCode::InvalidArgument,
+                                  "Failed to parse camera settings: " + parse_status.ToString());
+        }
 
         FacilityDeserializer deserializer(state);
         for (auto facility : get_serializable_facilities(d)) {

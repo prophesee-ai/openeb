@@ -24,6 +24,7 @@
 #endif
 #include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
+#include <metavision/sdk/base/utils/error_utils.h>
 #include <metavision/sdk/base/utils/log.h>
 #include <metavision/sdk/base/utils/software_info.h>
 #include <metavision/hal/facilities/i_hal_software_info.h>
@@ -33,7 +34,6 @@
 #include <metavision/hal/facilities/i_geometry.h>
 #include <metavision/hal/device/device.h>
 #include <metavision/hal/device/device_discovery.h>
-#include <metavision/hal/utils/hal_exception.h>
 
 namespace po = boost::program_options;
 
@@ -173,7 +173,9 @@ void do_short_diagnosis() {
         try {
             // open device from a serial
             device = Metavision::DeviceDiscovery::open(serial);
-        } catch (const Metavision::HalException &e) { MV_LOG_ERROR() << e.what(); }
+        } catch (const Metavision::BaseException &e) {
+            MV_LOG_ERROR() << e.what();
+        }
 
         if (device) {
             auto i_hal_software_info = device->get_facility<Metavision::I_HALSoftwareInfo>();

@@ -38,6 +38,7 @@
 #include "metavision/hal/utils/device_config.h"
 #include "metavision/hal/facilities/i_events_stream.h"
 #include "metavision/hal/utils/hal_error_code.h"
+#include "metavision/hal/utils/hal_connection_exception.h"
 #include "metavision/hal/utils/hal_exception.h"
 #include "metavision/hal/utils/hal_log.h"
 #include "metavision/hal/utils/resources_folder.h"
@@ -326,11 +327,11 @@ DeviceConfigOptionMap DeviceDiscovery::list_device_config_options(const std::str
 }
 
 std::unique_ptr<Device> DeviceDiscovery::open(const std::string &serial) {
-    DeviceConfig default_config;
+    const DeviceConfig default_config;
     return DeviceDiscovery::open(serial, default_config);
 }
 
-std::unique_ptr<Device> DeviceDiscovery::open(const std::string &input_serial, DeviceConfig &config) {
+std::unique_ptr<Device> DeviceDiscovery::open(const std::string &input_serial, const DeviceConfig &config) {
     MV_HAL_LOG_TRACE() << "Opening camera with serial:" << input_serial;
 
     std::unique_ptr<Device> device;
@@ -405,6 +406,9 @@ std::unique_ptr<Device> DeviceDiscovery::open(const std::string &input_serial, D
                 }
             } catch (HalException &e) {
                 log_plugin_error(plugin, camera_discovery.get_name(), e);
+            } catch (const HalConnectionException &e) {
+                log_plugin_error(plugin, camera_discovery.get_name(), e);
+                throw e;
             } catch (const std::exception &e) {
                 log_plugin_error(plugin, camera_discovery.get_name(), e);
             } catch (...) { log_plugin_error(plugin, camera_discovery.get_name()); }
@@ -415,11 +419,11 @@ std::unique_ptr<Device> DeviceDiscovery::open(const std::string &input_serial, D
 }
 
 std::unique_ptr<Device> DeviceDiscovery::open_raw_file(const std::string &raw_file) {
-    RawFileConfig cfg;
+    const RawFileConfig cfg;
     return open_raw_file(raw_file, cfg);
 }
 
-std::unique_ptr<Device> DeviceDiscovery::open_raw_file(const std::string &raw_file, RawFileConfig &file_config) {
+std::unique_ptr<Device> DeviceDiscovery::open_raw_file(const std::string &raw_file, const RawFileConfig &file_config) {
     auto ifs = std::make_unique<std::ifstream>(raw_file, std::ios::in | std::ios::binary);
     if (!ifs->good()) {
         throw HalException(HalErrorCode::FailedInitialization, "Unable to open RAW file '" + raw_file + "'");
@@ -437,7 +441,7 @@ std::unique_ptr<Device> DeviceDiscovery::open_raw_file(const std::string &raw_fi
         if (events_stream) {
             events_stream->set_underlying_filename(raw_file);
             if (file_config.build_index_ && device->get_facility<I_EventsStreamDecoder>()) {
-                // We create an additional decicated device that we will use for indexing the RAW file
+                // We create an additional dedicated device that we will use for indexing the RAW file
                 // We set build_index_ = false for this device, because it won't be used for seeking, so it does
                 // not need to have an index automatically built. Not doing so would create an infinite loop
                 // of devices created for the purpose of building the index for the one previously created.
@@ -464,7 +468,7 @@ std::unique_ptr<Device> DeviceDiscovery::open_raw_file(const std::string &raw_fi
 }
 
 std::unique_ptr<Device> DeviceDiscovery::open_stream(std::unique_ptr<std::istream> stream,
-                                                     RawFileConfig &stream_config) {
+                                                     const RawFileConfig &stream_config) {
     if (!stream) {
         throw HalException(HalErrorCode::FailedInitialization,
                            "Failed to read from input stream: invalid pointer (nullptr)");
@@ -561,6 +565,9 @@ std::unique_ptr<Device> DeviceDiscovery::open_stream(std::unique_ptr<std::istrea
                     }
                 } catch (HalException &e) {
                     log_plugin_error(plugin, file_discovery.get_name(), e);
+                } catch (const HalConnectionException &e) {
+                    log_plugin_error(plugin, file_discovery.get_name(), e);
+                    throw e;
                 } catch (const std::exception &e) {
                     log_plugin_error(plugin, file_discovery.get_name(), e);
                 } catch (...) { log_plugin_error(plugin, file_discovery.get_name()); }
