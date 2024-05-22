@@ -9,7 +9,7 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-#include <bits/stdint-uintn.h>
+#include <cstdint>
 #include <cstring>
 #include "boards/v4l2/v4l2_device.h"
 
@@ -118,4 +118,3 @@ void V4L2DeviceControl::stop() {
         raise_error("VIDIOC_STREAMOFF failed");
 }
 void V4L2DeviceControl::reset() {}
-

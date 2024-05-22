@@ -13,14 +13,8 @@ target_sources(metavision_psee_hw_layer_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/imx636_tz_trigger_event.cpp
 )
 
-target_sources(metavision_hal_imx636_evk2_system_obj PRIVATE
+target_sources(metavision_hal_psee_plugin_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/imx636_evk2_tz_device.cpp
-)
-
-target_sources(metavision_hal_imx636_evk3_system_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/imx636_tz_device.cpp
-)
-
-target_sources(metavision_hal_imx636_rdk2_system_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/imx636_rdk2_tz_device.cpp
 )

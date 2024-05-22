@@ -8,8 +8,8 @@
 # See the License for the specific language governing permissions and limitations under the License.
 
 set(GIT_BRANCH "main")
-set(GIT_COMMIT_ID "330aa64e328a2343c85c251e6f483b9c58de7a62")
-set(GIT_COMMIT_DATE "2024-02-09 11:47:53 +0100")
+set(GIT_COMMIT_ID "95ccd2597aa7a8f8f44fd6ee405c4f3a8f9eda24")
+set(GIT_COMMIT_DATE "2024-05-21 15:27:14 +0200")
 
 find_program(GIT_SCM git DOC "Git version control" HINTS "C:\\Program Files\\Git\\bin\\")
 
@@ -40,7 +40,7 @@ endforeach(cmd)
 # Remark : we need to do this instead of just having the file and passing the
 # commands like ${GIT_COMMAND_GET_BRANCH} into a variable because this variable would
 # contain spaces (and even if passing it between quotes id does not work because it keeps the quotes)
-set(cmake_script ${GENERATE_FILES_DIRECTORY}/scripts/configure_version_file.cmake)
+set(cmake_script ${GENERATE_FILES_DIRECTORY}/scripts/configure_version_file.cmake CACHE PATH "Path to the cmake script to generate version files")
 file(WRITE ${cmake_script} "
 include(CMakeParseArguments)
 function(wrap_command)
@@ -134,6 +134,7 @@ function(add_library_version_header target_name outputfile libname)
     endif(LIB_HEADER_VERSION)
 
     string(TOUPPER "${libname}" LIBRARY_NAME_UPPER)
+
     add_custom_target(
         ${target_name} ALL
         COMMAND ${CMAKE_COMMAND}

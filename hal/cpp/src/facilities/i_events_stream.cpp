@@ -21,6 +21,7 @@
 #include "metavision/hal/facilities/i_hal_software_info.h"
 #include "metavision/hal/facilities/i_plugin_software_info.h"
 #include "metavision/hal/utils/file_data_transfer.h"
+#include "metavision/hal/utils/hal_connection_exception.h"
 #include "metavision/hal/utils/hal_error_code.h"
 #include "metavision/hal/utils/hal_exception.h"
 #include "metavision/hal/utils/hal_log.h"
@@ -532,6 +533,16 @@ I_EventsStream::I_EventsStream(std::unique_ptr<DataTransfer> data_transfer,
             }
         }
     });
+
+    data_transfer_->add_transfer_error_callback([this](std::exception_ptr eptr) {
+        std::unique_lock<std::mutex> lock(new_buffer_safety_);
+        try {
+            std::rethrow_exception(eptr);
+        } catch (HalConnectionException &e) {
+            // Only propagate connection exceptions
+            data_transfer_connection_error_ = std::current_exception();
+        } catch (...) {}
+    });
 }
 
 I_EventsStream::~I_EventsStream() {
@@ -541,6 +552,7 @@ I_EventsStream::~I_EventsStream() {
     }
     stop();
     data_transfer_.reset(nullptr);
+    data_transfer_connection_error_ = nullptr;
 }
 
 void I_EventsStream::release_data_transfer_buffers() {
@@ -607,6 +619,11 @@ void I_EventsStream::stop_device() {
 
 short I_EventsStream::poll_buffer() {
     std::lock_guard<std::mutex> lock(new_buffer_safety_);
+
+    if (stop_ && data_transfer_connection_error_) {
+        std::rethrow_exception(data_transfer_connection_error_);
+    }
+
     if (!available_buffers_.empty()) {
         return 1;
     }
@@ -618,6 +635,10 @@ short I_EventsStream::wait_next_buffer() {
     std::unique_lock<std::mutex> lock(new_buffer_safety_);
     new_buffer_cond_.wait(lock, [this]() { return !available_buffers_.empty() || stop_; });
 
+    if (stop_ && data_transfer_connection_error_) {
+        std::rethrow_exception(data_transfer_connection_error_);
+    }
+
     return available_buffers_.empty() ? -1 : 1;
 }
 
@@ -625,6 +646,10 @@ I_EventsStream::RawData *I_EventsStream::get_latest_raw_data(long &size) {
     DataTransfer::BufferPtr local_ptr;
     {
         std::lock_guard<std::mutex> lock(new_buffer_safety_);
+
+        if (stop_ && data_transfer_connection_error_) {
+            std::rethrow_exception(data_transfer_connection_error_);
+        }
 
         if (available_buffers_.empty()) {
             // If no new buffer available yet
@@ -652,6 +677,10 @@ DataTransfer::BufferPtr I_EventsStream::get_latest_raw_data() {
     DataTransfer::BufferPtr res;
     {
         std::lock_guard<std::mutex> lock(new_buffer_safety_);
+
+        if (stop_ && data_transfer_connection_error_) {
+            std::rethrow_exception(data_transfer_connection_error_);
+        }
 
         if (available_buffers_.empty()) {
             // If no new buffer available yet

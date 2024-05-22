@@ -32,13 +32,15 @@ class ValidatorInterface {
 protected:
     std::map<size_t, I_Decoder::ProtocolViolationCallback_t> notifiers_map_;
     size_t next_cb_idx_{0};
+    int height_;
+    int width_;
 
 public:
     constexpr static int TIME_HIGH_MAX_VALUE = 0xFFF;
     constexpr static int LOOSE_TIME_HIGH_OVERFLOW_EPSILON =
         0xFF; // Arbitrary value to distinguish data swap from data drop
 
-    ValidatorInterface(int height, int width) {}
+    ValidatorInterface(int height, int width) : height_(height), width_(width) {}
 
     size_t add_protocol_violation_callback(const I_Decoder::ProtocolViolationCallback_t &cb) {
         notifiers_map_[next_cb_idx_] = cb;
@@ -113,11 +115,11 @@ class NullCheckValidator : public ValidatorInterface<NullCheckValidator> {
 public:
     NullCheckValidator(int height, int width) : ValidatorInterface<NullCheckValidator>(height, width) {}
 
-    bool validate_event_cd_impl(const Evt3Raw::RawEvent *raw_events) {
+    bool validate_event_cd_impl([[maybe_unused]] const Evt3Raw::RawEvent *raw_events) {
         return true;
     }
 
-    bool validate_ext_trigger_impl(const Evt3Raw::RawEvent *raw_events) {
+    bool validate_ext_trigger_impl([[maybe_unused]] const Evt3Raw::RawEvent *raw_events) {
         return true;
     }
 
@@ -125,35 +127,34 @@ public:
         return true;
     }
 
-    bool validate_vect_12_12_8_pattern_impl(const Evt3Raw::RawEvent *raw_events, unsigned vect_base,
-                                            int &next_valid_offset) {
+    bool validate_vect_12_12_8_pattern_impl([[maybe_unused]] const Evt3Raw::RawEvent *raw_events,
+                                            [[maybe_unused]] unsigned vect_base, int &next_valid_offset) {
         next_valid_offset = sizeof(Evt3Raw::Event_Vect12_12_8) / sizeof(Evt3Raw::RawEvent);
         return true;
     }
 
-    bool validate_continue_12_12_4_pattern_impl(const Evt3Raw::RawEvent *raw_events, int &next_valid_offset) {
+    bool validate_continue_12_12_4_pattern_impl([[maybe_unused]] const Evt3Raw::RawEvent *raw_events,
+                                                int &next_valid_offset) {
         next_valid_offset = sizeof(Evt3Raw::Event_Continue12_12_4) / sizeof(Evt3Raw::RawEvent);
         return true;
     }
 
-    void validate_time_high_impl(timestamp prev_time_high, timestamp time_high) {}
+    void validate_time_high_impl([[maybe_unused]] timestamp prev_time_high, [[maybe_unused]] timestamp time_high) {}
 
-    void state_update_impl(const Evt3Raw::RawEvent *raw_event) {}
+    void state_update_impl([[maybe_unused]] const Evt3Raw::RawEvent *raw_event) {}
 };
 
 class BasicCheckValidator : public ValidatorInterface<BasicCheckValidator> {
-    uint32_t width_;
     bool has_vect_base_ = false;
 
 public:
-    BasicCheckValidator(int height, int width) :
-        ValidatorInterface<BasicCheckValidator>(height, width), width_(width) {}
+    BasicCheckValidator(int height, int width) : ValidatorInterface<BasicCheckValidator>(height, width) {}
 
-    bool validate_event_cd_impl(const Evt3Raw::RawEvent *raw_events) {
+    bool validate_event_cd_impl([[maybe_unused]] const Evt3Raw::RawEvent *raw_events) {
         return true;
     }
 
-    bool validate_ext_trigger_impl(const Evt3Raw::RawEvent *raw_events) {
+    bool validate_ext_trigger_impl([[maybe_unused]] const Evt3Raw::RawEvent *raw_events) {
         return true;
     }
 
@@ -161,11 +162,11 @@ public:
         return true;
     }
 
-    bool validate_vect_12_12_8_pattern_impl(const Evt3Raw::RawEvent *raw_events, unsigned vect_base,
+    bool validate_vect_12_12_8_pattern_impl([[maybe_unused]] const Evt3Raw::RawEvent *raw_events, unsigned vect_base,
                                             int &next_valid_offset) {
         next_valid_offset = sizeof(Evt3Raw::Event_Vect12_12_8) / sizeof(Evt3Raw::RawEvent);
 
-        if (!has_vect_base_ || vect_base + 32 > width_) {
+        if (!has_vect_base_ || int(vect_base + 32) > width_) {
             has_vect_base_ = false;
             notify(DecoderProtocolViolation::InvalidVectBase);
             return false;
@@ -174,7 +175,8 @@ public:
         return true;
     }
 
-    bool validate_continue_12_12_4_pattern_impl(const Evt3Raw::RawEvent *raw_events, int &next_valid_offset) {
+    bool validate_continue_12_12_4_pattern_impl([[maybe_unused]] const Evt3Raw::RawEvent *raw_events,
+                                                int &next_valid_offset) {
         next_valid_offset = sizeof(Evt3Raw::Event_Continue12_12_4) / sizeof(Evt3Raw::RawEvent);
         return true;
     }
@@ -199,17 +201,14 @@ public:
 };
 
 class GrammarValidator : public ValidatorInterface<GrammarValidator> {
-    uint32_t height_;
-    uint32_t width_;
     bool is_valid_time_high_ = false;
     bool has_addr_y_         = false;
     bool has_vect_base_      = false;
 
 public:
-    GrammarValidator(int height, int width) :
-        ValidatorInterface<GrammarValidator>(height, width), height_(height), width_(width) {}
+    GrammarValidator(int height, int width) : ValidatorInterface<GrammarValidator>(height, width) {}
 
-    bool validate_event_cd_impl(const Evt3Raw::RawEvent *raw_events) {
+    bool validate_event_cd_impl([[maybe_unused]] const Evt3Raw::RawEvent *raw_events) {
         if (!has_addr_y_) {
             notify(DecoderProtocolViolation::MissingYAddr);
             return false;
@@ -217,7 +216,7 @@ public:
         return is_valid_time_high_;
     }
 
-    bool validate_ext_trigger_impl(const Evt3Raw::RawEvent *raw_events) {
+    bool validate_ext_trigger_impl([[maybe_unused]] const Evt3Raw::RawEvent *raw_events) {
         return is_valid_time_high_;
     }
 
@@ -242,7 +241,7 @@ public:
 
         next_valid_offset = sizeof(Evt3Raw::Event_Vect12_12_8) / sizeof(Evt3Raw::RawEvent);
 
-        if (!has_vect_base_ || vect_base + 32 > width_) {
+        if (!has_vect_base_ || int(vect_base + 32) > width_) {
             has_vect_base_ = false;
             notify(DecoderProtocolViolation::InvalidVectBase);
             return false;

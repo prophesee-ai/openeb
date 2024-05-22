@@ -52,13 +52,18 @@ public:
     /// @brief ROI controller driver mode
     ///
     /// MASTER : Region of interest controlled by ROI Master state machine
-    /// LATCH : Region of interest directly controlled by register access to latches
-    enum class DriverMode { MASTER, LATCH };
+    /// LATCH : Region of interest controlled by register access to latches
+    /// IO : Region of interest controlled by pixel reset register or external input pin
+    enum class DriverMode { MASTER, LATCH, IO };
 
     /// @brief Set ROI controller mode
-    /// @param driver_mode driver mode to set (MASTER or LATCH)
+    /// @param driver_mode driver mode to set
     /// @return true on success
     bool set_driver_mode(const DriverMode &driver_mode);
+
+    /// @brief Gets ROI controller mode
+    /// @return ROI driver mode
+    DriverMode get_driver_mode() const;
 
     static std::filesystem::path default_calibration_path();
     bool load_calibration_file(const std::filesystem::path &path);
@@ -142,6 +147,8 @@ public:
     Grid get_grid() const;
     void print_grid_config();
 
+    void pixel_reset(const bool &enable);
+
 private:
     int device_height_{0};
     int device_width_{0};
@@ -156,6 +163,8 @@ private:
     Grid grid_;
     I_ROI::Window main_window_;
     unsigned int roi_window_cnt_;
+
+    void open_all_latches();
 };
 
 } // namespace Metavision

@@ -23,7 +23,7 @@
 namespace Metavision {
 
 void export_rolling_event_cd_buffer(py::module &m) {
-    py::enum_<RollingEventBufferMode>(m, "ClusterMaker")
+    py::enum_<RollingEventBufferMode>(m, "RollingEventBufferMode")
         .value("N_US", RollingEventBufferMode::N_US)
         .value("N_EVENTS", RollingEventBufferMode::N_EVENTS);
 

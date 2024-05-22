@@ -12,8 +12,7 @@ Simple Iterator built around the Metavision Reader classes.
 """
 from .raw_reader import RawReaderBase
 from .py_reader import EventDatReader
-from .h5_io import H5EventsReader, HDF5EventsReader
-from .meta_event_producer import MetaEventBufferProducer
+from .h5_io import HDF5EventsReader
 import numpy as np
 
 
@@ -56,7 +55,7 @@ class EventsIterator(object):
                  max_duration=None, relative_timestamps=False, **kwargs):
         if (mode in ["delta_t", "mixed"]) and (start_ts % delta_t != 0):
             raise ValueError(f"start_ts ({start_ts}) must be a multiple of delta_t ({delta_t})")
-        if mode == 'n_events' and start_ts>0:
+        if mode == 'n_events' and start_ts > 0:
             raise ValueError(f"start_ts must be 0 when loading n_events")
         self.start_ts = int(start_ts)
         assert delta_t >= 0 and n_events >= 0
@@ -85,15 +84,12 @@ class EventsIterator(object):
         if isinstance(input_path, type("")):
             if input_path.endswith(".dat"):
                 self.reader = EventDatReader(input_path, **kwargs)
-            elif input_path.endswith(".h5"):
-                h5_reader = H5EventsReader(input_path)
-                self.reader = MetaEventBufferProducer(h5_reader, self.mode, self.delta_t, self.n_events, self.start_ts)
             elif input_path.endswith(".hdf5"):
                 self.reader = HDF5EventsReader(input_path)
             else:
                 self.reader = RawReaderBase(input_path, delta_t=self.delta_t, ev_count=self.n_events, **kwargs)
         else:
-            # we assume input_path is a actually device
+            # we assume input_path is an actual device
             self.reader = RawReaderBase.from_device(input_path, delta_t=self.delta_t, ev_count=self.n_events, **kwargs)
 
     @classmethod

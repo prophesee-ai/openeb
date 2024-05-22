@@ -33,6 +33,12 @@ set(CPACK_COMPONENT_METAVISION-HAL-BIN_DEPENDS metavision-hal-lib)
 set(CPACK_COMPONENT_METAVISION-HAL-SAMPLES_DESCRIPTION "Samples for Metavision HAL libraries.\n${OPEN_PACKAGE_LICENSE}")
 set(CPACK_COMPONENT_METAVISION-HAL-SAMPLES_DEPENDS metavision-hal-dev)
 
+###################################
+#  metavision-hal-python-samples  #
+###################################
+set(CPACK_COMPONENT_METAVISION-HAL-PYTHON-SAMPLES_DESCRIPTION "Samples for Metavision HAL Python libraries.\n${OPEN_PACKAGE_LICENSE}")
+set(CPACK_COMPONENT_METAVISION-HAL-PYTHON-SAMPLES_DEPENDS metavision-hal-python${PYTHON3_DEFAULT_VERSION})
+
 ############################
 # metavision-hal-python3.X #
 ############################

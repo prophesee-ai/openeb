@@ -9,15 +9,23 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
+#include "metavision/hal/utils/hal_connection_exception.h"
 #include "metavision/psee_hw_layer/boards/utils/psee_libusb.h"
 
 namespace Metavision {
 
+const std::error_category &libusb_error_category() {
+    // The category singleton
+    static LibUsbError instance;
+    return instance;
+}
+
 LibUSBContext::LibUSBContext() {
     int err;
     err = libusb_init(&ctx_);
-    if (err)
-        throw std::system_error(err, LibUsbError());
+    if (err) {
+        throw HalConnectionException(err, libusb_error_category());
+    }
 }
 
 LibUSBContext::~LibUSBContext() {
@@ -31,16 +39,18 @@ libusb_context *LibUSBContext::ctx() {
 LibUSBDevice::LibUSBDevice(std::shared_ptr<LibUSBContext> libusb_ctx, libusb_device *dev) : libusb_ctx_(libusb_ctx) {
     int err;
     err = libusb_open(dev, &dev_handle_);
-    if (err)
-        throw std::system_error(err, LibUsbError());
+    if (err) {
+        throw HalConnectionException(err, libusb_error_category());
+    }
 }
 
 LibUSBDevice::LibUSBDevice(std::shared_ptr<LibUSBContext> libusb_ctx, uint16_t vendor_id, uint16_t product_id) :
     libusb_ctx_(libusb_ctx) {
     libusb_context *ctx = libusb_ctx ? libusb_ctx->ctx() : NULL;
     dev_handle_         = libusb_open_device_with_vid_pid(ctx, vendor_id, product_id);
-    if (!dev_handle_)
-        throw std::system_error(LIBUSB_ERROR_NO_DEVICE, LibUsbError());
+    if (!dev_handle_) {
+        throw HalConnectionException(LIBUSB_ERROR_NO_DEVICE, libusb_error_category());
+    }
 }
 
 LibUSBDevice::~LibUSBDevice() {
@@ -107,24 +117,27 @@ void LibUSBDevice::control_transfer(uint8_t bmRequestType, uint8_t bRequest, uin
                                     unsigned char *data, uint16_t wLength, unsigned int timeout) {
     int res;
     res = libusb_control_transfer(dev_handle_, bmRequestType, bRequest, wValue, wIndex, data, wLength, timeout);
-    if (res < 0)
-        throw std::system_error(res, LibUsbError());
+    if (res < 0) {
+        throw HalConnectionException(res, libusb_error_category());
+    }
 }
 
 void LibUSBDevice::bulk_transfer(unsigned char endpoint, unsigned char *data, int length, int *transferred,
                                  unsigned int timeout) {
     int res;
     res = libusb_bulk_transfer(dev_handle_, endpoint, data, length, transferred, timeout);
-    if (res < 0)
-        throw std::system_error(res, LibUsbError());
+    if (res < 0) {
+        throw HalConnectionException(res, libusb_error_category());
+    }
 }
 
 void LibUSBDevice::interrupt_transfer(unsigned char endpoint, unsigned char *data, int length, int *transferred,
                                       unsigned int timeout) {
     int res;
     res = libusb_interrupt_transfer(dev_handle_, endpoint, data, length, transferred, timeout);
-    if (res < 0)
-        throw std::system_error(res, LibUsbError());
+    if (res < 0) {
+        throw HalConnectionException(res, libusb_error_category());
+    }
 }
 
 } // namespace Metavision

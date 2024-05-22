@@ -23,6 +23,7 @@
 #define WIN_CALLBACK_DECL
 #endif
 
+#include "metavision/hal/utils/hal_connection_exception.h"
 #include "metavision/psee_hw_layer/boards/utils/psee_libusb_data_transfer.h"
 #include "boards/utils/config_registers_map.h"
 
@@ -204,7 +205,7 @@ bool PseeLibUSBDataTransfer::UserParamForAsyncBulkCallback::proceed_async_bulk(l
             MV_HAL_LOG_ERROR() << "ErrTransfert";
             MV_HAL_LOG_ERROR() << libusb_error_name(transfer->status);
             if (transfer->status == LIBUSB_TRANSFER_NO_DEVICE) {
-                MV_HAL_LOG_ERROR() << "LIBUSB_TRANSFER_NO_DEVICE";
+                throw HalConnectionException(transfer->status, libusb_error_category());
                 return false;
             }
         }
@@ -212,7 +213,7 @@ bool PseeLibUSBDataTransfer::UserParamForAsyncBulkCallback::proceed_async_bulk(l
         if (r != 0) {
             MV_HAL_LOG_ERROR() << "Resubmit Error after Error";
             MV_HAL_LOG_ERROR() << libusb_error_name(r);
-            return false;
+            throw HalConnectionException(r, libusb_error_category());
         }
         return true;
     }
@@ -235,7 +236,7 @@ bool PseeLibUSBDataTransfer::UserParamForAsyncBulkCallback::proceed_async_bulk(l
     if (r != 0) {
         MV_HAL_LOG_ERROR() << "Resubmit error after transfer OK";
         MV_HAL_LOG_ERROR() << libusb_error_name(r);
-        return false;
+        throw HalConnectionException(r, libusb_error_category());
     }
 
     return true;
@@ -249,7 +250,7 @@ void PseeLibUSBDataTransfer::UserParamForAsyncBulkCallback::start() {
     if (r != 0) {
         MV_HAL_LOG_ERROR() << "Submit error in start";
         MV_HAL_LOG_ERROR() << libusb_error_name(r);
-        return;
+        throw HalConnectionException(r, libusb_error_category());
     }
 
     stop_ = false;
@@ -294,10 +295,10 @@ void PseeLibUSBDataTransfer::free_async_bulk_transfer(libusb_transfer *transfer)
 }
 
 int PseeLibUSBDataTransfer::submit_transfer(libusb_transfer *transfer) {
-    int r = 0;
-    r     = libusb_submit_transfer(transfer);
+    int r = libusb_submit_transfer(transfer);
     if (r < 0) {
         MV_HAL_LOG_ERROR() << "USB Submit Error";
+        throw HalConnectionException(r, libusb_error_category());
     }
     return r;
 }

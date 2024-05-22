@@ -23,14 +23,13 @@
 class EventAnalyzer {
 public:
     // class variables to store global information
+    int callback_counter               = 0; // this will track the number of callbacks
     int global_counter                 = 0; // this will track how many events we processed
     Metavision::timestamp global_max_t = 0; // this will track the highest timestamp we processed
 
     // this function will be associated to the camera callback
     // it is used to compute statistics on the received events
     void analyze_events(const Metavision::EventCD *begin, const Metavision::EventCD *end) {
-        std::cout << "----- New callback! -----" << std::endl;
-
         // time analysis
         // Note: events are ordered by timestamp in the callback, so the first event will have the lowest timestamp and
         // the last event will have the highest timestamp
@@ -45,13 +44,14 @@ public:
         }
         global_counter += counter; // increase global counter
 
-        // report
-        std::cout << "There were " << counter << " events in this callback" << std::endl;
-        std::cout << "There were " << global_counter << " total events up to now." << std::endl;
-        std::cout << "The current callback included events from " << min_t << " up to " << max_t << " microseconds."
-                  << std::endl;
+        // Uncomment next line to display the buffer report in the terminal
+        // WARNING : logging in the terminal can drastically decrease the performances of your application, especially
+        // on embedded platforms with low computational power
+        std::cout << "Cb n°" << callback_counter << ": " << counter << " events from t=" << min_t << " to t="
+                  << max_t << " us." << std::endl;
 
-        std::cout << "----- End of the callback! -----" << std::endl;
+        // increment callbacks counter
+        callback_counter++;
     }
 };
 
@@ -130,7 +130,8 @@ int main(int argc, char *argv[]) {
 
     // print the global statistics
     const double length_in_seconds = event_analyzer.global_max_t / 1000000.0;
-    std::cout << "There were " << event_analyzer.global_counter << " events in total." << std::endl;
+    std::cout << "There were " << event_analyzer.global_counter << " events in total, dispatched in "
+              << event_analyzer.callback_counter << " callbacks." << std::endl;
     std::cout << "The total duration was " << length_in_seconds << " seconds." << std::endl;
     if (length_in_seconds >= 1) { // no need to print this statistics if the total duration was too short
         std::cout << "There were " << event_analyzer.global_counter / length_in_seconds

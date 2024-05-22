@@ -63,6 +63,7 @@ public:
     static bool can_build_mp(std::shared_ptr<TzLibUSBBoardCommand>, uint32_t dev_id);
     std::list<StreamFormat> get_supported_formats() const override;
     StreamFormat get_output_format() const override;
+    StreamFormat set_output_format(const std::string &format_name) override;
     virtual long get_system_id() const;
     virtual bool set_mode_standalone();
     virtual bool set_mode_master();

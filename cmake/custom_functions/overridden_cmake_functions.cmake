@@ -233,7 +233,7 @@ if (WIN32)
     # this is done in a very hackish way, because cmake does not officially support overriding add_library
     # to do so, we need to redefine add_library (our version) and _add_library (called by VCPKG internally)
     # but since redefining a function shadows its previous version, we successively redefine _{0,4}add_library
-    # to keep vcpkg and the original cmake versions "accessible" 
+    # to keep vcpkg and the original cmake versions "accessible"
 
     # save original add_library (already redefined by VCPKG, so renamed _add_library)
     function (_add_library)
@@ -250,7 +250,7 @@ if (WIN32)
         ____add_library(${ARGN})
     endfunction ()
 
-    # save vcpkg add_library 
+    # save vcpkg add_library
     function (add_library)
         # ... renames add_library to _add_library
     endfunction ()
@@ -295,44 +295,6 @@ if (WIN32)
         add_library_orig(${ARGN})
     endfunction(_add_library)
 endif()
-
-##################################################
-
-if(${CMAKE_VERSION} VERSION_GREATER "3.19.0")
-
-# Override built-in target_include_directories to also forward the call to target_sources(), so that
-# some IDEs (e.g. Visual Studio, XCode, etc) properly display the header files for each target.
-# This is disabled for CMake versions below 3.19.0, because they do not support adding PRIVATE target
-# sources to INTERFACE libraries, which leads to much too many headers being added to the targets.
-function(target_include_directories target)
-    _target_include_directories(${target} ${ARGN})
-    # List relevant files in the include directories to forward to target_sources
-    set(ignored_keywords AFTER BEFORE PUBLIC PRIVATE INTERFACE)
-    set(header_file_list "")
-    foreach(arg ${ARGN})
-        if(${arg} STREQUAL "SYSTEM")
-            break()
-        elseif(${arg} IN_LIST ignored_keywords)
-            continue()
-        elseif(${arg} MATCHES "^.<BUILD_INTERFACE:.*>$")
-            string(LENGTH ${arg} arg_length)
-            math(EXPR arg_substring_length "${arg_length}-19")
-            string(SUBSTRING ${arg} 18 ${arg_substring_length} arg_path)
-            file(GLOB_RECURSE tmp_header_file_list "${arg_path}/*.h" "${arg_path}/*.hpp")
-            list(APPEND header_file_list ${tmp_header_file_list})
-        elseif(${arg} MATCHES "^.<.*>$")
-            continue()
-        else()
-            file(GLOB_RECURSE header_file_list "${arg}/*.h" "${arg}/*.hpp")
-            list(APPEND header_file_list ${tmp_header_file_list})
-        endif(${arg} STREQUAL "SYSTEM")
-    endforeach(arg in ${ARGN})
-    if(NOT header_file_list STREQUAL "")
-        target_sources(${target} PRIVATE ${header_file_list})
-    endif(NOT header_file_list STREQUAL "")
-endfunction(target_include_directories)
-
-endif(${CMAKE_VERSION} VERSION_GREATER "3.19.0")
 
 ##################################################
 

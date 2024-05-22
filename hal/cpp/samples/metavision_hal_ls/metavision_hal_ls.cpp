@@ -19,7 +19,7 @@
 #include <metavision/hal/facilities/i_plugin_software_info.h>
 #include <metavision/hal/device/device.h>
 #include <metavision/hal/device/device_discovery.h>
-#include <metavision/hal/utils/hal_exception.h>
+#include <metavision/sdk/base/utils/error_utils.h>
 #include <metavision/sdk/base/utils/log.h>
 
 namespace po = boost::program_options;
@@ -76,7 +76,7 @@ int main(int argc, char *argv[]) {
                 // open device from a serial
                 device = Metavision::DeviceDiscovery::open(s);
                 /// [open serial]
-            } catch (const Metavision::HalException &e) { MV_LOG_ERROR() << e.what(); }
+            } catch (const Metavision::BaseException &e) { MV_LOG_ERROR() << e.what(); }
 
             if (device) {
                 auto i_hal_software_info = device->get_facility<Metavision::I_HALSoftwareInfo>();

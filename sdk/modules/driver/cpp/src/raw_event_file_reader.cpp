@@ -118,7 +118,7 @@ public:
                 return false;
             }
             if (i_events_stream_) {
-                data_buffer_ = i_events_stream_->get_latest_raw_data();
+                data_buffer_      = i_events_stream_->get_latest_raw_data();
                 raw_data_cur_ptr_ = data_buffer_->data();
                 raw_data_end_ptr_ = data_buffer_->data() + data_buffer_->size();
             }
@@ -192,7 +192,7 @@ public:
     bool seek_impl(timestamp t) {
         timestamp ts;
         if (i_events_stream_->seek(t, ts) == I_EventsStream::SeekStatus::Success) {
-            i_events_stream_decoder_->reset_timestamp(ts);
+            i_events_stream_decoder_->reset_last_timestamp(ts);
             reader_.notify_seek(ts);
             raw_data_cur_ptr_ = raw_data_end_ptr_; // force a wait_next_buffer at next read_impl
             return true;

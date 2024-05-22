@@ -94,8 +94,21 @@ public:
     /// @warning If time shifting is enabled, the @p timestamp must be in the shifted time reference
     /// @warning Additional care may be required regarding the expected content of the data to be decoded
     ///          after this function has been called. Refer to the constraints and limitations of a specific
+    ///          decoder implementation (e.g EVT2Decoder::reset_last_timestamp_impl,
+    ///          EVT21Decoder::reset_last_timestamp_impl and EVT3Decoder::reset_last_timestamp_impl)
+    bool reset_last_timestamp(const Metavision::timestamp &timestamp);
+
+    /// @brief Resets the decoder last timestamp
+    /// @param timestamp Timestamp to reset the decoder to
+    /// @return true if the reset operation could complete, false otherwise.
+    /// @note After this call has succeeded, that @ref get_last_timestamp returns @p timestamp
+    /// @warning If time shifting is enabled, the @p timestamp must be in the shifted time reference
+    /// @warning Additional care may be required regarding the expected content of the data to be decoded
+    ///          after this function has been called. Refer to the constraints and limitations of a specific
     ///          decoder implementation (e.g EVT2Decoder::reset_timestamp_impl, EVT21Decoder::reset_timestamp_impl and
     ///          EVT3Decoder::reset_timestamp_impl)
+    [[deprecated("'I_EventsStream::reset_timestamp' is deprecated since v4.6.0, "
+                 "please use 'I_EventsStream::reset_last_timestamp' instead.")]]
     bool reset_timestamp(const Metavision::timestamp &timestamp);
 
     /// @brief Resets the decoder timestamp shift
@@ -181,7 +194,19 @@ private:
     /// @return True if the reset operation could complete, false otherwise.
     /// @note It is expected after this call has succeeded, that @ref get_last_timestamp returns @p timestamp
     /// @warning If time shifting is enabled, the @p timestamp must be in the shifted time reference
-    virtual bool reset_timestamp_impl(const Metavision::timestamp &timestamp) = 0;
+    virtual bool reset_last_timestamp_impl(const Metavision::timestamp &timestamp);
+
+    /// @brief Implementation of "reset the decoder last timestamp" operation
+    /// @param timestamp Timestamp to reset the decoder to
+    ///        If >= 0, reset the decoder last timestamp to the actual value @p timestamp
+    ///        If < 0, reset the decoder internal state so that the last timestamp will be found from the
+    ///        next buffer of events to decoder (the timestamp shift and overflow loop counter is not reset)
+    /// @return True if the reset operation could complete, false otherwise.
+    /// @note It is expected after this call has succeeded, that @ref get_last_timestamp returns @p timestamp
+    /// @warning If time shifting is enabled, the @p timestamp must be in the shifted time reference
+    [[deprecated("'I_EventsStream::reset_timestamp_impl' is deprecated since v4.6.0, "
+                 "please use 'I_EventsStream::reset_last_timestamp_impl' instead.")]]
+    virtual bool reset_timestamp_impl(const Metavision::timestamp &timestamp);
 
     /// @brief Implementation of "reset the decoder timestamp shift" operation
     /// @param shift Timestamp shift to reset the decoder to

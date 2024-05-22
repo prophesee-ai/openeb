@@ -11,9 +11,9 @@ if(NOT HAS_V4L2 OR ANDROID)
     return()
 endif()
 
-target_compile_definitions(metavision_hal_v4l2_protocol_obj PRIVATE HAS_V4L2)
+target_compile_definitions(metavision_hal_psee_plugin_obj PRIVATE HAS_V4L2)
 
-target_sources(metavision_hal_v4l2_protocol_obj PRIVATE
+target_sources(metavision_hal_psee_plugin_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/v4l2_camera_discovery.cpp
 )
 

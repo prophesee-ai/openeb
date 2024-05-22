@@ -5,7 +5,7 @@ import "camera_synchronization_state.proto";
 import "digital_crop_state.proto";
 import "digital_event_mask_state.proto";
 import "event_rate_control_state.proto";
-import "event_rate_noise_filter_state.proto";
+import "event_rate_activity_filter_state.proto";
 import "event_trail_filter_state.proto";
 import "hw_register_state.proto";
 import "ll_biases_state.proto";
@@ -21,6 +21,7 @@ message DeviceState {
     DigitalCropState digital_crop_state = 3;
     DigitalEventMaskState digital_event_mask_state = 4;
     EventRateControlState event_rate_control_state = 5;
+    // For metavision versions < 4.6.0, replaced by EventRateActivityFilterState #13
     EventRateNoiseFilterState event_rate_noise_filter_state = 6;
     EventTrailFilterState event_trail_filter_state = 7;
     HWRegisterState hw_register_state = 8;
@@ -28,4 +29,5 @@ message DeviceState {
     RegionOfInterestState roi_state = 10;
     TriggerInState trigger_in_state = 11;
     TriggerOutState trigger_out_state = 12;
+    EventRateActivityFilterState event_rate_activity_filter_state = 13;
 }

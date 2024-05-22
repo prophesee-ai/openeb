@@ -13,8 +13,8 @@
 #include <fstream>
 #include <boost/program_options.hpp>
 
+#include <metavision/sdk/base/utils/error_utils.h>
 #include <metavision/sdk/base/utils/log.h>
-#include <metavision/hal/utils/hal_exception.h>
 #include <metavision/hal/facilities/i_events_stream_decoder.h>
 #include <metavision/hal/device/device.h>
 #include <metavision/hal/device/device_discovery.h>
@@ -77,7 +77,7 @@ int main(int argc, char *argv[]) {
 
     try {
         device = Metavision::DeviceDiscovery::open_raw_file(in_raw_file_path, file_config);
-    } catch (Metavision::HalException &e) {
+    } catch (Metavision::BaseException &e) {
         MV_LOG_ERROR() << "Error exception:" << e.what();
         return 1;
     }

@@ -14,8 +14,3 @@ target_sources(hal_plugin_prophesee PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/psee_uni
 if(HAS_V4L2)
     target_compile_definitions(hal_plugin_prophesee PRIVATE HAS_V4L2)
 endif(HAS_V4L2)
-
-if(HAL_SENSORLIB_SUPPORT)
-    target_sources(hal_plugin_sensorlib_tz PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/psee_sensorlib_tz.cpp)
-    target_sources(hal_plugin_sensorlib_fx3 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/psee_sensorlib_fx3.cpp)
-endif(HAL_SENSORLIB_SUPPORT)

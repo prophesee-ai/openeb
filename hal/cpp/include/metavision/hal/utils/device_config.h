@@ -103,6 +103,8 @@ public:
     /// @return string representing current event format setting
     std::string format() const;
 
+    /// @brief Sets the event format
+    /// @param format String representing event format to set
     void set_format(const std::string &format);
 
     static std::string get_biases_range_check_bypass_key();

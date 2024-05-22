@@ -10,6 +10,7 @@
  **********************************************************************************************************************/
 
 #include "metavision/hal/facilities/i_events_stream_decoder.h"
+#include "metavision/hal/utils/hal_exception.h"
 
 namespace Metavision {
 
@@ -103,9 +104,38 @@ bool I_EventsStreamDecoder::remove_time_callback(size_t callback_id) {
     return false;
 }
 
-bool I_EventsStreamDecoder::reset_timestamp(const timestamp &t) {
+// Exception only used to detect which of reset_timestamp or reset_last_timestamp is implemented
+// Should be removed once reset_timestamp is removed
+class ResetTimestampNotImplementedException : public std::exception {};
+
+bool I_EventsStreamDecoder::reset_timestamp(const timestamp &timestamp) {
+    return reset_last_timestamp(timestamp);
+}
+
+bool I_EventsStreamDecoder::reset_last_timestamp(const timestamp &timestamp) {
     incomplete_raw_data_.clear();
-    return reset_timestamp_impl(t);
+    try {
+        return reset_timestamp_impl(timestamp);
+    } catch (const ResetTimestampNotImplementedException &e) {
+        try {
+            return reset_last_timestamp_impl(timestamp);
+        } catch (const ResetTimestampNotImplementedException &e) {
+            // Plugin is broken
+            throw HalException(HalErrorCode::OperationNotImplemented,
+                               "I_EventsStreamDecoder::reset_timestamp/reset_last_timestamp"
+                               " operation is not implemented by the current plugin");
+        }
+    }
+    return false;
+}
+
+bool I_EventsStreamDecoder::reset_timestamp_impl(const timestamp &timestamp) {
+    throw ResetTimestampNotImplementedException();
+}
+
+// Should made pure virtual once I_EventsStreamDecoder::reset_timestamp is removed
+bool I_EventsStreamDecoder::reset_last_timestamp_impl(const timestamp &timestamp) {
+    throw ResetTimestampNotImplementedException();
 }
 
 bool I_EventsStreamDecoder::reset_timestamp_shift(const timestamp &t) {

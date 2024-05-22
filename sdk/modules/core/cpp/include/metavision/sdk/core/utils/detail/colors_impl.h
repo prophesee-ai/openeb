@@ -214,6 +214,22 @@ inline const RGBColor &get_color(const ColorPalette &palette, const std::string 
     throw std::runtime_error("Unknown color palette " + std::to_string(static_cast<int>(palette)));
 }
 
+inline const std::unordered_map<std::string, RGBColor> &get_colors(const ColorPalette &palette) {
+    switch (palette) {
+    case ColorPalette::Light:
+        return detail::LightColorPaletteMap;
+    case ColorPalette::Dark:
+        return detail::DarkColorPaletteMap;
+    case ColorPalette::CoolWarm:
+        return detail::CoolWarmColorPaletteMap;
+    case ColorPalette::Gray:
+        return detail::GrayColorPaletteMap;
+    default:
+        break;
+    }
+    throw std::runtime_error("Unknown color palette " + std::to_string(static_cast<int>(palette)));
+}
+
 inline cv::Vec3b get_bgr_color(const RGBColor &c) {
     return cv::Vec3b(static_cast<uchar>(c.b * 255 + 0.5), static_cast<uchar>(c.g * 255 + 0.5),
                      static_cast<uchar>(c.r * 255 + 0.5));

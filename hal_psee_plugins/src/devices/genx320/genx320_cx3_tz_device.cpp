@@ -30,6 +30,7 @@
 #include "metavision/psee_hw_layer/devices/genx320/genx320_roi_driver.h"
 #include "metavision/psee_hw_layer/devices/genx320/genx320_roi_interface.h"
 #include "metavision/psee_hw_layer/devices/genx320/genx320_roi_pixel_mask_interface.h"
+#include "metavision/psee_hw_layer/devices/genx320/genx320_roi_pixel_reset.h"
 #include "metavision/psee_hw_layer/devices/genx320/genx320_ll_biases.h"
 #include "metavision/psee_hw_layer/devices/genx320/genx320_erc.h"
 #include "metavision/psee_hw_layer/devices/genx320/genx320_nfl_driver.h"
@@ -265,6 +266,8 @@ void TzCx3GenX320::spawn_facilities(DeviceBuilder &device_builder, const DeviceC
 
     device_builder.add_facility(std::make_unique<GenX320RoiInterface>(roi_driver));
     device_builder.add_facility(std::make_unique<GenX320RoiPixelMaskInterface>(roi_driver));
+    device_builder.add_facility(std::make_unique<GenX320RoiPixelReset>(roi_driver));
+
     device_builder.add_facility(std::make_unique<GenX320LLBiases>(register_map, device_config));
     device_builder.add_facility(std::make_unique<AntiFlickerFilter>(register_map, get_sensor_info(), SENSOR_PREFIX));
     device_builder.add_facility(std::make_unique<EventTrailFilter>(register_map, get_sensor_info(), SENSOR_PREFIX));
@@ -285,14 +288,56 @@ long long TzCx3GenX320::get_sensor_id() {
 
 std::list<StreamFormat> TzCx3GenX320::get_supported_formats() const {
     std::list<StreamFormat> formats;
-    formats.push_back(StreamFormat("EVT21;height=320;width=320"));
+
+    // /!\ HAL advertizes first value in list as default format
+    formats.emplace_back("EVT21;height=320;width=320");
+    formats.emplace_back("EVT2;height=320;width=320");
+
+    if (is_mp) {
+        formats.emplace_back("EVT3;height=320;width=320");
+    }
+
     return formats;
 }
 
+StreamFormat TzCx3GenX320::set_output_format(const std::string &format_name) {
+    if (is_mp && (format_name == "EVT3")) {
+        (*register_map)["edf/control"]["format"].write_value(1);
+        (*register_map)["edf/pipeline_control"].write_value(1);
+    } else if (format_name == "EVT2") {
+        (*register_map)["edf/control"]["format"].write_value(0);
+        (*register_map)["edf/pipeline_control"].write_value(1);
+    } else {
+        // Default as EVT21
+        (*register_map)["edf/control"]["format"].write_value(2);
+        (*register_map)["edf/control"]["endianness"].write_value(0);
+        (*register_map)["edf/pipeline_control"].write_value(1);
+    }
+    return get_output_format();
+}
+
 StreamFormat TzCx3GenX320::get_output_format() const {
-    StreamFormat format("EVT21");
+    uint32_t fmt        = (*register_map)["edf/control"]["format"].read_value();
+    std::string fmt_str = "";
+
+    switch (fmt) {
+    case 0:
+        fmt_str = "EVT2";
+        break;
+    case 1:
+        fmt_str = "EVT3";
+        break;
+    case 2:
+        fmt_str = "EVT21;endianness=little";
+        break;
+    default:
+        break;
+    }
+
+    StreamFormat format(fmt_str);
     format["width"]  = "320";
     format["height"] = "320";
+
     return format;
 }
 

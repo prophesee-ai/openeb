@@ -16,6 +16,7 @@ target_sources(metavision_psee_hw_layer_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/genx320_roi_driver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/genx320_roi_interface.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/genx320_roi_pixel_mask_interface.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/genx320_roi_pixel_reset.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/genx320_ll_biases.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/genx320_erc.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/genx320_nfl_driver.cpp
@@ -25,6 +26,6 @@ target_sources(metavision_psee_hw_layer_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/genx320_digital_crop.cpp
 )
 
-target_sources(metavision_hal_genx320_cx3_system_obj PRIVATE
+target_sources(metavision_hal_psee_plugin_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/genx320_cx3_tz_device.cpp
 )

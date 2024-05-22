@@ -7,17 +7,6 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/src/devices/saphir")
-    set(HAL_SAPHIR_SUPPORT TRUE)
-endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/src/devices/saphir")
-
-if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/src/devices/sensorlib")
-    set(HAL_SENSORLIB_SUPPORT TRUE)
-endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/src/devices/sensorlib")
-
-if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/src/devices/evk3d")
-    set(HAL_EVK3D_SUPPORT TRUE)
-endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/src/devices/evk3d")
 
 find_file(v4l2_headers videodev2.h PATH_SUFFIXES linux)
 message(STATUS "Found V4l2 header : ${v4l2_headers}")
@@ -33,7 +22,6 @@ if(v4l2_headers AND dma_buf_header AND dma_heap_header)
     set(HAS_V4L2_SUPPORT TRUE)
 endif()
 set(HAS_V4L2 ${HAS_V4L2_SUPPORT} CACHE BOOL "Has V4l2 support with dma")
-
 
 # Add libraries (plugins)
 set(biasgen_calib_files_dir "${GENERATE_FILES_DIRECTORY}/biasgen_calib")

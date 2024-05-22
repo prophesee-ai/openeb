@@ -12,6 +12,7 @@
 #ifndef METAVISION_HAL_I_EVENTS_STREAM_H
 #define METAVISION_HAL_I_EVENTS_STREAM_H
 
+#include <exception>
 #include <string>
 #include <fstream>
 #include <memory>
@@ -201,6 +202,7 @@ private:
     std::mutex log_raw_safety_;
 
     std::unique_ptr<DataTransfer> data_transfer_;
+    std::exception_ptr data_transfer_connection_error_;
     std::shared_ptr<DeviceControl> device_control_;
     std::mutex new_buffer_safety_;
     std::condition_variable new_buffer_cond_;

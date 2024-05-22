@@ -41,7 +41,6 @@ def display_event_frames(input_path, output_video_path=None, disable_display=Fal
     else:
         raise NotImplementedError(f"Unsupported type of frame: {frame_type}")
 
-    stop = False
     for frame_idx, frame in enumerate(mv_it):
         if frame_type == "DIFF3D":
             print(f"frame_idx: {frame_idx}, shape: {frame.shape}, min: {frame.min()}, max: {frame.max()}")
@@ -78,7 +77,7 @@ def display_event_frames(input_path, output_video_path=None, disable_display=Fal
         if not disable_display:
             k = cv2.waitKey(1)
             if k == ord('q'):
-                print("!! STOP !!")
+                print("Stopped")
                 break
 
     if not disable_display:

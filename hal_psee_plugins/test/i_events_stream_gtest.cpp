@@ -634,6 +634,134 @@ TEST_F_WITH_DATASET(I_EventsStream_GTest, file_index_seek) {
                 timestamp reached_ts;
                 ASSERT_EQ(I_EventsStream::SeekStatus::Success, fes->seek(first_indexed_event_ts_us, reached_ts));
                 ASSERT_EQ(first_indexed_event_ts_us, reached_ts);
+                decoder->reset_last_timestamp(reached_ts);
+                ASSERT_EQ(decoder->get_last_timestamp(), reached_ts);
+
+                ASSERT_TRUE(fes->wait_next_buffer() > 0);
+                // Decode a single event and check that the timestamp is correct
+                auto buffer = fes->get_latest_raw_data();
+
+                // The first event decoded must have a timestamp that is equal to the first event's timestamp
+                decoder->decode(buffer->data(), buffer->data() + decoder->get_raw_event_size_bytes());
+                ASSERT_EQ(decoder->get_last_timestamp(), first_indexed_event_ts_us);
+
+                // ------------------------------
+                // Check seeking in the range of possible timestamps
+                MV_HAL_LOG_INFO() << "\t\t\tSeek in range of available timestamp";
+
+                std::vector<timestamp> targets;
+                const timestamp timestamp_step = (last_indexed_event_ts_us - first_indexed_event_ts_us) / 10;
+                for (uint32_t step = 1; step <= 10; ++step) {
+                    targets.push_back(first_indexed_event_ts_us + step * timestamp_step);
+                }
+
+                // Seeks back and forth in the file
+                using SizeType = std::vector<timestamp>::size_type;
+                for (SizeType i = 0; i < targets.size(); ++i) {
+                    auto target_ts_us = i % 2 ? targets[targets.size() - i] : targets[i];
+                    ASSERT_EQ(I_EventsStream::SeekStatus::Success, fes->seek(target_ts_us, reached_ts));
+                    decoder->reset_last_timestamp(reached_ts);
+                    ASSERT_LE(reached_ts, target_ts_us);
+
+                    // Read data from the file
+                    ASSERT_TRUE(fes->wait_next_buffer() > 0);
+                    buffer = fes->get_latest_raw_data();
+
+                    // The first event decoded must have a timestamp that is equal to the reached timestamp
+                    decoder->decode(buffer->data(), buffer->data() + decoder->get_raw_event_size_bytes());
+                    ASSERT_EQ(decoder->get_last_timestamp(), reached_ts);
+                }
+
+                // ------------------------------
+                // Check seeking at the end of the file
+                MV_HAL_LOG_INFO() << "\t\t\tSeek last event";
+                ASSERT_EQ(I_EventsStream::SeekStatus::Success, fes->seek(last_indexed_event_ts_us, reached_ts));
+                ASSERT_LE(reached_ts, last_indexed_event_ts_us);
+                decoder->reset_last_timestamp(reached_ts);
+
+                // Read data from the file
+                ASSERT_TRUE(fes->wait_next_buffer() > 0);
+                buffer = fes->get_latest_raw_data();
+
+                // The first event decoded must have a timestamp that is equal to the reached timestamp
+                decoder->decode(buffer->data(), buffer->data() + decoder->get_raw_event_size_bytes());
+                ASSERT_EQ(decoder->get_last_timestamp(), reached_ts);
+            }
+        }
+    }
+}
+
+TEST_F_WITH_DATASET(I_EventsStream_GTest, file_index_seek_deprecated_reset_timestamp) {
+    ////////////////////////////////////////////////////////////////////////////////
+    // PURPOSE
+    // Check seeking feature of the file control
+
+    RawFileConfig config;
+    config.n_events_to_read_ = 10000;
+
+    std::vector<bool> delete_index{{true, false}};
+    std::vector<bool> time_shift{{true, false}};
+
+    for (const auto &do_delete : delete_index) {
+        MV_HAL_LOG_INFO() << (do_delete ? "Index building from scratch" : "Index loaded from file");
+        for (const auto &dataset : datasets_) {
+            if (do_delete) {
+                std::string path;
+                boost::filesystem::remove(dataset + ".tmp_index");
+                ASSERT_FALSE(boost::filesystem::exists(dataset + ".tmp_index"));
+            }
+
+            MV_HAL_LOG_INFO() << "\tTesting dataset" << dataset;
+            for (const auto &do_time_shifting : time_shift) {
+                // Builds the device from the dataset
+                MV_HAL_LOG_INFO() << "\t\tTime shift:" << (do_time_shifting ? "enabled" : "disabled");
+                config.do_time_shifting_ = do_time_shifting;
+                ASSERT_TRUE(open_dataset(dataset, config));
+
+                // Ensures the index have been built and one can retrieve the timestamp range
+                auto fes = device_->get_facility<I_EventsStream>();
+                ASSERT_NE(nullptr, fes);
+
+                timestamp first_indexed_event_ts_us, last_indexed_event_ts_us;
+                auto index_status = fes->get_seek_range(first_indexed_event_ts_us, last_indexed_event_ts_us);
+                constexpr uint32_t max_trials = 1000;
+                uint32_t trials               = 1;
+                while (index_status != Metavision::I_EventsStream::IndexStatus::Good && trials != max_trials) {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                    ++trials;
+                    index_status = fes->get_seek_range(first_indexed_event_ts_us, last_indexed_event_ts_us);
+                }
+
+                ASSERT_LT(trials, max_trials);
+                ASSERT_GT(last_indexed_event_ts_us, first_indexed_event_ts_us);
+
+                auto decoder    = device_->get_facility<I_EventsStreamDecoder>();
+                auto cd_decoder = device_->get_facility<I_EventDecoder<EventCD>>();
+                ASSERT_NE(nullptr, decoder);
+                ASSERT_NE(nullptr, cd_decoder);
+                ASSERT_EQ(do_time_shifting, decoder->is_time_shifting_enabled());
+
+                // Start polling data
+                fes->start();
+
+                // GTest necessity only:
+                // Initialize the decoder (i.e. wait to reach the first decodable event)
+                // This is needed so that the seeking capability is validated
+                bool valid_event = false;
+                cd_decoder->add_event_buffer_callback([&](auto, auto) { valid_event = true; });
+                while (!valid_event) {
+                    // Read data from the file
+                    ASSERT_TRUE(fes->wait_next_buffer() > 0);
+                    auto buffer = fes->get_latest_raw_data();
+                    decoder->decode(buffer->data(), buffer->data() + buffer->size());
+                }
+
+                // ------------------------------
+                // Check seeking at the beginning
+                MV_HAL_LOG_INFO() << "\t\t\tSeek first event";
+                timestamp reached_ts;
+                ASSERT_EQ(I_EventsStream::SeekStatus::Success, fes->seek(first_indexed_event_ts_us, reached_ts));
+                ASSERT_EQ(first_indexed_event_ts_us, reached_ts);
                 decoder->reset_timestamp(reached_ts);
                 ASSERT_EQ(decoder->get_last_timestamp(), reached_ts);
 

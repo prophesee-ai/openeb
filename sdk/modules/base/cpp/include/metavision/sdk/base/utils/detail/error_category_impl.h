@@ -30,7 +30,7 @@ inline const char *ErrorCategory::name() const noexcept {
     return name_.c_str();
 }
 
-inline std::string ErrorCategory::message(int ev) const {
+inline std::string ErrorCategory::message([[maybe_unused]] int ev) const {
     return error_message_;
 }
 

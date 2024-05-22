@@ -89,7 +89,7 @@ endif (COMPILE_PYTHON3_BINDINGS)
 if (COMPILE_PYTHON3_BINDINGS)
     set(CPACK_COMPONENT_METAVISION-OPEN-PYTHON-SAMPLES_DESCRIPTION "Samples for Metavision Open Python 3 libraries.\n${OPEN_PACKAGE_LICENSE}")
     # TODO: handle core-ml dependency inside loop with MV-517
-    set(CPACK_COMPONENT_METAVISION-OPEN-PYTHON-SAMPLES_DEPENDS metavision-sdk-core-ml-python-samples)
+    set(CPACK_COMPONENT_METAVISION-OPEN-PYTHON-SAMPLES_DEPENDS metavision-hal-python-samples metavision-sdk-core-ml-python-samples)
     foreach(available_open_module IN LISTS METAVISION_SDK_OPEN_MODULES_AVAILABLE)
         if(metavision-sdk-${available_open_module}-python-samples IN_LIST components_to_install_public)
             list(APPEND CPACK_COMPONENT_METAVISION-OPEN-PYTHON-SAMPLES_DEPENDS metavision-sdk-${available_open_module}-python-samples)

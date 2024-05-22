@@ -63,20 +63,6 @@ def _{runtime}_kernel_{func_name}(
                         polC = pol * C
                         num_events = 0
 
-                        # Better Refractory Model!
-                        # TODO: during characterization story MV-67, check if this code
-                        # improves realism
-                        # dt_since_last_event = curr_image_ts - last_timestamp_at_xy
-                        # if dt_since_last_event >= refractory_period and last_timestamp_at_xy > 0:
-                        #     time_end_refractory_period = last_timestamp_at_xy + refractory_period
-                        #     if last_image_ts <= time_end_refractory_period <= curr_image_ts:
-                        #         dt_since_last_image = time_end_refractory_period - last_image_ts
-                        #         ratio = dt_since_last_image / delta_t
-                        #         prev_ref_val = it * (1-ratio) + itdt * ratio
-                        #         it = prev_ref_val
-
-                        #         last_image_ts = time_end_refractory_period
-
                         if abs(itdt - prev_ref_val) > C:
                             current_ref_val = prev_ref_val
 

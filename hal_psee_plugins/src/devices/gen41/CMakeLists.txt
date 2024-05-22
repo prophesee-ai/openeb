@@ -16,10 +16,7 @@ target_sources(metavision_psee_hw_layer_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/gen41_digital_crop.cpp
 )
 
-target_sources(metavision_hal_gen41_evk2_system_obj PRIVATE
+target_sources(metavision_hal_psee_plugin_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/gen41_evk2_tz_device.cpp
-)
-
-target_sources(metavision_hal_gen41_evk3_system_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/gen41_tz_device.cpp
 )

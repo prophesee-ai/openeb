@@ -15,15 +15,17 @@
 #include <string>
 #include <system_error>
 
-#include "metavision/sdk/base/utils/error_category.h"
+#include "metavision/sdk/base/utils/error_utils.h"
 #include "metavision/hal/utils/hal_error_code.h"
 
 namespace Metavision {
 
+const std::error_category &hal_error_category();
+
 /// @brief Class for all exceptions thrown by Metavision HAL
 /// @sa http://www.cplusplus.com/reference/system_error/system_error/
 /// @sa http://en.cppreference.com/w/cpp/error/error_code
-class HalException : public std::system_error {
+class HalException : public BaseException {
 public:
     /// @brief Creates an exception of type e with default error message
     /// @param e Camera error code
@@ -33,7 +35,7 @@ public:
     /// @param e Camera error code
     /// @param additional_info Error description
     HalException(HalErrorCodeType e, const std::string &additional_info) :
-        std::system_error(e, ErrorCategory(e, "Metavision HAL exception", additional_info)) {}
+        BaseException(e, hal_error_category(), additional_info) {}
 };
 
 } // namespace Metavision

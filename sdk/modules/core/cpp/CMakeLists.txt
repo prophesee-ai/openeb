@@ -11,7 +11,9 @@
 add_subdirectory(lib)
 
 # Samples
-add_subdirectory(samples)
+if (BUILD_SAMPLES)
+    add_subdirectory(samples)
+endif (BUILD_SAMPLES)
 
 # Add sources to the library
 add_subdirectory(src)

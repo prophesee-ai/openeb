@@ -10,7 +10,7 @@
 set(HAL_PSEE_OPEN_PLUGIN_DEVICES gen31 gen41 imx636 imx646 genx320 treuzell v4l2
     CACHE INTERNAL "Hal plugin open sourced devices")
 
-set(HAL_PSEE_CLOSED_PLUGIN_DEVICES saphir sensorlib evk3d 
+set(HAL_PSEE_CLOSED_PLUGIN_DEVICES saphir evk3d
     CACHE INTERNAL "Hal plugin close sourced devices")
 
 set(HAL_PSEE_PLUGIN_DEVICES_COMMON utils common psee-video others)

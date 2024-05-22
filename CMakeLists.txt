@@ -17,7 +17,7 @@ endif(NOT CMAKE_BUILD_TYPE)
 
 cmake_minimum_required(VERSION 3.5)
 
-project(metavision VERSION 4.5.2)
+project(metavision VERSION 4.6.0)
 set(PROJECT_VERSION_SUFFIX "")
 
 if(PROJECT_VERSION_SUFFIX STREQUAL "")
@@ -73,16 +73,22 @@ include(lfs_download)
 include(add_pytest)
 include(common_macros)
 
-if (ANDROID)
+if (ANDROID AND NOT ENV_CMAKE)
+    # Those OVERLOAD_ functions are used to be able to bypass default Metavision
+    # implementation of Android support to give a different own depending on
+    # dependencies management
+    set(ENV_CMAKE cmake/android/env.cmake)
+    set(PREBUILT_BASE_DIR utils/android)
+    set(PREBUILT_FILENAME prebuilt-3rdparty.tar.gz)
+
     # Setup 3rd party prebuilt libraries dir
-    set(ANDROID_PREBUILT_3RDPARTY_ARCHIVE utils/android/prebuilt-3rdparty.tar.gz)
     set(ANDROID_PREBUILT_3RDPARTY_EXTRACT_DIR ${GENERATE_FILES_DIRECTORY}/android/3rdparty)
     if (NOT EXISTS ${ANDROID_PREBUILT_3RDPARTY_EXTRACT_DIR})
-        lfs_download(${ANDROID_PREBUILT_3RDPARTY_ARCHIVE} COMPILATION)
-        message(STATUS "Unpacking ${ANDROID_PREBUILT_3RDPARTY_ARCHIVE} in ${ANDROID_PREBUILT_3RDPARTY_EXTRACT_DIR}")
+        lfs_download(${PREBUILT_BASE_DIR}/${PREBUILT_FILENAME} COMPILATION)
+        message(STATUS "Unpacking ${PREBUILT_BASE_DIR}/${PREBUILT_FILENAME} in ${ANDROID_PREBUILT_3RDPARTY_EXTRACT_DIR}")
         file(MAKE_DIRECTORY ${ANDROID_PREBUILT_3RDPARTY_EXTRACT_DIR})
         execute_process(
-            COMMAND ${CMAKE_COMMAND} -E tar -xf ${PROJECT_SOURCE_DIR}/${ANDROID_PREBUILT_3RDPARTY_ARCHIVE}
+            COMMAND ${CMAKE_COMMAND} -E tar -xf ${PROJECT_SOURCE_DIR}/${PREBUILT_BASE_DIR}/${PREBUILT_FILENAME}
             WORKING_DIRECTORY ${ANDROID_PREBUILT_3RDPARTY_EXTRACT_DIR}
         )
     endif (NOT EXISTS ${ANDROID_PREBUILT_3RDPARTY_EXTRACT_DIR})
@@ -92,8 +98,8 @@ if (ANDROID)
 
     # Use Android env.cmake to find required dependencies
     set(ANDROID_PREBUILT_3RDPARTY_DIR ${GENERATE_FILES_DIRECTORY}/android/3rdparty/prebuilt)
-    include(${PROJECT_SOURCE_DIR}/cmake/android/env.cmake)
-endif (ANDROID)
+    include(${ENV_CMAKE})
+endif (ANDROID AND NOT ENV_CMAKE)
 
 ###################################################
 
@@ -166,6 +172,7 @@ add_subdirectory_if_exists(utils/platforms) # Load platform specific cmake early
 
 ################################################### CMake options
 
+option(BUILD_SAMPLES "Build Metavision apps & samples" ON)
 if (NOT ANDROID)
     option(COMPILE_PYTHON3_BINDINGS "Compile python 3 bindings" ON)
     cmake_dependent_option(CODE_COVERAGE "Enable code coverage" ON "CMAKE_BUILD_TYPE_LOWER STREQUAL debug" OFF)
@@ -236,11 +243,11 @@ if (BUILD_TESTING)
 
     # Pytests
     if(NOT EXISTS "${PROJECT_SOURCE_DIR}/datasets" AND GIT_LFS_NOT_AVAILABLE)
-        message("---------------------------------------------------------------------------------------------------------")
-        message("|  Test data was not found. To run the tests, please download the test data adapted to your project:    |")
-        message("|  - OpenEB: https://dataset.prophesee.ai/index.php/s/tiP0wl0r5aW5efL (1.2 Gb archive)                  |")
-        message("|  - Metavision SDK: https://dataset.prophesee.ai/index.php/s/l3RpHoC3NDL7OU6 (5 Gb archive)            |")
-        message("---------------------------------------------------------------------------------------------------------\n")
+        message("--------------------------------------------------------------------------------------------------------------------------")
+        message("|  Test data was not found. To run the tests, please download the test data adapted to your project:                     |")
+        message("|  - OpenEB: https://kdrive.infomaniak.com/app/share/975517/cddcc78a-3480-420f-bc19-17d5b0535ca4 (1.2 Gb archive)        |")
+        message("|  - Metavision SDK: https://kdrive.infomaniak.com/app/share/975517/727dadda-764a-4a2f-80cb-07c800913116 (5 Gb archive)  |")
+        message("--------------------------------------------------------------------------------------------------------------------------\n")
     endif()
 
     set(PYTEST_CMD ${PYTHON_${PYTEST_PYTHON_VERSION}_EXECUTABLE} -m pytest)
@@ -355,12 +362,13 @@ foreach(metavision_modules_set OPEN ADVANCED)
     set(METAVISION_SDK_${metavision_modules_set}_MODULES_AVAILABLE)
     message(STATUS "Building METAVISION_SDK_MODULES_${metavision_modules_set} modules : ${METAVISION_SDK_MODULES_${metavision_modules_set}}")
     foreach(module_name IN LISTS METAVISION_SDK_MODULES_${metavision_modules_set})
-        if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/sdk/modules/${module_name}/CMakeLists.txt")
+        if ((NOT METAVISION_SELECTED_MODULES OR ${module_name} IN_LIST METAVISION_SELECTED_MODULES)
+            AND EXISTS "${CMAKE_CURRENT_LIST_DIR}/sdk/modules/${module_name}/CMakeLists.txt")
             list(APPEND METAVISION_SDK_${metavision_modules_set}_MODULES_AVAILABLE "${module_name}")
-        endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/sdk/modules/${module_name}/CMakeLists.txt")
-    endforeach(module_name)
+        endif()
+    endforeach()
     list(APPEND METAVISION_SDK_MODULES_AVAILABLE ${METAVISION_SDK_${metavision_modules_set}_MODULES_AVAILABLE})
-endforeach(metavision_modules_set)
+endforeach()
 
 ################################################### COMPILATION
 
@@ -369,10 +377,10 @@ include(uninstall)
 include(add_library_version_header)
 include(add_cpack_component)
 
-if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/cmake/custom_targets_metavision_sdk")
+if(EXISTS "${PROJECT_SOURCE_DIR}/cmake/custom_targets_metavision_sdk")
     list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/custom_targets_metavision_sdk)
     include(create_metavision_sdk_source_archives)
-endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/cmake/custom_targets_metavision_sdk")
+endif(EXISTS "${PROJECT_SOURCE_DIR}/cmake/custom_targets_metavision_sdk")
 
 # Add Metavision Open debian packages :
 add_cpack_component(PUBLIC metavision-open-lib metavision-open-bin metavision-open-dev metavision-open-samples)
@@ -425,16 +433,16 @@ add_subdirectory_if_exists(hal_psee_plugins)
 ################################
 add_subdirectory(sdk)
 
-################################
-#      Standalone samples     ##
-################################
-add_subdirectory(standalone_samples)
-
-################################
-#      Standalone apps        ##
-################################
-add_subdirectory_if_exists(standalone_apps)
-
+if (BUILD_SAMPLES)
+    ################################
+    #      Standalone samples     ##
+    ################################
+    add_subdirectory(standalone_samples)
+    ################################
+    #      Standalone apps        ##
+    ################################
+    add_subdirectory_if_exists(standalone_apps)
+endif()
 ################################
 #           Documentation     ##
 ################################

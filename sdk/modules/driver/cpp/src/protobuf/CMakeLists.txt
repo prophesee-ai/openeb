@@ -34,7 +34,7 @@ if(USE_PROTOBUF)
         ${CMAKE_CURRENT_SOURCE_DIR}/digital_crop_state.proto
         ${CMAKE_CURRENT_SOURCE_DIR}/digital_event_mask_state.proto
         ${CMAKE_CURRENT_SOURCE_DIR}/event_rate_control_state.proto
-        ${CMAKE_CURRENT_SOURCE_DIR}/event_rate_noise_filter_state.proto
+        ${CMAKE_CURRENT_SOURCE_DIR}/event_rate_activity_filter_state.proto
         ${CMAKE_CURRENT_SOURCE_DIR}/event_trail_filter_state.proto
         ${CMAKE_CURRENT_SOURCE_DIR}/hw_register_state.proto
         ${CMAKE_CURRENT_SOURCE_DIR}/ll_biases_state.proto

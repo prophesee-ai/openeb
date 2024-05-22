@@ -13,6 +13,7 @@ target_sources(metavision_hal PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/demangle.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/device_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/device_config.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/hal_exception.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/hal_software_info.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/file_data_transfer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/file_discovery.cpp

@@ -65,7 +65,7 @@ private:
     /// @return True if the reset operation could complete, false otherwise.
     /// @note It is expected after this call has succeeded, that @ref get_last_timestamp returns @p timestamp
     /// @warning If time shifting is enabled, the @p timestamp must be in the shifted time reference
-    bool reset_timestamp_impl(const Metavision::timestamp &timestamp) override final;
+    bool reset_last_timestamp_impl(const Metavision::timestamp &timestamp) override final;
 
     /// @brief Resets the decoder timestamp shift
     /// @param shift Timestamp shift to reset the decoder to

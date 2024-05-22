@@ -15,6 +15,7 @@
 #include <string>
 #include <system_error>
 
+#include "metavision/sdk/base/utils/error_utils.h"
 #include "metavision/sdk/driver/camera_error_code.h"
 
 namespace Metavision {
@@ -23,7 +24,7 @@ namespace Metavision {
 ///
 /// @sa http://www.cplusplus.com/reference/system_error/system_error/
 /// @sa http://en.cppreference.com/w/cpp/error/error_code
-class CameraException : public std::system_error {
+class CameraException : public BaseException {
 public:
     /// @brief Creates an exception of type e with default error message
     /// @param e Camera error code

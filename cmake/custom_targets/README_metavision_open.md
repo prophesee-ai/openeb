@@ -133,7 +133,7 @@ python3 -m pip install "numba==0.56.3" "profilehooks==1.12.0" "pytorch_lightning
 
 ### Compilation
 
- 1. Retrieve the code: `git clone https://github.com/prophesee-ai/openeb.git --branch 4.5.2`.
+ 1. Retrieve the code: `git clone https://github.com/prophesee-ai/openeb.git --branch 4.6.0`.
     (If you choose to download an archive of OpenEB from GitHub rather than cloning the repository,
     you need to ensure that you select a ``Full.Source.Code.*`` archive instead of using
     the automatically generated ``Source.Code.*`` archives. This is because the latter do not include
@@ -184,7 +184,8 @@ or you can deploy the OpenEB files in the system path (`/usr/local/lib`, `/usr/l
 
     ```bash
     export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
-    export HDF5_PLUGIN_PATH=$HDF5_PLUGIN_PATH:/usr/local/lib/hdf5/plugin
+    export HDF5_PLUGIN_PATH=$HDF5_PLUGIN_PATH:/usr/local/lib/hdf5/plugin  # On Ubuntu 20.04
+    export HDF5_PLUGIN_PATH=$HDF5_PLUGIN_PATH:/usr/local/hdf5/lib/plugin  # On Ubuntu 22.04
     ```
 
 Note that if you are using a third-party camera, you need to install the plugin provided
@@ -198,7 +199,7 @@ or you can stream data from your Prophesee-compatible event-based camera.
 
 Running the test suite is a sure-fire way to ensure you did everything well with your compilation and installation process.
 
- * Download [the files](https://dataset.prophesee.ai/index.php/s/tiP0wl0r5aW5efL) necessary to run the tests.
+ * Download [the files](https://kdrive.infomaniak.com/app/share/975517/cddcc78a-3480-420f-bc19-17d5b0535ca4) necessary to run the tests.
    Click `Download` on the top right folder. Beware of the size of the obtained archive which weighs around 1.2 Gb.
 
  * Extract and put the content of this archive to `<OPENEB_SRC_DIR>/datasets`. 
@@ -323,7 +324,7 @@ python -m pip install "numba==0.56.3" "profilehooks==1.12.0" "pytorch_lightning=
 First, retrieve the codebase:
 
 ```bash
-git clone https://github.com/prophesee-ai/openeb.git --branch 4.5.2
+git clone https://github.com/prophesee-ai/openeb.git --branch 4.6.0
 ```
 
 Note that if you choose to download an archive of OpenEB from GitHub rather than cloning the repository,
@@ -418,7 +419,7 @@ or you can deploy the OpenEB files (applications, samples, libraries etc.) in a 
 Prophesee camera plugins are included in OpenEB, but you need to install the drivers
 for the cameras to be available on Windows. To do so, follow this procedure:
 
-1. download [wdi-simple.exe from our file server](https://files.prophesee.ai/share/dists/public/drivers/FeD45ki5/wdi-simple.exe)
+1. download [wdi-simple.exe from our file server](https://kdrive.infomaniak.com/app/share/975517/4f59e852-af5e-4e00-90fc-f213aad20edd)
 2. execute the following commands in a Command Prompt launched as an administrator:
 
 ```bash
@@ -446,7 +447,7 @@ or you can stream data from your Prophesee-compatible event-based camera.
 
 Running the test suite is a sure-fire way to ensure you did everything well with your compilation and installation process.
 
- * Download [the files](https://dataset.prophesee.ai/index.php/s/tiP0wl0r5aW5efL) necessary to run the tests.
+ * Download [the files](https://kdrive.infomaniak.com/app/share/975517/cddcc78a-3480-420f-bc19-17d5b0535ca4) necessary to run the tests.
    Click `Download` on the top right folder. Beware of the size of the obtained archive which weighs around 1.2 Gb.
    
  * Extract and put the content of this archive to `<OPENEB_SRC_DIR>/datasets`. 
