@@ -15,21 +15,21 @@ find_program(GIT_SCM git DOC "Git version control" HINTS "C:\\Program Files\\Git
 
 # If git information are not provided in command line when running cmake, try to automatically determine them
 if(NOT GIT_BRANCH)
-    set(GIT_COMMAND_GET_BRANCH "${GIT_SCM} -C \"${PROJECT_SOURCE_DIR}\" rev-parse --abbrev-ref HEAD")
+    set(GIT_COMMAND_GET_BRANCH "\"${GIT_SCM}\" -C \"${PROJECT_SOURCE_DIR}\" rev-parse --abbrev-ref HEAD")
 else()
-    set(GIT_COMMAND_GET_BRANCH "${CMAKE_COMMAND} -E echo ${GIT_BRANCH}")
+    set(GIT_COMMAND_GET_BRANCH "\"${CMAKE_COMMAND}\" -E echo ${GIT_BRANCH}")
 endif(NOT GIT_BRANCH)
 
 if(NOT GIT_COMMIT_ID)
-    set(GIT_COMMAND_GET_COMMIT_ID "${GIT_SCM} -C \"${PROJECT_SOURCE_DIR}\" log -1 --pretty=format:%H")
+    set(GIT_COMMAND_GET_COMMIT_ID "\"${GIT_SCM}\" -C \"${PROJECT_SOURCE_DIR}\" log -1 --pretty=format:%H")
 else()
-    set(GIT_COMMAND_GET_COMMIT_ID "${CMAKE_COMMAND} -E echo ${GIT_COMMIT_ID}")
+    set(GIT_COMMAND_GET_COMMIT_ID "\"${CMAKE_COMMAND}\" -E echo ${GIT_COMMIT_ID}")
 endif(NOT GIT_COMMIT_ID)
 
 if(NOT GIT_COMMIT_DATE)
-    set(GIT_COMMAND_GET_COMMIT_DATE "${GIT_SCM} -C \"${PROJECT_SOURCE_DIR}\" log -1 --pretty=format:%cd --date=iso8601")
+    set(GIT_COMMAND_GET_COMMIT_DATE "\"${GIT_SCM}\" -C \"${PROJECT_SOURCE_DIR}\" log -1 --pretty=format:%cd --date=iso8601")
 else()
-    set(GIT_COMMAND_GET_COMMIT_DATE "${CMAKE_COMMAND} -E echo ${GIT_COMMIT_DATE}")
+    set(GIT_COMMAND_GET_COMMIT_DATE "\"${CMAKE_COMMAND}\" -E echo ${GIT_COMMIT_DATE}")
 endif(NOT GIT_COMMIT_DATE)
 
 foreach(cmd GIT_COMMAND_GET_BRANCH GIT_COMMAND_GET_COMMIT_ID GIT_COMMAND_GET_COMMIT_DATE)
