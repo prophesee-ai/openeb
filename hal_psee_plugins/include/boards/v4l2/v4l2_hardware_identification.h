@@ -4,13 +4,14 @@
 #include <linux/videodev2.h>
 
 namespace Metavision {
-using V4l2Capability     = struct v4l2_capability;
+using V4l2Capability = struct v4l2_capability;
 
 class V4l2HwIdentification : public I_HW_Identification {
     V4l2Capability cap_;
 
 public:
-    V4l2HwIdentification(const V4l2Capability cap, const std::shared_ptr<I_PluginSoftwareInfo> &plugin_sw_info, const SensorDescriptor &sensor_descriptor);
+    V4l2HwIdentification(const V4l2Capability cap, const std::shared_ptr<I_PluginSoftwareInfo> &plugin_sw_info,
+                         const SensorDescriptor &sensor_descriptor);
 
     virtual long get_system_id() const override;
     virtual SensorInfo get_sensor_info() const override;
@@ -23,5 +24,8 @@ public:
 protected:
     virtual DeviceConfigOptionMap get_device_config_options_impl() const override;
     const SensorDescriptor &sensor_descriptor_;
+
+private:
+    RawFileHeader get_header_impl() const override;
 };
-}
+} // namespace Metavision
