@@ -129,9 +129,13 @@ BaseWindow::BaseWindow(const std::string &title, int width, int height, RenderMo
     };
     // clang-format on
 
+  #if defined(__APPLE__) && !defined(__linux__)
+    glGenVertexArraysAPPLE(1, &vertex_array_id_);
+    glBindVertexArrayAPPLE(vertex_array_id_);
+  #else
     glGenVertexArrays(1, &vertex_array_id_);
     glBindVertexArray(vertex_array_id_);
-
+  #endif
     glGenBuffers(1, &vertex_buffer_);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_);
     glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
@@ -143,7 +147,11 @@ BaseWindow::BaseWindow(const std::string &title, int width, int height, RenderMo
     glEnableVertexAttribArray(1);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+  #if defined(__APPLE__) && !defined(__linux__)
+    glBindVertexArrayAPPLE(0);
+  #else
     glBindVertexArray(0);
+  #endif
 
     glfwMakeContextCurrent(nullptr);
 
@@ -157,7 +165,11 @@ BaseWindow::~BaseWindow() {
     if (glfw_window_) {
         glfwMakeContextCurrent(glfw_window_);
         glDeleteBuffers(1, &vertex_buffer_);
-        glDeleteVertexArrays(1, &vertex_array_id_);
+ #if defined(__APPLE__) && !defined(__linux__)
+    glDeleteVertexArraysAPPLE(1, &vertex_array_id_);
+  #else
+    glDeleteVertexArrays(1, &vertex_array_id_);
+  #endif
         glDeleteTextures(1, &tex_id_);
         glDeleteProgram(program_id_);
     }
@@ -228,7 +240,11 @@ void BaseWindow::draw_background_texture() {
 
     glBindTexture(GL_TEXTURE_2D, tex_id_);
 
+  #if defined(__APPLE__) && !defined(__linux__)
+    glBindVertexArrayAPPLE(vertex_array_id_);
+  #else
     glBindVertexArray(vertex_array_id_);
+  #endif
 
     glDrawArrays(GL_TRIANGLES, 0, 6);
 

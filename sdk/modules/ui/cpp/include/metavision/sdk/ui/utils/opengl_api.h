@@ -21,8 +21,14 @@ inline int glewInit(void) {
     return GLEW_OK;
 }
 #else // OpenGL
+#if defined(__APPLE__) && !defined(__linux__)
+#include <OpenGL/gl.h>
+#include <OpenGL/glu.h>
+#include <OpenGL/gl3.h>
+#elif defined(__linux__)
 #include <GL/glew.h>
 #include <GL/gl.h>
+#endif
 #endif
 
 // GLFW need to be included after OpenGL
