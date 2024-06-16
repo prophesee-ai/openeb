@@ -43,7 +43,8 @@ OfflineGenericPrivate::OfflineGenericPrivate(const std::string &file_path, const
     Private(detail::Config()) {
     // clang-format off
     try {
-        if (boost::filesystem::extension(file_path) == ".hdf5") {
+        boost::filesystem::path path_obj(file_path);
+        if (path_obj.extension() == ".hdf5") {
             file_reader_ = std::make_unique<HDF5EventFileReader>(file_path, hints.time_shift());
         } else {
             file_reader_ = std::make_unique<DATEventFileReader>(file_path);

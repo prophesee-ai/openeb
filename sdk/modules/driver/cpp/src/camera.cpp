@@ -284,18 +284,18 @@ bool Camera::Private::process_impl() {
 }
 
 bool Camera::Private::start_recording_impl(const std::string &file_path) {
-    std::string ext = boost::filesystem::extension(file_path);
+    boost::filesystem::path path_obj(file_path);
     std::shared_ptr<Metavision::EventFileWriter> writer;
-    if (ext == ".raw") {
+    if (path_obj.extension() == ".raw") {
         writer = std::make_shared<Metavision::RAWEventFileWriter>(file_path);
-    } else if (ext == ".hdf5") {
+    } else if (path_obj.extension() == ".hdf5") {
         writer = std::make_shared<Metavision::HDF5EventFileWriter>(file_path);
     } else {
         throw CameraException(CameraErrorCode::WrongExtension,
-                              "Unsupported extension for the recording destination " + file_path + ".");
+                              "Unsupported extension for the recording destination " + path_obj.string() + ".");
     }
     writer->add_metadata_map_from_camera(*pub_ptr_);
-    if (ext == ".raw") {
+    if (path_obj.extension() == ".raw") {
         if (!raw_data_) {
             throw CameraException(UnsupportedFeatureErrors::RawRecordingUnavailable,
                                   "Cannot record to a RAW file from this type of camera.");
@@ -513,24 +513,25 @@ Camera Camera::from_serial(const std::string &serial, const DeviceConfig &config
 }
 
 Camera Camera::from_file(const std::string &file_path, const FileConfigHints &hints) {
-    if (boost::filesystem::extension(file_path) != "") {
-        if (!boost::filesystem::exists(file_path)) {
+    boost::filesystem::path path_obj(file_path);
+    if (path_obj.has_extension()) {
+        if (!boost::filesystem::exists(path_obj)) {
             throw CameraException(CameraErrorCode::FileDoesNotExist,
-                                  "Opening file at " + file_path + ": not an existing file.");
+                                  "Opening file at " + path_obj.string() + ": not an existing file.");
         }
 
-        if (!boost::filesystem::is_regular_file(file_path)) {
+        if (!boost::filesystem::is_regular_file(path_obj)) {
             throw CameraException(CameraErrorCode::NotARegularFile);
         }
     }
 
-    if (boost::filesystem::extension(file_path) == ".raw") {
+    if (path_obj.extension() == ".raw") {
         return Camera(new detail::OfflineRawPrivate(file_path, hints));
-    } else if (boost::filesystem::extension(file_path) == ".hdf5") {
+    } else if (path_obj.extension() == ".hdf5") {
 #if defined HAS_HDF5
         return Camera(new detail::OfflineGenericPrivate(file_path, hints));
 #endif
-    } else if (boost::filesystem::extension(file_path) == ".dat" || boost::filesystem::extension(file_path) == "") {
+    } else if (path_obj.extension() == ".dat" || path_obj.extension() == "") {
         return Camera(new detail::OfflineGenericPrivate(file_path, hints));
     }
 

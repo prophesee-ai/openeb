@@ -97,15 +97,15 @@ bool parse_command_line(int argc, const char *argv[], Parameters &app_params) {
     }
 
     // Check extension of provided output files
-    if (boost::filesystem::extension(app_params.out_bias_file) != ".bias") {
+    if (boost::filesystem::path(app_params.out_bias_file).extension() != ".bias") {
         MV_LOG_ERROR() << "Wrong extension for provided output bias file: supported extension is '.bias'";
         return false;
     }
-    if (boost::filesystem::extension(app_params.out_png_file) != ".png") {
+    if (boost::filesystem::path(app_params.out_png_file).extension() != ".png") {
         MV_LOG_ERROR() << "Wrong extension for provided output PNG file: supported extension is '.png'";
         return false;
     }
-    if (boost::filesystem::extension(app_params.out_avi_file) != ".avi") {
+    if (boost::filesystem::path(app_params.out_avi_file).extension() != ".avi") {
         MV_LOG_ERROR() << "Wrong extension for provided output AVI file: supported extension is '.avi'";
         return false;
     }

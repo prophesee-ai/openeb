@@ -206,11 +206,11 @@ bool LivePrivate::process_impl(TimingProfilerType *profiler) {
 }
 
 bool LivePrivate::start_recording_impl(const std::string &file_path) {
-    std::string base_path = boost::filesystem::change_extension(file_path, "").string();
+    boost::filesystem::path path_obj(file_path);
     if (biases_) {
-        biases_->save_to_file(base_path + ".bias");
+        biases_->save_to_file(path_obj.filename().string() + ".bias");
     }
-    return Camera::Private::start_recording_impl(file_path);
+    return Camera::Private::start_recording_impl(path_obj.filename().string());
 }
 
 void LivePrivate::save(std::ostream &os) const {

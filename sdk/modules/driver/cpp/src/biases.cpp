@@ -31,12 +31,12 @@ Biases::~Biases() {}
 
 void Biases::set_from_file(const std::string &biases_filename) {
     // Check extension
-    const auto extension = boost::filesystem::extension(biases_filename);
-    if (extension != ".bias") {
+    const boost::filesystem::path biases_file_path = biases_filename;
+    if (biases_file_path.extension() != ".bias") {
         throw CameraException(CameraErrorCode::WrongExtension,
                               "For bias file '" + biases_filename +
                                   "' : expected '.bias' extension to set the bias from this file but got '." +
-                                  extension + "'");
+                                  biases_file_path.extension().generic_string() + "'");
     }
 
     // open file
@@ -106,12 +106,12 @@ void Biases::set_from_file(const std::string &biases_filename) {
 }
 
 void Biases::save_to_file(const std::string &dest_file) const {
-    const auto extension = boost::filesystem::extension(dest_file);
-    if (extension != ".bias") {
+    const boost::filesystem::path biases_file_path = dest_file;
+    if (biases_file_path.extension() != ".bias") {
         throw CameraException(CameraErrorCode::WrongExtension,
                               "For bias file '" + dest_file +
                                   "' : expected '.bias' extension to set the bias from this file but got '." +
-                                  extension + "'");
+                                  biases_file_path.extension().generic_string() + "'");
     }
 
     std::ofstream output_file(dest_file);
