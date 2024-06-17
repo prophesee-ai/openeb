@@ -45,9 +45,9 @@ This guide uses [Homebrew](https://brew.sh/) formulae to retrieve packages. It a
         python3 -m venv .venv && \
         source .venv/bin/activate
         ```
-1. Retrieve the latest [OpenEB source](https://github.com/emsight/openeb), or your desired branch, and navigate into the project folder.
+1. Retrieve the latest [OpenEB source](https://github.com/prophesee-ai/openeb), or your desired branch, and navigate into the project folder.
     ```console
-    git clone https://github.com/emsight/openeb.git && cd openeb
+    git clone https://github.com/prophesee-ai/openeb.git && cd openeb
     ```
 1. Once inside your OpenEB directory, create an environment variable to reference that location.
     ```console
