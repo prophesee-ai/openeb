@@ -12,6 +12,7 @@
 #include <boost/filesystem.hpp>
 
 #include "metavision/hal/device/device_discovery.h"
+#include "metavision/hal/utils/hal_connection_exception.h"
 #include "metavision/sdk/driver/internal/camera_internal.h"
 #include "metavision/sdk/driver/internal/camera_live_internal.h"
 #include "metavision/sdk/driver/internal/camera_offline_generic_internal.h"
@@ -104,7 +105,7 @@ bool Camera::Private::start() {
     // notifies the thread that it can start running
     run_thread_cond_.notify_one();
 
-    while (!camera_is_started_) {}
+    while (!camera_is_started_ && is_running_) {}
 
     return true;
 }
@@ -148,7 +149,7 @@ bool Camera::Private::start_recording(const std::string &file_path) {
     try {
         ret = start_recording_impl(file_path);
     } catch (CameraException &e) {
-         throw e; 
+         throw;
     } catch (...) {
         throw CameraException(CameraErrorCode::CouldNotOpenFile,
                               "Could not open file '" + file_path +
@@ -361,6 +362,17 @@ void Camera::Private::load(std::istream &is) {
     throw CameraException(CameraErrorCode::CameraNotInitialized);
 }
 
+void Camera::Private::propagate_runtime_error(const CameraException &e) {
+    std::map<CallbackId, RuntimeErrorCallback> callbacks;
+    {
+        std::unique_lock<std::mutex> lock(cbs_mutex_);
+        callbacks = runtime_error_callback_map_;
+    }
+    for (auto &&p : callbacks) {
+        p.second(e);
+    }
+}
+
 void Camera::Private::run() {
     check_initialization();
 
@@ -374,7 +386,15 @@ void Camera::Private::run() {
     // notifies that this thread can now be stopped if needed
     run_thread_cond_.notify_one();
 
-    start_impl();
+    try {
+        start_impl();
+    } catch (const HalConnectionException &e) {
+        const CameraException camera_error =
+            CameraException(CameraErrorCode::ConnectionError, std::string("Connection error: ") + e.what());
+        propagate_runtime_error(camera_error);
+        set_is_running(false);
+        return;
+    }
     camera_is_started_ = true;
 
     while (is_running_) {
@@ -382,15 +402,15 @@ void Camera::Private::run() {
             if (!process_impl()) {
                 break;
             }
-        } catch (std::exception &e) {
-            std::map<CallbackId, RuntimeErrorCallback> callbacks;
-            {
-                std::unique_lock<std::mutex> lock(cbs_mutex_);
-                callbacks = runtime_error_callback_map_;
-            }
-            for (auto &&p : callbacks) {
-                p.second(CameraException(CameraErrorCode::RuntimeError, std::string("Unexpected error : ") + e.what()));
-            }
+        } catch (const HalConnectionException &e) {
+            const CameraException camera_error =
+                CameraException(CameraErrorCode::ConnectionError, std::string("Connection error: ") + e.what());
+            propagate_runtime_error(camera_error);
+            break;
+        } catch (const std::exception &e) {
+            const CameraException camera_error =
+                CameraException(CameraErrorCode::RuntimeError, std::string("Unexpected error : ") + e.what());
+            propagate_runtime_error(camera_error);
             break;
         }
     }
@@ -489,27 +509,51 @@ Camera::Camera(Private *pimpl) : pimpl_(pimpl) {
 }
 
 Camera Camera::from_first_available() {
-    return Camera(new detail::LivePrivate());
+    try {
+        return Camera(new detail::LivePrivate());
+    } catch (const HalConnectionException &e) {
+        throw CameraException(CameraErrorCode::ConnectionError, std::string("Connection error: ") + e.what());
+    }
 }
 
 Camera Camera::from_first_available(const DeviceConfig &config) {
-    return Camera(new detail::LivePrivate(&config));
+    try {
+        return Camera(new detail::LivePrivate(&config));
+    } catch (const HalConnectionException &e) {
+        throw CameraException(CameraErrorCode::ConnectionError, std::string("Connection error: ") + e.what());
+    }
 }
 
 Camera Camera::from_source(OnlineSourceType input_source_type, uint32_t source_index) {
-    return Camera(new detail::LivePrivate(input_source_type, source_index));
+    try {
+        return Camera(new detail::LivePrivate(input_source_type, source_index));
+    } catch (const HalConnectionException &e) {
+        throw CameraException(CameraErrorCode::ConnectionError, std::string("Connection error: ") + e.what());
+    }
 }
 
 Camera Camera::from_source(OnlineSourceType input_source_type, const DeviceConfig &config, uint32_t source_index) {
-    return Camera(new detail::LivePrivate(input_source_type, source_index, &config));
+    try {
+        return Camera(new detail::LivePrivate(input_source_type, source_index, &config));
+    } catch (const HalConnectionException &e) {
+        throw CameraException(CameraErrorCode::ConnectionError, std::string("Connection error: ") + e.what());
+    }
 }
 
 Camera Camera::from_serial(const std::string &serial) {
-    return Camera(new detail::LivePrivate(serial));
+    try {
+        return Camera(new detail::LivePrivate(serial));
+    } catch (const HalConnectionException &e) {
+        throw CameraException(CameraErrorCode::ConnectionError, std::string("Connection error: ") + e.what());
+    }
 }
 
 Camera Camera::from_serial(const std::string &serial, const DeviceConfig &config) {
-    return Camera(new detail::LivePrivate(serial, &config));
+    try {
+        return Camera(new detail::LivePrivate(serial, &config));
+    } catch (const HalConnectionException &e) {
+        throw CameraException(CameraErrorCode::ConnectionError, std::string("Connection error: ") + e.what());
+    }
 }
 
 Camera Camera::from_file(const std::string &file_path, const FileConfigHints &hints) {
@@ -615,7 +659,11 @@ const CameraGeneration &Camera::generation() const {
 }
 
 bool Camera::start() {
-    return pimpl_->start();
+    try {
+        return pimpl_->start();
+    } catch (const HalConnectionException &e) {
+        throw CameraException(CameraErrorCode::ConnectionError, std::string("Connection error: ") + e.what());
+    }
 }
 
 bool Camera::is_running() {
@@ -623,7 +671,11 @@ bool Camera::is_running() {
 }
 
 bool Camera::stop() {
-    return pimpl_->stop();
+    try {
+        return pimpl_->stop();
+    } catch (const HalConnectionException &e) {
+        throw CameraException(CameraErrorCode::ConnectionError, std::string("Connection error: ") + e.what());
+    }
 }
 
 bool Camera::start_recording(const std::string &file_path) {

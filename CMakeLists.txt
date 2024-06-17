@@ -17,7 +17,7 @@ endif(NOT CMAKE_BUILD_TYPE)
 
 cmake_minimum_required(VERSION 3.5)
 
-project(metavision VERSION 4.6.0)
+project(metavision VERSION 4.6.1)
 set(PROJECT_VERSION_SUFFIX "")
 
 if(PROJECT_VERSION_SUFFIX STREQUAL "")
@@ -25,6 +25,8 @@ if(PROJECT_VERSION_SUFFIX STREQUAL "")
 else(PROJECT_VERSION_SUFFIX STREQUAL "")
     set(PROJECT_VERSION_FULL "${PROJECT_VERSION}-${PROJECT_VERSION_SUFFIX}")
 endif(PROJECT_VERSION_SUFFIX STREQUAL "")
+
+include(CTest)
 
 # Set output directory for build targets
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib/ CACHE PATH "Output directory of libraries.")
@@ -227,7 +229,6 @@ if (GENERATE_DOC)
 endif (GENERATE_DOC)
 
 # Tests
-include(CTest)
 if (BUILD_TESTING)
     # Gtest
     find_package(GTest CONFIG)
@@ -455,6 +456,9 @@ add_subdirectory(utils/scripts)
 
 # Add open archive task after modules, hal and plugins that might affect it
 include(create_metavision_open_archive)
+
+# Create metavision-get-started archive
+include(create_metavision_get_started_archive)
 
 ################################################### CPack for debian packages
 

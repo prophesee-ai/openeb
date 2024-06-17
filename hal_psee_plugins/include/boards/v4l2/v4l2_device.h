@@ -12,14 +12,14 @@
 #ifndef METAVISION_HAL_PSEE_PLUGINS_V4L2_DEVICE_H
 #define METAVISION_HAL_PSEE_PLUGINS_V4L2_DEVICE_H
 
+#include <algorithm>
+#include <cstddef>
+#include <iterator>
 #include <string>
-#include <vector>
 
 #include <linux/videodev2.h>
 
-#include "metavision/hal/facilities/i_hw_identification.h"
 #include "metavision/hal/facilities/i_camera_synchronization.h"
-#include "metavision/hal/utils/camera_discovery.h"
 #include "metavision/hal/utils/device_control.h"
 
 namespace Metavision {

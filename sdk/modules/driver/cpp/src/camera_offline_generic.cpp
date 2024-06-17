@@ -49,7 +49,7 @@ OfflineGenericPrivate::OfflineGenericPrivate(const std::string &file_path, const
             file_reader_ = std::make_unique<DATEventFileReader>(file_path);
         }
     } catch (CameraException &e) {
-        throw e;
+        throw;
     } catch (...) {
         throw CameraException(CameraErrorCode::CouldNotOpenFile);
     }

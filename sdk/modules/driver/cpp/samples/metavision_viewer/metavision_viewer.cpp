@@ -28,6 +28,7 @@
 #include <metavision/sdk/core/utils/misc.h>
 #include <metavision/sdk/core/utils/rate_estimator.h>
 #include <metavision/sdk/driver/camera.h>
+#include <metavision/sdk/driver/camera_error_code.h>
 #include <metavision/hal/facilities/i_plugin_software_info.h>
 
 static const int ESCAPE = 27;
@@ -141,7 +142,7 @@ int main(int argc, char *argv[]) {
     std::string out_cam_config_path;
     std::vector<uint16_t> roi;
 
-    bool do_retry = false;
+    std::atomic<bool> do_retry = false;
 
     const std::string short_program_desc(
         "Simple viewer to stream events from an event file or a device, using the SDK driver API.\n");
@@ -245,7 +246,14 @@ int main(int argc, char *argv[]) {
                 }
 
                 camera_is_opened = true;
-            } catch (Metavision::CameraException &e) { MV_LOG_ERROR() << e.what(); }
+            } catch (Metavision::CameraException &e) {
+                MV_LOG_ERROR() << e.what();
+                if (e.code().value() == Metavision::CameraErrorCode::ConnectionError) {
+                    do_retry = true;
+                    MV_LOG_INFO() << "Trying to reopen camera...";
+                    continue;
+                }
+            }
         }
 
         // With the HAL device corresponding to the camera object (file or live camera), we can try to get a facility
@@ -274,6 +282,9 @@ int main(int argc, char *argv[]) {
 
         // Add runtime error callback
         camera.add_runtime_error_callback([&do_retry](const Metavision::CameraException &e) {
+            if (e.code().value() == Metavision::CameraErrorCode::ConnectionError) {
+                MV_LOG_ERROR() << "Lost connection with the device. Please try replugging the device";
+            }
             MV_LOG_ERROR() << e.what();
             do_retry = true;
         });
@@ -339,7 +350,16 @@ int main(int argc, char *argv[]) {
             });
 
         // Start the camera streaming
-        camera.start();
+        try {
+            camera.start();
+        } catch (const Metavision::CameraException &e) {
+            MV_LOG_ERROR() << e.what();
+            if (e.code().value() == Metavision::CameraErrorCode::ConnectionError) {
+                do_retry = true;
+                MV_LOG_INFO() << "Trying to reopen camera...";
+                continue;
+            }
+        }
 
         bool recording     = false;
         bool osc_available = false;
@@ -524,7 +544,11 @@ int main(int argc, char *argv[]) {
         }
 
         // Stop the camera streaming, optional, the destructor will automatically do it
-        camera.stop();
+        try {
+            camera.stop();
+        } catch (const Metavision::CameraException &e) {
+            MV_LOG_ERROR() << e.what();
+        }
         cd_frame_generator.stop();
     } while (!signal_caught && do_retry);
 

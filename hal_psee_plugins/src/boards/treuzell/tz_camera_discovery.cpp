@@ -23,10 +23,11 @@
 
 namespace Metavision {
 
-TzCameraDiscovery::TzCameraDiscovery() :
-    libusb_ctx(std::make_shared<LibUSBContext>()), builder(std::make_unique<TzDeviceBuilder>()) {}
+TzCameraDiscovery::TzCameraDiscovery() : builder(std::make_unique<TzDeviceBuilder>()) {}
 
-std::vector<std::shared_ptr<BoardCommand>> TzCameraDiscovery::list_boards() const {
+std::vector<std::shared_ptr<BoardCommand>>
+    TzCameraDiscovery::list_boards() const {
+    std::shared_ptr<LibUSBContext> libusb_ctx = std::make_shared<LibUSBContext>();
     std::vector<std::shared_ptr<BoardCommand>> boards;
     libusb_device **devs;
 
