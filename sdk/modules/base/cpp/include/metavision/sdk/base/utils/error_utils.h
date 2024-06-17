@@ -49,6 +49,15 @@ public:
     BaseException(int error_code, const std::error_category &ecat, const std::string &what_arg) :
         BaseException(error_code, error_code, ecat, what_arg) {}
 
+    /// @brief Copy constructor
+    BaseException(const BaseException &other) :
+        std::system_error(other) {
+        msg_ = other.msg_;
+    }
+
+    /// @brief Destructor
+    virtual ~BaseException() {}
+
     /// @brief Returns the explanatory string
     /// @return Pointer to a null-terminated string with explanatory information
     virtual const char *what() const noexcept override {

@@ -14,6 +14,7 @@
 #include "metavision/psee_hw_layer/utils/tz_device_control.h"
 #include "metavision/psee_hw_layer/devices/treuzell/tz_device.h"
 #include "metavision/psee_hw_layer/devices/treuzell/tz_main_device.h"
+#include "metavision/hal/utils/hal_connection_exception.h"
 #include "metavision/hal/utils/hal_exception.h"
 #include "utils/psee_hal_plugin_error_code.h"
 #include "metavision/hal/utils/hal_log.h"
@@ -75,8 +76,14 @@ void TzDeviceControl::stop() {
         return;
     // Stop only the main device, the others are always running
     for (auto dev = devices_.rbegin(); dev != devices_.rend(); dev++)
-        if (auto main_dev = dynamic_cast<TzMainDevice *>((*dev).get()))
-            (*dev).get()->stop();
+        if (auto main_dev = dynamic_cast<TzMainDevice *>((*dev).get())) {
+            try {
+                (*dev).get()->stop();
+            } catch (const HalConnectionException &e) {
+                MV_HAL_LOG_WARNING() << "Failed to properly stop TzDevice due do connection error";
+                MV_HAL_LOG_WARNING() << e.what();
+            }
+        }
     streaming_ = false;
 }
 

@@ -61,6 +61,9 @@ enum Enum : CameraErrorCodeType {
     WrongExtension = InvalidArgument | 0x3,
     /// Could not open file
     CouldNotOpenFile = InvalidArgument | 0x4,
+
+    /// Errors related to connectivity
+    ConnectionError = CameraError | 0x4000,
 };
 }
 
