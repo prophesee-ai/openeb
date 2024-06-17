@@ -47,15 +47,19 @@ V4L2BoardCommand::V4L2BoardCommand(std::string device_path) {
 
     // TODO: get video_path_ and sensor_subdev_path_ from media_path when available.
     // Hack for now, let's just dismiss the /dev/mediaX device and hardcode the video and sensor subdev path.
+    // More hack: sometimes it's not subdev1
+    const char *sensor_path = getenv("V4L2_SENSOR_PATH");
+    if (!sensor_path)
+        sensor_path = "/dev/v4l-subdev1";
 
     // and now for sensor_fd_:
-    if (-1 == stat("/dev/v4l-subdev1", &st))
+    if (-1 == stat(sensor_path, &st))
         raise_error("Cannot identify device /dev/v4l-subdev1.");
 
     if (!S_ISCHR(st.st_mode))
         throw std::runtime_error("/dev/v4l-subdev1 is not a device");
 
-    sensor_fd_ = open("/dev/v4l-subdev1", O_RDWR);
+    sensor_fd_ = open(sensor_path, O_RDWR);
     if (-1 == sensor_fd_) {
         raise_error("Cannot open device /dev/v4l-subdev1");
     };
