@@ -26,8 +26,8 @@ OpenEB also contains the source code for [Prophesee camera plugins](https://docs
 Follow the links below to find the build and installation guide for your OS.
 
 - [**Linux**](./docs/build-and-installation-guides/linux-build-test-and-installation.md)
-- [**MacOS**](./docs/build-and-installation-guides/macos-build-test-and-installation.md.md)
-- [**Windows**](./docs/build-and-installation-guides/windows-build-test-and-installation.md.md)
+- [**MacOS**](./docs/build-and-installation-guides/macos-build-test-and-installation.md)
+- [**Windows**](./docs/build-and-installation-guides/windows-build-test-and-installation.md)
 
 ## Additional Resources
 - [**Metavision SDK Docs**](https://docs.prophesee.ai/stable/index.html)
