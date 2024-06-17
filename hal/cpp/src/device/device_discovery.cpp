@@ -171,7 +171,7 @@ void common_log_plugin_error(const Metavision::Plugin &plugin, const std::string
 }
 
 void log_plugin_error(const Metavision::Plugin &plugin, const std::string &discovery_name,
-                      const Metavision::HalException &e) {
+                      const Metavision::BaseException &e) {
     common_log_plugin_error(plugin, discovery_name);
     MV_HAL_LOG_ERROR() << "Failed with exception:";
     MV_HAL_LOG_ERROR() << e.what();
@@ -408,7 +408,7 @@ std::unique_ptr<Device> DeviceDiscovery::open(const std::string &input_serial, c
                 log_plugin_error(plugin, camera_discovery.get_name(), e);
             } catch (const HalConnectionException &e) {
                 log_plugin_error(plugin, camera_discovery.get_name(), e);
-                throw e;
+                throw;
             } catch (const std::exception &e) {
                 log_plugin_error(plugin, camera_discovery.get_name(), e);
             } catch (...) { log_plugin_error(plugin, camera_discovery.get_name()); }
@@ -461,7 +461,7 @@ std::unique_ptr<Device> DeviceDiscovery::open_raw_file(const std::string &raw_fi
 
     } catch (const HalException &e) {
         MV_HAL_LOG_ERROR() << Log::no_space << "While opening RAW file '" << raw_file << "':" << std::endl;
-        throw e;
+        throw;
     }
 
     return device;
@@ -567,7 +567,7 @@ std::unique_ptr<Device> DeviceDiscovery::open_stream(std::unique_ptr<std::istrea
                     log_plugin_error(plugin, file_discovery.get_name(), e);
                 } catch (const HalConnectionException &e) {
                     log_plugin_error(plugin, file_discovery.get_name(), e);
-                    throw e;
+                    throw;
                 } catch (const std::exception &e) {
                     log_plugin_error(plugin, file_discovery.get_name(), e);
                 } catch (...) { log_plugin_error(plugin, file_discovery.get_name()); }

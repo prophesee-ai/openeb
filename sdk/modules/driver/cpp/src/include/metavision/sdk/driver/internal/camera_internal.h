@@ -84,6 +84,8 @@ public:
 
     void check_initialization() const;
 
+    void propagate_runtime_error(const CameraException &e);
+
     Camera *pub_ptr_ = nullptr;
 
     detail::Config config_;

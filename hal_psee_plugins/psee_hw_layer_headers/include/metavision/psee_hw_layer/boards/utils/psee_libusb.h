@@ -85,6 +85,8 @@ public:
     void interrupt_transfer(unsigned char endpoint, unsigned char *data, int length, int *transferred,
                             unsigned int timeout);
 
+    void force_release();
+
     friend void libusb_fill_control_transfer(struct libusb_transfer *transfer, std::shared_ptr<LibUSBDevice> dev,
                                              unsigned char *buffer, libusb_transfer_cb_fn callback, void *user_data,
                                              unsigned int timeout) {

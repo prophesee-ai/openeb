@@ -29,14 +29,6 @@ class TzCameraDiscovery : public Metavision::CameraDiscovery {
 public:
     TzCameraDiscovery();
 
-    struct DeviceBuilderParameters : public Metavision::DeviceBuilderParameters {
-        DeviceBuilderParameters(std::shared_ptr<LibUSBContext> libusb_ctx,
-                                const std::shared_ptr<BoardCommand> &board_cmd) :
-            board_cmd(board_cmd), libusb_ctx(libusb_ctx) {}
-        std::shared_ptr<BoardCommand> board_cmd;
-        std::shared_ptr<LibUSBContext> libusb_ctx;
-    };
-
     virtual CameraDiscovery::SerialList list() override;
     virtual CameraDiscovery::SystemList list_available_sources() override;
     virtual bool discover(Metavision::DeviceBuilder &device_builder, const std::string &serial,
@@ -49,7 +41,6 @@ public:
 
 private:
     std::vector<std::shared_ptr<BoardCommand>> list_boards() const;
-    std::shared_ptr<LibUSBContext> libusb_ctx;
     std::unique_ptr<TzDeviceBuilder> builder;
 
     // By default, nothing is supported, because we want boards to be ignored by the plugins that can manage it, so that

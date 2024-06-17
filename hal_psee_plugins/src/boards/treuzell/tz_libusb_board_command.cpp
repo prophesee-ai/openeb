@@ -229,7 +229,7 @@ std::string TzLibUSBBoardCommand::get_serial() {
         if (e.code().value() == TZ_TOO_SHORT)
             ostr << req.get32(0);
         else
-            throw e;
+            throw;
     }
     ostr << std::dec;
     return ostr.str();
@@ -273,7 +273,7 @@ unsigned int TzLibUSBBoardCommand::get_device_count() {
     } catch (std::system_error &e) {
         if (!quirks.ignore_size_on_device_prop_answer || (e.code().value() != TZ_SIZE_MISMATCH)) {
             // if quirk is enabled and error is SIZE_MISMATCH, ignore it
-            throw e;
+            throw;
         }
     }
     return req.get32(0);
@@ -294,7 +294,7 @@ std::vector<uint32_t> TzLibUSBBoardCommand::read_device_register(uint32_t device
             int err = req.get32(2);
             throw std::system_error(err, std::generic_category());
         } else {
-            throw e;
+            throw;
         }
     }
     if (req.get32(0) != device)
@@ -333,7 +333,7 @@ void TzLibUSBBoardCommand::write_device_register(uint32_t device, uint32_t addre
             int err = req.get32(2);
             throw std::system_error(err, std::generic_category());
         } else {
-            throw e;
+            throw;
         }
     }
     if (req.get32(0) != device)
