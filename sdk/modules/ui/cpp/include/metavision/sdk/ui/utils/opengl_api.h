@@ -14,18 +14,14 @@
 
 #ifdef _USE_OPENGL_ES3_
 #include <GLES3/gl3.h>
-// While we keep support for OpenGL, we need to provide a
-// dummy implementation for Glew init function
-#define GLEW_OK 0
-inline int glewInit(void) {
-    return GLEW_OK;
-}
 #else // OpenGL
 #if defined(__APPLE__) && !defined(__linux__)
-#include <OpenGL/gl.h>
-#include <OpenGL/glu.h>
+#define GL_SILENCE_DEPRECATION
 #include <OpenGL/gl3.h>
-#elif defined(__linux__)
+#else
+#if defined(WIN32)
+#include <Windows.h>
+#endif
 #include <GL/glew.h>
 #include <GL/gl.h>
 #endif
@@ -33,5 +29,14 @@ inline int glewInit(void) {
 
 // GLFW need to be included after OpenGL
 #include <GLFW/glfw3.h>
+
+// While we keep support for OpenGL, we need to provide a
+// dummy implementation for Glew init function
+#ifndef GLEW_OK
+#define GLEW_OK 0
+inline int glewInit(void) {
+    return GLEW_OK;
+}
+#endif
 
 #endif // METAVISION_SDK_UI_UTILS_OPENGL_API

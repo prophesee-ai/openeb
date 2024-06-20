@@ -46,11 +46,11 @@ struct GLFWContext {
             throw std::runtime_error("Impossible to create a glfw window");
 
         glfwMakeContextCurrent(window);
-#if defined(__linux__)
+
         if (glewInit() != GLEW_OK) {
             throw std::runtime_error("Impossible to initialize GL extensions with GLEW");
         }
-#endif
+
         glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
         glfwMakeContextCurrent(nullptr);
 
