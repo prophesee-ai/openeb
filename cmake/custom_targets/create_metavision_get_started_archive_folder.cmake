@@ -49,7 +49,7 @@ function(copy_cpp_sample path)
     endif ()
 endfunction()
 
-function(copy_python_sample path)
+function(copy_python_sample path exclude_files)
     set(sample_path ${PROJECT_SOURCE_DIR}/${path})
     if (EXISTS ${sample_path})
         get_filename_component(dest_folder_name "${sample_path}" NAME)
@@ -59,14 +59,19 @@ function(copy_python_sample path)
             PATTERN __pycache__ EXCLUDE
         )
         file (REMOVE ${dest_path}${dest_folder_name}/CMakeLists.txt)
+        foreach (file ${exclude_files})
+            if (EXISTS "${sample_path}/${file}")
+                file (REMOVE "${dest_path}${dest_folder_name}/${file}")
+            endif ()
+        endforeach(file)
     else()
         message(FATAL_ERROR "The requested sample does not exist: ${sample_path}")
     endif ()
 endfunction()
 
 # Add some Metavision Python samples to the metavision-get-started folder
-copy_python_sample("sdk/modules/core/python/samples/metavision_time_surface")
-copy_python_sample("sdk/modules/ml/python_extended/samples/flow_inference")
+copy_python_sample("sdk/modules/core/python/samples/metavision_time_surface" "")
+copy_python_sample("sdk/modules/ml/python_extended/samples/flow_inference" "flow_viz.py")
 
 # Add some Metavision C++ samples to the metavision-get-started folder
 copy_cpp_sample("sdk/modules/core/cpp/samples/metavision_time_surface")

@@ -22,10 +22,12 @@
 namespace Metavision {
 
 class PseeLibUSBDataTransfer : public Metavision::DataTransfer {
+    using EpId = unsigned char;
+
 public:
     static DataTransfer::BufferPool make_buffer_pool(size_t max_pool_byte_size = 0);
 
-    PseeLibUSBDataTransfer(const std::shared_ptr<LibUSBDevice> dev, int endpoint, uint32_t raw_event_size_bytes,
+    PseeLibUSBDataTransfer(const std::shared_ptr<LibUSBDevice> dev, EpId endpoint, uint32_t raw_event_size_bytes,
                            const DataTransfer::BufferPool &buffer_pool = make_buffer_pool());
     ~PseeLibUSBDataTransfer() override;
 
@@ -33,33 +35,18 @@ private:
     void start_impl(BufferPtr buffer) override final;
     void run_impl() override final;
     void stop_impl() override final;
-    void flush();
-
-    class UserParamForAsyncBulkCallback;
-
-    void preprocess_transfer(libusb_transfer *transfer);
-    void initiate_async_transfers();
-    void release_async_transfers();
+    void run_transfers();
 
     std::shared_ptr<LibUSBDevice> dev_;
-    int bEpCommAddress_;
+    EpId bEpCommAddress_;
 
-    std::mutex protect_vtransfert_;
-    std::vector<std::unique_ptr<UserParamForAsyncBulkCallback>> vtransfer_;
-
-    std::atomic<uint32_t> active_bulks_transfers_{0};
-
-    // USB Commands
-    libusb_transfer *construct_async_bulk_transfer(unsigned char *buf, int packet_size,
-                                                   libusb_transfer_cb_fn async_bulk_cb, void *user_data,
-                                                   unsigned int timeout);
-    static void free_async_bulk_transfer(libusb_transfer *transfer);
-    static int submit_transfer(libusb_transfer *transfer);
-    void prepare_async_bulk_transfer(libusb_transfer *transfer, unsigned char *buf, int packet_size,
-                                     libusb_transfer_cb_fn async_bulk_cb, void *user_data, unsigned int timeout);
+    class AsyncTransfer;
+    std::vector<AsyncTransfer> vtransfer_;
+    uint32_t timeout_cnt_;
 
     static const size_t packet_size_;
     static const size_t async_transfer_num_;
+    static const unsigned int timeout_;
 };
 
 } // namespace Metavision

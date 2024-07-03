@@ -51,7 +51,7 @@ uint32_t TzPseeFpgaDevice::get_system_id() const {
     try {
         return cmd->read_device_register(tzID, STEREO_SYSTEM_CONFIG_ID_ADDR)[0];
     } catch (const std::system_error &e) {
-        MV_HAL_LOG_WARNING() << "Could not fetch" << name << "system_id" << e.what();
+        MV_HAL_LOG_WARNING() << "Could not fetch" << name() << "system_id" << e.what();
         return 0;
     }
 }
@@ -60,7 +60,7 @@ uint32_t TzPseeFpgaDevice::get_system_version() const {
     try {
         return cmd->read_device_register(tzID, STEREO_SYSTEM_CONFIG_VERSION_ADDR)[0];
     } catch (const std::system_error &e) {
-        MV_HAL_LOG_WARNING() << "Could not fetch" << name << "system_version" << e.what();
+        MV_HAL_LOG_WARNING() << "Could not fetch" << name() << "system_version" << e.what();
         return 0;
     }
 }
@@ -69,7 +69,7 @@ uint32_t TzPseeFpgaDevice::get_system_build_date() const {
     try {
         return cmd->read_device_register(tzID, STEREO_SYSTEM_CONFIG_BUILD_DATE_ADDR)[0];
     } catch (const std::system_error &e) {
-        MV_HAL_LOG_WARNING() << "Could not fetch" << name << "system_build_date" << e.what();
+        MV_HAL_LOG_WARNING() << "Could not fetch" << name() << "system_build_date" << e.what();
         return 0;
     }
 }
@@ -78,7 +78,7 @@ uint32_t TzPseeFpgaDevice::get_system_version_control_id() const {
     try {
         return cmd->read_device_register(tzID, STEREO_SYSTEM_CONFIG_VERSION_CONTROL_ID_ADDR)[0];
     } catch (const std::system_error &e) {
-        MV_HAL_LOG_WARNING() << "Could not fetch" << name << "system_version_control_id" << e.what();
+        MV_HAL_LOG_WARNING() << "Could not fetch" << name() << "system_version_control_id" << e.what();
         return 0;
     }
 }

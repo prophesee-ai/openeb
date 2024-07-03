@@ -26,7 +26,9 @@ Evk2TzTriggerOut::Evk2TzTriggerOut(const std::shared_ptr<RegisterMap> &regmap, c
 }
 
 Evk2TzTriggerOut::~Evk2TzTriggerOut() {
-    disable();
+    try {
+        disable();
+    } catch (...) {}
 }
 
 bool Evk2TzTriggerOut::enable() {

@@ -212,6 +212,11 @@ private:
     /// to do so in the scope of the run_impl method to avoid concurrent calls
     virtual void stop_impl();
 
+    /// @brief Notify the internal thread that it shall stop
+    ///
+    /// This method makes a thread-safe update of should_stop() return value
+    void notify_stop();
+
     /// @brief Trigger all registered callbacks
     /// @param buffer The data to be carried forward
     void fire_callbacks(const BufferPtr buffer) const;

@@ -35,7 +35,8 @@ class StreamFormat;
 
 class TzDevice : public std::enable_shared_from_this<TzDevice> {
 public:
-    std::string get_name();
+    std::string get_name();          // get the name on from the device
+    const std::string &name() const; // get the local copy of the name
     std::vector<std::string> get_compatible();
     virtual void get_device_info(I_HW_Identification::SystemInfo &info, std::string prefix);
     virtual DeviceConfigOptionMap get_device_config_options() const;
@@ -57,11 +58,13 @@ protected:
     virtual void initialize();
     virtual void destroy();
 
-    std::string name;
     std::shared_ptr<TzDevice> parent;
     std::weak_ptr<TzDevice> child;
     std::shared_ptr<Metavision::TzLibUSBBoardCommand> cmd;
     uint32_t tzID;
+
+private:
+    std::string name_;
 };
 
 } // namespace Metavision

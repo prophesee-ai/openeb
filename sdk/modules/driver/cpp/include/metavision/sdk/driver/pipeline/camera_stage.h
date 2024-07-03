@@ -78,7 +78,7 @@ public:
     /// @param enable_cd_events_callback If true, enables the callback of CD events
     CameraStage(Camera &&camera, SharedEventsBufferProducerParameters buffer_producer_parameters,
                 bool enable_cd_events_callback = true) :
-        ext_trigger_buffer_pool_(EventTriggerBufferPool::make_bounded()) {
+        camera_(std::move(camera)), ext_trigger_buffer_pool_(EventTriggerBufferPool::make_bounded()) {
         if (enable_cd_events_callback) {
             init_cd_processing(buffer_producer_parameters);
         }

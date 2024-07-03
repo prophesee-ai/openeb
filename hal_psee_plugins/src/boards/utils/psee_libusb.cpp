@@ -54,9 +54,7 @@ LibUSBDevice::LibUSBDevice(std::shared_ptr<LibUSBContext> libusb_ctx, uint16_t v
 }
 
 LibUSBDevice::~LibUSBDevice() {
-    if (dev_handle_) {
-        libusb_close(dev_handle_);
-    }
+    libusb_close(dev_handle_);
 }
 
 libusb_context *LibUSBDevice::ctx() {
@@ -64,107 +62,59 @@ libusb_context *LibUSBDevice::ctx() {
 }
 
 libusb_device *LibUSBDevice::get_device() {
-    if (!dev_handle_) {
-        return nullptr;
-    }
     return libusb_get_device(dev_handle_);
 }
 
 int LibUSBDevice::get_configuration(int *config) {
-    if (!dev_handle_) {
-        return LIBUSB_ERROR_NO_DEVICE;
-    }
     return libusb_get_configuration(dev_handle_, config);
 }
 
 int LibUSBDevice::set_configuration(int configuration) {
-    if (!dev_handle_) {
-        return LIBUSB_ERROR_NO_DEVICE;
-    }
     return libusb_set_configuration(dev_handle_, configuration);
 }
 
 int LibUSBDevice::claim_interface(int interface_number) {
-    if (!dev_handle_) {
-        return LIBUSB_ERROR_NO_DEVICE;
-    }
     return libusb_claim_interface(dev_handle_, interface_number);
 }
 
 int LibUSBDevice::release_interface(int interface_number) {
-    if (!dev_handle_) {
-        return LIBUSB_ERROR_NO_DEVICE;
-    }
     return libusb_release_interface(dev_handle_, interface_number);
 }
 
 int LibUSBDevice::set_interface_alt_setting(int interface_number, int alternate_setting) {
-    if (!dev_handle_) {
-        return LIBUSB_ERROR_NO_DEVICE;
-    }
     return libusb_set_interface_alt_setting(dev_handle_, interface_number, alternate_setting);
 }
 
 int LibUSBDevice::clear_halt(unsigned char endpoint) {
-    if (!dev_handle_) {
-        return LIBUSB_ERROR_NO_DEVICE;
-    }
     return libusb_clear_halt(dev_handle_, endpoint);
 }
 
 int LibUSBDevice::reset_device() {
-    if (!dev_handle_) {
-        return LIBUSB_ERROR_NO_DEVICE;
-    }
     return libusb_reset_device(dev_handle_);
 }
 
-void LibUSBDevice::force_release() {
-    reset_device();
-    dev_handle_ = nullptr;
-}
-
 int LibUSBDevice::kernel_driver_active(int interface_number) {
-    if (!dev_handle_) {
-        return LIBUSB_ERROR_NO_DEVICE;
-    }
     return libusb_kernel_driver_active(dev_handle_, interface_number);
 }
 
 int LibUSBDevice::detach_kernel_driver(int interface_number) {
-    if (!dev_handle_) {
-        return LIBUSB_ERROR_NO_DEVICE;
-    }
     return libusb_detach_kernel_driver(dev_handle_, interface_number);
 }
 
 int LibUSBDevice::attach_kernel_driver(int interface_number) {
-    if (!dev_handle_) {
-        return LIBUSB_ERROR_NO_DEVICE;
-    }
     return libusb_attach_kernel_driver(dev_handle_, interface_number);
 }
 
 int LibUSBDevice::set_auto_detach_kernel_driver(int enable) {
-    if (!dev_handle_) {
-        return LIBUSB_ERROR_NO_DEVICE;
-    }
     return libusb_set_auto_detach_kernel_driver(dev_handle_, enable);
 }
 
 int LibUSBDevice::get_string_descriptor_ascii(uint8_t desc_index, unsigned char *data, int length) {
-    if (!dev_handle_) {
-        return LIBUSB_ERROR_NO_DEVICE;
-    }
     return libusb_get_string_descriptor_ascii(dev_handle_, desc_index, data, length);
 }
 
 void LibUSBDevice::control_transfer(uint8_t bmRequestType, uint8_t bRequest, uint16_t wValue, uint16_t wIndex,
                                     unsigned char *data, uint16_t wLength, unsigned int timeout) {
-    if (!dev_handle_) {
-        throw HalConnectionException(LIBUSB_ERROR_NO_DEVICE, libusb_error_category());
-    }
-
     int res;
     res = libusb_control_transfer(dev_handle_, bmRequestType, bRequest, wValue, wIndex, data, wLength, timeout);
     if (res < 0) {
@@ -174,10 +124,6 @@ void LibUSBDevice::control_transfer(uint8_t bmRequestType, uint8_t bRequest, uin
 
 void LibUSBDevice::bulk_transfer(unsigned char endpoint, unsigned char *data, int length, int *transferred,
                                  unsigned int timeout) {
-    if (!dev_handle_) {
-        throw HalConnectionException(LIBUSB_ERROR_NO_DEVICE, libusb_error_category());
-    }
-
     int res;
     res = libusb_bulk_transfer(dev_handle_, endpoint, data, length, transferred, timeout);
     if (res < 0) {
@@ -187,10 +133,6 @@ void LibUSBDevice::bulk_transfer(unsigned char endpoint, unsigned char *data, in
 
 void LibUSBDevice::interrupt_transfer(unsigned char endpoint, unsigned char *data, int length, int *transferred,
                                       unsigned int timeout) {
-    if (!dev_handle_) {
-        throw HalConnectionException(LIBUSB_ERROR_NO_DEVICE, libusb_error_category());
-    }
-
     int res;
     res = libusb_interrupt_transfer(dev_handle_, endpoint, data, length, transferred, timeout);
     if (res < 0) {

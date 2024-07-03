@@ -30,7 +30,7 @@ TzDeviceControl::TzDeviceControl(std::vector<std::shared_ptr<TzDevice>> &devices
             try {
                 dev.get()->start();
             } catch (const std::system_error &e) {
-                MV_HAL_LOG_TRACE() << dev.get()->get_name() << "did not start:" << e.what();
+                MV_HAL_LOG_TRACE() << dev.get()->name() << "did not start:" << e.what();
             }
         }
     }
@@ -52,7 +52,7 @@ TzDeviceControl::~TzDeviceControl() {
             try {
                 (*dev).get()->stop();
             } catch (const std::system_error &e) {
-                MV_HAL_LOG_TRACE() << (*dev).get()->get_name() << "did not stop:" << e.what();
+                MV_HAL_LOG_TRACE() << (*dev).get()->name() << "did not stop:" << e.what();
             }
         }
     }

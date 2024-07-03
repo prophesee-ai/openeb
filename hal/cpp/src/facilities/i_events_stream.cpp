@@ -550,7 +550,9 @@ I_EventsStream::~I_EventsStream() {
         abort_index_building_ = true;
         index_build_thread_.join();
     }
-    stop();
+    try {
+        stop();
+    } catch (const std::exception &e) { MV_LOG_ERROR() << "I_EventsStream::stop() raised an exception : " << e.what(); }
     data_transfer_.reset(nullptr);
     data_transfer_connection_error_ = nullptr;
 }
