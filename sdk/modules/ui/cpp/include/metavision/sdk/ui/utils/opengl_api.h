@@ -14,8 +14,7 @@
 
 #ifdef _USE_OPENGL_ES3_
 #include <GLES3/gl3.h>
-#else // OpenGL
-#if defined(__APPLE__) && !defined(__linux__)
+#elif defined(__APPLE__) && !defined(__linux__)
 #define GL_SILENCE_DEPRECATION
 #include <OpenGL/gl3.h>
 #else
@@ -25,9 +24,8 @@
 #include <GL/glew.h>
 #include <GL/gl.h>
 #endif
-#endif
 
-// GLFW need to be included after OpenGL
+// GLFW needs to be included after OpenGL
 #include <GLFW/glfw3.h>
 
 // While we keep support for OpenGL, we need to provide a
