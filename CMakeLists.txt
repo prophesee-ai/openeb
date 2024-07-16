@@ -16,7 +16,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif(NOT CMAKE_BUILD_TYPE)
 
 option(COMPILE_PYTHON3_BINDINGS "Enable/Disable Python bindings. Python bindings are disabled by default." OFF)
-option(BUILD_TESTING "Enable/Disable test applications." OFF)
+option(BUILD_TESTING "Build OpenEB's test suite" OFF)
 
 cmake_minimum_required(VERSION 3.5)
 
