@@ -21,13 +21,13 @@ TzUnknownDevice::TzUnknownDevice(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint
     TzDevice(cmd, dev_id, parent) {
     try {
         initialize();
-    } catch (const std::system_error &e) { MV_HAL_LOG_TRACE() << name << "did not enable:" << e.what(); }
+    } catch (const std::system_error &e) { MV_HAL_LOG_TRACE() << name() << "did not enable:" << e.what(); }
 }
 
 TzUnknownDevice::~TzUnknownDevice() {
     try {
         destroy();
-    } catch (const std::system_error &e) { MV_HAL_LOG_TRACE() << name << "did not disable:" << e.what(); }
+    } catch (const std::system_error &e) { MV_HAL_LOG_TRACE() << name() << "did not disable:" << e.what(); }
 }
 
 std::shared_ptr<TzDevice> TzUnknownDevice::build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id,

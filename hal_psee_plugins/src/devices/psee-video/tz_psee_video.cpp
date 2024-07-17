@@ -25,7 +25,7 @@ TzPseeVideo::TzPseeVideo(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev
     } catch (const std::system_error &) {}
     try {
         initialize();
-    } catch (const std::system_error &e) { MV_HAL_LOG_TRACE() << name << "did not enable:" << e.what(); }
+    } catch (const std::system_error &e) { MV_HAL_LOG_TRACE() << name() << "did not enable:" << e.what(); }
 }
 
 TzPseeVideo::~TzPseeVideo() {
@@ -55,7 +55,7 @@ StreamFormat TzPseeVideo::get_output_format() const {
         cmd->transfer_tz_frame(format);
         return StreamFormat(format.get_strings()[0]);
     } catch (const std::system_error &e) {
-        MV_HAL_LOG_TRACE() << name << "defaulting to EVT3:" << e.what();
+        MV_HAL_LOG_TRACE() << name() << "defaulting to EVT3:" << e.what();
         StreamFormat fmt("EVT3");
         fmt["width"]  = "1280";
         fmt["height"] = "720";

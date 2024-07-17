@@ -19,7 +19,7 @@ option(BUILD_TESTING "Build OpenEB's test suite" OFF)
 
 cmake_minimum_required(VERSION 3.5)
 
-project(metavision VERSION 4.6.1)
+project(metavision VERSION 4.6.2)
 set(PROJECT_VERSION_SUFFIX "")
 
 if(PROJECT_VERSION_SUFFIX STREQUAL "")

@@ -124,7 +124,20 @@ bool Camera::Private::stop() {
 
     set_is_running(false);
 
-    stop_impl();
+    try {
+        stop_impl();
+    } catch (const HalConnectionException &) {
+        // The implementation (probably in a plugin) reported an error. It is unknown wether the run thread will
+        // terminate properly. If we join on it, we may wait forever, but if we don't, the thread remains joinable
+        // and a future call to stop() may wait for the thread to be running while it is already stopped.
+        // Detaching the thread makes it non-joinable, preserving Metavision execution, while preserving the
+        // opportunity for the plugin to cancel its operations.
+        MV_HAL_LOG_WARNING() << "Camera implementation did not stop properly, detaching run thread";
+        run_thread_.detach();
+        // We can't ensure that every event was logged
+        stop_recording();
+        throw;
+    }
 
     try {
         run_thread_.join();

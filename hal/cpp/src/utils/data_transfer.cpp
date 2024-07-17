@@ -83,20 +83,13 @@ void DataTransfer::start() {
                     suspend_cond_.wait(lock, [this] { return !suspend_ || stop_; });
                 }
             }
-        } catch (std::exception &e) {
+        } catch (const std::exception &) {
             for (auto cb : transfer_error_cbs_) {
                 cb.second(std::current_exception());
             }
         }
 
-        {
-            std::lock(suspend_mutex_, running_mutex_);
-            std::unique_lock<std::mutex> lock1(suspend_mutex_, std::adopt_lock);
-            std::unique_lock<std::mutex> lock2(running_mutex_, std::adopt_lock);
-            stop_ = true;
-        }
-        suspend_cond_.notify_all();
-        running_cond_.notify_all();
+        notify_stop();
 
         for (auto cb : status_change_cbs_) {
             cb.second(Status::Stopped);
@@ -111,7 +104,20 @@ void DataTransfer::stop() {
         return;
     }
 
-    stop_impl();
+    try {
+        stop_impl();
+    } catch (const HalConnectionException &) {
+        notify_stop();
+        // We can't be sure the thread will terminate
+        run_transfers_thread_.detach();
+        throw;
+    }
+
+    notify_stop();
+    run_transfers_thread_.join();
+}
+
+void DataTransfer::notify_stop() {
     {
         std::lock(suspend_mutex_, running_mutex_);
         std::unique_lock<std::mutex> lock1(suspend_mutex_, std::adopt_lock);
@@ -120,8 +126,6 @@ void DataTransfer::stop() {
     }
     suspend_cond_.notify_all();
     running_cond_.notify_all();
-
-    run_transfers_thread_.join();
 }
 
 void DataTransfer::suspend() {
