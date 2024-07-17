@@ -40,7 +40,7 @@ Building OpenEB with component configurations other than what is listed above ma
         apt-utils \
         wget
     ```
-1. If you'll be using the Python API, Python bindings for C++, or and of the test applications, install Python3 as well.
+1. If you'll be using the Python API, Python bindings for C++, or any of the test applications, install Python3 and pybind11 as well.
     ```bash
     sudo apt -y install \
         python3.x \
@@ -48,7 +48,8 @@ Building OpenEB with component configurations other than what is listed above ma
         python3.x-distutils \
         python3.x-venv \
         python3-pip \
-        python3-setuptools
+        python3-setuptools \
+        python3-pybind11
     ```
     > **Note**: *For externally managed environments, activate a Python virtual environment and use it for all subsequent installation and build instructions.*
     - Navigate to your development area and activate a Python virtual environment.
@@ -82,19 +83,19 @@ When you build OpenEB you have the option to:
 1. Enable/Disable Python binding for C++
 1. Change the build type (`Release`, `Debug`, ect.)
 
-By default, test applications and Python C++ bindings are disabled. However, you can control them by using the CMake configuration options given in the table below.
+The table below describes CMake options that you can use to change the default build behavior.
 
-| Build Description | CMake Configuration Option |
-|-------------------|----------------------------|
-| **Enable Test Applications** | `-DBUILD_TESTING=ON` |
-| **Enable Python Bindings** | `-DCOMPILE_PYTHON3_BINDINGS=ON` |
-| **Change the build type** | `-DCMAKE_BUILD_TYPE=<Release\|Debug>`|
+| CMake Configuration Option | Description | Default State |
+|----------------------------|-------------|---------------|
+| `BUILD_TESTING` | Enable/Disable Test Applications | `OFF` |
+| `COMPILE_PYTHON3_BINDINGS` | Enable/Disable Python Bindings | `ON` |
+| `CMAKE_BUILD_TYPE`| Change the build type | `Release` |
 
 Once you've completed the requirements for
-any of the additional build configurations, use the option flags individually, or together, to enable the features you desire.
+any of the additional build configurations, use the option flags individually, or together, to set the state you desire.
 
 ##### Test Applications
-1. Complete steps 1&rarr;4 of the [initial setup and build configuration.](#initial-setup-and-build-configuration)
+1. Complete steps 1&rarr;3 of the [initial setup and build configuration.](#initial-setup-and-build-configuration)
 1. Install the Google Test and `pytest` dependencies.
     ```bash
     sudo apt -y install \
@@ -112,17 +113,6 @@ any of the additional build configurations, use the option flags individually, o
 1. Enable the test applications using the CMake command and options below.
     ```bash
     cmake --fresh .. -DBUILD_TESTING=ON
-    ```
-
-##### Python Bindings for C++
-1. Complete steps 1&rarr;3 for the [initial setup and build configuration.](#initial-setup-and-build-configuration)
-1. Install pybind11.
-    ```bash
-    sudo apt -y install python3-pybind11
-    ```
-1. Enable the Python bindings using the CMake command and options below.
-    ```bash
-    cmake --fresh .. -DCOMPILE_PYTHON3_BINDINGS=ON
     ```
 
 ### Build, Test, and Install OpenEB Binaries

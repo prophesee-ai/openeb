@@ -15,7 +15,6 @@ if(NOT CMAKE_BUILD_TYPE)
         "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
 
-option(COMPILE_PYTHON3_BINDINGS "Enable/Disable Python bindings. Python bindings are disabled by default." OFF)
 option(BUILD_TESTING "Build OpenEB's test suite" OFF)
 
 cmake_minimum_required(VERSION 3.5)
