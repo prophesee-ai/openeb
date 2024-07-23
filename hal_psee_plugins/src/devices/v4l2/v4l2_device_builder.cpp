@@ -129,6 +129,16 @@ static SensorDescriptor *get_sensor_descriptor(std::shared_ptr<BoardCommand> cmd
             "EVT21;height=320;width=320",
         },
         {
+            GenX320ESRegisterMap,
+            GenX320ESRegisterMapSize,
+            genx320_spawn_facilities,
+            {
+                {.addr = 0x14, .value = 0xb0602003, .mask = 0xFFFFFFFF},
+            },
+            {320, 1, "GenX320MP"},
+            "EVT21;height=320;width=320",
+        },
+        {
             Imx636RegisterMap,
             Imx636RegisterMapSize,
             imx636_spawn_facilities,
