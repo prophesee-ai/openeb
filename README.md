@@ -133,7 +133,7 @@ python3 -m pip install "numba==0.56.3" "profilehooks==1.12.0" "pytorch_lightning
 
 ### Compilation
 
- 1. Retrieve the code: `git clone https://github.com/prophesee-ai/openeb.git --branch 4.6.0`.
+ 1. Retrieve the code: `git clone https://github.com/prophesee-ai/openeb.git --branch 4.6.2`.
     (If you choose to download an archive of OpenEB from GitHub rather than cloning the repository,
     you need to ensure that you select a ``Full.Source.Code.*`` archive instead of using
     the automatically generated ``Source.Code.*`` archives. This is because the latter do not include
@@ -324,7 +324,7 @@ python -m pip install "numba==0.56.3" "profilehooks==1.12.0" "pytorch_lightning=
 First, retrieve the codebase:
 
 ```bash
-git clone https://github.com/prophesee-ai/openeb.git --branch 4.6.0
+git clone https://github.com/prophesee-ai/openeb.git --branch 4.6.2
 ```
 
 Note that if you choose to download an archive of OpenEB from GitHub rather than cloning the repository,
@@ -356,7 +356,7 @@ or you can deploy the OpenEB files (applications, samples, libraries etc.) in a 
 
 * Option 2 - deploying in a directory of your choice
 
-  * To deploy SDK Pro in the default folder (`C:\Program Files\Prophesee`), execute this command
+  * To deploy OpenEB in the default folder (`C:\Program Files\Prophesee`), execute this command
     (your console should be launched as an administrator):
 
     ```bash
