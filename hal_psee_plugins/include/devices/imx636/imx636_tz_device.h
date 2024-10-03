@@ -54,6 +54,9 @@ public:
 protected:
     virtual void spawn_facilities(DeviceBuilder &device_builder, const DeviceConfig &device_config);
 
+    static std::string ROOT_PREFIX;
+    static std::string SENSOR_PREFIX;
+
 private:
     void temperature_init();
     void time_base_config(bool external, bool master);

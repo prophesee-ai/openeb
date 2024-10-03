@@ -32,10 +32,6 @@ std::string FileHWIdentification::get_serial() const {
     return raw_header_.get_serial();
 }
 
-long FileHWIdentification::get_system_id() const {
-    return raw_header_.get_system_id();
-}
-
 I_HW_Identification::SensorInfo FileHWIdentification::get_sensor_info() const {
     return raw_header_.get_sensor_info();
 }

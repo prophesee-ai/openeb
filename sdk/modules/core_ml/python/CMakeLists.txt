@@ -10,10 +10,6 @@
 # Cpack
 add_cpack_component(PUBLIC metavision-sdk-core-ml-python metavision-sdk-core-ml-python-samples)
 
-# Models
-lfs_download("sdk/modules/core_ml/python/models" COMPILATION)
-lfs_download("sdk/modules/core_ml/python/models" VALIDATION)
-
 # Add Python library
 add_subdirectory(pypkg)
 

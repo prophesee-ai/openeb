@@ -12,8 +12,8 @@
 #ifndef METAVISION_UTILS_GTEST_TEMPORARY_DIRECTORY_HANDLER_H
 #define METAVISION_UTILS_GTEST_TEMPORARY_DIRECTORY_HANDLER_H
 
+#include <filesystem>
 #include <string>
-#include <boost/filesystem.hpp>
 
 namespace Metavision {
 
@@ -46,8 +46,11 @@ public:
     /// @note It does NOT create the file/directory returned
     std::string get_full_path(const std::string &basename) const;
 
+    void disable_remove_on_destruction();
+
 private:
-    boost::filesystem::path tmpdir_;
+    std::filesystem::path tmpdir_;
+    bool remove_on_destruction_ = true;
 };
 
 } // namespace Metavision

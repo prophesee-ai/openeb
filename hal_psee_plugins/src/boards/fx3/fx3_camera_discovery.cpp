@@ -61,7 +61,7 @@ Metavision::CameraDiscovery::SystemList Fx3CameraDiscovery::list_available_sourc
         cmd.open(serial);
         SystemId system_id = static_cast<SystemId>(cmd.get_system_id());
         if (device_builder_factory().contains(system_id) || device_builder_factory().contains(SYSTEM_FX3_UNKNOWN)) {
-            system_list.push_back({serial, Metavision::USB_LINK, system_id});
+            system_list.push_back({serial, Metavision::USB_LINK});
         }
     }
     return system_list;

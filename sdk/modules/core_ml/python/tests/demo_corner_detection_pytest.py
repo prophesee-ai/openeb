@@ -20,8 +20,8 @@ def pytestcase_demo_corner_detection(tmpdir, dataset_dir):
     """
     video_path = os.path.join(tmpdir, "demo_video.avi")
     datfile = os.path.join(dataset_dir, "openeb/core_ml/corner_detection/guernica_small_for_pytest.dat")
-
-    models_dir = os.path.join(dataset_dir, '..', 'sdk', 'modules', 'core_ml', 'python', 'models')
+    
+    models_dir = os.path.join(dataset_dir, '..', 'sdk', 'modules', 'core_ml', 'models')
     checkpoint = os.path.join(models_dir, "corner_detection_10_heatmaps.ckpt")
 
     assert os.path.exists(checkpoint)

@@ -90,7 +90,6 @@ int main(int argc, char *argv[]) {
     std::string plugin_name;
     std::string pixel_mask_coord;
     std::string crop_region_coord;
-    long system_id = -1;
 
     std::string temperature, illumination, pixel_dead_time;
 
@@ -135,9 +134,7 @@ int main(int argc, char *argv[]) {
         } else {
             device = Metavision::DeviceDiscovery::open_raw_file(in_raw_file_path);
         }
-    } catch (Metavision::BaseException &e) {
-        std::cerr << "Error exception: " << e.what() << std::endl;
-    }
+    } catch (Metavision::BaseException &e) { std::cerr << "Error exception: " << e.what() << std::endl; }
 
     if (!device) {
         std::cerr << "Camera opening failed." << std::endl;
@@ -153,8 +150,7 @@ int main(int argc, char *argv[]) {
 
     Metavision::I_HW_Identification *i_hw_identification = device->get_facility<Metavision::I_HW_Identification>();
     if (i_hw_identification) {
-        system_id = i_hw_identification->get_system_id();
-        std::cout << "System ID: " << system_id << std::endl;
+        std::cout << "Camera serial: " << i_hw_identification->get_serial() << std::endl;
     }
 
     Metavision::I_CameraSynchronization *i_camera_synchronization =
@@ -231,8 +227,7 @@ int main(int argc, char *argv[]) {
         i_triggerdecoder->add_event_buffer_callback(
             [](const Metavision::EventExtTrigger *begin, const Metavision::EventExtTrigger *end) {
                 for (auto ev = begin; ev != end; ++ev) {
-                    std::cout << "Trigger "
-                              << " " << ev->t << " " << ev->id << " " << ev->p << std::endl;
+                    std::cout << "Trigger " << " " << ev->t << " " << ev->id << " " << ev->p << std::endl;
                 }
             });
     } else {
@@ -366,7 +361,7 @@ int main(int argc, char *argv[]) {
 
             // This will trigger callbacks set on decoders: in our case EventAnalyzer.process_events
             if (raw_data) {
-                i_eventsstreamdecoder->decode(raw_data->data(), raw_data->data() + raw_data->size());
+                i_eventsstreamdecoder->decode(raw_data);
             }
             /// [buffer]
         }

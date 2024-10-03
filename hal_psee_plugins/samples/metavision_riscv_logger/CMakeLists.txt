@@ -15,7 +15,7 @@ target_link_libraries(metavision_riscv_logger PRIVATE ${common_libraries})
 
 install(TARGETS ${sample}
     RUNTIME DESTINATION bin
-    COMPONENT metavision-sdk-driver-bin
+    COMPONENT metavision-sdk-stream-bin
 )
 
 install(FILES

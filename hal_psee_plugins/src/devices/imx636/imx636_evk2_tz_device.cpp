@@ -37,10 +37,9 @@
 #include "utils/psee_hal_utils.h"
 
 namespace Metavision {
-namespace {
-std::string ROOT_PREFIX   = "PSEE/";
-std::string SENSOR_PREFIX = "SENSOR_IF/IMX636/";
-} // namespace
+
+std::string TzEvk2Imx636::ROOT_PREFIX   = "PSEE/";
+std::string TzEvk2Imx636::SENSOR_PREFIX = "SENSOR_IF/IMX636/";
 
 TzEvk2Imx636::TzEvk2Imx636(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id,
                            std::shared_ptr<TzDevice> parent) :
@@ -67,6 +66,7 @@ std::shared_ptr<TzDevice> TzEvk2Imx636::build(std::shared_ptr<TzLibUSBBoardComma
 bool TzEvk2Imx636::can_build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id) {
     return (cmd->read_device_register(dev_id, 0x800)[0] == SYSTEM_EVK2_IMX636);
 }
+
 static TzRegisterBuildMethod method("psee,video_imx636", TzEvk2Imx636::build, TzEvk2Imx636::can_build);
 
 void TzEvk2Imx636::spawn_facilities(DeviceBuilder &device_builder, const DeviceConfig &device_config) {

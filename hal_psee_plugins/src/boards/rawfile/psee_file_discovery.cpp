@@ -17,7 +17,7 @@
 #include "metavision/psee_hw_layer/boards/rawfile/file_hw_identification.h"
 #include "metavision/hal/facilities/i_events_stream.h"
 #include "metavision/hal/utils/device_builder.h"
-#include "metavision/hal/utils/file_data_transfer.h"
+#include "metavision/hal/utils/file_raw_data_producer.h"
 #include "metavision/hal/utils/raw_file_config.h"
 #include "metavision/sdk/base/events/event_cd.h"
 #include "metavision/sdk/base/events/event_erc_counter.h"
@@ -41,7 +41,8 @@ bool PseeFileDiscovery::discover(DeviceBuilder &device_builder, std::unique_ptr<
             std::make_unique<FileHWIdentification>(device_builder.get_plugin_software_info(), psee_header));
 
         device_builder.add_facility(std::make_unique<I_EventsStream>(
-            std::make_unique<FileDataTransfer>(std::move(stream), raw_size_bytes, file_config), file_hw_id, decoder));
+            std::make_unique<FileRawDataProducer>(std::move(stream), raw_size_bytes, file_config), file_hw_id,
+            decoder));
         return true;
     } catch (std::exception &e) {
         MV_HAL_LOG_TRACE() << "Could not read file:" << e.what();

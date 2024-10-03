@@ -68,11 +68,6 @@ public:
     /// @return Serial number as a string
     virtual std::string get_serial() const = 0;
 
-    /// @brief Returns the system id of the camera
-    /// @return The system id as an integer
-    /// @note This number can be used to check the compatibility of biases file
-    virtual long get_system_id() const = 0;
-
     /// @brief Returns the detail about the available sensor
     /// @return The sensor information
     virtual SensorInfo get_sensor_info() const = 0;

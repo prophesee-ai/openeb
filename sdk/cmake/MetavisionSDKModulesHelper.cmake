@@ -447,7 +447,9 @@ function(MetavisionSDK_add_advanced_module module_name)
     MetavisionSDK_add_module(${module_name} ${ARGN})
 
     if(EXISTS "${PROJECT_SOURCE_DIR}/licensing/LICENSE_METAVISION_SDK")
-        install(FILES ${PROJECT_SOURCE_DIR}/licensing/LICENSE_METAVISION_SDK
+        install(FILES
+                    ${PROJECT_SOURCE_DIR}/licensing/LICENSE_METAVISION_SDK
+                    ${PROJECT_SOURCE_DIR}/licensing/OPEN_SOURCE_3RDPARTY_NOTICES
                 DESTINATION share/metavision/licensing)
     endif()
 

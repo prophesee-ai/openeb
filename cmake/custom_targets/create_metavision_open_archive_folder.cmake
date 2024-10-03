@@ -18,7 +18,7 @@ string(REPLACE " " ";" HAL_OPEN_PLUGIN_DEVICES "${HAL_OPEN_PLUGIN_DEVICES}")
 
 include(overridden_cmake_functions)
 
-set(HAL_OPEN_PLUGIN_FILES apps biasgen cmake CMakeLists.txt lib resources samples test)
+set(HAL_OPEN_PLUGIN_FILES apps biasgen cmake CMakeLists.txt lib resources samples python test)
 set(HAL_OPEN_PLUGIN_INCLUDES boards utils geometries plugin devices/common devices/utils devices/others)
 set(HAL_OPEN_PLUGIN_HW_LAYER_INCLUDES boards facilities utils devices/common devices/utils devices/psee-video)
 set(HAL_OPEN_PLUGIN_SOURCES boards CMakeLists.txt facilities plugin utils devices/common devices/utils devices/psee-video devices/others devices/CMakeLists.txt)
@@ -34,8 +34,29 @@ list_transform_prepend (HAL_OPEN_PLUGIN_HW_LAYER_INCLUDES psee_hw_layer_headers/
 list(APPEND HAL_OPEN_PLUGIN_FILES ${HAL_OPEN_PLUGIN_INCLUDES} ${HAL_OPEN_PLUGIN_SOURCES} ${HAL_OPEN_PLUGIN_HW_LAYER_INCLUDES})
 list_transform_prepend (HAL_OPEN_PLUGIN_FILES hal_psee_plugins/)
 
+set(DIRECT_COPY_FILES
+  CMakeLists.txt
+  licensing/LICENSE_OPEN
+  licensing/OPEN_SOURCE_3RDPARTY_NOTICES
+  .gitignore conftest.py
+  pytest.ini
+  cmake
+  standalone_samples
+  hal
+  ${HAL_OPEN_PLUGIN_FILES}
+  utils/python/metavision_utils
+  utils/python/requirements_openeb.txt
+  utils/cpp utils/scripts
+  utils/windows/resources.rc.in
+  utils/windows/vcpkg-openeb.json
+  utils/CMakeLists.txt
+  sdk/cmake
+  sdk/CMakeLists.txt
+  sdk/modules/CMakeLists.txt
+)
+
 # Add the files and folders needed to compile open :
-foreach (file_or_dir CMakeLists.txt licensing/LICENSE_OPEN .gitignore conftest.py pytest.ini cmake standalone_samples hal ${HAL_OPEN_PLUGIN_FILES} utils/python/metavision_utils utils/cpp utils/scripts utils/windows/resources.rc.in utils/windows/vcpkg-openeb.json utils/CMakeLists.txt sdk/cmake sdk/CMakeLists.txt sdk/modules/CMakeLists.txt)
+foreach (file_or_dir ${DIRECT_COPY_FILES})
     if (EXISTS "${PROJECT_SOURCE_DIR}/${file_or_dir}")
         get_filename_component(dest "${OUTPUT_DIR}/${file_or_dir}" DIRECTORY)
         file(COPY "${PROJECT_SOURCE_DIR}/${file_or_dir}"
@@ -70,7 +91,7 @@ file(REMOVE "${OUTPUT_DIR}/sdk/cmake/MetavisionSDKCPackConfig.cmake")
 file(REMOVE "${OUTPUT_DIR}/sdk/cmake/MetavisionStudioCPackConfig.cmake")
 file(REMOVE_RECURSE "${OUTPUT_DIR}/hal/cpp/doc")
 file(REMOVE_RECURSE "${OUTPUT_DIR}/hal/python/doc")
-foreach (mod base core driver ui core_ml)
+foreach (mod base core stream ui core_ml)
     file(COPY "${PROJECT_SOURCE_DIR}/sdk/modules/${mod}" DESTINATION "${OUTPUT_DIR}/sdk/modules")
     # Remove the code we don't want from the SDK modules (doc):
     foreach(subdir doc)
@@ -87,13 +108,13 @@ endforeach(mod)
 
 if (NOT KEEP_GIT_SUBMODULES)
     # Remove hdf5_ecf submodule
-    file(REMOVE_RECURSE "${OUTPUT_DIR}/sdk/modules/driver/cpp/3rdparty/hdf5_ecf")
+    file(REMOVE_RECURSE "${OUTPUT_DIR}/sdk/modules/stream/cpp/3rdparty/hdf5_ecf")
 endif ()
 # Remove Metavision Studio :
 file(REMOVE_RECURSE "${OUTPUT_DIR}/sdk/modules/core/cpp/apps/metavision_studio")
 
 # Remove evk3d viewer as the plugin is closed source
-file(REMOVE_RECURSE "${OUTPUT_DIR}/sdk/modules/driver/cpp/samples/metavision_evk3d_viewer")
+file(REMOVE_RECURSE "${OUTPUT_DIR}/sdk/modules/stream/cpp/samples/metavision_evk3d_viewer")
 
 # Now we need to modify the way to determine the VCS information (folder created is not be a git repo)
 string(CONCAT licence_header "# Copyright (c) Prophesee S.A.\n"

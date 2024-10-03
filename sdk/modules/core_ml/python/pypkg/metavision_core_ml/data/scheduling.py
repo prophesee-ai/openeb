@@ -12,9 +12,13 @@ Scheduling System for Videos
 import os
 import random
 import numpy as np
+# Temporary solution to fix the numpy deprecated alias in skvideo: https://github.com/scikit-video/scikit-video/issues/154#issuecomment-1445239790
+# Will be deleted in MV-2134 when skvideo makes the correction
+np.float = np.float64
+np.int = np.int_
 import skvideo.io
 import json
-from metavision_core_ml.utils.files import grab_videos, grab_images
+from metavision_core_ml.utils.files import grab_videos, grab_images, grab_tiff_images
 
 
 class Metadata(object):
@@ -92,6 +96,28 @@ def build_image_metadata(folder, min_size, max_size, denominator=1):
     """
     paths = grab_images(folder, recursive=False)
     sizes = np.round(np.random.randint(min_size, max_size, size=len(paths)) / float(denominator)) * denominator
+    sizes = sizes.astype(np.int32)
+    sizes[sizes == 0] = denominator
+    out = []
+    for path, num_frames in zip(paths, sizes):
+        out.append(Metadata(path, 0, num_frames))
+    return out
+
+
+def build_tiff_image_metadata(folder, min_size, max_size, denominator=1):
+    """
+    Build Metadata from images
+
+    Args:
+        folder (str): path to pictures
+        min_size (int): minimum number of frames
+        max_size (int): maximum number of frames
+        denominator (int): num_frames will always be a multiple of denominator.
+                           It is used to avoid having batches that are missing some frames and need to be padded. This
+                           happens when the number of time steps is not a multiple of num_frames.
+    """
+    paths = grab_tiff_images(folder, recursive=True)
+    sizes = np.round(np.random.randint(min_size, max_size, size=len(paths)) / float(denominator)) * denominator
     sizes = sizes.astype(np.int)
     sizes[sizes == 0] = denominator
     out = []
@@ -132,4 +158,7 @@ def build_metadata(folder, min_length, max_length, denominator=1):
     if not len(metadata):
         print('no video, grabbing pictures')
         metadata = build_image_metadata(folder, min_length, max_length, denominator=denominator)
+    if not len(metadata):
+        print('no video nor image, grabbing numpy float images')
+        metadata = build_tiff_image_metadata(folder, min_length, max_length, denominator=denominator)
     return metadata

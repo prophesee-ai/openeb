@@ -6,7 +6,6 @@
  * A copy of these License T&C's is located in the "licensing" folder accompanying this file.                         *
  **********************************************************************************************************************/
 
-#include <boost/filesystem.hpp>
 #include <iostream>
 #include <cstddef>
 #include <utility>
@@ -14,8 +13,6 @@
 
 #include "metavision/utils/profiling/chrome_tracing_profiler.h"
 #include "metavision/utils/profiling/utils/chrome_tracing_event_serializer.h"
-
-namespace fs = boost::filesystem;
 
 namespace Profiling {
 
@@ -78,9 +75,7 @@ void ChromeTracingProfiler::add_counter_event(const std::string &name, const std
 }
 
 ChromeTracingProfiler::ChromeTracingProfiler(const std::string &name, bool save_on_destruction) {
-    fs::path output_path = fs::temp_directory_path() / fs::path(name);
-
-    output_path_         = output_path.string();
+    output_path_         = std::filesystem::temp_directory_path() / name;
     save_on_destruction_ = save_on_destruction;
     reset_impl();
 }

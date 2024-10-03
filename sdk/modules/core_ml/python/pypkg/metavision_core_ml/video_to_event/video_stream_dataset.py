@@ -16,7 +16,7 @@ from metavision_core_ml.data.video_stream import TimedVideoStream
 from metavision_core_ml.data.image_planar_motion_stream import PlanarMotionStream
 from metavision_core_ml.data.stream_dataloader import StreamDataset, StreamDataLoader
 from metavision_core_ml.data.scheduling import build_metadata
-from metavision_core_ml.utils.files import is_image, is_video
+from metavision_core_ml.utils.files import is_image, is_video, is_tiff_image
 
 
 class VideoDatasetIterator(object):
@@ -39,23 +39,26 @@ class VideoDatasetIterator(object):
         max_interp_consecutive_frames (int): maximum number of interpolated frames between two consecutive frames (works only with PlanarMotionStream)
         max_number_of_batches_to_produce (int): maximum number of batches to produce
         crop_image (bool): crop images or resize them
+        saturation_max_factor (float): multiplicative factor of saturated pixels (only for tiff 16 bits images. Use 1.0 to disable)
     """
 
     def __init__(self, metadata, height, width, rgb, mode='frames', min_tbins=3, max_tbins=10,
                  min_dt=3000, max_dt=50000, batch_times=1,
                  pause_probability=0.5,
                  max_optical_flow_threshold=2., max_interp_consecutive_frames=20,
-                 max_number_of_batches_to_produce=None, crop_image=False):
+                 max_number_of_batches_to_produce=None, crop_image=False,
+                 saturation_max_factor=1.0):
         assert mode in ["frames", "delta_t", "random"]
         if is_video(metadata.path):
             self.image_stream = TimedVideoStream(metadata.path, height, width, rgb=rgb,
                                                  start_frame=metadata.start_frame, max_frames=len(metadata))
-        elif is_image(metadata.path):
+        elif is_image(metadata.path) or is_tiff_image(metadata.path):
             self.image_stream = PlanarMotionStream(metadata.path, height, width, len(metadata), rgb=rgb,
                                                    pause_probability=pause_probability,
                                                    max_optical_flow_threshold=max_optical_flow_threshold,
                                                    max_interp_consecutive_frames=max_interp_consecutive_frames,
-                                                   crop_image=crop_image)
+                                                   crop_image=crop_image,
+                                                   saturation_max_factor=saturation_max_factor)
         self.height = height
         self.width = width
         self.rgb = rgb
@@ -106,7 +109,7 @@ class VideoDatasetIterator(object):
                 assert target_indices[-1] == len(out) - 1
                 assert len(target_indices) == self.batch_times
                 target_indices = torch.FloatTensor(target_indices)[None, :]  # (1, self.batch_times=1)
-                yield sequence, timestamps, target_indices, first_time
+                yield sequence, timestamps, target_indices, first_time, self.metadata.path
                 nb_batches_produced += 1
 
                 if self.max_number_of_batches_to_produce and nb_batches_produced >= self.max_number_of_batches_to_produce:
@@ -128,14 +131,14 @@ class VideoDatasetIterator(object):
 
             assert len(target_indices) == self.batch_times
             target_indices = torch.FloatTensor(target_indices)[None, :]  # B,T
-            yield sequence, timestamps, target_indices, first_time
+            yield sequence, timestamps, target_indices, first_time, self.metadata.path
 
 
 def pad_collate_fn(data_list):
     """
     Here we pad with last image/ timestamp to get a contiguous batch
     """
-    images, timestamps, target_indices, first_times = zip(*data_list)
+    images, timestamps, target_indices, first_times, metadata_paths = zip(*data_list)
     video_len = [item.shape[-1] for item in images]
     max_len = max([item.shape[-1] for item in images])
     b = len(images)
@@ -160,14 +163,15 @@ def pad_collate_fn(data_list):
         'first_times': first_times,
         'video_len': torch.tensor(
             video_len,
-            dtype=torch.int32)}
+            dtype=torch.int32),
+        'paths': metadata_paths }
 
 
 def make_video_dataset(
         path, num_workers, batch_size, height, width, min_length, max_length, mode='frames',
         min_frames=5, max_frames=30, min_delta_t=5000, max_delta_t=50000, rgb=False, seed=None, batch_times=1,
         pause_probability=0.5, max_optical_flow_threshold=2., max_interp_consecutive_frames=20,
-        max_number_of_batches_to_produce=None, crop_image=False):
+        max_number_of_batches_to_produce=None, crop_image=False, saturation_max_factor=1.0):
     """
     Makes a video / moving picture dataset.
 
@@ -192,6 +196,8 @@ def make_video_dataset(
         max_number_of_batches_to_produce (int): maximum number of batches to produce. Makes sure the stream will not
                                                 produce more than this number of consecutive batches using the same
                                                 image or video.
+        crop_image (bool): crop images or resize them
+        saturation_max_factor (float): multiplicative factor of saturated pixels (only for tiff 16 bits images. Use 1.0 to disable)
     """
     metadatas = build_metadata(path, min_length, max_length)
     print('scheduled streams: ', len(metadatas))
@@ -201,7 +207,8 @@ def make_video_dataset(
             metadata, height, width, rgb=rgb, mode=mode, min_tbins=min_frames,
             max_tbins=max_frames, min_dt=min_delta_t, max_dt=max_delta_t, batch_times=batch_times,
             pause_probability=pause_probability, max_optical_flow_threshold=max_optical_flow_threshold,
-            max_interp_consecutive_frames=max_interp_consecutive_frames, crop_image=crop_image)
+            max_interp_consecutive_frames=max_interp_consecutive_frames, crop_image=crop_image,
+            saturation_max_factor=saturation_max_factor)
     dataset = StreamDataset(metadatas, iterator_fun, batch_size, "data", None, seed)
     dataloader = StreamDataLoader(dataset, num_workers, pad_collate_fn)
     # TODO: one day unify make_video_dataset and make_video_dataset_with_events_cpu

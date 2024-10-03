@@ -143,8 +143,12 @@ void GenX320RoiDriver::Grid::set_vector(const unsigned int &vector_id, const uns
 }
 
 std::filesystem::path GenX320RoiDriver::default_calibration_path() {
+#ifndef __ANDROID__
     static auto calib_path = std::filesystem::path(ResourcesFolder::get_user_path()) / "active_pixel_calib.txt";
     return calib_path;
+#else
+    throw HalException(HalErrorCode::OperationNotImplemented);
+#endif
 }
 
 GenX320RoiDriver::GenX320RoiDriver(int width, int height, const std::shared_ptr<RegisterMap> &regmap,

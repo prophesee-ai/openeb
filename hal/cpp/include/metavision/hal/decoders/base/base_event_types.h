@@ -23,8 +23,8 @@ typedef uint8_t EventTypesUnderlying_t;
 // same for all cameras (it is the case for now, but with every new
 // sensor we have to check)
 enum class BaseEventTypes : EventTypesUnderlying_t {
-    CD_LOW        = 0x00, // Left camera CD event, decrease in illumination (polarity '0')
-    CD_HIGH       = 0x01, // Left camera CD event, increase in illumination (polarity '1')
+    CD_OFF        = 0x00, // Left camera CD event, decrease in illumination (polarity '0')
+    CD_ON         = 0x01, // Left camera CD event, increase in illumination (polarity '1')
     EVT_TIME_HIGH = 0x08, // Timer high bits, also used to synchronize different event flows in the FPGA.
     EXT_TRIGGER   = 0x0A, // External trigger output
     IMU_EVT       = 0x0D, // Inertial Measurement Unit event that relays accelerometer and gyroscope information.

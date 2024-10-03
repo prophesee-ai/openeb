@@ -15,35 +15,6 @@
 
 namespace Metavision {
 
-namespace {
-bool set_stc_cut_trail_filter_wrapper(I_EventTrailFilterModule &self) {
-    auto warnings = pybind11::module::import("warnings");
-    warnings.attr("warn")("set_stc_cut_trail_filter() is deprecated since v4.2.0, use "
-                          "set_type(metavision_hal.I_EventTrailFilterModule.STC_CUT_TRAIL) instead.");
-
-    if (self.get_available_types().count(I_EventTrailFilterModule::Type::STC_CUT_TRAIL) <= 0)
-        return false;
-
-    self.set_type(I_EventTrailFilterModule::Type::STC_CUT_TRAIL);
-    return true;
-}
-
-bool set_trail_filter_wrapper(I_EventTrailFilterModule &self) {
-    auto warnings = pybind11::module::import("warnings");
-    warnings.attr("warn")("set_trail_filter() is deprecated since v4.2.0, use "
-                          "set_type(metavision_hal.I_EventTrailFilterModule.TRAIL) instead.");
-
-    if (self.get_available_types().count(I_EventTrailFilterModule::Type::TRAIL) <= 0)
-        return false;
-    self.set_type(I_EventTrailFilterModule::Type::TRAIL);
-    return true;
-}
-} // namespace
-
-// TODO : remove before next major release
-// Add depreciation message for get_i_eventrail_fiter_module typo -> get_i_event_trail_filter_module
-static DeprecatedDeviceFacilityGetter<I_EventTrailFilterModule> getter_("get_i_eventrailfilter_module",
-                                                                        "get_i_event_trail_filter_module", "4.0.1");
 static DeviceFacilityGetter<I_EventTrailFilterModule> getter("get_i_event_trail_filter_module");
 
 static HALFacilityPythonBinder<I_EventTrailFilterModule> bind(
@@ -58,18 +29,6 @@ static HALFacilityPythonBinder<I_EventTrailFilterModule> bind(
                  pybind_doc_hal["Metavision::I_EventTrailFilterModule::enable"])
             .def("is_enabled", &I_EventTrailFilterModule::is_enabled,
                  pybind_doc_hal["Metavision::I_EventTrailFilterModule::is_enabled"])
-            // TODO : remove before next major release
-            .def("set_stc_cut_trail_filter", set_stc_cut_trail_filter_wrapper,
-                 "Sets the EventTrailFilterModule filter mode to STC_CUT_TRAIL\n"
-                 "\n"
-                 "This filter keeps the second event within a burst of events with the same polarity\n"
-                 "Returns true on success, false if filter type is not supported\n")
-            // TODO : remove before next major release
-            .def("set_trail_filter", set_trail_filter_wrapper,
-                 "Sets the EventTrailFilterModule filter mode to TRAIL\n"
-                 "\n"
-                 "This filter keeps the first event within a burst of events with the same polarity\n"
-                 "Returns true on success, false if filter type is not supported\n")
             .def("get_available_types", &I_EventTrailFilterModule::get_available_types,
                  pybind_doc_hal["Metavision::I_EventTrailFilterModule::get_available_types"])
             .def("get_type", &I_EventTrailFilterModule::get_type,

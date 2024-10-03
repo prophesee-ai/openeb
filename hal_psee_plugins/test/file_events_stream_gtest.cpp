@@ -14,7 +14,6 @@
 #include <sstream>
 #include <memory>
 #include <numeric>
-#include <boost/filesystem.hpp>
 
 #include "metavision/utils/gtest/gtest_with_tmp_dir.h"
 #include "metavision/sdk/base/events/event_cd.h"
@@ -227,14 +226,13 @@ TEST_F(FileEventsStream_Gtest, reading_all_data) {
     ASSERT_TRUE(open_and_start_file_events_stream());
 
     std::vector<RawEventType> data_read;
-    long n_bytes_polled;
 
     while (file_events_stream_->wait_next_buffer() > 0) {
         auto buffer = file_events_stream_->get_latest_raw_data();
-        ASSERT_TRUE(buffer->size() == (n_events_to_read_default_ * decoder_->get_raw_event_size_bytes()) ||
-                    buffer->size() == (n_events_read_in_last_buffer_ * decoder_->get_raw_event_size_bytes()));
-        data_read.insert(data_read.end(), reinterpret_cast<RawEventType *>(buffer->data()),
-                         reinterpret_cast<RawEventType *>(buffer->data() + buffer->size()));
+        ASSERT_TRUE(buffer.size() == (n_events_to_read_default_ * decoder_->get_raw_event_size_bytes()) ||
+                    buffer.size() == (n_events_read_in_last_buffer_ * decoder_->get_raw_event_size_bytes()));
+        data_read.insert(data_read.end(), reinterpret_cast<const RawEventType *>(buffer.data()),
+                         reinterpret_cast<const RawEventType *>(buffer.data() + buffer.size()));
     }
 
     ASSERT_EQ(data_ref, data_read);
@@ -346,10 +344,10 @@ TEST_F(FileEventsStream_Gtest, rawfile_logging_data_logged_is_data_read) {
     std::vector<RawEventType> data_read;
     while (file_events_stream_->wait_next_buffer() > 0) {
         auto buffer = file_events_stream_->get_latest_raw_data();
-        ASSERT_TRUE(buffer->size() == n_events_to_read_default_ * decoder_->get_raw_event_size_bytes() ||
-                    buffer->size() == n_events_read_in_last_buffer_ * decoder_->get_raw_event_size_bytes());
-        data_read.insert(data_read.end(), reinterpret_cast<RawEventType *>(buffer->data()),
-                         reinterpret_cast<RawEventType *>(buffer->data() + buffer->size()));
+        ASSERT_TRUE(buffer.size() == n_events_to_read_default_ * decoder_->get_raw_event_size_bytes() ||
+                    buffer.size() == n_events_read_in_last_buffer_ * decoder_->get_raw_event_size_bytes());
+        data_read.insert(data_read.end(), reinterpret_cast<const RawEventType *>(buffer.begin()),
+                         reinterpret_cast<const RawEventType *>(buffer.end()));
     }
 
     ASSERT_EQ(data_ref, data_read);
@@ -388,10 +386,10 @@ TEST_F(FileEventsStream_Gtest, reading_from_custom_istream) {
     std::vector<RawEventType> data_read;
     while (file_events_stream_->wait_next_buffer() > 0) {
         auto buffer = file_events_stream_->get_latest_raw_data();
-        ASSERT_TRUE(buffer->size() == n_events_to_read_default_ * decoder_->get_raw_event_size_bytes() ||
-                    buffer->size() == n_events_read_in_last_buffer_ * decoder_->get_raw_event_size_bytes());
-        data_read.insert(data_read.end(), reinterpret_cast<RawEventType *>(buffer->data()),
-                         reinterpret_cast<RawEventType *>(buffer->data() + buffer->size()));
+        ASSERT_TRUE(buffer.size() == n_events_to_read_default_ * decoder_->get_raw_event_size_bytes() ||
+                    buffer.size() == n_events_read_in_last_buffer_ * decoder_->get_raw_event_size_bytes());
+        data_read.insert(data_read.end(), reinterpret_cast<const RawEventType *>(buffer.begin()),
+                         reinterpret_cast<const RawEventType *>(buffer.end()));
     }
 
     ASSERT_EQ(data_ref, data_read);

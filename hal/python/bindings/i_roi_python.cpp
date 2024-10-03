@@ -19,9 +19,9 @@ namespace {
 
 void set_windows_wrapper(I_ROI &i_roi, py::list &windows_list) {
     std::vector<I_ROI::Window> windows;
-    const ssize_t n_roi = py::len(windows_list);
+    const py::ssize_t n_roi = py::len(windows_list);
 
-    for (ssize_t i = 0; i < n_roi; ++i) {
+    for (py::ssize_t i = 0; i < n_roi; ++i) {
         windows.push_back((windows_list[i]).cast<I_ROI::Window>());
     }
 
@@ -31,14 +31,14 @@ void set_windows_wrapper(I_ROI &i_roi, py::list &windows_list) {
 void set_lines_wrapper(I_ROI &i_roi, py::list &cols, py::list &rows) {
     std::vector<bool> cols_vec;
     std::vector<bool> rows_vec;
-    const ssize_t n_cols = py::len(cols);
-    const ssize_t n_rows = py::len(rows);
+    const py::ssize_t n_cols = py::len(cols);
+    const py::ssize_t n_rows = py::len(rows);
 
-    for (ssize_t idx = 0; idx < n_cols; ++idx) {
+    for (py::ssize_t idx = 0; idx < n_cols; ++idx) {
         cols_vec.push_back((cols[idx]).cast<bool>());
     }
 
-    for (ssize_t idx = 0; idx < n_rows; ++idx) {
+    for (py::ssize_t idx = 0; idx < n_rows; ++idx) {
         rows_vec.push_back((rows[idx]).cast<bool>());
     }
 

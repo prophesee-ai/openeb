@@ -18,10 +18,10 @@ add_custom_target(create_metavision_get_started_archive_folder
         -P ${CMAKE_CURRENT_LIST_DIR}/create_metavision_get_started_archive_folder.cmake
 )
 
-set(output_metavision_get_started_archive_path "${GENERATE_FILES_DIRECTORY}/metavision_get_started_${PROJECT_VERSION_FULL}.tar")
+set(output_metavision_get_started_archive_path "${GENERATE_FILES_DIRECTORY}/metavision_get_started_${PROJECT_VERSION_FULL}.tar.gz")
 
 add_custom_target(create_metavision_get_started_archive
-    COMMAND ${CMAKE_COMMAND} -E chdir ${output_metavision_get_started_archive_dir_path} ${CMAKE_COMMAND} -E tar cvf ${output_metavision_get_started_archive_path} .
+    COMMAND ${CMAKE_COMMAND} -E chdir ${output_metavision_get_started_archive_dir_path} ${CMAKE_COMMAND} -E tar czvf ${output_metavision_get_started_archive_path} .
     COMMAND ${CMAKE_COMMAND} -E echo "File ${output_metavision_get_started_archive_path} generated"
 )
 add_dependencies(create_metavision_get_started_archive create_metavision_get_started_archive_folder)

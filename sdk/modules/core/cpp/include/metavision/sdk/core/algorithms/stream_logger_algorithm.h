@@ -12,7 +12,7 @@
 #ifndef METAVISION_SDK_CORE_STREAM_LOGGER_ALGORITHM_H
 #define METAVISION_SDK_CORE_STREAM_LOGGER_ALGORITHM_H
 
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include <string>
 #include <vector>
 #include <fstream>
@@ -32,11 +32,11 @@ class StreamLoggerAlgorithm {
 
 public:
     /// @brief Builds a new StreamLogger object with given geometry
-    /// @param filename Name of the file to write into. If the file already exists, its previous content will be
+    /// @param file_path Path of the file to write into. If the file already exists, its previous content will be
     /// lost.
     /// @param width Width of the producer
     /// @param height Height of the producer
-    inline StreamLoggerAlgorithm(const std::string &filename, std::size_t width, std::size_t height);
+    inline StreamLoggerAlgorithm(const std::filesystem::path &file_path, std::size_t width, std::size_t height);
 
     /// @brief Default destructor
     ~StreamLoggerAlgorithm() = default;
@@ -57,10 +57,10 @@ public:
     inline std::int32_t get_split_time_seconds() const;
 
     /// @brief Changes the destination file of the logger.
-    /// @param filename Name of the file to write into.
+    /// @param file_path Name of the file to write into.
     /// @param reset_ts If we are currently recording,
     /// the timestamp used in the last call to update will be considered as timestamp zero
-    inline void change_destination(const std::string &filename, bool reset_ts = true);
+    inline void change_destination(const std::filesystem::path &file_path, bool reset_ts = true);
 
     /// @brief Exports the information in the input buffer into the StreamLogger
     /// @tparam InputIt Read-Only input event iterator type. Works for iterators over buffers of @ref Event2d
@@ -75,13 +75,9 @@ public:
     inline void close();
 
 protected:
-    /// @brief Changes the destination file internally
-    /// @param filename Name of the file to write into
-    inline void set_filename(const std::string &filename);
-
-    /// @brief Returns the StreamLogger file name
+    /// @brief Returns the StreamLogger file path
     /// @note If the system is working in split mode, it returns the file used in each iteration
-    inline std::string get_filename() const;
+    inline std::filesystem::path get_file_path() const;
 
     /// @brief Splits the current file, if the timestamp reach the timeout
     /// @param ts Current timestamp
@@ -91,9 +87,7 @@ protected:
     std::size_t width_{0};
     std::size_t height_{0};
     std::size_t split_counter_{0};
-    std::string filename_{};
-    std::string filename_base_{};
-    std::string filename_ext_{};
+    std::filesystem::path file_path_{};
     std::ofstream output_{};
     bool enable_{false};
     bool header_written_{false};
@@ -104,11 +98,9 @@ protected:
     std::vector<std::uint8_t> buffer_{};
 };
 
-inline StreamLoggerAlgorithm::StreamLoggerAlgorithm(const std::string &filename, std::size_t width,
+inline StreamLoggerAlgorithm::StreamLoggerAlgorithm(const std::filesystem::path &file_path, std::size_t width,
                                                     std::size_t height) :
-    width_(width), height_(height) {
-    set_filename(filename);
-}
+    width_(width), height_(height), file_path_(file_path) {}
 
 inline void StreamLoggerAlgorithm::enable(bool state, bool reset_ts, std::int32_t split_time_seconds) {
     const auto split_enabled = split_time_seconds != InvalidTimestamp;
@@ -132,10 +124,10 @@ inline void StreamLoggerAlgorithm::enable(bool state, bool reset_ts, std::int32_
             output_.close();
         }
 
-        output_.open(get_filename(), std::ios::binary);
+        output_.open(get_file_path(), std::ios::binary);
         if (output_.fail()) {
             throw std::runtime_error(
-                "Could not open file '" + get_filename() +
+                "Could not open file '" + get_file_path().string() +
                 " to record. Make sure it is a valid filename and that you have permissions to write it.");
         }
         header_written_    = false;
@@ -153,13 +145,13 @@ std::int32_t StreamLoggerAlgorithm::get_split_time_seconds() const {
     return split_timestamp_secs_;
 }
 
-inline void StreamLoggerAlgorithm::change_destination(const std::string &filename, bool reset_ts) {
+inline void StreamLoggerAlgorithm::change_destination(const std::filesystem::path &file_path, bool reset_ts) {
     const auto previous_state = enable_;
     if (enable_) {
         StreamLoggerAlgorithm::enable(false);
     }
 
-    set_filename(filename);
+    file_path_     = file_path;
     split_counter_ = 0;
     StreamLoggerAlgorithm::enable(previous_state, reset_ts, split_timestamp_secs_);
 }
@@ -168,21 +160,16 @@ inline void StreamLoggerAlgorithm::close() {
     output_.close();
 }
 
-inline void StreamLoggerAlgorithm::set_filename(const std::string &filename) {
-    boost::filesystem::path path(filename);
-    filename_      = filename;
-    filename_base_ = path.stem().string();
-    filename_ext_  = path.extension().string();
-}
-
-inline std::string StreamLoggerAlgorithm::get_filename() const {
+inline std::filesystem::path StreamLoggerAlgorithm::get_file_path() const {
     if (split_timestamp_us_ != InvalidTimestamp) {
-        std::ostringstream split_filename;
-        split_filename << filename_base_ << "_" << std::setw(4) << std::setfill('0') << std::to_string(split_counter_)
-                       << filename_ext_;
-        return split_filename.str();
+        std::filesystem::path split_file = file_path_.parent_path() / file_path_.stem();
+        std::ostringstream split_num_sstr;
+        split_num_sstr << std::setw(4) << std::setfill('0') << std::to_string(split_counter_);
+        split_file += split_num_sstr.str();
+        split_file.replace_extension(file_path_.extension());
+        return split_file;
     } else {
-        return filename_;
+        return file_path_;
     }
 }
 
@@ -196,7 +183,7 @@ void StreamLoggerAlgorithm::split_file(timestamp ts) {
             output_.close();
         }
 
-        output_.open(get_filename(), std::ios::binary);
+        output_.open(get_file_path(), std::ios::binary);
         header_written_    = false;
         initial_timestamp_ = last_timestamp_;
     }

@@ -12,8 +12,9 @@
 #ifndef METAVISION_SDK_CORE_EVENT_FRAME_HISTO_GENERATION_ALGORITHM_H
 #define METAVISION_SDK_CORE_EVENT_FRAME_HISTO_GENERATION_ALGORITHM_H
 
-#include "metavision/sdk/base/events/event_cd.h"
 #include "metavision/sdk/base/events/raw_event_frame_histo.h"
+#include "metavision/sdk/base/utils/timestamp.h"
+#include "metavision/sdk/core/preprocessors/hardware_histo_processor.h"
 
 namespace Metavision {
 
@@ -25,6 +26,8 @@ namespace Metavision {
 /// polarities. The histogram values will saturate if more events than the maximum representable integers are received
 /// at a given pixel for a given polarity. Generated event frames are stored using row-major convention with interleaved
 /// channels for each polarity.
+/// @tparam InputIt The type of the input iterator for the range of events to process.
+template<typename InputIt>
 class EventFrameHistoGenerationAlgorithm {
 public:
     /// @brief Constructor for the EventFrameHistoGenerationAlgorithm class.
@@ -50,10 +53,8 @@ public:
     }
 
     /// @brief Processes a range of events and updates the sum of events at each pixel & polarity.
-    /// @tparam InputIt The type of the input iterator for the range of events.
     /// @param it_begin An iterator pointing to the beginning of the events range.
     /// @param it_end An iterator pointing to the end of the events range.
-    template<typename InputIt>
     void process_events(InputIt it_begin, InputIt it_end);
 
     /// @brief Retrieves the histo event frame aggregating events since the last call to @p generate, and resets the
@@ -79,7 +80,7 @@ public:
     void reset();
 
 private:
-    const uint8_t sum_max_neg_, sum_max_pos_;
+    HardwareHistoProcessor<InputIt> processor_;
     const RawEventFrameHistoConfig cfg_;
     const timestamp min_generation_period_us_;
     bool is_ts_prev_set_ = false;

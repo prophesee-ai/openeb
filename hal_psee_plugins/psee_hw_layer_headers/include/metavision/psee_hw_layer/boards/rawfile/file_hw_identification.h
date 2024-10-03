@@ -27,7 +27,6 @@ public:
                          const PseeRawFileHeader &raw_header);
 
     std::string get_serial() const override final;
-    long get_system_id() const override final;
     std::vector<std::string> get_available_data_encoding_formats() const override final;
     std::string get_current_data_encoding_format() const override final;
     std::string get_integrator() const override final;

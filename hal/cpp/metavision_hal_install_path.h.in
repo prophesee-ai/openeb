@@ -12,7 +12,7 @@
 #ifndef METAVISION_HAL_INSTALL_PATH_H
 #define METAVISION_HAL_INSTALL_PATH_H
 
-#include <string>
+#include <filesystem>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -22,8 +22,8 @@
 
 namespace Metavision {
 
-static const std::string HAL_INSTALL_SUPPORT_RELATIVE_PATH = "@HAL_INSTALL_SUPPORT_RELATIVE_PATH@";
-static const std::string HAL_INSTALL_PLUGIN_RELATIVE_PATH  = "@HAL_INSTALL_PLUGIN_RELATIVE_PATH@";
+static const std::filesystem::path HAL_INSTALL_SUPPORT_RELATIVE_PATH = "@HAL_INSTALL_SUPPORT_RELATIVE_PATH@";
+static const std::filesystem::path HAL_INSTALL_PLUGIN_RELATIVE_PATH  = "@HAL_INSTALL_PLUGIN_RELATIVE_PATH@";
 #ifdef _WIN32
 static const LPCSTR METAVISION_SUBKEY              = "@METAVISION_SUBKEY@";
 static const LPCSTR METAVISION_SUBKEY_INSTALL_PATH = "@METAVISION_SUBKEY_INSTALL_PATH@";
@@ -31,7 +31,7 @@ static const LPCSTR METAVISION_SUBKEY_INSTALL_PATH = "@METAVISION_SUBKEY_INSTALL
 
 static const std::string METAVISION_HAL_LIB_RELATIVE_PATH = "lib/$<TARGET_FILE_NAME:metavision_hal>";
 
-inline std::vector<std::string> get_root_installation_path_candidates() {
+inline std::vector<std::filesystem::path> get_root_installation_path_candidates() {
     return {"@CMAKE_INSTALL_PREFIX@", "/usr"};
 }
 

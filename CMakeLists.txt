@@ -17,7 +17,7 @@ endif(NOT CMAKE_BUILD_TYPE)
 
 cmake_minimum_required(VERSION 3.5)
 
-project(metavision VERSION 4.6.2)
+project(metavision VERSION 5.0.0)
 set(PROJECT_VERSION_SUFFIX "")
 
 if(PROJECT_VERSION_SUFFIX STREQUAL "")
@@ -60,7 +60,7 @@ endif (ANDROID)
 set(HAL_BUILD_PLUGIN_PATH "${PROJECT_BINARY_DIR}/${HAL_INSTALL_PLUGIN_RELATIVE_PATH}")
 
 # Set output directory for generated files
-set(GENERATE_FILES_DIRECTORY ${CMAKE_BINARY_DIR}/generated)
+set(GENERATE_FILES_DIRECTORY ${PROJECT_BINARY_DIR}/generated)
 file(MAKE_DIRECTORY ${GENERATE_FILES_DIRECTORY})
 
 # Update CMAKE_MODULE_PATH
@@ -75,33 +75,35 @@ include(lfs_download)
 include(add_pytest)
 include(common_macros)
 
-if (ANDROID AND NOT ENV_CMAKE)
-    # Those OVERLOAD_ functions are used to be able to bypass default Metavision
-    # implementation of Android support to give a different own depending on
-    # dependencies management
-    set(ENV_CMAKE cmake/android/env.cmake)
-    set(PREBUILT_BASE_DIR utils/android)
-    set(PREBUILT_FILENAME prebuilt-3rdparty.tar.gz)
+if (ANDROID)
+    if (NOT ENV_CMAKE)
+        # Those OVERLOAD_ functions are used to be able to bypass default Metavision
+        # implementation of Android support to give a different own depending on
+        # dependencies management
+        set(ENV_CMAKE ${PROJECT_SOURCE_DIR}/cmake/android/env.cmake)
+        set(PREBUILT_BASE_DIR utils/android)
+        set(PREBUILT_FILENAME prebuilt-3rdparty.tar.gz)
 
-    # Setup 3rd party prebuilt libraries dir
-    set(ANDROID_PREBUILT_3RDPARTY_EXTRACT_DIR ${GENERATE_FILES_DIRECTORY}/android/3rdparty)
-    if (NOT EXISTS ${ANDROID_PREBUILT_3RDPARTY_EXTRACT_DIR})
-        lfs_download(${PREBUILT_BASE_DIR}/${PREBUILT_FILENAME} COMPILATION)
-        message(STATUS "Unpacking ${PREBUILT_BASE_DIR}/${PREBUILT_FILENAME} in ${ANDROID_PREBUILT_3RDPARTY_EXTRACT_DIR}")
-        file(MAKE_DIRECTORY ${ANDROID_PREBUILT_3RDPARTY_EXTRACT_DIR})
-        execute_process(
-            COMMAND ${CMAKE_COMMAND} -E tar -xf ${PROJECT_SOURCE_DIR}/${PREBUILT_BASE_DIR}/${PREBUILT_FILENAME}
-            WORKING_DIRECTORY ${ANDROID_PREBUILT_3RDPARTY_EXTRACT_DIR}
-        )
-    endif (NOT EXISTS ${ANDROID_PREBUILT_3RDPARTY_EXTRACT_DIR})
+        # Setup 3rd party prebuilt libraries dir
+        set(ANDROID_PREBUILT_3RDPARTY_EXTRACT_DIR ${GENERATE_FILES_DIRECTORY}/android/3rdparty)
+        if (NOT EXISTS ${ANDROID_PREBUILT_3RDPARTY_EXTRACT_DIR})
+            lfs_download(${PREBUILT_BASE_DIR}/${PREBUILT_FILENAME} COMPILATION)
+            message(STATUS "Unpacking ${PREBUILT_BASE_DIR}/${PREBUILT_FILENAME} in ${ANDROID_PREBUILT_3RDPARTY_EXTRACT_DIR}")
+            file(MAKE_DIRECTORY ${ANDROID_PREBUILT_3RDPARTY_EXTRACT_DIR})
+            execute_process(
+                COMMAND ${CMAKE_COMMAND} -E tar -xf ${PROJECT_SOURCE_DIR}/${PREBUILT_BASE_DIR}/${PREBUILT_FILENAME}
+                WORKING_DIRECTORY ${ANDROID_PREBUILT_3RDPARTY_EXTRACT_DIR}
+            )
+        endif (NOT EXISTS ${ANDROID_PREBUILT_3RDPARTY_EXTRACT_DIR})
+
+        # Use Android env.cmake to find required dependencies
+        set(ANDROID_PREBUILT_3RDPARTY_DIR ${GENERATE_FILES_DIRECTORY}/android/3rdparty/prebuilt)
+        include(${ENV_CMAKE})
+    endif()
 
     # Include the function required to build an Android APK
     include(add_android_app)
-
-    # Use Android env.cmake to find required dependencies
-    set(ANDROID_PREBUILT_3RDPARTY_DIR ${GENERATE_FILES_DIRECTORY}/android/3rdparty/prebuilt)
-    include(${ENV_CMAKE})
-endif (ANDROID AND NOT ENV_CMAKE)
+endif()
 
 ###################################################
 
@@ -203,9 +205,9 @@ find_package(Threads REQUIRED)
 find_package(LibUSB REQUIRED)
 
 # Boost
-set (boost_components_to_find program_options filesystem timer chrono thread)
+set (boost_components_to_find program_options timer chrono thread)
 find_package(Boost COMPONENTS ${boost_components_to_find} REQUIRED)
-add_definitions(-DBOOST_BIND_GLOBAL_PLACEHOLDERS) ## needed to get rid of warning `#pragma message: The practice of declaring the Bind placeholders (_1, _2, ...)`
+add_compile_definitions(BOOST_BIND_GLOBAL_PLACEHOLDERS) ## needed to get rid of warning `#pragma message: The practice of declaring the Bind placeholders (_1, _2, ...)`
 
 # Python 3 for bindings and pytests
 if (COMPILE_PYTHON3_BINDINGS OR BUILD_TESTING)
@@ -246,16 +248,26 @@ if (BUILD_TESTING)
     if(NOT EXISTS "${PROJECT_SOURCE_DIR}/datasets" AND GIT_LFS_NOT_AVAILABLE)
         message("--------------------------------------------------------------------------------------------------------------------------")
         message("|  Test data was not found. To run the tests, please download the test data adapted to your project:                     |")
-        message("|  - OpenEB: https://kdrive.infomaniak.com/app/share/975517/cddcc78a-3480-420f-bc19-17d5b0535ca4 (1.2 Gb archive)        |")
-        message("|  - Metavision SDK: https://kdrive.infomaniak.com/app/share/975517/727dadda-764a-4a2f-80cb-07c800913116 (5 Gb archive)  |")
+        message("|  - OpenEB: https://kdrive.infomaniak.com/app/share/975517/2aa2545c-6b12-4478-992b-df2acfb81b38 (1.5 Gb archive)        |")
+        message("|  - Metavision SDK: https://kdrive.infomaniak.com/app/share/975517/e1a64b9b-c7d3-4b7c-8f70-20bbf474c49d (5.4 Gb archive)|")
         message("--------------------------------------------------------------------------------------------------------------------------\n")
     endif()
 
     set(PYTEST_CMD ${PYTHON_${PYTEST_PYTHON_VERSION}_EXECUTABLE} -m pytest)
+
+    # Perform additional test to ensure that variable `PYTEST_CMD` resulted to a valid executable.
+    # Throw fatal error otherwise to inform user something went wrong.
+    string(COMPARE EQUAL "${PYTEST_CMD}" "-m pytest" PYTEST_CMD_IS_INVALID)
+
+    if(PYTEST_CMD_IS_INVALID)
+        message(WARNING "Problem with finding valid 'pytest' version, try overriding with: '-DPYTEST_PYTHON_VERSION=<version>'! ")
+    endif(PYTEST_CMD_IS_INVALID)
+
     if(CMAKE_CROSSCOMPILING)
         # When cross compiling, we cannot use python executable path from the Host
         set(PYTEST_CMD pytest) # TODO we need a proper way to find python executable path on the TARGET.
     endif(CMAKE_CROSSCOMPILING)
+
 
     lfs_download(datasets/openeb/gen31_timer.raw VALIDATION)
     lfs_download(datasets/openeb/gen31_timer.hdf5 VALIDATION)
@@ -265,10 +277,12 @@ if (BUILD_TESTING)
     lfs_download(datasets/openeb/gen4_evt2_hand.hdf5 VALIDATION)
     lfs_download(datasets/openeb/gen4_evt3_hand.raw VALIDATION)
     lfs_download(datasets/openeb/gen4_evt3_hand.hdf5 VALIDATION)
+    lfs_download(datasets/openeb/gen4_evt4_hand.raw VALIDATION)
     lfs_download(datasets/openeb/blinking_gen4_with_ext_triggers.raw VALIDATION)
     lfs_download(datasets/openeb/blinking_gen4_with_ext_triggers.hdf5 VALIDATION)
     lfs_download(datasets/openeb/claque_doigt_evt21.raw VALIDATION)
     lfs_download(datasets/openeb/claque_doigt_evt21.hdf5 VALIDATION)
+    lfs_download(datasets/openeb/claque_doigt_evt4.raw VALIDATION)
     lfs_download(datasets/openeb/standup_evt21-legacy.raw VALIDATION)
     lfs_download(datasets/openeb/standup_evt21-legacy.hdf5 VALIDATION)
     lfs_download(datasets/openeb/diff3d.raw VALIDATION)
@@ -279,6 +293,9 @@ if (BUILD_TESTING)
     lfs_download(datasets/openeb/aer_4bits.raw VALIDATION)
     lfs_download(datasets/openeb/0101_cm_mtr12_output.raw VALIDATION)
     lfs_download(datasets/openeb/0101_cm_mtru_output.raw VALIDATION)
+    lfs_download(datasets/openeb/synced/recording_master.raw VALIDATION)
+    lfs_download(datasets/openeb/synced/recording_slave_0.raw VALIDATION)
+    lfs_download(datasets/openeb/synced/recording_slave_1.raw VALIDATION)
     if(COMPILE_PYTHON3_BINDINGS)
         lfs_download(datasets/openeb/blinking_leds.raw VALIDATION)
         lfs_download(datasets/openeb/gen4_evt2_hand_cd.dat VALIDATION)
@@ -347,15 +364,18 @@ endif(CODE_COVERAGE)
 
 ################################################### Detect which SDK modules are available
 
-set(METAVISION_SDK_MODULES_OPEN base core driver CACHE STRING "SDK Open modules")
+set(METAVISION_SDK_MODULES_OPEN base core stream CACHE STRING "SDK Open modules")
 if (COMPILE_PYTHON3_BINDINGS)
     list(APPEND METAVISION_SDK_MODULES_OPEN core_ml)
 endif (COMPILE_PYTHON3_BINDINGS)
-set(METAVISION_SDK_MODULES_ADVANCED analytics calibration cv ml CACHE STRING "SDK Advanced modules")
+set(METAVISION_SDK_MODULES_ADVANCED analytics cv ml CACHE STRING "SDK Advanced modules")
 
 if (NOT ANDROID)
     list(APPEND METAVISION_SDK_MODULES_OPEN ui)
-    list(APPEND METAVISION_SDK_MODULES_ADVANCED cv3d)
+
+    if(NOT DISABLE_METAVISION_SDK_MODULE_CALIBRATION_AND_CV3D)
+        list(APPEND METAVISION_SDK_MODULES_ADVANCED calibration cv3d)
+    endif()
 endif (NOT ANDROID)
 
 set(METAVISION_SDK_MODULES_AVAILABLE)
@@ -381,22 +401,39 @@ include(add_cpack_component)
 if(EXISTS "${PROJECT_SOURCE_DIR}/cmake/custom_targets_metavision_sdk")
     list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/custom_targets_metavision_sdk)
     include(create_metavision_sdk_source_archives)
+    include(create_metavision_sdk_ml_models_archive)
 endif(EXISTS "${PROJECT_SOURCE_DIR}/cmake/custom_targets_metavision_sdk")
 
 # Add Metavision Open debian packages :
-add_cpack_component(PUBLIC metavision-open-lib metavision-open-bin metavision-open-dev metavision-open-samples)
+add_cpack_component(PUBLIC metavision-openeb-lib metavision-openeb-bin metavision-openeb-dev metavision-openeb-samples)
+add_cpack_component(PUBLIC metavision-openeb metavision-openeb-license)
 if(COMPILE_PYTHON3_BINDINGS)
-    add_cpack_component(PUBLIC metavision-open-python metavision-open-python-samples)
-    add_python_cpack_components(PUBLIC metavision-open)
+    add_cpack_component(PUBLIC metavision-openeb-python metavision-openeb-python-samples)
+    add_python_cpack_components(PUBLIC metavision-openeb)
+
+    install(FILES ${PROJECT_SOURCE_DIR}/utils/python/requirements_openeb.txt
+            DESTINATION share/metavision/python_requirements
+            COMPONENT metavision-openeb-python)
 endif(COMPILE_PYTHON3_BINDINGS)
+
+install(FILES
+            ${PROJECT_SOURCE_DIR}/licensing/LICENSE_OPEN
+            ${PROJECT_SOURCE_DIR}/licensing/OPEN_SOURCE_3RDPARTY_NOTICES
+        DESTINATION share/metavision/licensing
+        COMPONENT metavision-openeb-license)
+
 
 # Add Metavision SDK debian packages :
 if (METAVISION_SDK_ADVANCED_MODULES_AVAILABLE)
     # Advanced
-    add_cpack_component(PUBLIC metavision-sdk-advanced-lib metavision-sdk-advanced-bin metavision-sdk-advanced-dev metavision-sdk-advanced-samples)
+    add_cpack_component(PUBLIC metavision-sdk-advanced-lib metavision-sdk-advanced-bin metavision-sdk-advanced-dev metavision-sdk-advanced-samples metavision-sdk-advanced-license)
     if(COMPILE_PYTHON3_BINDINGS)
         add_cpack_component(PUBLIC metavision-sdk-advanced-python metavision-sdk-advanced-python-samples)
         add_python_cpack_components(PUBLIC metavision-sdk-advanced)
+
+        install(FILES ${PROJECT_SOURCE_DIR}/utils/python/requirements_sdk_advanced.txt
+                DESTINATION share/metavision/python_requirements
+                COMPONENT metavision-sdk-advanced-python)
     endif(COMPILE_PYTHON3_BINDINGS)
 
     # SDK
@@ -409,7 +446,7 @@ if (METAVISION_SDK_ADVANCED_MODULES_AVAILABLE)
     if(EXISTS "${PROJECT_SOURCE_DIR}/licensing/LICENSE_METAVISION_SDK")
         install(FILES ${PROJECT_SOURCE_DIR}/licensing/LICENSE_METAVISION_SDK
                 DESTINATION share/metavision/licensing
-                COMPONENT metavision-sdk-base-lib)
+                COMPONENT metavision-sdk-advanced-license)
     endif()
 else ()
     # Installing metavision open
@@ -472,8 +509,8 @@ set(cpack_all_components ${cpack_public_components} ${cpack_internal_components}
 list(REMOVE_DUPLICATES cpack_all_components)
 file(WRITE ${GENERATE_FILES_DIRECTORY}/meta-package.log "")
 foreach(comp ${cpack_all_components})
-    if ("${comp}" MATCHES "^metavision-(open|sdk|sdk-advanced)-(lib|bin|dev|samples|python3.*|python|python-samples)$" OR
-        "${comp}" STREQUAL "metavision-sdk")
+    if ("${comp}" MATCHES "^metavision-(openeb|sdk|sdk-advanced)-(lib|bin|dev|samples|python3.*|python|python-samples)$" OR
+        "${comp}" STREQUAL "metavision-openeb" OR "${comp}" STREQUAL "metavision-sdk")
         install(FILES ${GENERATE_FILES_DIRECTORY}/meta-package.log
                 DESTINATION share/metavision/log/${comp}
                 COMPONENT ${comp}

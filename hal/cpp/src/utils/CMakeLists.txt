@@ -15,7 +15,7 @@ target_sources(metavision_hal PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/device_config.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/hal_exception.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/hal_software_info.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/file_data_transfer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/file_raw_data_producer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/file_discovery.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/raw_file_header.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/resources_folder.cpp

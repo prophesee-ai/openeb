@@ -10,7 +10,15 @@
 ############################
 # metavision-sdk-{modules} #
 ############################
-include("${CMAKE_CURRENT_LIST_DIR}/MetavisionOpenCPackConfig.cmake")
+
+foreach(available_module IN LISTS METAVISION_SDK_MODULES_AVAILABLE)
+    get_filename_component(module_cpack_config "${CMAKE_CURRENT_LIST_DIR}/../modules/${available_module}/cmake/MetavisionSDK_${available_module}CPackConfig.cmake" REALPATH)
+    if(EXISTS "${module_cpack_config}")
+        include("${module_cpack_config}")
+    endif(EXISTS "${module_cpack_config}")
+endforeach(available_module)
+
+include("${CMAKE_CURRENT_LIST_DIR}/MetavisionOpenEBCPackConfig.cmake")
 if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/MetavisionSDKAdvancedCPackConfig.cmake")
     include("${CMAKE_CURRENT_LIST_DIR}/MetavisionSDKAdvancedCPackConfig.cmake")
 endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/MetavisionSDKAdvancedCPackConfig.cmake")
@@ -20,10 +28,3 @@ endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/MetavisionSDKCPackConfig.cmake")
 if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/MetavisionStudioCPackConfig.cmake")
   include("${CMAKE_CURRENT_LIST_DIR}/MetavisionStudioCPackConfig.cmake")
 endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/MetavisionStudioCPackConfig.cmake")
-
-foreach(available_module IN LISTS METAVISION_SDK_MODULES_AVAILABLE)
-    get_filename_component(module_cpack_config "${CMAKE_CURRENT_LIST_DIR}/../modules/${available_module}/cmake/MetavisionSDK_${available_module}CPackConfig.cmake" REALPATH)
-    if(EXISTS "${module_cpack_config}")
-        include("${module_cpack_config}")
-    endif(EXISTS "${module_cpack_config}")
-endforeach(available_module)

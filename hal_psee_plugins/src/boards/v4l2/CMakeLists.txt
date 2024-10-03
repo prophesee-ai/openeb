@@ -20,8 +20,9 @@ target_sources(metavision_hal_psee_plugin_obj PRIVATE
 target_sources(metavision_psee_hw_layer_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/v4l2_camera_discovery.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/v4l2_data_transfer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/v4l2_mmap_allocator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/v4l2_dmabuf_allocator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/v4l2_device.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/v4l2_user_ptr_data.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/v4l2_board_command.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/v4l2_hardware_identification.cpp
 )

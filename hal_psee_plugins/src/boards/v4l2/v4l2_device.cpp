@@ -54,57 +54,11 @@ V4L2DeviceControl::V4L2DeviceControl(const std::string &dev_name) {
     if (!(cap_.capabilities & V4L2_CAP_STREAMING))
         throw std::runtime_error(dev_name + " does not support streaming i/o");
 
-    struct v4l2_format fmt;
-    std::memset(&fmt, 0, sizeof(fmt));
-    fmt.type                = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
-    fmt.fmt.pix.field       = V4L2_FIELD_ANY;
-    fmt.fmt.pix.width       = 65536;
-    fmt.fmt.pix.height      = 64;
-
-    if (ioctl(fd_, VIDIOC_S_FMT, &fmt))
-        raise_error("VIDIOC_S_FMT failed");
-}
-
-V4l2RequestBuffers V4L2DeviceControl::request_buffers(v4l2_memory memory, uint32_t nb_buffers) {
-    V4l2RequestBuffers req{0};
-    req.count  = nb_buffers;
-    req.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    req.memory = memory;
-
-    if (-1 == ioctl(fd_, VIDIOC_REQBUFS, &req)) {
-        raise_error("VIDIOC_QUERYBUF failed");
-    }
-
-    return req;
-}
-
-V4l2Buffer V4L2DeviceControl::query_buffer(v4l2_memory memory_type, uint32_t buf_index) {
-    V4l2Buffer buf{0};
-    buf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    buf.memory = memory_type;
-    buf.index  = buf_index;
-
-    if (ioctl(fd_, VIDIOC_QUERYBUF, &buf))
-        raise_error("VIDIOC_QUERYBUF failed");
-
-    return buf;
+    // Note: this code expects the V4L2 device to be configured to output a supported format
 }
 
 V4l2Capability V4L2DeviceControl::get_capability() const {
     return cap_;
-}
-
-int V4L2DeviceControl::queue_buffer(V4l2Buffer &buffer) {
-    auto ioctl_res = ioctl(fd_, VIDIOC_QBUF, &buffer);
-    if (ioctl_res) {
-        raise_error("VIDIOC_QBUF failed");
-    }
-    return ioctl_res;
-}
-
-int V4L2DeviceControl::dequeue_buffer(V4l2Buffer *buffer) {
-    return ioctl(fd_, VIDIOC_DQBUF, buffer);
 }
 
 void V4L2DeviceControl::start() {

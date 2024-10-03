@@ -10,18 +10,17 @@
  **********************************************************************************************************************/
 
 #include "metavision/hal/facilities/i_events_stream.h"
-
-#include "metavision/psee_hw_layer/devices/treuzell/tz_device.h"
 #include "metavision/psee_hw_layer/boards/treuzell/tz_control_frame.h"
-#include "metavision/psee_hw_layer/boards/treuzell/tz_libusb_board_command.h"
-#include "boards/treuzell/treuzell_command_definition.h"
 #include "metavision/psee_hw_layer/boards/treuzell/tz_hw_identification.h"
-#include "metavision/psee_hw_layer/boards/utils/psee_libusb_data_transfer.h"
+#include "metavision/psee_hw_layer/boards/treuzell/tz_libusb_board_command.h"
+#include "metavision/psee_hw_layer/devices/treuzell/tz_device.h"
 #include "metavision/psee_hw_layer/facilities/tz_camera_synchronization.h"
-#include "metavision/psee_hw_layer/facilities/tz_monitoring.h"
 #include "metavision/psee_hw_layer/facilities/tz_hw_register.h"
+#include "metavision/psee_hw_layer/facilities/tz_monitoring.h"
 #include "metavision/psee_hw_layer/utils/psee_format.h"
 #include "metavision/psee_hw_layer/utils/tz_device_control.h"
+
+#include "boards/treuzell/treuzell_command_definition.h"
 #include "devices/treuzell/tz_device_builder.h"
 #include "utils/make_decoder.h"
 
@@ -148,7 +147,7 @@ bool TzDeviceBuilder::build_devices(std::shared_ptr<TzLibUSBBoardCommand> cmd,
         auto format           = devices[0]->get_output_format();
         auto decoder          = make_decoder(device_builder, format, raw_size_bytes, false);
         device_builder.add_facility(std::make_unique<Metavision::I_EventsStream>(
-            cmd->build_data_transfer(raw_size_bytes), hw_identification, decoder, ctrl));
+            cmd->build_raw_data_producer(raw_size_bytes), hw_identification, decoder, ctrl));
     } catch (std::exception &e) { MV_HAL_LOG_WARNING() << "System can't stream:" << e.what(); }
 
     std::shared_ptr<TemperatureProvider> temp        = get_provider<TemperatureProvider>(devices);

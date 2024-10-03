@@ -12,6 +12,7 @@
 #ifndef METAVISION_UTILS_GTEST_DETAIL_TEMPORARY_DIRECTORY_HANDLER_IMPL_H
 #define METAVISION_UTILS_GTEST_DETAIL_TEMPORARY_DIRECTORY_HANDLER_IMPL_H
 
+#include <filesystem>
 #include <iostream>
 
 namespace Metavision {
@@ -23,27 +24,31 @@ inline TemporaryDirectoryHandler::TemporaryDirectoryHandler(const std::string &d
     int counter = 1;
     do {
         tmpdir_ =
-            boost::filesystem::temp_directory_path() / boost::filesystem::path(dir_name + std::to_string(counter++));
-    } while (boost::filesystem::exists(tmpdir_));
+            std::filesystem::temp_directory_path() / std::filesystem::path(dir_name + std::to_string(counter++));
+    } while (std::filesystem::exists(tmpdir_));
 
-    if (!boost::filesystem::create_directory(tmpdir_)) {
+    if (!std::filesystem::create_directory(tmpdir_)) {
         throw std::runtime_error("Could not create temporary directory " + tmpdir_.string());
     }
 }
 
 inline TemporaryDirectoryHandler::~TemporaryDirectoryHandler() {
-    if (!boost::filesystem::remove_all(tmpdir_)) {
+    if (remove_on_destruction_ && std::filesystem::remove_all(tmpdir_) == 0) {
         // one reason can be the directory was deleted manually by the user while program is running
-        std::cerr << "Could not delete temporary directory" << tmpdir_.string() << std::endl;
+        std::cerr << "Could not delete temporary directory" << tmpdir_ << std::endl;
     }
 }
 
 inline std::string TemporaryDirectoryHandler::get_tmpdir_path() const {
-    return boost::filesystem::canonical(tmpdir_).make_preferred().string();
+    return std::filesystem::canonical(tmpdir_).make_preferred().string();
 }
 
 inline std::string TemporaryDirectoryHandler::get_full_path(const std::string &file_basename) const {
-    return (tmpdir_ / boost::filesystem::path(file_basename)).string();
+    return (tmpdir_ / std::filesystem::path(file_basename)).string();
+}
+
+inline void TemporaryDirectoryHandler::disable_remove_on_destruction() {
+    remove_on_destruction_ = false;
 }
 
 } // namespace Metavision

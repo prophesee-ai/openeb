@@ -34,15 +34,12 @@ add_custom_target(create_metavision_open_archive_folder
         -P ${CMAKE_CURRENT_LIST_DIR}/create_metavision_open_archive_folder.cmake
 )
 
-set(output_metavision_open_archive_path "${GENERATE_FILES_DIRECTORY}/metavision_open_${PROJECT_VERSION_FULL}.tar")
-set(output_metavision_open_full_tar_archive_path "${GENERATE_FILES_DIRECTORY}/metavision_open_full_${PROJECT_VERSION_FULL}.tar")
-set(output_metavision_open_full_zip_archive_path "${GENERATE_FILES_DIRECTORY}/metavision_open_full_${PROJECT_VERSION_FULL}.zip")
+set(output_metavision_open_archive_path "${GENERATE_FILES_DIRECTORY}/metavision_open_${PROJECT_VERSION_FULL}.tar.gz")
+set(output_metavision_open_full_archive_path "${GENERATE_FILES_DIRECTORY}/metavision_open_full_${PROJECT_VERSION_FULL}.tar.gz")
 add_custom_target(create_metavision_open_archive
-    COMMAND ${CMAKE_COMMAND} -E chdir ${output_metavision_open_archive_dir_path} ${CMAKE_COMMAND} -E tar cvf ${output_metavision_open_archive_path} .
+    COMMAND ${CMAKE_COMMAND} -E chdir ${output_metavision_open_archive_dir_path} ${CMAKE_COMMAND} -E tar czvf ${output_metavision_open_archive_path} .
     COMMAND ${CMAKE_COMMAND} -E echo "File ${output_metavision_open_archive_path} generated"
-    COMMAND ${CMAKE_COMMAND} -E chdir ${output_metavision_open_full_archive_dir_path} ${CMAKE_COMMAND} -E tar cvf ${output_metavision_open_full_tar_archive_path} .
-    COMMAND ${CMAKE_COMMAND} -E echo "File ${output_metavision_open_full_tar_archive_path} generated"
-    COMMAND ${CMAKE_COMMAND} -E chdir ${output_metavision_open_full_archive_dir_path} ${CMAKE_COMMAND} -E tar cvf ${output_metavision_open_full_zip_archive_path} --format=zip .
-    COMMAND ${CMAKE_COMMAND} -E echo "File ${output_metavision_open_full_zip_archive_path} generated"
+    COMMAND ${CMAKE_COMMAND} -E chdir ${output_metavision_open_full_archive_dir_path} ${CMAKE_COMMAND} -E tar czvf ${output_metavision_open_full_archive_path} .
+    COMMAND ${CMAKE_COMMAND} -E echo "File ${output_metavision_open_full_archive_path} generated"
 )
 add_dependencies(create_metavision_open_archive create_metavision_open_archive_folder)

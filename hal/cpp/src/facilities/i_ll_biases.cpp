@@ -9,8 +9,10 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
+#include <fstream>
 #include <memory>
 
+#include "metavision/sdk/base/utils/generic_header.h"
 #include "metavision/hal/facilities/i_ll_biases.h"
 #include "metavision/hal/utils/hal_exception.h"
 #include "metavision/hal/utils/hal_log.h"
@@ -60,6 +62,98 @@ bool I_LL_Biases::get_bias_info(const std::string &bias_name, LL_Bias_Info &bias
         bias_info.disable_recommended_range();
     }
     return true;
+}
+
+void I_LL_Biases::load_from_file(const std::filesystem::path &src_file) {
+    // Check extension
+    const auto extension = src_file.extension().string();
+    if (extension != ".bias") {
+        throw HalException(HalErrorCode::InvalidArgument,
+                           "For bias file '" + src_file.string() +
+                           "' : expected '.bias' extension to set the bias from this file but got '." +
+                           extension + "'");
+    }
+
+    // open file
+    std::ifstream bias_file(src_file);
+    if (!bias_file.is_open()) {
+        throw HalException(HalErrorCode::InvalidArgument,
+                           "Could not open file '" + src_file.string() + "' for reading. Failed to set biases.");
+    }
+
+    // Skip header if any
+    GenericHeader header(bias_file);
+
+    // Get available biases :
+    std::map<std::string, int> available_biases = get_all_biases();
+
+    // Parse the file to get the list of the biases that the user wants to set
+    std::map<std::string, int> biases_to_set;
+    for (std::string line; std::getline(bias_file, line) && !line.empty();) {
+        std::stringstream ss(line);
+
+        // Get value and name
+        std::string value_str, bias_name, separator;
+        ss >> value_str >> separator >> bias_name;
+        std::transform(value_str.begin(), value_str.end(), value_str.begin(), ::tolower);
+
+        if (value_str.empty() || bias_name.empty()) {
+            throw HalException(HalErrorCode::InvalidArgument,
+                               "Cannot read bias file '" + src_file.string() + "' : wrong line format '" + line + "'");
+        }
+        int value;
+        if (value_str.find("0x") != std::string::npos) {
+            value = std::stoi(value_str, 0, 16);
+
+        } else {
+            value = std::stol(value_str);
+        }
+
+        // Check if the bias that we want to set is compatible and not read only
+        LL_Bias_Info bias_info;
+        get_bias_info(bias_name, bias_info);
+        if (!bias_info.is_modifiable()) {
+            continue;
+        }
+
+        auto it = biases_to_set.find(bias_name);
+        if (it != biases_to_set.end()) {
+            if (value != it->second) {
+                throw HalException(HalErrorCode::InvalidArgument, "Given two different values for bias '" +
+                                   bias_name + "' in file '" + src_file.string() + "'");
+            }
+        }
+        biases_to_set.emplace(bias_name, value);
+    }
+
+    // If we get here, no error was found, and we can proceed in setting the biases
+    for (auto it = biases_to_set.begin(), it_end = biases_to_set.end(); it != it_end; ++it) {
+        set(it->first, it->second);
+    }
+}
+
+void I_LL_Biases::save_to_file(const std::filesystem::path &dest_file) const {
+    const auto extension = dest_file.extension().string();
+    if (extension != ".bias") {
+        throw HalException(HalErrorCode::InvalidArgument,
+                           "For bias file '" + dest_file.string() +
+                           "' : expected '.bias' extension to set the bias from this file but got '." +
+                           extension + "'");
+    }
+
+    std::ofstream output_file(dest_file);
+    if (!output_file.is_open()) {
+        throw HalException(HalErrorCode::InvalidArgument,
+                           "Could not open file '" + dest_file.string() + "' for writing. Failed to save biases.");
+    }
+
+    // Get available biases :
+    std::map<std::string, int> available_biases = get_all_biases();
+
+    for (auto it = available_biases.begin(), it_end = available_biases.end(); it != it_end; ++it) {
+        output_file << std::left << std::setw(5) << it->second << "% " << it->first << std::endl;
+    }
+    output_file.close();
 }
 
 LL_Bias_Info::LL_Bias_Info(int min_value, int max_value, const std::string &description, bool modifiable,

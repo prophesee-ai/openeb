@@ -21,29 +21,7 @@ namespace Metavision {
 
 static constexpr uint32_t BIAS_CONF = 0x11A10000;
 
-class Gen41LLBias : public LL_Bias_Info {
-public:
-    Gen41LLBias(int min_recommended_value, int max_recommended_value, bool modifiable, std::string register_name,
-                const std::string &description, const std::string &category) :
-        LL_Bias_Info(0x00, 0xFF, min_recommended_value, max_recommended_value, description, modifiable, category) {
-        register_name_ = register_name;
-    }
-
-    ~Gen41LLBias() {}
-    const std::string &get_register_name() const {
-        return register_name_;
-    }
-
-private:
-    std::string register_name_;
-};
-
-std::map<std::string, Gen41LLBias> &get_gen41_biases_map() {
-    static std::map<std::string, Gen41LLBias> biases_map_;
-    return biases_map_;
-}
-
-uint32_t get_gen41_bias_encoding(const Gen41LLBias &bias, int bias_value, bool saturate_value) {
+uint32_t get_gen41_bias_encoding(const Gen41_LL_Biases::Gen41LLBias &bias, int bias_value, bool saturate_value) {
     if (saturate_value) {
         if (bias_value < 0) {
             bias_value = 0;
@@ -151,6 +129,14 @@ std::map<std::string, int> Gen41_LL_Biases::get_all_biases() const {
 
 const std::shared_ptr<I_HW_Register> &Gen41_LL_Biases::get_hw_register() const {
     return i_hw_register_;
+}
+
+std::map<std::string, Gen41_LL_Biases::Gen41LLBias> &Gen41_LL_Biases::get_gen41_biases_map() {
+    return biases_map_;
+}
+
+const std::map<std::string, Gen41_LL_Biases::Gen41LLBias> &Gen41_LL_Biases::get_gen41_biases_map() const {
+    return biases_map_;
 }
 
 } // namespace Metavision

@@ -72,7 +72,7 @@ CameraDiscovery::SerialList V4l2CameraDiscovery::list() {
 CameraDiscovery::SystemList V4l2CameraDiscovery::list_available_sources() {
     SystemList system_list;
     for (const auto &device : devices_) {
-        system_list.push_back({device->get_serial(), ConnectionType::MIPI_LINK, 000420});
+        system_list.push_back({device->get_serial(), ConnectionType::MIPI_LINK});
     }
     return system_list;
 }

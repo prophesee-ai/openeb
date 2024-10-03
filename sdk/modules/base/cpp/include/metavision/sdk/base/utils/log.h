@@ -12,6 +12,7 @@
 #ifndef METAVISION_SDK_BASE_LOG_H
 #define METAVISION_SDK_BASE_LOG_H
 
+#include <filesystem>
 #include <iostream>
 #include <vector>
 #include <memory>
@@ -248,7 +249,7 @@ public:
     /// @note The replacement in the prefix format only occurs once, i.e. each token is searched only once and not
     /// replaced multiple times.
     LoggingOperation(const LogOptions &opts = LogOptions(), const std::string &prefixFmt = std::string(),
-                     const std::string &file = std::string(), int line = 0,
+                     const std::filesystem::path &file = std::string(), int line = 0,
                      const std::string &function = std::string());
 
     /// @brief Copy constructor
@@ -288,7 +289,7 @@ public:
     void disableEndOfLineAtDestruction();
 
     /// @brief Returns the name of the file associated to this logging operation
-    std::string file() const;
+    std::filesystem::path file() const;
 
     /// @brief Returns the line associated to this logging operation
     int line() const;
@@ -326,7 +327,8 @@ private:
     bool addSpaceBetweenTokens_;
     bool addEndLine_;
     bool should_output_;
-    std::string prefix_, file_, function_;
+    std::string prefix_, function_;
+    std::filesystem::path file_;
     int line_;
 };
 

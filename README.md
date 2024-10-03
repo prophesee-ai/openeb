@@ -10,9 +10,9 @@ to the fast-growing event-based vision community.
 OpenEB is composed of the [Open modules of Metavision SDK](https://docs.prophesee.ai/stable/modules.html#chapter-modules-and-packaging-open):
 * HAL: Hardware Abstraction Layer to operate any event-based vision device.
 * Base: Foundations and common definitions of event-based applications.
-* Core: Generic algorithms for visualization, event stream manipulation, applicative pipeline generation.
+* Core: Generic algorithms for visualization, event stream manipulation.
 * Core ML: Generic functions for Machine Learning, event_to_video and video_to_event pipelines.
-* Driver: High-level abstraction built on the top of HAL to easily interact with event-based cameras.
+* Stream: High-level abstraction built on the top of HAL to easily interact with event-based cameras.
 * UI: Viewer and display controllers for event-based data.
 
 OpenEB also contains the source code of [Prophesee camera plugins](https://docs.prophesee.ai/stable/installation/camera_plugins.html),
@@ -34,7 +34,7 @@ some [samples](https://docs.prophesee.ai/stable/samples.html) to discover how to
 
 Compilation and execution were tested on platforms that meet the following requirements:
 
-  * Linux: Ubuntu 20.04 or 22.04 64-bit
+  * Linux: Ubuntu 22.04 or 24.04 64-bit
   * Architecture: amd64 (a.k.a. x64)
   * Graphic card with support of OpenGL 3.0 minimum
   * CPU with [support of AVX2](https://en.wikipedia.org/wiki/Advanced_Vector_Extensions#CPUs_with_AVX2)
@@ -60,6 +60,23 @@ sudo make uninstall
 In addition, make a global check in your system paths (`/usr/lib`, `/usr/local/lib`, `/usr/include`, `/usr/local/include`)
 and in your environment variables (`PATH`, `PYTHONPATH` and `LD_LIBRARY_PATH`) to remove occurrences of Prophesee or Metavision files.
 
+
+### Retrieving OpenEB source code
+
+To retrieve OpenEB source code, you can just clone the [GitHub repository](https://github.com/prophesee-ai/openeb):
+
+```bash
+git clone https://github.com/prophesee-ai/openeb.git --branch 5.0.0
+```
+
+In the following sections, absolute path to this directory is called ``OPENEB_SRC_DIR``
+
+If you choose to download an archive of OpenEB from GitHub rather than cloning the repository,
+you need to ensure that you select a `Full.Source.Code.*` archive instead of using
+the automatically generated `Source.Code.*` archives. This is because the latter do not include
+a necessary submodule.
+
+
 ### Prerequisites
 
 Install the following dependencies:
@@ -79,20 +96,34 @@ sudo apt -y install libgtest-dev libgmock-dev
 ```
 
 For the [Python API](https://docs.prophesee.ai/stable/api/python/index.html#chapter-api-python), you will need Python and some additional libraries.
-If Python is not available on your system, install it
-We support Python 3.8 and 3.9 on Ubuntu 20.04 and Python 3.9 and 3.10 on Ubuntu 22.04.
-If you want to use other versions of Python, some source code modifications will be necessary
+We support Python 3.9 and 3.10 on Ubuntu 22.04 and Python 3.11 and 3.12 on Ubuntu 24.04.
 
-Then install `pip` and some Python libraries:
+We recommend using Python with [virtualenv](https://virtualenv.pypa.io/en/latest/) to avoid conflicts with other installed Python packages.
+So, first install it along with some Python development tools:
+
 ```bash
-sudo apt -y install python3-pip python3-distutils
-sudo apt -y install python3.X-dev  # where X is 8, 9 or 10 depending on your Python version (3.8, 3.9 or 3.10)
-python3 -m pip install pip --upgrade
-python3 -m pip install "opencv-python==4.5.5.64" "sk-video==1.1.10" "fire==0.4.0" "numpy==1.23.4" "h5py==3.7.0" pandas scipy
-python3 -m pip install jupyter jupyterlab matplotlib "ipywidgets==7.6.5" pytest command_runner
+sudo apt -y install python3.x-venv python3.x-dev
+# where "x" is 9, 10, 11 or 12 depending on your Python version
 ```
 
-The Python bindings of the C++ API rely on the [pybind11](https://github.com/pybind) library, specifically version 2.6.0.
+Next, create a virtual environment and install the necessary dependencies:
+
+```bash
+python3 -m venv /tmp/prophesee/py3venv --system-site-packages
+/tmp/prophesee/py3venv/bin/python -m pip install pip --upgrade
+/tmp/prophesee/py3venv/bin/python -m pip install -r OPENEB_SRC_DIR/utils/python/python_requirements/requirements_openeb.txt
+```
+
+Note that when creating the virtual environment, it is necessary to use the `--system-site-packages` option to ensure that
+the SDK packages installed in the system directories are accessible. However, this option also makes your local
+user site-packages (typically found in `~/.local/lib/pythonX.Y/site-packages`) visible by default.
+To prevent this and maintain a cleaner virtual environment, you can set the environment variable `PYTHONNOUSERSITE` to true.
+
+Optionally, you can run the `activate` command (`source /tmp/prophesee/py3venv/bin/activate`) to modify your shell's environment variables,
+setting the virtual environment's Python interpreter and scripts as the default for your current session.
+This allows you to use simple commands like `python` without needing to specify the full path each time.
+
+The Python bindings of the C++ API rely on the [pybind11](https://github.com/pybind) library, specifically version 2.11.0.
 
 *Note* that pybind11 is required only if you want to use the Python bindings of the C++ API .
 You can opt out of creating these bindings by passing the argument `-DCOMPILE_PYTHON3_BINDINGS=OFF` at step 3 during compilation (see below).
@@ -101,9 +132,9 @@ In that case, you will not need to install pybind11, but you won't be able to us
 Unfortunately, there is no pre-compiled version of pybind11 available, so you need to install it manually:
 
 ```bash
-wget https://github.com/pybind/pybind11/archive/v2.6.0.zip
-unzip v2.6.0.zip
-cd pybind11-2.6.0/
+wget https://github.com/pybind/pybind11/archive/v2.11.0.zip
+unzip v2.11.0.zip
+cd pybind11-2.11.0/
 mkdir build && cd build
 cmake .. -DPYBIND11_TEST=OFF
 cmake --build .
@@ -120,30 +151,15 @@ Make sure that you install a version of CUDA that is compatible with your GPUs b
 
 Note that, at the moment, we don't support [OpenCL](https://www.khronos.org/opencl/) and AMD GPUs.
 
-Then, you need to install [PyTorch 1.13.1](https://pytorch.org).
-Retrieve and execute the pip command of version 1.13.1 from
-the [previous versions install guide section](<https://pytorch.org/get-started/previous-versions/#v1131>).
-
-Then install some extra Python libraries:
-
-```bash
-python3 -m pip install "numba==0.56.3" "profilehooks==1.12.0" "pytorch_lightning==1.8.6" "tqdm==4.63.0" "kornia==0.6.8"
-```
-
 
 ### Compilation
 
- 1. Retrieve the code: `git clone https://github.com/prophesee-ai/openeb.git --branch 4.6.2`.
-    (If you choose to download an archive of OpenEB from GitHub rather than cloning the repository,
-    you need to ensure that you select a ``Full.Source.Code.*`` archive instead of using
-    the automatically generated ``Source.Code.*`` archives. This is because the latter do not include
-    a necessary submodule.)
- 2. Create and open the build directory in the `openeb` folder (absolute path to this directory is called `OPENEB_SRC_DIR` in next sections): `cd openeb; mkdir build && cd build`
- 3. Generate the makefiles using CMake: `cmake .. -DBUILD_TESTING=OFF`.
+ 1. Create and open the build directory `OPENEB_SRC_DIR`: `mkdir build && cd build`
+ 2. Generate the makefiles using CMake: `cmake .. -DBUILD_TESTING=OFF`.
     If you want to specify to cmake which version of Python to consider, you should use the option ``-DPython3_EXECUTABLE=<path_to_python_to_use>``.
     This is useful, for example, when you have a more recent version of Python than the ones we support installed on your system.
     In that case, cmake would select it and compilation might fail.
- 4. Compile: `cmake --build . --config Release -- -j 4`
+ 3. Compile: `cmake --build . --config Release -- -j 4`
 
 Once the compilation is finished, you have two options: you can choose to work directly from the `build` folder
 or you can deploy the OpenEB files in the system path (`/usr/local/lib`, `/usr/local/include`...).
@@ -176,7 +192,7 @@ or you can deploy the OpenEB files in the system path (`/usr/local/lib`, `/usr/l
 
     Note that you can also deploy the OpenEB files (applications, samples, libraries etc.) in a directory of your choice by using
     the `CMAKE_INSTALL_PREFIX` variable (`-DCMAKE_INSTALL_PREFIX=<OPENEB_INSTALL_DIR>`) when generating the makefiles
-    in step 3. Similarly, you can configure the directory where the Python packages will be deployed using the
+    in step 2. Similarly, you can configure the directory where the Python packages will be deployed using the
     `PYTHON3_SITE_PACKAGES` variable (`-DPYTHON3_SITE_PACKAGES=<PYTHON3_PACKAGES_INSTALL_DIR>`).
 
   * you also need to update `LD_LIBRARY_PATH` and `HDF5_PLUGIN_PATH`
@@ -184,23 +200,23 @@ or you can deploy the OpenEB files in the system path (`/usr/local/lib`, `/usr/l
 
     ```bash
     export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
-    export HDF5_PLUGIN_PATH=$HDF5_PLUGIN_PATH:/usr/local/lib/hdf5/plugin  # On Ubuntu 20.04
     export HDF5_PLUGIN_PATH=$HDF5_PLUGIN_PATH:/usr/local/hdf5/lib/plugin  # On Ubuntu 22.04
+    export HDF5_PLUGIN_PATH=$HDF5_PLUGIN_PATH:/usr/local/lib/hdf5/plugin  # On Ubuntu 24.04
     ```
 
 Note that if you are using a third-party camera, you need to install the plugin provided
 by the camera vendor and specify the location of the plugin using the `MV_HAL_PLUGIN_PATH` environment variable.
 
 To get started with OpenEB, you can download some [sample recordings](https://docs.prophesee.ai/stable/datasets.html) 
-and visualize them with [metavision_viewer](https://docs.prophesee.ai/stable/samples/modules/driver/viewer.html)
+and visualize them with [metavision_viewer](https://docs.prophesee.ai/stable/samples/modules/stream/viewer.html)
 or you can stream data from your Prophesee-compatible event-based camera.
 
 ### Running the test suite (Optional)
 
 Running the test suite is a sure-fire way to ensure you did everything well with your compilation and installation process.
 
- * Download [the files](https://kdrive.infomaniak.com/app/share/975517/cddcc78a-3480-420f-bc19-17d5b0535ca4) necessary to run the tests.
-   Click `Download` on the top right folder. Beware of the size of the obtained archive which weighs around 1.2 Gb.
+ * Download [the files](https://kdrive.infomaniak.com/app/share/975517/2aa2545c-6b12-4478-992b-df2acfb81b38) necessary to run the tests.
+   Click `Download` on the top right folder. Beware of the size of the obtained archive which weighs around 1.5 Gb.
 
  * Extract and put the content of this archive to `<OPENEB_SRC_DIR>/datasets`. 
    For instance, the correct path of sequence `gen31_timer.raw` should be `<OPENEB_SRC_DIR>/datasets/openeb/gen31_timer.raw`.
@@ -232,6 +248,21 @@ Then, if you have previously installed any Prophesee's software, you will need t
 Remove the folders where you installed Metavision artifacts (check both the `build` folder of the source code and
 `C:\Program Files\Prophesee` which is the default install path of the deployment step).
 
+### Retrieving OpenEB source code
+
+To retrieve OpenEB source code, you can just clone the [GitHub repository](https://github.com/prophesee-ai/openeb):
+
+```bash
+git clone https://github.com/prophesee-ai/openeb.git --branch 5.0.0
+```
+
+In the following sections, absolute path to this directory is called ``OPENEB_SRC_DIR``
+
+If you choose to download an archive of OpenEB from GitHub rather than cloning the repository,
+you need to ensure that you select a `Full.Source.Code.*` archive instead of using
+the automatically generated `Source.Code.*` archives. This is because the latter do not include
+a necessary submodule.
+
 ### Prerequisites
 
 Some steps of this procedure don't work on FAT32 and exFAT file system.
@@ -245,62 +276,75 @@ You must enable the support for long paths:
 To compile OpenEB, you will need to install some extra tools:
 
  * install [git](https://git-scm.com/download/win)
- * install [CMake 3.21](https://cmake.org/files/v3.21/cmake-3.21.7-windows-x86_64.msi)
+ * install [CMake 3.26](https://cmake.org/files/v3.26/cmake-3.26.6-windows-x86_64.msi)
  * install Microsoft C++ compiler (64-bit). You can choose one of the following solutions:
     * For building only, you can install MS Build Tools (free, part of Windows 10 SDK package)
       * Download and run ["Build tools for Visual Studio 2022" installer](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
       * Select "C++ build tools", make sure Windows 10 SDK is checked, and add English Language Pack
     * For development, you can also download and run [Visual Studio Installer](https://visualstudio.microsoft.com/downloads/)    
  * install [vcpkg](https://github.com/microsoft/vcpkg) that will be used for installing dependencies:
-    * download and extract [vcpkg version 2023.11.20](https://github.com/microsoft/vcpkg/archive/refs/tags/2023.11.20.zip)
+    * download and extract [vcpkg version 2024.04.26](https://github.com/microsoft/vcpkg/archive/refs/tags/2024.04.26.zip) in a folder that we will refer as `VCPKG_SRC_DIR`
     * `cd <VCPKG_SRC_DIR>`
     * `bootstrap-vcpkg.bat`
-  * install the libraries by running `vcpkg.exe install --triplet x64-windows libusb boost opencv dirent gtest glew glfw3 hdf5[cpp,threadsafe,tools,zlib]`
+    * `vcpkg update`
+    * copy the ``vcpkg-openeb.json`` file located in the OpenEB source code at ``utils/windows``
+      into `VCPKG_SRC_DIR` and rename it to ``vcpkg.json``
+  * install the libraries by running:
+    * `vcpkg install --triplet x64-windows --x-install-root installed`
   * Finally, download and install [ffmpeg](https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full.7z) and add the `bin` directory to your PATH.
 
-Note that if you are using vcpkg for various projects or multiple versions of OpenEB, you might want to optimize the
-number of vcpkg install you manage. To do so, you will need the versions of the libraries we require.
-Those can be found in the [vcpkg repository](https://github.com/microsoft/vcpkg/tree/2023.11.20/versions) but we list them here for convenience:
-  * libusb: 1.0.26
-  * boost: 1.83.0
+Note that if you're using vcpkg across multiple projects or versions of OpenEB, it’s beneficial to streamline
+the number of vcpkg installations you manage. To achieve this, you'll need the specific versions of
+the libraries required. You can find these versions by cross-referencing our `vcpkg.json` file with the
+[official vcpkg repository](https://github.com/microsoft/vcpkg/tree/2024.04.26/versions),
+but for your convenience, we’ve listed them below:
+
+  * libusb: 1.0.27
+  * boost: 1.78.0
   * opencv: 4.8.0
   * dirent: 1.24.0
   * gtest: 1.14.0
+  * pybind11: 2.12.0
   * glew: 2.2.0
-  * glfw3: 3.3.8
+  * glfw3: 3.4.0
   * hdf5: 1.14.2
+  * protobuf: 3.21.12
 
 #### Installing Python and libraries
 
 * Download "Windows x86-64 executable installer" for one of these Python versions:
-  * [Python 3.8](https://www.python.org/downloads/release/python-3810/)
   * [Python 3.9](https://www.python.org/downloads/release/python-3913/)
+  * [Python 3.10](https://www.python.org/downloads/release/python-31011/)
+  * [Python 3.11](https://www.python.org/downloads/release/python-3119/)
+  * [Python 3.12](https://www.python.org/downloads/release/python-3125/)
 * Add Python install and script directories in your `PATH` and make sure they are listed before
   the `WindowsApps` folder which contains a Python alias launching the Microsoft Store. So, if you installed
-  Python 3.8 in the default path, your user `PATH` should contain those three lines in that order:
+  Python 3.9 in the default path, your user `PATH` should contain those three lines in that order:
   
 ```bash
-%USERPROFILE%\AppData\Local\Programs\Python\Python38
-%USERPROFILE%\AppData\Local\Programs\Python\Python38\Scripts
+%USERPROFILE%\AppData\Local\Programs\Python\Python39
+%USERPROFILE%\AppData\Local\Programs\Python\Python39\Scripts
 %USERPROFILE%\AppData\Local\Microsoft\WindowsApps
 ````
+We recommend using Python with [virtualenv](https://virtualenv.pypa.io/en/latest/) to avoid conflicts with other installed Python packages.
 
-Then install `pip` and some Python libraries:
+Create a virtual environment and install the necessary dependencies:
 
 ```bash
-python -m pip install pip --upgrade
-python -m pip install "opencv-python==4.5.5.64" "sk-video==1.1.10" "fire==0.4.0" "numpy==1.23.4" "h5py==3.7.0" pandas scipy
-python -m pip install jupyter jupyterlab matplotlib "ipywidgets==7.6.5" pytest command_runner
+python -m venv C:\tmp\prophesee\py3venv --system-site-packages
+C:\tmp\prophesee\py3venv\Scripts\python -m pip install pip --upgrade
+C:\tmp\prophesee\py3venv\Scripts\python -m pip install -r OPENEB_SRC_DIR\utils\python\python_requirements\requirements_openeb.txt
 ```
 
-#### Install pybind
+When creating the virtual environment, it is necessary to use the `--system-site-packages` option to ensure that
+the SDK packages installed in the system directories are accessible. However, this option also makes your local
+user site-packages visible by default.
+To prevent this and maintain a cleaner virtual environment, you can set the environment variable `PYTHONNOUSERSITE` to true.
 
-The Python bindings of the C++ API rely on the [pybind11](https://github.com/pybind) library.
-You should install pybind using vcpkg in order to get the appropriate version: `vcpkg.exe install --triplet x64-windows pybind11`
+Optionally, you can run the `activate` command (`C:\tmp\prophesee\py3venv\Scripts\activate`) to modify your shell's environment variables,
+setting the virtual environment's Python interpreter and scripts as the default for your current session.
+This allows you to use simple commands like `python` without needing to specify the full path each time.
 
-*Note* that pybind11 is required only if you plan to use the Python bindings of the C++ API.
-You can opt out of creating these bindings by passing the argument `-DCOMPILE_PYTHON3_BINDINGS=OFF` at step 2 during compilation (see section "Compilation using CMake").
-In that case, you will not need to install pybind11, but you won't be able to use our Python interface to the C++ API.
 
 #### Prerequisites for the ML module
 
@@ -309,33 +353,12 @@ To use Machine Learning features, you need to install some additional dependenci
 First, if you have some Nvidia hardware with GPUs, you can optionally install [CUDA (11.6 or 11.7)](https://developer.nvidia.com/cuda-downloads)
 and [cuDNN](https://docs.nvidia.com/deeplearning/cudnn/install-guide/index.html) to leverage them with pytorch and libtorch.
 
-Then, you need to install [PyTorch 1.13.1](https://pytorch.org).
-Retrieve and execute the pip command of version 1.13.1 from
-the [previous versions install guide section](<https://pytorch.org/get-started/previous-versions/#v1131>).
-
-Then install some extra Python libraries:
-
-```bash
-python -m pip install "numba==0.56.3" "profilehooks==1.12.0" "pytorch_lightning==1.8.6" "tqdm==4.63.0" "kornia==0.6.8"
-```
 
 ### Compilation
 
-First, retrieve the codebase:
-
-```bash
-git clone https://github.com/prophesee-ai/openeb.git --branch 4.6.2
-```
-
-Note that if you choose to download an archive of OpenEB from GitHub rather than cloning the repository,
-you need to ensure that you select a ``Full.Source.Code.*`` archive instead of using
-the automatically generated ``Source.Code.*`` archives. This is because the latter do not include
-a necessary submodule.
-
-
 #### Compilation using CMake
 
-Open a command prompt inside the `openeb` folder (absolute path to this directory is called `OPENEB_SRC_DIR` in next sections) and do as follows:
+Open a command prompt inside the `OPENEB_SRC_DIR` folder :
 
  1. Create and open the build directory, where temporary files will be created: `mkdir build && cd build`
  2. Generate the makefiles using CMake: `cmake .. -A x64 -DCMAKE_TOOLCHAIN_FILE=<OPENEB_SRC_DIR>\cmake\toolchains\vcpkg.cmake -DVCPKG_DIRECTORY=<VCPKG_SRC_DIR>`.
@@ -393,7 +416,7 @@ or you can deploy the OpenEB files (applications, samples, libraries etc.) in a 
 
 #### Compilation using MS Visual Studio
 
-Open a command prompt inside the `openeb` folder (absolute path to this directory is called `OPENEB_SRC_DIR` in next sections) and do as follows:
+Open a command prompt inside the `OPENEB_SRC_DIR` folder:
 
  1. Create and open the build directory, where temporary files will be created: `mkdir build && cd build`
  2. Generate the Visual Studio files using CMake: `cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_TOOLCHAIN_FILE=<OPENEB_SRC_DIR>\cmake\toolchains\vcpkg.cmake -DVCPKG_DIRECTORY=<VCPKG_SRC_DIR>` (adapt to your Visual Studio version).
@@ -439,7 +462,7 @@ the `MV_HAL_PLUGIN_PATH` environment variable.
 #### Getting Started
 
 To get started with OpenEB, you can download some [sample recordings](https://docs.prophesee.ai/stable/datasets.html) 
-and visualize them with [metavision_viewer](https://docs.prophesee.ai/stable/samples/modules/driver/viewer.html)
+and visualize them with [metavision_viewer](https://docs.prophesee.ai/stable/samples/modules/stream/viewer.html)
 or you can stream data from your Prophesee-compatible event-based camera.
 
 
@@ -447,8 +470,8 @@ or you can stream data from your Prophesee-compatible event-based camera.
 
 Running the test suite is a sure-fire way to ensure you did everything well with your compilation and installation process.
 
- * Download [the files](https://kdrive.infomaniak.com/app/share/975517/cddcc78a-3480-420f-bc19-17d5b0535ca4) necessary to run the tests.
-   Click `Download` on the top right folder. Beware of the size of the obtained archive which weighs around 1.2 Gb.
+ * Download [the files](https://kdrive.infomaniak.com/app/share/975517/2aa2545c-6b12-4478-992b-df2acfb81b38) necessary to run the tests.
+   Click `Download` on the top right folder. Beware of the size of the obtained archive which weighs around 1.5 Gb.
    
  * Extract and put the content of this archive to `<OPENEB_SRC_DIR>/datasets`. 
    For instance, the correct path of sequence `gen31_timer.raw` should be `<OPENEB_SRC_DIR>/datasets/openeb/gen31_timer.raw`.

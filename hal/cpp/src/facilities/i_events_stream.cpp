@@ -20,7 +20,7 @@
 #include "metavision/hal/facilities/i_hw_identification.h"
 #include "metavision/hal/facilities/i_hal_software_info.h"
 #include "metavision/hal/facilities/i_plugin_software_info.h"
-#include "metavision/hal/utils/file_data_transfer.h"
+#include "metavision/hal/utils/file_raw_data_producer.h"
 #include "metavision/hal/utils/hal_connection_exception.h"
 #include "metavision/hal/utils/hal_error_code.h"
 #include "metavision/hal/utils/hal_exception.h"
@@ -69,8 +69,10 @@ const std::string &get_raw_file_index_extension_suffix() {
     return extension;
 }
 
-const std::string get_raw_file_index_name(const std::string &raw_file_name) {
-    return raw_file_name + get_raw_file_index_extension_suffix();
+const std::filesystem::path get_raw_file_index_path(const std::filesystem::path &raw_file_path) {
+    std::filesystem::path index_path = raw_file_path;
+    index_path.replace_extension(index_path.extension().string() + get_raw_file_index_extension_suffix());
+    return index_path;
 }
 
 bool serialize_bookmark(I_EventsStream::Bookmark &bookmark, std::ofstream &output_index_file) {
@@ -152,14 +154,15 @@ bool check_magic_number_presence(std::ifstream &input_index_file) {
     return is_bookmark_magic_number(bookmark);
 }
 
-bool build_and_try_writing_bookmarks(Device &device, I_EventsStream::Index &index, const std::string &raw_file_name,
-                                     GenericHeader &index_file_header, const std::string &output_index_file_name,
+bool build_and_try_writing_bookmarks(Device &device, I_EventsStream::Index &index,
+                                     const std::filesystem::path &raw_file_path, GenericHeader &index_file_header,
+                                     const std::filesystem::path &output_index_file_path,
                                      const std::atomic<bool> &abort) {
     // Opens the output index file
-    std::ofstream output_index_file(output_index_file_name, std::ios::binary);
+    std::ofstream output_index_file(output_index_file_path, std::ios::binary);
     if (!output_index_file) {
-        MV_HAL_LOG_WARNING() << "Failed to write index file" << output_index_file_name << "for input RAW file"
-                             << raw_file_name;
+        MV_HAL_LOG_WARNING() << "Failed to write index file" << output_index_file_path << "for input RAW file"
+                             << raw_file_path;
         MV_HAL_LOG_WARNING() << "Make sure the folder which contains the RAW file is writeable to avoid building "
                                 "the index from scratch again next time";
     }
@@ -175,9 +178,9 @@ bool build_and_try_writing_bookmarks(Device &device, I_EventsStream::Index &inde
     const long raw_event_size_bytes = decoder->get_raw_event_size_bytes();
 
     // Retrieve byte offset information of the RAW file
-    std::ifstream raw_file(raw_file_name, std::ios::binary);
+    std::ifstream raw_file(raw_file_path, std::ios::binary);
     if (!raw_file) {
-        MV_HAL_LOG_ERROR() << "Could not build index for the file. Failed to open RAW file at" << raw_file_name;
+        MV_HAL_LOG_ERROR() << "Could not build index for the file. Failed to open RAW file at" << raw_file_path;
         return false;
     }
 
@@ -206,15 +209,15 @@ bool build_and_try_writing_bookmarks(Device &device, I_EventsStream::Index &inde
         auto now = std::chrono::steady_clock::now();
         if (then + std::chrono::seconds(1) <= now) {
             then = now;
-            MV_HAL_LOG_TRACE() << "Still building index for" << raw_file_name << "...";
+            MV_HAL_LOG_TRACE() << "Still building index for" << raw_file_path << "...";
         }
 
-        auto buffer       = file_events_stream->get_latest_raw_data();
+        auto buffer = file_events_stream->get_latest_raw_data();
         // Decode the buffer events per events
-        for (size_t idx = 0; idx < buffer->size();
+        for (size_t idx = 0; idx < buffer.size();
              idx += raw_event_size_bytes, current_byte_offset += raw_event_size_bytes) {
             // Decode single event
-            decoder->decode(buffer->data() + idx, buffer->data() + idx + raw_event_size_bytes);
+            decoder->decode(buffer.data() + idx, buffer.data() + idx + raw_event_size_bytes);
 
             // Wait for timestamp shift to be computed before logging any bookmark
             if (!ts_shift_computed) {
@@ -244,7 +247,7 @@ bool build_and_try_writing_bookmarks(Device &device, I_EventsStream::Index &inde
                 bookmark.timestamp_      = last_ts;
                 bookmark.byte_offset_    = last_byte_offset;
                 if (!add_bookmarks(last_bookmark_index, bookmark_index, bookmark, index, output_index_file)) {
-                    MV_HAL_LOG_ERROR() << "Could not write index to the file" << raw_file_name;
+                    MV_HAL_LOG_ERROR() << "Could not write index to the file" << raw_file_path;
                     return false;
                 }
                 last_byte_offset    = current_byte_offset;
@@ -259,27 +262,16 @@ bool build_and_try_writing_bookmarks(Device &device, I_EventsStream::Index &inde
     bookmark.timestamp_      = last_ts;
     bookmark.byte_offset_    = last_byte_offset;
     if (!add_bookmarks(last_bookmark_index, last_bookmark_index + 1, bookmark, index, output_index_file)) {
-        MV_HAL_LOG_ERROR() << "Could not write index to the file" << raw_file_name;
+        MV_HAL_LOG_ERROR() << "Could not write index to the file" << raw_file_path;
         return false;
     }
 
     if (!add_magic_number(output_index_file)) {
-        MV_HAL_LOG_ERROR() << "Could not write index to the file" << raw_file_name;
+        MV_HAL_LOG_ERROR() << "Could not write index to the file" << raw_file_path;
         return false;
     }
 
-    if (abort) {
-        if (output_index_file) {
-            output_index_file.close();
-            // remove incomplete index file
-            remove(output_index_file_name.c_str());
-        }
-        MV_HAL_LOG_TRACE() << "Indexing for input RAW file" << raw_file_name
-                           << "has been aborted, removing incomplete index file";
-        return false;
-    }
-
-    return true;
+    return !abort;
 }
 
 I_EventsStream::Bookmarks load_bookmarks(std::ifstream &input_index_file, const std::atomic<bool> &abort) {
@@ -309,13 +301,13 @@ I_EventsStream::Bookmarks load_bookmarks(std::ifstream &input_index_file, const 
     return bookmarks;
 }
 
-I_EventsStream::Index build_index(Device &device, const std::string &raw_file_name, const std::atomic<bool> &abort) {
+I_EventsStream::Index build_index(Device &device, const std::filesystem::path &raw_file_path,
+                                  const std::atomic<bool> &abort) {
     I_EventsStream::Index index;
-    bool do_build_index = false;
 
     // ------------------------------
     // Retrieve RAW file info
-    std::ifstream raw_file(raw_file_name, std::ios::binary);
+    std::ifstream raw_file(raw_file_path, std::ios::binary);
     if (!raw_file) {
         // RAW file can't be opened. Should not happen.
         return index;
@@ -339,12 +331,12 @@ I_EventsStream::Index build_index(Device &device, const std::string &raw_file_na
     // Checks the validity of the index file for the input RAW file
 
     // Opens the index file
-    const std::string raw_file_index_name(get_raw_file_index_name(raw_file_name));
-    std::ifstream index_file(raw_file_index_name, std::ios::binary);
-    if (!index_file) {
-        // Index file doesn't exist
-        do_build_index = true;
-    } else {
+    const std::filesystem::path raw_file_index_path(get_raw_file_index_path(raw_file_path));
+    bool do_build_index = !std::filesystem::exists(raw_file_index_path);
+
+    if (!do_build_index) {
+        std::ifstream index_file(raw_file_index_path, std::ios::binary);
+
         // Index file exists
         // Now quick check the content to assert if the indexed file actually indexes the input RAW file
 
@@ -405,13 +397,12 @@ I_EventsStream::Index build_index(Device &device, const std::string &raw_file_na
         // Make sure that magic number is present
         do_build_index = do_build_index || !check_magic_number_presence(index_file);
     };
-    index_file.close();
 
     // ------------------------------
     // If necessary, compute and write the index
     if (do_build_index) {
         // Builds and write the index
-        MV_HAL_LOG_TRACE() << "Building index for input RAW file" << raw_file_name;
+        MV_HAL_LOG_TRACE() << "Building index for input RAW file" << raw_file_path;
 
         // Write index file's header
         GenericHeader index_file_header(raw_file_header);
@@ -424,10 +415,17 @@ I_EventsStream::Index build_index(Device &device, const std::string &raw_file_na
         index_file_header.set_field(bookmark_period_key, bookmark_period_us_str);
         index_file_header.set_field(index_version_key, index_version);
 
-        if (!build_and_try_writing_bookmarks(device, index, raw_file_name, index_file_header, raw_file_index_name,
+        if (!build_and_try_writing_bookmarks(device, index, raw_file_path, index_file_header, raw_file_index_path,
                                              abort)) {
             if (!abort) {
-                MV_HAL_LOG_WARNING() << "Failed to build index for input RAW file" << raw_file_name;
+                MV_HAL_LOG_WARNING() << "Failed to build index for input RAW file" << raw_file_path;
+            } else {
+                if (std::filesystem::exists(raw_file_index_path)) {
+                    // remove incomplete index file
+                    std::filesystem::remove(raw_file_index_path);
+                }
+                MV_HAL_LOG_TRACE() << "Indexing for input RAW file" << raw_file_path
+                                   << "has been aborted, removing incomplete index file";
             }
             index.status_ = I_EventsStream::IndexStatus::Bad;
             return index;
@@ -436,11 +434,11 @@ I_EventsStream::Index build_index(Device &device, const std::string &raw_file_na
         index.bookmark_period_ = bookmark_period_us;
         // index.ts_shift_us_ and index.bookmarks_ are filled by build_and_try_writing_bookmarks
         index.status_ = I_EventsStream::IndexStatus::Good;
-        MV_HAL_LOG_TRACE() << "Index for input RAW file" << raw_file_name << "built";
+        MV_HAL_LOG_TRACE() << "Index for input RAW file" << raw_file_path << "built";
     } else {
-        index_file.open(raw_file_index_name, std::ios::binary);
+        std::ifstream index_file(raw_file_index_path, std::ios::binary);
         if (!index_file) {
-            MV_HAL_LOG_ERROR() << "Failed to open index for RAW file at" << raw_file_index_name;
+            MV_HAL_LOG_ERROR() << "Failed to open index for RAW file at" << raw_file_index_path;
             index.status_ = I_EventsStream::IndexStatus::Bad;
             return index;
         }
@@ -452,12 +450,12 @@ I_EventsStream::Index build_index(Device &device, const std::string &raw_file_na
         index.ts_shift_us_     = std::atoll(index_file_header.get_field(ts_shift_key).c_str());
         index.bookmarks_       = load_bookmarks(index_file, abort);
         if (index.bookmarks_.empty()) {
-            MV_HAL_LOG_ERROR() << "Failed to open index for RAW file at" << raw_file_index_name;
+            MV_HAL_LOG_ERROR() << "Failed to open index for RAW file at" << raw_file_index_path;
             index.status_ = I_EventsStream::IndexStatus::Bad;
             return index;
         }
         index.status_ = I_EventsStream::IndexStatus::Good;
-        MV_HAL_LOG_TRACE() << "Index for input RAW file" << raw_file_name << "loaded";
+        MV_HAL_LOG_TRACE() << "Index for input RAW file" << raw_file_path << "loaded";
     }
 
     return index;
@@ -465,11 +463,11 @@ I_EventsStream::Index build_index(Device &device, const std::string &raw_file_na
 
 } // namespace
 
-I_EventsStream::I_EventsStream(std::unique_ptr<DataTransfer> data_transfer,
+I_EventsStream::I_EventsStream(std::unique_ptr<DataTransfer::RawDataProducer> data_producer,
                                const std::shared_ptr<I_HW_Identification> &hw_identification,
                                const std::shared_ptr<I_EventsStreamDecoder> &decoder,
                                const std::shared_ptr<DeviceControl> &device_control) :
-    data_transfer_(std::move(data_transfer)),
+    data_transfer_(std::move(data_producer)),
     hw_identification_(hw_identification),
     decoder_(decoder),
     seeking_(false),
@@ -477,26 +475,21 @@ I_EventsStream::I_EventsStream(std::unique_ptr<DataTransfer> data_transfer,
     // this is not the most elegant way of figuring out if we are transferring data from an offline
     // recording where we should not release the buffers when the streaming is stopped, but this keeps
     // binary backward compatibility with previously released interfaces of DataTransfer
-    stop_should_release_buffers_(dynamic_cast<FileDataTransfer *>(data_transfer_.get()) == nullptr),
-    tmp_buffer_pool_(DataTransfer::BufferPool::make_unbounded()),
+    stop_should_release_buffers_(std::dynamic_pointer_cast<FileRawDataProducer>(data_transfer_.get_data_producer()) ==
+                                 nullptr),
     stop_(true) {
     if (!hw_identification_) {
         throw(HalException(HalErrorCode::FailedInitialization, "HW identification facility is null."));
     }
-    data_transfer_->add_new_buffer_callback([this](const DataTransfer::BufferPtr &buffer) {
+    data_transfer_.add_new_buffer_callback([this](const DataTransfer::BufferPtr &buffer) {
         std::unique_lock<std::mutex> lock(new_buffer_safety_);
         if (seeking_) {
-            // to prevent any data loss when seeking, while also preventing a deadlock when trying to stop
-            // the data transfer before resetting the stream to a different position we need to copy this buffer in a
-            // temporary buffer pool
-            auto tmp_buffer = tmp_buffer_pool_.acquire();
-            *tmp_buffer     = *buffer;
-            available_buffers_.push(tmp_buffer);
+            available_buffers_.push(buffer.clone());
         } else {
             if (!stop_) {
-                auto *buf = buffer.get();
-                if (data_transfer_buffer_ptrs_.count(buf) == 0) {
-                    data_transfer_buffer_ptrs_.insert(buf);
+                auto buff_ptr = buffer.data();
+                if (data_transfer_buffer_ptrs_.count(buff_ptr) == 0) {
+                    data_transfer_buffer_ptrs_.insert(buff_ptr);
                 }
                 available_buffers_.push(buffer);
                 new_buffer_cond_.notify_all();
@@ -505,15 +498,14 @@ I_EventsStream::I_EventsStream(std::unique_ptr<DataTransfer> data_transfer,
                     // streaming is stopped, this buffer comes from the data transfer and we should not release
                     // transferred buffers, so we need to copy this buffer in a temporary buffer pool to make sure the
                     // data transfer buffer pool is empty when streaming is resumed
-                    auto tmp_buffer = tmp_buffer_pool_.acquire();
-                    *tmp_buffer     = *buffer;
+                    auto tmp_buffer = buffer.clone();
                     available_buffers_.push(tmp_buffer);
                 }
             }
         }
     });
 
-    data_transfer_->add_status_changed_callback([this](DataTransfer::Status status) {
+    data_transfer_.add_status_changed_callback([this](DataTransfer::Status status) {
         if (status == DataTransfer::Status::Stopped) {
             bool should_notify = false;
             {
@@ -534,11 +526,11 @@ I_EventsStream::I_EventsStream(std::unique_ptr<DataTransfer> data_transfer,
         }
     });
 
-    data_transfer_->add_transfer_error_callback([this](std::exception_ptr eptr) {
+    data_transfer_.add_transfer_error_callback([this](std::exception_ptr eptr) {
         std::unique_lock<std::mutex> lock(new_buffer_safety_);
         try {
             std::rethrow_exception(eptr);
-        } catch (HalConnectionException &e) {
+        } catch (const HalConnectionException &) {
             // Only propagate connection exceptions
             data_transfer_connection_error_ = std::current_exception();
         } catch (...) {}
@@ -553,7 +545,6 @@ I_EventsStream::~I_EventsStream() {
     try {
         stop();
     } catch (const std::exception &e) { MV_LOG_ERROR() << "I_EventsStream::stop() raised an exception : " << e.what(); }
-    data_transfer_.reset(nullptr);
     data_transfer_connection_error_ = nullptr;
 }
 
@@ -562,11 +553,10 @@ void I_EventsStream::release_data_transfer_buffers() {
     std::swap(tmp_queue, available_buffers_);
     while (!tmp_queue.empty()) {
         auto buffer = tmp_queue.front();
-        if (data_transfer_buffer_ptrs_.count(buffer.get())) {
+        if (data_transfer_buffer_ptrs_.count(buffer.data())) {
             // we only copy buffers that are coming from the data transfer pool
             // those are the ones we need to release
-            auto tmp_buffer = tmp_buffer_pool_.acquire();
-            *tmp_buffer     = *buffer;
+            auto tmp_buffer = buffer.clone();
             available_buffers_.push(tmp_buffer);
         } else {
             available_buffers_.push(buffer);
@@ -581,7 +571,7 @@ void I_EventsStream::start() {
         std::lock_guard<std::mutex> lock(new_buffer_safety_);
         stop_ = false;
     }
-    data_transfer_->start();
+    data_transfer_.start();
     start_device();
 }
 
@@ -604,7 +594,7 @@ void I_EventsStream::stop() {
         stop_log_raw_data();
     }
     stop_device();
-    data_transfer_->stop();
+    data_transfer_.stop();
 }
 
 void I_EventsStream::start_device() {
@@ -644,37 +634,6 @@ short I_EventsStream::wait_next_buffer() {
     return available_buffers_.empty() ? -1 : 1;
 }
 
-I_EventsStream::RawData *I_EventsStream::get_latest_raw_data(long &size) {
-    DataTransfer::BufferPtr local_ptr;
-    {
-        std::lock_guard<std::mutex> lock(new_buffer_safety_);
-
-        if (stop_ && data_transfer_connection_error_) {
-            std::rethrow_exception(data_transfer_connection_error_);
-        }
-
-        if (available_buffers_.empty()) {
-            // If no new buffer available yet
-            size = 0;
-            return nullptr;
-        }
-
-        // Keep a reference to returned buffer to ensure validity until next call to this function
-        returned_buffer_ = available_buffers_.front();
-        size             = returned_buffer_->size();
-        available_buffers_.pop();
-        local_ptr = returned_buffer_;
-    }
-
-    {
-        std::lock_guard<std::mutex> log_lock(log_raw_safety_);
-        if (log_raw_data_) {
-            log_raw_data_->write(reinterpret_cast<char *>(local_ptr->data()), size * sizeof(RawData));
-        }
-    }
-    return local_ptr->data();
-}
-
 DataTransfer::BufferPtr I_EventsStream::get_latest_raw_data() {
     DataTransfer::BufferPtr res;
     {
@@ -686,7 +645,7 @@ DataTransfer::BufferPtr I_EventsStream::get_latest_raw_data() {
 
         if (available_buffers_.empty()) {
             // If no new buffer available yet
-            return nullptr;
+            return {};
         }
 
         // Reset potential reference from last call
@@ -698,7 +657,7 @@ DataTransfer::BufferPtr I_EventsStream::get_latest_raw_data() {
     {
         std::lock_guard<std::mutex> log_lock(log_raw_safety_);
         if (log_raw_data_) {
-            log_raw_data_->write(reinterpret_cast<char *>(res->data()), res->size() * sizeof(RawData));
+            log_raw_data_->write(reinterpret_cast<const char *>(res.data()), res.size() * sizeof(RawData));
         }
     }
     return res;
@@ -717,8 +676,8 @@ I_EventsStream::SeekStatus I_EventsStream::seek(timestamp target_ts_us, timestam
         break;
     }
 
-    auto file_data_transfer = dynamic_cast<FileDataTransfer *>(data_transfer_.get());
-    if (!file_data_transfer || !decoder_) {
+    auto file_raw_data_producer = std::dynamic_pointer_cast<FileRawDataProducer>(data_transfer_.get_data_producer());
+    if (!file_raw_data_producer || !decoder_) {
         // should never happen, we check that seeking is possible before indexing...
         return SeekStatus::SeekCapabilityNotAvailable;
     }
@@ -749,9 +708,8 @@ I_EventsStream::SeekStatus I_EventsStream::seek(timestamp target_ts_us, timestam
         release_data_transfer_buffers();
     }
 
-    file_data_transfer->suspend();
-
-    auto seek_succeed = file_data_transfer->seek(index_.bookmarks_[bookmark_index].byte_offset_);
+    data_transfer_.suspend();
+    auto seek_succeed = file_raw_data_producer->seek(index_.bookmarks_[bookmark_index].byte_offset_);
 
     SeekStatus seek_status;
     if (seek_succeed) {
@@ -767,19 +725,19 @@ I_EventsStream::SeekStatus I_EventsStream::seek(timestamp target_ts_us, timestam
             stop_ = false;
         }
 
-        if (file_data_transfer->stopped()) {
+        if (data_transfer_.stopped()) {
             // if the data transfer was stopped because the end of file was reached before seeking, restart it
             //
             // Note : even if we start the data transfer now (while seeking_ = true), there is no risk of missing a EOF
             // (which would be signaled by a Stopped status change ... but ignored because a seek is ongoing) since the
             // data transfer won't resume reading (and thus reach a potential EOF) before seeking_ = false (c.f wait
             // loop in status change callback)
-            file_data_transfer->start();
+            data_transfer_.start();
         }
     } else {
         seek_status = SeekStatus::Failed;
 
-        if (file_data_transfer->stopped()) {
+        if (data_transfer_.stopped()) {
             // if the data transfer was stopped while we were seeking, and the seek failed,
             // update our status
             {
@@ -791,7 +749,7 @@ I_EventsStream::SeekStatus I_EventsStream::seek(timestamp target_ts_us, timestam
     }
 
     seeking_ = false;
-    file_data_transfer->resume();
+    data_transfer_.resume();
 
     return seek_status;
 }
@@ -833,34 +791,41 @@ void I_EventsStream::index(std::unique_ptr<Device> device_for_indexing) {
         return;
     }
 
-    if (get_underlying_filename().empty()) {
+    if (get_underlying_file().empty()) {
         MV_HAL_LOG_ERROR() << "Can not build index for the stream input (no valid RAW file name found).";
         index_.status_ = IndexStatus::Bad;
         return;
     }
 
     auto indexing_fes = device_for_indexing->get_facility<Metavision::I_EventsStream>();
-    if (!indexing_fes || !dynamic_cast<FileDataTransfer *>(indexing_fes->data_transfer_.get()) ||
+    if (!indexing_fes ||
+        !std::dynamic_pointer_cast<FileRawDataProducer>(indexing_fes->data_transfer_.get_data_producer()) ||
         !indexing_fes->decoder_) {
         MV_HAL_LOG_ERROR() << "Can not build index for the stream input: invalid indexing device.";
         return;
     }
 
-    if (indexing_fes->get_underlying_filename() != get_underlying_filename()) {
+    if (indexing_fes->get_underlying_file() != get_underlying_file()) {
         MV_HAL_LOG_ERROR() << "Can not build index for the stream input: indexing device is built from another RAW "
                               "file as source. The file to index is"
-                           << get_underlying_filename() << "whereas the input indexing device has been built from"
-                           << indexing_fes->get_underlying_filename();
+                           << get_underlying_file() << "whereas the input indexing device has been built from"
+                           << indexing_fes->get_underlying_file();
     }
 
     index_.status_ = IndexStatus::Building;
 
     // Start the indexing thread
     index_build_thread_ = std::thread([device_for_indexing = std::move(device_for_indexing), this]() {
-        auto index = index_impl(*device_for_indexing);
+        try {
+            auto index = index_impl(*device_for_indexing);
 
-        std::lock_guard<std::mutex> lock(index_safety_);
-        std::swap(index_, index);
+            std::lock_guard<std::mutex> lock(index_safety_);
+            std::swap(index_, index);
+        } catch (const std::exception &e) {
+            MV_HAL_LOG_WARNING() << "Unhandled error while building index:";
+            MV_HAL_LOG_WARNING() << e.what();
+            MV_HAL_LOG_WARNING() << "Seek feature might not work properly.";
+        }
     });
 
     // Wait for the thread to be running
@@ -869,7 +834,7 @@ void I_EventsStream::index(std::unique_ptr<Device> device_for_indexing) {
 
 I_EventsStream::Index I_EventsStream::index_impl(Device &device) {
     abort_index_building_ = false;
-    auto index            = build_index(device, get_underlying_filename(), abort_index_building_);
+    auto index            = build_index(device, get_underlying_file(), abort_index_building_);
     decoder_->reset_timestamp_shift(index.ts_shift_us_);
     return index;
 }
@@ -880,7 +845,7 @@ void I_EventsStream::stop_log_raw_data() {
 }
 
 bool I_EventsStream::log_raw_data(const std::string &f) {
-    if (f == underlying_filename_) {
+    if (f == underlying_file_) {
         return false;
     }
 
@@ -898,12 +863,12 @@ bool I_EventsStream::log_raw_data(const std::string &f) {
     return true;
 }
 
-void I_EventsStream::set_underlying_filename(const std::string &filename) {
-    underlying_filename_ = filename;
+void I_EventsStream::set_underlying_file(const std::filesystem::path &file) {
+    underlying_file_ = file;
 }
 
-const std::string &I_EventsStream::get_underlying_filename() const {
-    return underlying_filename_;
+const std::filesystem::path &I_EventsStream::get_underlying_file() const {
+    return underlying_file_;
 }
 
 } // namespace Metavision

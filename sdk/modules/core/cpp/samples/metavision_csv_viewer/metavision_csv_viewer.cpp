@@ -9,21 +9,22 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-// This code sample demonstrates how to use Metavision Core SDK pipeline utility to display events read from a CSV
-// formatted event-based file, such as one produced by the sample metavision_file_to_csv. It also shows how to create a
-// class deriving from BaseStage that produces data but consumes nothing.
+// This code sample demonstrates how to use Metavision Core SDK to display events read from a CSV
+// formatted event-based file, such as one produced by the sample metavision_file_to_csv.
 
+#include <atomic>
 #include <iostream>
 #include <functional>
 #include <fstream>
 #include <optional>
+#include <thread>
 #include <boost/program_options.hpp>
+#include "metavision/sdk/base/events/event_cd.h"
+#include "metavision/sdk/base/utils/object_pool.h"
 #include <metavision/sdk/base/utils/log.h>
-#include <metavision/sdk/core/pipeline/pipeline.h>
-#include <metavision/sdk/core/pipeline/frame_generation_stage.h>
-#include <metavision/sdk/core/algorithms/polarity_filter_algorithm.h>
+#include <metavision/sdk/core/algorithms/periodic_frame_generation_algorithm.h>
+#include <metavision/sdk/ui/utils/window.h>
 #include <metavision/sdk/ui/utils/event_loop.h>
-#include <metavision/sdk/ui/pipeline/frame_display_stage.h>
 
 // A stage producing events from a CSV file with events written in the following format:
 // x1,y1,t1,p1
@@ -31,10 +32,14 @@
 // ...
 // xn,yn,tn,pn
 
-/// [PIPELINE_USAGE_DEFINE_STAGE_BEGIN]
-class CSVReadingStage : public Metavision::BaseStage {
+class CSVReader {
 public:
-    CSVReadingStage(const std::string &filename) : ifs_(filename) {
+    using EventBuffer = std::vector<Metavision::EventCD>;
+    using EventBufferPool = Metavision::SharedObjectPool<EventBuffer>;
+    using EventBufferPtr = EventBufferPool::ptr_type;
+    using OutputCallback = std::function<void(const Metavision::EventCD *, const Metavision::EventCD *)>;
+
+    CSVReader(const std::string &filename) : ifs_(filename) {
         if (!ifs_.is_open()) {
             MV_LOG_ERROR() << "Unable to open " << filename;
             throw std::runtime_error("Unable to open " + filename);
@@ -46,28 +51,11 @@ public:
 
         cur_cd_buffer_ = cd_buffer_pool_.acquire();
         cur_cd_buffer_->clear();
-
-        // this callback is called once the pipeline is started, so the stage knows it can start producing
-        set_starting_callback([this]() {
-            done_           = false;
-            reading_thread_ = std::thread([this] { read(); });
-        });
-
-        // this callback is called once the pipeline is stopped : it can be initiated by a call
-        // to @ref Pipeline::cancel() and/or after all stages are done and all task queues have been cleared
-        set_stopping_callback([this]() {
-            done_ = true;
-            if (reading_thread_.joinable())
-                reading_thread_.join();
-        });
     }
 
-    /// [PIPELINE_USAGE_READ_BEGIN]
     void read() {
         std::string line;
         while (!done_ && std::getline(ifs_, line)) {
-            // once here, we know that the stage has not been stopped yet,
-            // so we read a line and may produce a buffer
             std::istringstream iss(line);
             std::vector<std::string> tokens;
             std::string token;
@@ -78,8 +66,7 @@ public:
                 MV_LOG_ERROR() << "Invalid line : <" << line << "> ignored";
             } else {
                 if (cur_cd_buffer_->size() > 5000) {
-                    // this is how a stage produces data to be consumed by the next stages
-                    produce(cur_cd_buffer_);
+                    output_cb_(cur_cd_buffer_->data(), cur_cd_buffer_->data() + cur_cd_buffer_->size());
                     cur_cd_buffer_ = cd_buffer_pool_.acquire();
                     cur_cd_buffer_->clear();
                 }
@@ -88,10 +75,15 @@ public:
                                              static_cast<short>(std::stoi(tokens[2])), std::stoll(tokens[3]));
             }
         }
-        // notifies to the pipeline that this producer has no more data to produce
-        complete();
     }
-    /// [PIPELINE_USAGE_READ_END]
+
+    void stop() {
+        done_ = true;
+    }
+
+    void set_output_callback(const OutputCallback &out_cb) {
+        output_cb_ = out_cb;
+    }
 
     std::optional<int> get_width() const {
         return width_;
@@ -136,17 +128,16 @@ private:
     }
 
     std::optional<int> width_, height_;
-    std::atomic<bool> done_;
+    std::atomic<bool> done_ = false;
     std::thread reading_thread_;
     std::ifstream ifs_;
     EventBufferPool cd_buffer_pool_;
     EventBufferPtr cur_cd_buffer_;
+    OutputCallback output_cb_;
 };
-/// [PIPELINE_USAGE_DEFINE_STAGE_END]
 
 namespace po = boost::program_options;
 
-/// [PIPELINE_USAGE_MAIN_BEGIN]
 int main(int argc, char *argv[]) {
     std::string in_csv_file_path;
     int width, height;
@@ -186,29 +177,48 @@ int main(int argc, char *argv[]) {
     //  0 (Csv Reading) -->-- 1 (Frame Generation) -->-- 2 (Display)
     //
 
-    // A pipeline for which all added stages will automatically be run in their own processing threads (if applicable)
-    Metavision::Pipeline p(true);
-
-    // 0) Stage producing events from a CSV file
-    auto csv_reader = std::make_unique<CSVReadingStage>(in_csv_file_path);
-    if (auto width_opt = csv_reader->get_width()) {
+    std::atomic<bool> should_stop = false;
+    CSVReader csv_reader(in_csv_file_path);
+    if (auto width_opt = csv_reader.get_width()) {
         width = *width_opt;
     }
-    if (auto height_opt = csv_reader->get_height()) {
+    if (auto height_opt = csv_reader.get_height()) {
         height = *height_opt;
     }
-    auto &csv_stage = p.add_stage(std::move(csv_reader));
 
-    // 1) Stage generating a frame with events previously produced using accumulation time of 10ms
-    auto &frame_stage = p.add_stage(std::make_unique<Metavision::FrameGenerationStage>(width, height, 10), csv_stage);
+    Metavision::PeriodicFrameGenerationAlgorithm frame_generator(width, height, 10000);
+    csv_reader.set_output_callback([&frame_generator](const Metavision::EventCD *begin, const Metavision::EventCD *end) {
+                                       frame_generator.process_events(begin, end);
+                                   });
 
-    // 2) Stage displaying the generated frame
-    auto &disp_stage =
-        p.add_stage(std::make_unique<Metavision::FrameDisplayStage>("CD events", width, height), frame_stage);
+    Metavision::Window window("CD events", width, height, Metavision::Window::RenderMode::BGR);
+    window.set_keyboard_callback([&should_stop, &csv_reader](Metavision::UIKeyEvent key, int scancode, Metavision::UIAction action, int mods) {
+                                     if (action == Metavision::UIAction::RELEASE) {
+                                         switch (key) {
+                                         case Metavision::UIKeyEvent::KEY_ESCAPE:
+                                         case Metavision::UIKeyEvent::KEY_Q:
+                                             should_stop = true;
+                                             csv_reader.stop();
+                                             break;
+                                         }
+                                     }
+                                 });
 
-    // Run the pipeline and wait for its completion
-    p.run();
+    frame_generator.set_output_callback(
+        [&window](Metavision::timestamp t, cv::Mat &frame_data) {
+            if (!frame_data.empty())
+                window.show(frame_data);
+        });
+
+    auto t = std::thread([&csv_reader]() { csv_reader.read(); });
+    while (!t.joinable()) {
+    }
+
+    while (!should_stop) {
+        Metavision::EventLoop::poll_and_dispatch();
+    }
+
+    t.join();
 
     return 0;
 }
-/// [PIPELINE_USAGE_MAIN_END]

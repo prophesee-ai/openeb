@@ -130,15 +130,10 @@ class EventToVideoLightningModel(pl.LightningModule):
         logs = {'val_loss': loss}
         logs.update({'val_' + k: v.item() for k, v in loss_dict.items()})
 
-        self.log('val_loss', loss)
+        self.log('val_loss', loss, on_epoch=True)
         for k, v in loss_dict.items():
             self.log('val_' + k, v)
         return loss
-
-    def validation_epoch_end(self, outputs):
-        val_loss_avg = torch.FloatTensor([item for item in outputs]).mean()
-        self.log('val_acc', val_loss_avg)
-        return val_loss_avg
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.hparams.lr)

@@ -8,7 +8,7 @@
 # See the License for the specific language governing permissions and limitations under the License.
 
 set (sample metavision_time_surface)
-set (common_libraries MetavisionSDK::driver MetavisionSDK::core MetavisionSDK::ui Boost::program_options)
+set (common_libraries MetavisionSDK::stream MetavisionSDK::core MetavisionSDK::ui Boost::program_options)
 
 add_executable(${sample} ${sample}.cpp)
 target_link_libraries(${sample} PRIVATE ${common_libraries})

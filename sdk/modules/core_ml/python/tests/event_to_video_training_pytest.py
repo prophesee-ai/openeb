@@ -19,12 +19,7 @@ sample_dir_path = os.path.join(test_dir_path, '..', 'samples', 'train_event_to_v
 assert os.path.isdir(sample_dir_path)
 sys.path.append(sample_dir_path)
 
-try:
-    from train_event_to_video import train_parser, train
-    imports_error = False
-except ImportError as e:
-    print(e)
-    imports_error = True
+from train_event_to_video import train_parser, train
 
 
 def get_argparse_defaults(parser):
@@ -35,7 +30,6 @@ def get_argparse_defaults(parser):
     return defaults
 
 
-@pytest.mark.skipif(imports_error, reason="some imports are failing, please install requirements.txt")
 def pytestcase_training_mini_dataset(tmpdir, dataset_dir):
     """
     This is a functional test

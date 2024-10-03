@@ -62,6 +62,7 @@ enum SystemId : long {
     SYSTEM_EVK3_GENX320_MP             = 0x3B,
     SYSTEM_EVK3_GENX320                = 0x40,
     SYSTEM_EVK3D_SL                    = 0x41,
+    SYSTEM_EVK2_IMX636_ESP             = 0x42,
     SYSTEM_FX3_UNKNOWN                 = static_cast<long>(0xFFFFFFF0),
     SYSTEM_INVALID_NO_FPGA             = static_cast<long>(0xFFFFFFFF)
 };

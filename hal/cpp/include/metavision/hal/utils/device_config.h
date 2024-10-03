@@ -154,14 +154,6 @@ public:
     /// @overload
     std::string get(const std::string &key, const std::string &def = std::string()) const;
 
-    [[deprecated(
-        "This function is deprecated since version 4.1.0. Please use get_format_key() instead.")]] static std::string
-        get_evt_format_key();
-    [[deprecated("This function is deprecated since version 4.1.0. Please use format() instead.")]] std::string
-        evt_format() const;
-    [[deprecated("This function is deprecated since version 4.1.0. Please use set_format() instead.")]] void
-        set_evt_format(const std::string &);
-
 private:
     // private get<T> helper, to avoid template specialization errors on GCC
     template<typename T, typename U = typename std::enable_if<!std::is_same<std::string, T>::value>::type>

@@ -15,33 +15,19 @@
 
 #include "hal_python_binder.h"
 #include "metavision/hal/facilities/i_events_stream.h"
-#include "metavision/utils/pybind/deprecation_warning_exception.h"
 #include "pb_doc_hal.h"
 
-// Needed to avoid copies of vectors of RawData
-PYBIND11_MAKE_OPAQUE(Metavision::DataTransfer::Buffer);
-
 namespace Metavision {
-
 namespace {
-    std::shared_ptr<DataTransfer::Buffer> get_latest_raw_data_wrapper(I_EventsStream *ies) {
-        auto data = ies->get_latest_raw_data();
-        // If we return nullptr, python doesn't know the type of the objects and considers it "None".
-        // This causes issues when trying to call decode on an empty buffer which has been possible so far.
-        // So return a shared pointer to an empty vector not to break user scripts
-        if (!data) {
-            return std::make_shared<DataTransfer::Buffer>();
-        }
-        return data;
-    }
+auto get_latest_raw_data_wrapper(I_EventsStream &ies) {
+    return ies.get_latest_raw_data();
 }
+} // namespace
 
 static DeviceFacilityGetter<I_EventsStream> getter("get_i_events_stream");
 
 static HALFacilityPythonBinder<I_EventsStream> bind(
     [](auto &module, auto &class_binding) {
-
-        py::bind_vector<DataTransfer::Buffer, DataTransfer::BufferPtr>(module, "RawDataBuffer");
         class_binding.def("start", &I_EventsStream::start, pybind_doc_hal["Metavision::I_EventsStream::start"])
             .def("stop", &I_EventsStream::stop, pybind_doc_hal["Metavision::I_EventsStream::stop"])
             .def("poll_buffer", &I_EventsStream::poll_buffer, pybind_doc_hal["Metavision::I_EventsStream::poll_buffer"])
@@ -55,5 +41,12 @@ static HALFacilityPythonBinder<I_EventsStream> bind(
                  pybind_doc_hal["Metavision::I_EventsStream::stop_log_raw_data"]);
     },
     "I_EventsStream", pybind_doc_hal["Metavision::I_EventsStream"]);
+
+static HALFacilityPythonBinder<DataTransfer::BufferPtr> bind_buffer_ptr(
+    [](auto &module, auto &class_binding) {
+        class_binding.def("size", &DataTransfer::BufferPtr::size,
+                          pybind_doc_hal["Metavision::DataTransfer::BufferPtr::size"]);
+    },
+    "RawBuffer", pybind_doc_hal["Metavision::DataTransfer::BufferPtr"]);
 
 } // namespace Metavision

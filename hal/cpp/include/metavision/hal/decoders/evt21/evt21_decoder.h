@@ -12,7 +12,10 @@
 #ifndef METAVISION_HAL_EVT21_DECODER_H
 #define METAVISION_HAL_EVT21_DECODER_H
 
+#include <variant>
+
 #include "metavision/sdk/base/events/event_cd.h"
+#include "metavision/sdk/base/events/event_cd_vector.h"
 #include "metavision/sdk/base/events/event_ext_trigger.h"
 #include "metavision/sdk/base/events/event_erc_counter.h"
 #include "metavision/sdk/base/utils/detail/bitinstructions.h"
@@ -20,24 +23,31 @@
 #include "metavision/hal/facilities/i_events_stream_decoder.h"
 #include "metavision/hal/decoders/base/event_base.h"
 #include "metavision/hal/decoders/evt21/evt21_event_types.h"
+#include "metavision/hal/utils/detail/type_check.h"
 
 namespace Metavision {
 
 template<typename RawEvent, typename Event_TIME_HIGH, typename Event_2D, typename Event_EXT_TRIGGER,
-         typename Event_OTHERS>
+         typename Event_OTHERS, typename OutputCDType = EventCD>
 class EVT21GenericDecoder : public I_EventsStreamDecoder {
 public:
-    using EventTypesEnum = Evt21EventTypes_4bits;
+    using EventTypesEnum   = Evt21EventTypes_4bits;
+    using EventCDForwarder = I_EventsStreamDecoder::DecodedEventForwarder<OutputCDType>;
+    using OutputCDTypes    = std::variant<EventCD, EventCDVector>;
 
-    EVT21GenericDecoder(
-        bool time_shifting_enabled,
-        const std::shared_ptr<I_EventDecoder<EventCD>> &event_cd_decoder = std::shared_ptr<I_EventDecoder<EventCD>>(),
-        const std::shared_ptr<I_EventDecoder<EventExtTrigger>> &event_ext_trigger_decoder =
-            std::shared_ptr<I_EventDecoder<EventExtTrigger>>(),
-        const std::shared_ptr<I_EventDecoder<EventERCCounter>> &erc_count_event_decoder =
-            std::shared_ptr<I_EventDecoder<EventERCCounter>>()) :
+    EVT21GenericDecoder(bool time_shifting_enabled,
+                        const std::shared_ptr<I_EventDecoder<OutputCDType>> &event_cd_decoder =
+                            std::shared_ptr<I_EventDecoder<OutputCDType>>(),
+                        const std::shared_ptr<I_EventDecoder<EventExtTrigger>> &event_ext_trigger_decoder =
+                            std::shared_ptr<I_EventDecoder<EventExtTrigger>>(),
+                        const std::shared_ptr<I_EventDecoder<EventERCCounter>> &erc_count_event_decoder =
+                            std::shared_ptr<I_EventDecoder<EventERCCounter>>()) :
         I_EventsStreamDecoder(time_shifting_enabled, event_cd_decoder, event_ext_trigger_decoder,
-                              erc_count_event_decoder) {}
+                              erc_count_event_decoder) {
+        static_assert(Metavision::detail::is_in_type_list_v<OutputCDType, OutputCDTypes>,
+                      "Error, cannot construct EVT21GenericDecoder with specified OutputCDType... Supported types are: "
+                      "{EventCD, EventCDVector}.");
+    }
 
     virtual timestamp get_last_timestamp() const override final {
         if (!last_timestamp_set_) {
@@ -60,7 +70,11 @@ public:
 private:
     template<bool DO_TIMESHIFT>
     timestamp last_timestamp() const {
-        return DO_TIMESHIFT ? last_timestamp_ - timestamp_shift_ : last_timestamp_;
+        if constexpr (DO_TIMESHIFT) {
+            return last_timestamp_ - timestamp_shift_;
+        } else {
+            return last_timestamp_;
+        }
     }
 
     void decode_impl(const RawData *const cur_raw_data, const RawData *const raw_data_end) override {
@@ -95,7 +109,7 @@ private:
 
     template<bool DO_TIMESHIFT>
     void decode_events_buffer(const RawEvent *&cur_raw_ev, const RawEvent *const raw_ev_end) {
-        auto &cd_forwarder        = cd_event_forwarder();
+        auto &cd_forwarder        = cd_event_forwarder<OutputCDType>();
         auto &trigger_forwarder   = trigger_event_forwarder();
         auto &erc_count_forwarder = erc_count_event_forwarder();
 
@@ -108,21 +122,29 @@ private:
             if (type == static_cast<EventTypesUnderlying_t>(Evt21EventTypes_4bits::EVT_POS) ||
                 type == static_cast<EventTypesUnderlying_t>(Evt21EventTypes_4bits::EVT_NEG)) {
                 const Event_2D *ev_td = reinterpret_cast<const Event_2D *>(cur_ev);
-                uint16_t last_x       = ev_td->x;
+                uint16_t base_x       = ev_td->x;
                 uint16_t y            = ev_td->y;
 
                 last_timestamp_     = (last_timestamp_ & ~((1ULL << 6) - 1)) + ev_td->ts;
                 last_timestamp_set_ = true;
 
-                uint32_t valid     = ev_td->valid;
+                uint32_t vector_mask     = ev_td->valid;
                 const RawEvent *ev = reinterpret_cast<const RawEvent *>(cur_ev);
-                bool pol           = ev->type == static_cast<EventTypesUnderlying_t>(Evt21EventTypes_4bits::EVT_POS);
-                uint16_t off       = 0;
-                while (valid) {
-                    off = ctz_not_zero(valid);
-                    valid &= ~(1 << off);
-                    cd_forwarder.forward(last_x + off, y, static_cast<short>(pol), last_timestamp<DO_TIMESHIFT>());
+                bool polarity            = ev->type == static_cast<EventTypesUnderlying_t>(Evt21EventTypes_4bits::EVT_POS);
+
+                if constexpr (std::is_same_v<OutputCDType, EventCD>) {
+                    uint16_t offset = 0;
+                    while (vector_mask) {
+                        offset = ctz_not_zero(vector_mask);
+                        vector_mask &= ~(1 << offset);
+                        cd_forwarder.forward(base_x + offset, y, static_cast<short>(polarity), last_timestamp<DO_TIMESHIFT>());
+                    }
                 }
+
+                if constexpr (std::is_same_v<OutputCDType, EventCDVector>) {
+                    cd_forwarder.forward(base_x, y, polarity, vector_mask, last_timestamp<DO_TIMESHIFT>());
+                }
+
                 ++cur_ev;
             } else if (type == static_cast<EventTypesUnderlying_t>(Evt21EventTypes_4bits::EVT_TIME_HIGH)) {
                 const Event_TIME_HIGH *ev_timehigh = reinterpret_cast<const Event_TIME_HIGH *>(cur_ev);
@@ -222,6 +244,9 @@ using EVT21Decoder = EVT21GenericDecoder<Evt21Raw::RawEvent, Evt21Raw::Event_TIM
 using EVT21LegacyDecoder =
     EVT21GenericDecoder<Evt21LegacyRaw::RawEvent, Evt21LegacyRaw::Event_TIME_HIGH, Evt21LegacyRaw::Event_2D,
                         Evt21LegacyRaw::Event_EXT_TRIGGER, Evt21LegacyRaw::Event_OTHERS>;
+
+using EVT21VectorizedDecoder = EVT21GenericDecoder<Evt21Raw::RawEvent, Evt21Raw::Event_TIME_HIGH, Evt21Raw::Event_2D,
+                                                   Evt21Raw::Event_EXT_TRIGGER, Evt21Raw::Event_OTHERS, EventCDVector>;
 
 } // namespace Metavision
 

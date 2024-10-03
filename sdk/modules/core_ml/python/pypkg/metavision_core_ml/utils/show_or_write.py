@@ -10,6 +10,11 @@
 This wrapper shows and/or writes a video
 """
 import cv2
+import numpy as np
+# Temporary solution to fix the numpy deprecated alias in skvideo: https://github.com/scikit-video/scikit-video/issues/154#issuecomment-1445239790
+# Will be deleted in MV-2134 when skvideo makes the correction
+np.float = np.float64
+np.int = np.int_
 from skvideo.io import FFmpegWriter
 import os
 

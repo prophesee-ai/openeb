@@ -49,13 +49,13 @@ TEST_F_WITH_CAMERA(I_HW_Identification_GTest, hd_get_available_data_encoding_for
 TEST_F_WITH_CAMERA(I_HW_Identification_GTest, hd_get_available_data_encoding_formats_psee_gen31,
                    camera_params(camera_param().integrator("Prophesee").generation("3.1"))) {
     ASSERT_EQ(1, hw_id_->get_available_data_encoding_formats().size());
-    if (hw_id_->get_system_id() == 0x28) {
-        ASSERT_EQ("EVT3", hw_id_->get_available_data_encoding_formats()[0]);
-        ASSERT_EQ("EVT3", hw_id_->get_current_data_encoding_format());
-    } else {
-        ASSERT_EQ("EVT2", hw_id_->get_available_data_encoding_formats()[0]);
-        ASSERT_EQ("EVT2", hw_id_->get_current_data_encoding_format());
-    }
+    auto available = hw_id_->get_available_data_encoding_formats()[0];
+    auto current = hw_id_->get_current_data_encoding_format();
+
+    // Gen3.1 systems exist with either of these encodings
+    ASSERT_TRUE((available == "EVT2") || (available == "EVT3"));
+    ASSERT_TRUE((current == "EVT2") || (current == "EVT3"));
+    ASSERT_EQ(available, current);
 }
 
 TEST_F_WITH_CAMERA(I_HW_Identification_GTest, hd_get_available_data_encoding_formats_psee_gen4,

@@ -9,19 +9,16 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-
 #ifndef METAVISION_HAL_TZ_LIBUSB_BOARD_COMMAND_H
 #define METAVISION_HAL_TZ_LIBUSB_BOARD_COMMAND_H
 
 #include <cstdint>
-#include <list>
 #include <mutex>
 #include <string>
 #include <vector>
-#include <map>
-#include <functional>
 #include <memory>
 
+#include "metavision/hal/utils/data_transfer.h"
 #include "metavision/psee_hw_layer/boards/utils/psee_libusb.h"
 #include "metavision/psee_hw_layer/boards/treuzell/board_command.h"
 
@@ -44,7 +41,7 @@ struct BoardQuirks {
     bool do_not_set_config;
 };
 
-class TzLibUSBBoardCommand: public virtual BoardCommand {
+class TzLibUSBBoardCommand : public virtual BoardCommand {
 public:
     TzLibUSBBoardCommand() = delete;
     TzLibUSBBoardCommand(std::shared_ptr<LibUSBContext> ctx, libusb_device *dev, libusb_device_descriptor &desc,
@@ -69,7 +66,7 @@ public:
     void write_device_register(uint32_t device, uint32_t address, const std::vector<uint32_t> &val) override;
 
     // @brief Create a new DataTransfer object to stream the currently opened device
-    std::unique_ptr<DataTransfer> build_data_transfer(uint32_t raw_event_size_bytes) override;
+    std::unique_ptr<DataTransfer::RawDataProducer> build_raw_data_producer(uint32_t raw_event_size_bytes) override;
 
 private:
     bool clear_endpoint();

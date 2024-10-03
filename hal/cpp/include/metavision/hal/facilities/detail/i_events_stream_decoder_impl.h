@@ -12,6 +12,12 @@
 #ifndef METAVISION_HAL_I_EVENTS_STREAM_DECODER_IMPL_H
 #define METAVISION_HAL_I_EVENTS_STREAM_DECODER_IMPL_H
 
+#include <variant>
+
+#include "metavision/sdk/base/events/event_cd.h"
+#include "metavision/sdk/base/events/event_cd_vector.h"
+#include "metavision/hal/utils/detail/type_check.h"
+
 namespace Metavision {
 
 template<typename Event, int BUFFER_SIZE>
@@ -60,9 +66,25 @@ void I_EventsStreamDecoder::DecodedEventForwarder<Event, BUFFER_SIZE>::add_event
     ev_it_ = ev_buf_.begin();
 }
 
-inline I_EventsStreamDecoder::DecodedEventForwarder<EventCD> &I_EventsStreamDecoder::cd_event_forwarder() {
-    return *cd_event_forwarder_;
+template<typename OutputCDType>
+inline I_EventsStreamDecoder::DecodedEventForwarder<OutputCDType> &I_EventsStreamDecoder::cd_event_forwarder() {
+    using OutputCDTypes = std::variant<EventCD, EventCDVector>;
+
+    static_assert( 
+        detail::is_in_type_list_v<OutputCDType, OutputCDTypes>,
+        "Error, cannot construct I_EventsStreamDecoder::DecodedEventForwarder with specified OutputCDType... Supported types are: {EventCD, EventCDVector}." 
+    );  
+
+    if constexpr(std::is_same_v<OutputCDType, EventCD>){
+        return *cd_event_forwarder_;
+    }
+
+    if constexpr(std::is_same_v<OutputCDType, EventCDVector>){
+        return *cd_event_vector_forwarder_;
+    }
+
 }
+
 
 inline I_EventsStreamDecoder::DecodedEventForwarder<EventExtTrigger, 1> &
     I_EventsStreamDecoder::trigger_event_forwarder() {

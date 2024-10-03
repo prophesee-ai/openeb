@@ -8,7 +8,7 @@
 # See the License for the specific language governing permissions and limitations under the License.
 
 add_executable(metavision_platform_info metavision_platform_info.cpp)
-target_link_libraries(metavision_platform_info PRIVATE MetavisionSDK::base metavision_hal metavision_hal_discovery Boost::program_options Boost::filesystem)
+target_link_libraries(metavision_platform_info PRIVATE MetavisionSDK::base metavision_hal metavision_hal_discovery Boost::program_options)
 
 install(TARGETS metavision_platform_info
         RUNTIME DESTINATION bin

@@ -122,18 +122,16 @@ def main(raw_args=None):
             default_root_dir=params.root_dir,
             callbacks=[checkpoint_callback, demo_callback],
             logger=logger,
-            accelerator="cpu" if params.cpu else "gpu",
-            gpus=0 if params.cpu else 1,
+            accelerator="cpu" if params.cpu else "auto",
             precision=params.precision,
             accumulate_grad_batches=params.accumulate_grad_batches,
             max_epochs=params.epochs,
-            resume_from_checkpoint=ckpt,
             log_every_n_steps=5,
             limit_train_batches=params.limit_train_batches,
             limit_val_batches=params.limit_val_batches,
         )
 
-        trainer.fit(model, data)
+        trainer.fit(model, data, ckpt_path=ckpt)
 
 
 if __name__ == '__main__':

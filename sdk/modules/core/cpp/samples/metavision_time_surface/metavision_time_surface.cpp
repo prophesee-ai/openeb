@@ -15,7 +15,7 @@
 
 // Basic utils for camera streaming
 #include <metavision/sdk/base/utils/log.h>
-#include <metavision/sdk/driver/camera.h>
+#include <metavision/sdk/stream/camera.h>
 #include <metavision/sdk/ui/utils/event_loop.h>
 #include <metavision/sdk/ui/utils/window.h>
 
@@ -77,8 +77,8 @@ int main(int argc, char *argv[]) {
     }
 
     // Get camera resolution
-    const int camera_width  = camera.geometry().width();
-    const int camera_height = camera.geometry().height();
+    const int camera_width  = camera.geometry().get_width();
+    const int camera_height = camera.geometry().get_height();
 
     // To render the frames, we create a window using the Window class of the UI
     // module

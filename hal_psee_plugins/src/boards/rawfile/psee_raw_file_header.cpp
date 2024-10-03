@@ -49,7 +49,6 @@ static const std::string legacy_evt21_value      = "2.1";
 
 PseeRawFileHeader::PseeRawFileHeader(const I_HW_Identification &hw, const StreamFormat &format) {
     set_serial(hw.get_serial());
-    set_system_id(hw.get_system_id());
     set_sensor_info(hw.get_sensor_info());
     set_format(format);
 }

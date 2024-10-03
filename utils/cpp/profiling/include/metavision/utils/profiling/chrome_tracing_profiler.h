@@ -11,6 +11,7 @@
 
 #include <cstdint>
 #include <chrono>
+#include <filesystem>
 #include <mutex>
 #include <sstream>
 
@@ -127,7 +128,7 @@ private:
 
     void store_event(ProfileEvent &&event);
 
-    std::string output_path_;  ///< Path to the file where profiling logs will be saved
+    std::filesystem::path output_path_;  ///< Path to the file where profiling logs will be saved
     bool save_on_destruction_; ///< Flag to indicate if the profiling logs have to be saved when the destructor is
                                ///< called
     chrono::time_point start_; ///< Starting timestamp

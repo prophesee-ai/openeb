@@ -9,6 +9,7 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
+#include <filesystem>
 #include <vector>
 #include <string>
 
@@ -24,8 +25,9 @@ public:
     ~PluginLoader();
 
     void clear_folders();
-    void insert_folder(const std::string &folder);
+    void insert_folder(const std::filesystem::path &folder);
     void insert_folders(const std::vector<std::string> &folders);
+    void insert_folders(const std::vector<std::filesystem::path> &folders);
 
     void load_plugins();
     void unload_plugins();
@@ -37,10 +39,10 @@ private:
     struct PluginInfo;
     struct Library;
 
-    void insert_plugin(const std::string &name, const std::string &library_path);
+    void insert_plugin(const std::string &name, const std::filesystem::path &library_path);
     void insert_plugin(const PluginInfo &info);
 
-    std::vector<std::string> folders_;
+    std::vector<std::filesystem::path> folders_;
     std::vector<std::unique_ptr<Library>> libraries_;
 
     static std::unique_ptr<Plugin> make_plugin(const std::string &plugin_name);

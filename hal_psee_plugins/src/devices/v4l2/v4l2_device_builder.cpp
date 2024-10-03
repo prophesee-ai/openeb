@@ -13,7 +13,6 @@
 
 #include "metavision/psee_hw_layer/boards/treuzell/board_command.h"
 #include "metavision/psee_hw_layer/boards/v4l2/v4l2_board_command.h"
-#include "metavision/psee_hw_layer/boards/utils/psee_libusb_data_transfer.h"
 #include "metavision/psee_hw_layer/utils/psee_format.h"
 #include "metavision/psee_hw_layer/utils/register_map.h"
 #include "metavision/psee_hw_layer/facilities/psee_hw_register.h"
@@ -50,6 +49,9 @@
 #include "devices/v4l2/v4l2_device_builder.h"
 #include "utils/make_decoder.h"
 #include "devices/common/sensor_descriptor.h"
+
+#include <sys/ioctl.h>
+#include <linux/videodev2.h>
 
 namespace Metavision {
 
@@ -126,6 +128,16 @@ static SensorDescriptor *get_sensor_descriptor(std::shared_ptr<BoardCommand> cmd
             "EVT21;height=320;width=320",
         },
         {
+            GenX320ESRegisterMap,
+            GenX320ESRegisterMapSize,
+            genx320_spawn_facilities,
+            {
+                {.addr = 0x14, .value = 0xb0602003, .mask = 0xFFFFFFFF},
+            },
+            {320, 1, "GenX320MP"},
+            "EVT21;height=320;width=320",
+        },
+        {
             Imx636RegisterMap,
             Imx636RegisterMapSize,
             imx636_spawn_facilities,
@@ -175,7 +187,52 @@ bool V4L2DeviceBuilder::build_device(std::shared_ptr<BoardCommand> cmd, DeviceBu
 
     auto v4l2cmd = std::dynamic_pointer_cast<V4L2BoardCommand>(cmd);
 
-    auto ctrl          = v4l2cmd->get_device_control();
+    auto ctrl = v4l2cmd->get_device_control();
+    {
+        // This plugin code does not set format yet, it shall be set before starting Metavision SDK, but several values
+        // are possible. Update sensor information accordingly.
+        struct v4l2_format fmt {
+            .type = V4L2_BUF_TYPE_VIDEO_CAPTURE
+        };
+
+        if (ioctl(ctrl->get_fd(), VIDIOC_G_FMT, &fmt))
+            raise_error("VIDIOC_G_FMT failed");
+
+        switch (fmt.fmt.pix.pixelformat) {
+        case v4l2_fourcc('P', 'S', 'E', 'E'): {
+            StreamFormat format("EVT2");
+            format["width"]                    = std::to_string(fmt.fmt.pix.width);
+            format["height"]                   = std::to_string(fmt.fmt.pix.height);
+            sensor_descriptor->encoding_format = format.to_string();
+            break;
+        }
+        case v4l2_fourcc('P', 'S', 'E', '1'): {
+            StreamFormat format("EVT21");
+            format["endianness"]               = "legacy";
+            format["width"]                    = std::to_string(fmt.fmt.pix.width);
+            format["height"]                   = std::to_string(fmt.fmt.pix.height);
+            sensor_descriptor->encoding_format = format.to_string();
+            break;
+        }
+        case v4l2_fourcc('P', 'S', 'E', '2'): {
+            StreamFormat format("EVT21");
+            format["width"]                    = std::to_string(fmt.fmt.pix.width);
+            format["height"]                   = std::to_string(fmt.fmt.pix.height);
+            sensor_descriptor->encoding_format = format.to_string();
+            break;
+        }
+        case v4l2_fourcc('P', 'S', 'E', '3'): {
+            StreamFormat format("EVT3");
+            format["width"]                    = std::to_string(fmt.fmt.pix.width);
+            format["height"]                   = std::to_string(fmt.fmt.pix.height);
+            sensor_descriptor->encoding_format = format.to_string();
+            break;
+        }
+        default:
+            // Possibly hacky configuration to get things working. Assume default format
+            break;
+        }
+    }
     auto cap           = ctrl->get_capability();
     auto software_info = device_builder.get_plugin_software_info();
     auto hw_identification =
@@ -185,7 +242,7 @@ bool V4L2DeviceBuilder::build_device(std::shared_ptr<BoardCommand> cmd, DeviceBu
         size_t raw_size_bytes = 0;
         auto format           = StreamFormat(hw_identification->get_current_data_encoding_format());
         auto decoder          = make_decoder(device_builder, format, raw_size_bytes, false);
-        device_builder.add_facility(std::make_unique<I_EventsStream>(v4l2cmd->build_data_transfer(raw_size_bytes),
+        device_builder.add_facility(std::make_unique<I_EventsStream>(v4l2cmd->build_raw_data_producer(raw_size_bytes),
                                                                      hw_identification, decoder, ctrl));
     } catch (std::exception &e) { MV_HAL_LOG_WARNING() << "System can't stream:" << e.what(); }
 

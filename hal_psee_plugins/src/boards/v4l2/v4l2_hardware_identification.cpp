@@ -8,10 +8,6 @@ V4l2HwIdentification::V4l2HwIdentification(const V4l2Capability cap,
                                            const SensorDescriptor &sensor_descriptor) :
     I_HW_Identification(plugin_sw_info), cap_(cap), sensor_descriptor_(sensor_descriptor) {}
 
-long V4l2HwIdentification::get_system_id() const {
-    // @TODO Retrieve those info through V4L2
-    return 1234;
-}
 I_HW_Identification::SensorInfo V4l2HwIdentification::get_sensor_info() const {
     // @TODO Retrieve those info through V4L2
     return sensor_descriptor_.info;

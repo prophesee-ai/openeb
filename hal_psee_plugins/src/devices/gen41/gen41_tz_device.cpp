@@ -42,10 +42,9 @@
 using vfield = std::map<std::string, uint32_t>;
 
 namespace Metavision {
-namespace {
-std::string ROOT_PREFIX   = "PSEE/GEN41/";
-std::string SENSOR_PREFIX = "";
-} // namespace
+
+std::string TzGen41::ROOT_PREFIX   = "PSEE/GEN41/";
+std::string TzGen41::SENSOR_PREFIX = "";
 
 TzGen41::TzGen41(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id, std::shared_ptr<TzDevice> parent) :
     TzDevice(cmd, dev_id, parent),
@@ -65,6 +64,7 @@ std::shared_ptr<TzDevice> TzGen41::build(std::shared_ptr<TzLibUSBBoardCommand> c
         return nullptr;
     }
 }
+
 static TzRegisterBuildMethod method("psee,ccam5_gen41", TzGen41::build, TzGen41::can_build);
 
 bool TzGen41::can_build(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id) {

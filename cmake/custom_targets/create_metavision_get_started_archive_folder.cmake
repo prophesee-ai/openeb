@@ -71,14 +71,14 @@ endfunction()
 
 # Add some Metavision Python samples to the metavision-get-started folder
 copy_python_sample("sdk/modules/core/python/samples/metavision_time_surface" "")
-copy_python_sample("sdk/modules/ml/python_extended/samples/flow_inference" "flow_viz.py")
+copy_python_sample("sdk/modules/ml/python/samples/flow_inference" "")
 
 # Add some Metavision C++ samples to the metavision-get-started folder
 copy_cpp_sample("sdk/modules/core/cpp/samples/metavision_time_surface")
 copy_cpp_sample("sdk/modules/core/cpp/samples/metavision_dummy_radar")
 
 # Copy license files
-set(LICENSE_FILES "licensing/LICENSE_METAVISION_SDK" "licensing/LICENSE_OPEN")
+set(LICENSE_FILES "licensing/LICENSE_METAVISION_SDK" "licensing/LICENSE_OPEN" "licensing/OPEN_SOURCE_3RDPARTY_NOTICES")
 foreach (file ${LICENSE_FILES})
     file(COPY "${PROJECT_SOURCE_DIR}/${file}"
         DESTINATION "${METAVISION_GET_STARTED_FOLDER}/licensing"

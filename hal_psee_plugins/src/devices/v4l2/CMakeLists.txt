@@ -10,7 +10,7 @@
 if(NOT HAS_V4L2 OR ANDROID)
     return()
 endif()
-
+ 
 target_sources(metavision_psee_hw_layer_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/v4l2_device_builder.cpp
 )

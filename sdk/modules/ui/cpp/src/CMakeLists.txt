@@ -10,7 +10,6 @@ target_sources(metavision_sdk_ui PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/base_glfw_window.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/base_window.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/event_loop.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/frame_display_stage.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/mt_window.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/texture_utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/window.cpp

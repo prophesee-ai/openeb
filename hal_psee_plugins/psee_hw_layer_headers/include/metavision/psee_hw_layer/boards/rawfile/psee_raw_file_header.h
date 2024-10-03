@@ -35,9 +35,9 @@ public:
 
     std::string get_serial() const;
 
-    long get_system_id() const;
-
     // This isn't part of standard I_HW_Identification
+    void set_system_id(long system_id);
+    long get_system_id() const;
     void set_sub_system_id(long);
     long get_sub_system_id() const;
 
@@ -48,7 +48,6 @@ public:
 private:
     void check_header();
     void set_serial(std::string);
-    void set_system_id(long system_id);
     void set_sensor_info(const I_HW_Identification::SensorInfo &);
     void set_system_version(long);
     void set_format(const StreamFormat &);

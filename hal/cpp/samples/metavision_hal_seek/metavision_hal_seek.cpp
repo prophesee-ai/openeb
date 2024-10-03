@@ -9,7 +9,6 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-#include <iostream>
 #include <thread>
 #include <opencv2/highgui/highgui.hpp>
 #include <boost/program_options.hpp>
@@ -167,7 +166,7 @@ int main(int argc, char **argv) {
                 i_eventsstreamdecoder->reset_last_timestamp(ts_reached);
                 while (i_eventsstream->wait_next_buffer() > 0) {
                     auto buffer = i_eventsstream->get_latest_raw_data();
-                    i_eventsstreamdecoder->decode(buffer->data(), buffer->data() + buffer->size());
+                    i_eventsstreamdecoder->decode(buffer);
                     if (i_eventsstreamdecoder->get_last_timestamp() > seek_ts + accumulation_time) {
                         break;
                     }

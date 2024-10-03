@@ -22,7 +22,7 @@
 #include <metavision/sdk/core/algorithms/event_frame_diff_generation_algorithm.h>
 #include <metavision/sdk/core/algorithms/event_frame_histo_generation_algorithm.h>
 #include <metavision/hal/facilities/i_hw_identification.h>
-#include <metavision/sdk/driver/camera.h>
+#include <metavision/sdk/stream/camera.h>
 #include <metavision/sdk/ui/utils/window.h>
 #include <metavision/sdk/ui/utils/event_loop.h>
 
@@ -121,13 +121,13 @@ int main(int argc, char *argv[]) {
         return 2;
     }
 
-    const int camera_width  = camera.geometry().width();
-    const int camera_height = camera.geometry().height();
+    const int camera_width  = camera.geometry().get_width();
+    const int camera_height = camera.geometry().get_height();
     const int npixels       = camera_width * camera_height;
 
     // Instantiate generator for event frame diff and visualization functor
-    Metavision::EventFrameDiffGenerationAlgorithm diff_generator(camera_width, camera_height, diff_bit_size,
-                                                                 diff_allow_rollover, min_generation_period_us);
+    Metavision::EventFrameDiffGenerationAlgorithm<const Metavision::EventCD *> diff_generator(
+        camera_width, camera_height, diff_bit_size, diff_allow_rollover, min_generation_period_us);
     Metavision::RawEventFrameDiff evframe_diff;
     const double diff_rescaler = 128. / (1 << (diff_bit_size - 1));
     auto diff_to_viz_fct       = [&](int8_t diff_val) {
@@ -136,7 +136,7 @@ int main(int argc, char *argv[]) {
     };
 
     // Instantiate generator for event frame histo and visualization functor
-    Metavision::EventFrameHistoGenerationAlgorithm histo_generator(
+    Metavision::EventFrameHistoGenerationAlgorithm<const Metavision::EventCD *> histo_generator(
         camera_width, camera_height, histo_bit_size_neg, histo_bit_size_pos, histo_packed, min_generation_period_us);
     Metavision::RawEventFrameHisto evframe_histo;
     const uint8_t histo_packed_neg_mask  = (1 << histo_bit_size_neg) - 1;

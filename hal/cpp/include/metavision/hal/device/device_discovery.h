@@ -12,6 +12,7 @@
 #ifndef METAVISION_HAL_DEVICE_DISCOVERY_H
 #define METAVISION_HAL_DEVICE_DISCOVERY_H
 
+#include <filesystem>
 #include <list>
 #include <memory>
 #include <string>
@@ -38,9 +39,6 @@ struct PluginCameraDescription {
 
     /// Type of connection used to communicate with the camera
     ConnectionType connection_;
-
-    /// System Identification number
-    long system_id_;
 };
 
 /// @brief Overloads operator == for class PluginCameraDescription
@@ -123,13 +121,14 @@ public:
     /// @brief Builds a new Device from file
     /// @param raw_file Path to the file to open
     /// @return A new Device
-    static std::unique_ptr<Device> open_raw_file(const std::string &raw_file);
+    static std::unique_ptr<Device> open_raw_file(const std::filesystem::path &raw_file);
 
     /// @brief Builds a new Device from file
     /// @param raw_file Path to the file to open
     /// @param file_config Configuration describing how to read the file (see @ref RawFileConfig)
     /// @return A new Device
-    static std::unique_ptr<Device> open_raw_file(const std::string &raw_file, const RawFileConfig &file_config);
+    static std::unique_ptr<Device> open_raw_file(const std::filesystem::path &raw_file,
+                                                 const RawFileConfig &file_config);
 
     /// @brief Builds a new Device from a standard input stream
     /// @param stream The input stream to read from. The device takes ownership of the input stream to ensure its

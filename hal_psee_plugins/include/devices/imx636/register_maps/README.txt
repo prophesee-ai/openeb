@@ -1,0 +1,2 @@
+To generate imx636_evk2_esp_registermap.h:
+psee_regmap_header --regmap_name PseeEvk2Imx636RegisterMap --array_name 'PseeEvk2Imx636RegisterMap' --sensor_version '2.0' --header_file imx636_evk2_esp_registermap.h

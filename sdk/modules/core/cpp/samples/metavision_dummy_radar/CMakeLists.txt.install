@@ -7,14 +7,15 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-project(metavision_dummy_radar)
-
 cmake_minimum_required(VERSION 3.5)
+
+project(metavision_dummy_radar)
 
 set(CMAKE_CXX_STANDARD 17)
 
-find_package(MetavisionSDK COMPONENTS core driver ui REQUIRED)
+find_package(MetavisionSDK COMPONENTS core stream ui REQUIRED)
 find_package(Boost COMPONENTS program_options REQUIRED)
+add_compile_definitions(BOOST_BIND_GLOBAL_PLACEHOLDERS) ## needed to get rid of warning `#pragma message: The practice of declaring the Bind placeholders (_1, _2, ...)`
 find_package(OpenCV COMPONENTS core highgui imgproc REQUIRED)
 
 set (sample metavision_dummy_radar)
@@ -22,7 +23,7 @@ add_executable(${sample} ${sample}.cpp activity_monitoring.cpp radar_viewer.cpp)
 target_link_libraries(${sample}
                         MetavisionSDK::base
                         MetavisionSDK::core
-                        MetavisionSDK::driver
+                        MetavisionSDK::stream
                         MetavisionSDK::ui
                         Boost::program_options
                         opencv_core
