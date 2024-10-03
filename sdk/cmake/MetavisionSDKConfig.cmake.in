@@ -31,7 +31,7 @@
 #   MetavisionSDK_VERSION_PATCH         - MetavisionSDK patch version number (Z in x.y.Z)
 #
 #
-# Implicit dependencies such as MetavisionSDK::driver requiring
+# Implicit dependencies such as MetavisionSDK::stream requiring
 # MetavisionSDK::base will be automatically detected and satisfied, even
 # if base is not specified when using find_package and if
 # MetavisionSDK::base is not added to target_link_libraries.
@@ -39,9 +39,9 @@
 #
 # Example to find MetavisionSDK libraries and use imported targets::
 #
-#   find_package(MetavisionSDK 2.1.0 REQUIRED COMPONENTS base driver)
+#   find_package(MetavisionSDK 5.0.0 REQUIRED COMPONENTS base stream)
 #   add_executable(foo foo.cpp)
-#   target_link_libraries(foo MetavisionSDK::base MetavisionSDK::driver) # or target_link_libraries(foo ${MetavisionSDK_LIBRARIES})
+#   target_link_libraries(foo MetavisionSDK::base MetavisionSDK::stream) # or target_link_libraries(foo ${MetavisionSDK_LIBRARIES})
 
 
 @PACKAGE_INIT@

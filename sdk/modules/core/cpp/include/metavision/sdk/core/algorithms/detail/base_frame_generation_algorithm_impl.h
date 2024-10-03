@@ -42,11 +42,13 @@ inline cv::Vec3b rgb(const cv::Vec3b &v) {
 template<typename EventIt>
 void BaseFrameGenerationAlgorithm::generate_frame_from_events(EventIt it_begin, EventIt it_end, cv::Mat &frame,
                                                               const uint32_t accumulation_time_us,
-                                                              const Metavision::ColorPalette &palette) {
+                                                              const Metavision::ColorPalette &palette, int flags) {
     const cv::Vec4b bg_color = get_bgra_color(palette, Metavision::ColorType::Background);
     const std::array<cv::Vec4b, 2> off_on_colors{get_bgra_color(palette, Metavision::ColorType::Negative),
                                                  get_bgra_color(palette, Metavision::ColorType::Positive)};
-    int flags = (palette != Metavision::ColorPalette::Gray ? Parameters::BGR : Parameters::GRAY);
+    if (flags == 0) {
+        flags = (palette != Metavision::ColorPalette::Gray ? Parameters::BGR : Parameters::GRAY);
+    }
 
     // Process the entire range of events if the accumulation time is set to zero, or if there's no events.
     // Otherwise, find the first event to process in the desired time interval [t-dt, t[

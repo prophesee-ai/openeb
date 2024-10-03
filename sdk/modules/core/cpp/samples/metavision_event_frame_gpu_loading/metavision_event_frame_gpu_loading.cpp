@@ -12,18 +12,18 @@
 // This code sample demonstrates how to preprocess raw event frame on a GPU using CUDA.
 
 #include <cstring>
+#include <filesystem>
 #include <iostream>
 #include <list>
 #include <thread>
 
 #include <boost/program_options.hpp>
-#include <boost/filesystem.hpp>
 #include <cuda_runtime_api.h>
 #include <cuda.h>
 #include <opencv2/imgcodecs.hpp>
 
 #include <metavision/sdk/base/utils/log.h>
-#include <metavision/sdk/driver/camera.h>
+#include <metavision/sdk/stream/camera.h>
 #include <metavision/hal/facilities/i_event_frame_decoder.h>
 
 #include "convert_event_frame.h"
@@ -103,13 +103,13 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    if (!boost::filesystem::exists(output_dir)) {
-        if (!boost::filesystem::create_directories(output_dir)) {
+    if (!std::filesystem::exists(output_dir)) {
+        if (!std::filesystem::create_directories(output_dir)) {
             MV_LOG_ERROR() << "Failed to create output directory " << output_dir;
             return 1;
         }
     }
-    if (!boost::filesystem::is_directory(output_dir)) {
+    if (!std::filesystem::is_directory(output_dir)) {
         MV_LOG_ERROR() << "Output path '" << output_dir << "' is not a directory";
         return 1;
     }
@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
             cv::Mat frame;
             frame = cv::Mat(cfg.height, cfg.width, CV_32FC3, res);
             cv::imwrite(
-                (boost::filesystem::path(output_dir) / ("histo_frame" + std::to_string(frame_idx) + ".jpg")).string(),
+                (std::filesystem::path(output_dir) / ("histo_frame" + std::to_string(frame_idx) + ".jpg")).string(),
                 frame);
 
             cudaFree(res);
@@ -153,7 +153,7 @@ int main(int argc, char *argv[]) {
             frame = cv::Mat(cfg.height, cfg.width, CV_32FC3, res);
 
             cv::imwrite(
-                (boost::filesystem::path(output_dir) / ("diff_frame" + std::to_string(frame_idx) + ".jpg")).string(),
+                (std::filesystem::path(output_dir) / ("diff_frame" + std::to_string(frame_idx) + ".jpg")).string(),
                 frame);
             ++frame_idx;
         });

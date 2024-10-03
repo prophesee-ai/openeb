@@ -95,8 +95,8 @@ Metavision::PluginLoader::PluginList get_plugins() {
         std::string delimiter = ":";
 #endif
         size_t pos = 0;
-        std::string folder;
-        std::vector<std::string> folders;
+        std::filesystem::path folder;
+        std::vector<std::filesystem::path> folders;
         while ((pos = plugin_folders.find(delimiter)) != std::string::npos) {
             folder = plugin_folders.substr(0, pos);
             MV_HAL_LOG_TRACE() << "    Adding plugin search path:" << folder;
@@ -117,7 +117,7 @@ Metavision::PluginLoader::PluginList get_plugins() {
         // Remark : we do it here (after adding folders from MV_HAL_PLUGIN_PATH)
         // because we want to look first in env var MV_HAL_PLUGIN_PATH (if set by the user)
         // and then in the installation path
-        std::string plugin_install_path = Metavision::ResourcesFolder::get_plugin_install_path();
+        auto plugin_install_path = Metavision::ResourcesFolder::get_plugin_install_path();
         if (!plugin_install_path.empty()) {
             MV_HAL_LOG_TRACE() << "    Adding plugin search path:" << plugin_install_path;
             plugin_loader.insert_folder(plugin_install_path);
@@ -196,7 +196,7 @@ std::string CameraDescription::get_full_serial() const {
 }
 
 bool operator==(const PluginCameraDescription &lhs, const PluginCameraDescription &rhs) {
-    return lhs.serial_ == rhs.serial_ && lhs.connection_ == rhs.connection_ && lhs.system_id_ == rhs.system_id_;
+    return (lhs.serial_ == rhs.serial_) && (lhs.connection_ == rhs.connection_);
 }
 bool operator!=(const PluginCameraDescription &lhs, const PluginCameraDescription &rhs) {
     return !(lhs == rhs);
@@ -418,28 +418,24 @@ std::unique_ptr<Device> DeviceDiscovery::open(const std::string &input_serial, c
     return device;
 }
 
-std::unique_ptr<Device> DeviceDiscovery::open_raw_file(const std::string &raw_file) {
+std::unique_ptr<Device> DeviceDiscovery::open_raw_file(const std::filesystem::path &raw_file) {
     const RawFileConfig cfg;
     return open_raw_file(raw_file, cfg);
 }
 
-std::unique_ptr<Device> DeviceDiscovery::open_raw_file(const std::string &raw_file, const RawFileConfig &file_config) {
+std::unique_ptr<Device> DeviceDiscovery::open_raw_file(const std::filesystem::path &raw_file,
+                                                       const RawFileConfig &file_config) {
     auto ifs = std::make_unique<std::ifstream>(raw_file, std::ios::in | std::ios::binary);
     if (!ifs->good()) {
-        throw HalException(HalErrorCode::FailedInitialization, "Unable to open RAW file '" + raw_file + "'");
+        throw HalException(HalErrorCode::FailedInitialization, "Unable to open RAW file '" + raw_file.string() + "'");
     }
 
     std::unique_ptr<Device> device;
     try {
-        device             = open_stream(std::move(ifs), file_config);
-        auto *event_stream = device->get_facility<I_EventsStream>();
-        if (event_stream) {
-            event_stream->set_underlying_filename(raw_file);
-        }
-
+        device              = open_stream(std::move(ifs), file_config);
         auto *events_stream = device->get_facility<I_EventsStream>();
         if (events_stream) {
-            events_stream->set_underlying_filename(raw_file);
+            events_stream->set_underlying_file(raw_file);
             if (file_config.build_index_ && device->get_facility<I_EventsStreamDecoder>()) {
                 // We create an additional dedicated device that we will use for indexing the RAW file
                 // We set build_index_ = false for this device, because it won't be used for seeking, so it does
@@ -459,7 +455,7 @@ std::unique_ptr<Device> DeviceDiscovery::open_raw_file(const std::string &raw_fi
             }
         }
 
-    } catch (const HalException &e) {
+    } catch (const HalException &) {
         MV_HAL_LOG_ERROR() << Log::no_space << "While opening RAW file '" << raw_file << "':" << std::endl;
         throw;
     }

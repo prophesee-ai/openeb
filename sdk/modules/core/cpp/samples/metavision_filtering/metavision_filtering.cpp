@@ -9,28 +9,29 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-// This code sample demonstrates how to use Metavision Core SDK pipeline utility to display and filter events.
-// It shows how to capture the keys pressed in a display window so as to modify the behavior of the stages while the
-// pipeline is running.
+// This code sample demonstrates how to use Metavision Core SDK utility to display and filter events.
+// It shows how to capture the keys pressed in a display window so as to modify the behavior of the filters while the
+// camera is running.
 
+#include <atomic>
 #include <functional>
+#include <vector>
 #include <boost/program_options.hpp>
-#include <metavision/sdk/core/pipeline/pipeline.h>
-#include <metavision/sdk/core/pipeline/frame_generation_stage.h>
+#include <metavision/sdk/core/algorithms/periodic_frame_generation_algorithm.h>
 #include <metavision/sdk/core/algorithms/polarity_filter_algorithm.h>
 #include <metavision/sdk/core/algorithms/roi_filter_algorithm.h>
-#include <metavision/sdk/driver/pipeline/camera_stage.h>
-#include <metavision/sdk/ui/utils/event_loop.h>
-#include <metavision/sdk/ui/pipeline/frame_display_stage.h>
+#include <metavision/sdk/stream/camera.h>
+#include <metavision/sdk/stream/camera_exception.h>
+#include "metavision/sdk/ui/utils/event_loop.h"
+#include "metavision/sdk/ui/utils/window.h"
 
 namespace po = boost::program_options;
 
-/// [PIPELINE_FILTERING_BEGIN]
 int main(int argc, char *argv[]) {
     std::string event_file_path;
 
-    const std::string short_program_desc("Code sample showing how the pipeline utility can be used to "
-                                         "create a simple application to filter and display events.\n");
+    const std::string short_program_desc("Code sample showing how to create a simple application to filter"
+                                         " and display events.\n");
 
     const std::string long_program_desc(short_program_desc + "Available keyboard options:\n"
                                                              "  - r - toggle the ROI filter algorithm\n"
@@ -66,69 +67,95 @@ int main(int argc, char *argv[]) {
 
     MV_LOG_INFO() << long_program_desc;
 
-    // A pipeline for which all added stages will automatically be run in their own processing threads (if applicable)
-    Metavision::Pipeline p(true);
-
     // Construct a camera from a recording or a live stream
     Metavision::Camera cam;
+    std::atomic<bool> should_stop = false;
     if (!event_file_path.empty()) {
         cam = Metavision::Camera::from_file(event_file_path);
     } else {
         cam = Metavision::Camera::from_first_available();
     }
-    const unsigned short width  = cam.geometry().width();
-    const unsigned short height = cam.geometry().height();
+    const unsigned short width  = cam.geometry().get_width();
+    const unsigned short height = cam.geometry().get_height();
 
-    /// Pipeline
-    //
-    //  0 (Camera) -->-- 1 (ROI) -->-- 2 (Polarity) -->-- 3 (Frame Generation) -->-- 4 (Display)
-    //
+    Metavision::RoiFilterAlgorithm roi_filter(150, 150, width - 150, height - 150, false);
+    std::atomic<bool> roi_filter_enabled = false;
+    Metavision::PolarityFilterAlgorithm pol_filter(0);
+    std::atomic<bool> pol_filter_enabled = false;
 
-    // 0) Stage producing events from a camera
-    auto &cam_stage = p.add_stage(std::make_unique<Metavision::CameraStage>(std::move(cam)));
+    // Generating a frame from filtered events using accumulation time of 30ms
+    Metavision::PeriodicFrameGenerationAlgorithm frame_generator(width, height, 30000);
 
-    // 1) Stage wrapping an ROI filter algorithm
-    auto &roi_stage = p.add_algorithm_stage(
-        std::make_unique<Metavision::RoiFilterAlgorithm>(150, 150, width - 150, height - 150, false), cam_stage, false);
+    try {
+        cam.cd().add_callback(
+            [&roi_filter_enabled, &roi_filter,
+             &pol_filter_enabled, &pol_filter,
+             &frame_generator](const Metavision::EventCD *begin, const Metavision::EventCD *end) {
+                std::vector<Metavision::EventCD> roi_filter_out;
+                if (roi_filter_enabled) {
+                    roi_filter.process_events(begin, end, std::back_inserter(roi_filter_out));
+                    begin = roi_filter_out.data();
+                    end = begin + roi_filter_out.size();
+                }
 
-    // 2) Stage wrapping a polarity filter algorithm
-    auto &pol_stage = p.add_algorithm_stage(std::make_unique<Metavision::PolarityFilterAlgorithm>(0), roi_stage, false);
+                std::vector<Metavision::EventCD> pol_filter_out;
+                if (pol_filter_enabled) {
+                    pol_filter.process_events(begin, end, std::back_inserter(pol_filter_out));
+                    begin = pol_filter_out.data();
+                    end = begin + pol_filter_out.size();
+                }
 
-    // 3) Stage generating a frame from filtered events using accumulation time of 30ms
-    auto &frame_stage = p.add_stage(std::make_unique<Metavision::FrameGenerationStage>(width, height, 30), pol_stage);
+                frame_generator.process_events(begin, end);
+            });
+    } catch (const Metavision::CameraException &e) {
+        MV_LOG_ERROR() << "Unexpected error: " << e.what();
+    }
 
-    // 4) Stage displaying the frame
-    auto &disp_stage =
-        p.add_stage(std::make_unique<Metavision::FrameDisplayStage>("CD events", width, height), frame_stage);
+    Metavision::Window window("CD events", width, height, Metavision::Window::RenderMode::BGR);
 
-    disp_stage.set_key_callback([&](Metavision::UIKeyEvent key, int scancode, Metavision::UIAction action, int mods) {
+    window.set_keyboard_callback(
+        [&roi_filter_enabled, &pol_filter_enabled, &pol_filter, &cam, &should_stop](Metavision::UIKeyEvent key,
+                                                                                    int scancode,
+                                                                                    Metavision::UIAction action, int mods) {
         if (action == Metavision::UIAction::RELEASE) {
             switch (key) {
             case Metavision::UIKeyEvent::KEY_A:
                 // show all events
-                pol_stage.set_enabled(false);
+                pol_filter_enabled = false;
                 break;
             case Metavision::UIKeyEvent::KEY_N:
                 // show only negative events
-                pol_stage.set_enabled(true);
-                pol_stage.algo().set_polarity(0);
+                pol_filter_enabled = true;
+                pol_filter.set_polarity(0);
                 break;
             case Metavision::UIKeyEvent::KEY_P:
                 // show only positive events
-                pol_stage.set_enabled(true);
-                pol_stage.algo().set_polarity(1);
+                pol_filter_enabled = true;
+                pol_filter.set_polarity(1);
                 break;
             case Metavision::UIKeyEvent::KEY_R:
                 // toggle ROI filter
-                roi_stage.set_enabled(!roi_stage.is_enabled());
+                roi_filter_enabled = !roi_filter_enabled;
+                break;
+            case Metavision::UIKeyEvent::KEY_ESCAPE:
+            case Metavision::UIKeyEvent::KEY_Q:
+                should_stop = true;
                 break;
             }
         }
     });
 
-    // Run the pipeline
-    p.run();
+    frame_generator.set_output_callback(
+        [&window](Metavision::timestamp t, cv::Mat &frame_data) {
+            if (!frame_data.empty())
+                window.show(frame_data);
+        });
+
+    cam.start();
+    while (!should_stop && cam.is_running()) {
+        Metavision::EventLoop::poll_and_dispatch();
+    }
+    cam.stop();
 
     return 0;
 }
-/// [PIPELINE_FILTERING_END]

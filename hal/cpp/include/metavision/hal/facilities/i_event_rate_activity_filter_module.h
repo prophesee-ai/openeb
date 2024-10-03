@@ -56,20 +56,6 @@ public:
     /// @return the filter state
     virtual bool is_enabled() const = 0;
 
-    /// @brief Sets the event rate threshold. Below this threshold, no events are streamed.
-    /// @param threshold_Kev_s Event rate threshold in Kevt/s
-    /// @return true if the input value was correctly set (i.e. it falls in the range of acceptable values for the
-    /// sensor)
-    [[deprecated("This function is deprecated starting with version 4.4.0. Please use "
-                 "set_thresholds() instead.")]] virtual bool
-        set_event_rate_threshold(uint32_t threshold_Kev_s) = 0;
-
-    /// @brief Gets the event rate threshold in Kevt/s below which no events are streamed
-    /// @return Event rate threshold in Kevt/s
-    [[deprecated("This function is deprecated starting with version 4.4.0. Please use "
-                 "get_thresholds() instead.")]] virtual uint32_t
-        get_event_rate_threshold() const = 0;
-
     /// @brief Gets band pass filter hysteresis thresholds supported by the sensor.
     /// @return @ref thresholds thresholds structure with values 0/1 depending if corresponding threshold is supported.
     virtual thresholds is_thresholds_supported() const = 0;
@@ -94,10 +80,6 @@ public:
     /// @return @ref thresholds event rate thresholds structure.
     virtual thresholds get_max_supported_thresholds() const = 0;
 };
-
-using I_EventRateNoiseFilterModule [[deprecated(
-    "This class name is deprecated starting version 4.4.0. Please use I_EventRateActivityFilterModule instead.")]] =
-    I_EventRateActivityFilterModule;
 
 } // namespace Metavision
 

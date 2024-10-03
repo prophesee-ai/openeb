@@ -14,20 +14,15 @@ import os
 import numpy as np
 import pytest
 
-try:
-    test_dir_path = os.path.dirname(os.path.realpath(__file__))
-    sample_dir_path = os.path.join(test_dir_path, '..', 'samples', 'metavision_interop')
-    assert os.path.isdir(sample_dir_path)
-    import sys
-    sys.path.append(sample_dir_path)
-    from extended_events_iterator import ExtendedEventsIterator
-    imports_error = False
-except ImportError as e:
-    print(e)
-    imports_error = True
+test_dir_path = os.path.dirname(os.path.realpath(__file__))
+sample_dir_path = os.path.join(test_dir_path, '..', 'samples', 'metavision_interop')
+assert os.path.isdir(sample_dir_path)
+import sys
+sys.path.append(sample_dir_path)
+
+from extended_events_iterator import ExtendedEventsIterator
 
 
-@pytest.mark.skipif(imports_error, reason="Could not import ExtendedEventsIterator")
 def pytestcase_iterator_csv_zip_eth(dataset_dir):
     """Tests initialization of all member variables after creation of RawReader object from a file"""
     # GIVEN

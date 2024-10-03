@@ -85,7 +85,11 @@ public:
 private:
     template<bool DO_TIMESHIFT>
     timestamp last_timestamp() const {
-        return DO_TIMESHIFT ? last_timestamp_.time - timestamp_shift_ : last_timestamp_.time;
+        if constexpr (DO_TIMESHIFT) {
+            return last_timestamp_.time - timestamp_shift_;
+        } else {
+            return last_timestamp_.time;
+        }
     }
 
     virtual void decode_impl(const RawData *const cur_raw_data, const RawData *const raw_data_end) override {

@@ -12,6 +12,7 @@
 #ifndef METAVISION_SDK_CORE_CV_VIDEO_RECORDER_H
 #define METAVISION_SDK_CORE_CV_VIDEO_RECORDER_H
 
+#include <filesystem>
 #include <opencv2/videoio.hpp>
 
 #include "metavision/sdk/core/utils/threaded_process.h"
@@ -23,8 +24,8 @@ namespace Metavision {
 /// @brief A simple threaded video recorder using OpenCV routines
 class CvVideoRecorder {
 public:
-    CvVideoRecorder(const std::string &output_video_file, const int fourcc, const uint32_t fps, const cv::Size &size,
-                    bool colored);
+    CvVideoRecorder(const std::filesystem::path &output_video_file, const int fourcc, const uint32_t fps,
+                    const cv::Size &size, bool colored);
 
     /// @brief Records all remaining frames then destroys the object
     ~CvVideoRecorder();

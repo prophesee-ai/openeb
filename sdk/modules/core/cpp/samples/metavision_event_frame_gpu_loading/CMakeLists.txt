@@ -22,12 +22,11 @@ if (CMAKE_CUDA_COMPILER)
     target_include_directories(${sample} PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
     target_link_libraries(${sample}
         PRIVATE
-          Boost::filesystem
           Boost::program_options
           "${OpenCV_LIBS}"
           MetavisionSDK::base
           MetavisionSDK::core
-          MetavisionSDK::driver
+          MetavisionSDK::stream
           cuda_event_frame_convert
     )
 endif(CMAKE_CUDA_COMPILER)

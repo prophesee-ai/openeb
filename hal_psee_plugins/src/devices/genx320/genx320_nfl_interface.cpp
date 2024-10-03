@@ -24,20 +24,6 @@ bool GenX320NflInterface::is_enabled() const {
     return driver_->is_enabled();
 }
 
-bool GenX320NflInterface::set_event_rate_threshold(uint32_t threshold_Kev_s) {
-    auto thres_ev_s = threshold_Kev_s * 1000;
-    auto thres_max  = driver_->get_max_supported_thresholds();
-    bool valid      = driver_->set_thresholds(
-        {thres_ev_s, thres_ev_s + 10000, thres_max.upper_bound_start, thres_max.upper_bound_stop});
-
-    return valid;
-}
-
-uint32_t GenX320NflInterface::get_event_rate_threshold() const {
-    auto thres_ev_s = driver_->get_thresholds().lower_bound_start;
-    return std::round(thres_ev_s / 1000.0);
-}
-
 I_EventRateActivityFilterModule::thresholds GenX320NflInterface::is_thresholds_supported() const {
     return driver_->is_thresholds_supported();
 }

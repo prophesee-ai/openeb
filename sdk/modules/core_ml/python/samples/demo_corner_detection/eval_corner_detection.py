@@ -22,7 +22,7 @@ import csv
 
 from metavision_core_ml.corner_detection.lightning_model import CornerDetectionLightningModel
 from metavision_core_ml.preprocessing.event_to_tensor_torch import event_cd_to_torch, event_volume
-from metavision_core_ml.corner_detection.corner_tracker import CornerTracker, CCLTracker
+from metavision_core_ml.corner_detection.corner_tracker import CornerTracker
 from metavision_core_ml.corner_detection.utils import update_nn_tracker, save_nn_corners, clean_pred, events_as_pol
 from metavision_core.event_io.py_reader import EventDatReader
 

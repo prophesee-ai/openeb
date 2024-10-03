@@ -11,6 +11,7 @@
 
 // Example of using Metavision SDK Base and Metavision HAL APIs to run a system, platform and software diagnosis.
 
+#include <filesystem>
 #include <iostream>
 #include <iomanip>
 #include <cstdio>
@@ -22,7 +23,6 @@
 #ifdef __linux__
 #include <regex>
 #endif
-#include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
 #include <metavision/sdk/base/utils/error_utils.h>
 #include <metavision/sdk/base/utils/log.h>
@@ -443,7 +443,7 @@ void do_platform_diagnosis() {
         }
     }
 
-    if (boost::filesystem::exists(boost::filesystem::path("/.dockerenv"))) {
+    if (std::filesystem::exists("/.dockerenv")) {
         MV_LOG_INFO() << Metavision::Log::no_space << std::left << std::setw(label_size) << "Docker:"
                       << "YES" << std::right;
     } else {

@@ -19,10 +19,10 @@ namespace Metavision {
 constexpr uint8_t EVT2EventsTimeStampBits = 6;
 
 enum class EVT2EventTypes : EventTypesUnderlying_t {
-    CD_LOW = static_cast<EventTypesUnderlying_t>(
-        BaseEventTypes::CD_LOW), // Left camera TD event, decrease in illumination (polarity '0')
-    CD_HIGH = static_cast<EventTypesUnderlying_t>(
-        BaseEventTypes::CD_HIGH), // Left camera TD event, increase in illumination (polarity '1')
+    CD_OFF = static_cast<EventTypesUnderlying_t>(
+        BaseEventTypes::CD_OFF), // Left camera TD event, decrease in illumination (polarity '0')
+    CD_ON = static_cast<EventTypesUnderlying_t>(
+        BaseEventTypes::CD_ON), // Left camera TD event, increase in illumination (polarity '1')
     EVT_TIME_HIGH = static_cast<EventTypesUnderlying_t>(
         BaseEventTypes::EVT_TIME_HIGH), // Timer high bits, also used to synchronize different event flows in the FPGA.
     EXT_TRIGGER = static_cast<EventTypesUnderlying_t>(BaseEventTypes::EXT_TRIGGER), // External trigger output
@@ -149,6 +149,30 @@ struct EVT2EventMonitorEndOfFrame {
 };
 static_assert(sizeof(EVT2EventMonitorEndOfFrame) == 4,
               "The size of the packed struct EVT2EventMonitorEndOfFrame is not the expected one (which is 4 bytes)");
+
+struct EVT2TimeHigh {
+    std::uint32_t ts : 28;
+    std::uint32_t type : 4;
+};
+static_assert(sizeof(EVT2TimeHigh) == 4,
+              "The size of the packed struct EVT2TimeHigh is not the expected one (which is 4 bytes)");
+
+struct EVT2EvType {
+    std::uint32_t unused : 28;
+    std::uint32_t type : 4;
+};
+static_assert(sizeof(EVT2EvType) == 4,
+              "The size of the packed struct EVT2EvType is not the expected one (which is 4 bytes)");
+
+union EVT2RawEvent {
+    std::uint32_t raw; ///< Raw data type is first to ensure correct brace initialization
+    EVT2EvType type;
+    EVT2Event2D cd;
+    EVT2TimeHigh th;
+    EVT2EventExtTrigger trig;
+};
+static_assert(sizeof(EVT2RawEvent) == 4,
+              "The size of the packed union EVT2RawEvent is not the expected one (which is 4 bytes)");
 
 } // namespace Metavision
 

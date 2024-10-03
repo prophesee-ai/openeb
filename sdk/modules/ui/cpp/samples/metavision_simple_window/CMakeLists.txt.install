@@ -7,9 +7,9 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-project(metavision_simple_window)
-
 cmake_minimum_required(VERSION 3.5)
+
+project(metavision_simple_window)
 
 set(CMAKE_CXX_STANDARD 17)
 set(OpenGL_GL_PREFERENCE GLVND)

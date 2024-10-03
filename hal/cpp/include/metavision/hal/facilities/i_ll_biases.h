@@ -12,6 +12,7 @@
 #ifndef METAVISION_HAL_I_LL_BIASES_H
 #define METAVISION_HAL_I_LL_BIASES_H
 
+#include <filesystem>
 #include <limits>
 #include <string>
 #include <map>
@@ -51,6 +52,15 @@ public:
     /// @brief Gets all biases values
     /// @return A map containing the biases values
     virtual std::map<std::string, int> get_all_biases() const = 0;
+
+    /// @brief loads biases from a bias file at biases_file_path
+    /// @throw HalException in case of failure. This could happen for example if given path does not exists.
+    /// @param src_file bias file to load biases from
+    void load_from_file(const std::filesystem::path &src_file);
+
+    /// @brief Save the current biases into a file
+    /// @param dest_file the destination file
+    void save_to_file(const std::filesystem::path &dest_file) const;
 
 protected:
     DeviceConfig device_config_;

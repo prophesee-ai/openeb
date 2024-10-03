@@ -25,13 +25,8 @@ namespace Metavision {
 
 namespace {
 
-void decode_wrapper(I_EventsStreamDecoder *decoder, py::array_t<I_EventsStream::RawData> *array) {
-    py::buffer_info buf = array->request();
-    if (buf.ndim != 1) {
-        throw std::runtime_error("Decoder need a array of events the provided buffer as " + std::to_string(buf.ndim) +
-                                 " dimensions");
-    }
-    decoder->decode((I_EventsStream::RawData *)buf.ptr, (I_EventsStream::RawData *)buf.ptr + buf.size);
+void decode_wrapper(I_EventsStreamDecoder *decoder, py::object &raw_buffer) {
+    decoder->decode(raw_buffer.cast<DataTransfer::BufferPtr &>());
 }
 
 // Provide this overload to avoid having to convert opaque vectors to py::array_t
@@ -48,7 +43,7 @@ static HALFacilityPythonBinder<I_EventsStreamDecoder> bind(
         class_binding
             .def("get_last_timestamp", &I_EventsStreamDecoder::get_last_timestamp,
                  pybind_doc_hal["Metavision::I_EventsStreamDecoder::get_last_timestamp"])
-            .def("decode", &decode_wrapper, py::arg("RawData"),
+            .def("decode", &decode_wrapper,
                  "Decodes raw data. Identifies the events in the buffer and dispatches it to the instance "
                  "Event Decoder corresponding to each event type\n"
                  "\n"

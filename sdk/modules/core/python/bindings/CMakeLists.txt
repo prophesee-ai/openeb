@@ -10,8 +10,13 @@
 set(sdk_core_python_srcs
     ${CMAKE_CURRENT_SOURCE_DIR}/adaptive_rate_events_splitter_algorithm_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/base_frame_generation_algorithm_python.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/event_bbox_python.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/contrast_map_generation_algorithm_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/colors_python.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/event_bbox_python.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/event_rescaler_algorithm_python.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/event_preprocessor_python.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/event_tracked_box_python.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/events_integration_algorithm_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/flip_x_algorithm_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/flip_y_algorithm_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/on_demand_frame_generation_algorithm_python.cpp
@@ -21,10 +26,12 @@ set(sdk_core_python_srcs
     ${CMAKE_CURRENT_SOURCE_DIR}/polarity_inverter_algorithm_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/raw_event_frame_converter_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/roi_filter_algorithm_python.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/roi_mask_algorithm_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/rolling_buffer_python.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/rotate_events_algorithm_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/shared_cd_events_buffer_producer_wrapper_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/stream_logger_algorithm_python.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/timesurface_producer_algorithm_python.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/transpose_events_algorithm_python.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/metavision_sdk_core_bindings.cpp
 )
 

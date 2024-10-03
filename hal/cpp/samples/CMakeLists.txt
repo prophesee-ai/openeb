@@ -7,10 +7,11 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-add_subdirectory(metavision_hal_showcase)
+add_subdirectory(metavision_hal_evk4_sample_plugin)
 add_subdirectory(metavision_hal_ls)
 add_subdirectory(metavision_hal_raw_cutter)
 add_subdirectory(metavision_hal_seek)
+add_subdirectory(metavision_hal_showcase)
 add_subdirectory(metavision_hal_sync)
-add_subdirectory(metavision_hal_sample_plugin)
+add_subdirectory(metavision_hal_toy_sample_plugin)
 add_subdirectory(metavision_platform_info)

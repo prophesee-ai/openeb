@@ -1,0 +1,28 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+plugins {
+    id 'com.android.application' version '7.4.0' apply false
+    id 'com.android.library' version '7.4.0' apply false
+}
+
+ext.ndk_abi = local_props("ndk.abi")
+ext.ndk_version = local_props("ndk.version")
+ext.metavision_plugin_dir = local_props("metavision.plugin.dir")
+ext.build_dir = local_props("build.dir")
+project.buildDir = build_dir
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
+
+//------------------------------------------------------------
+def local_props(key) { // returns key if already defined or reads ~ value from local.properties file
+    if (project.hasProperty(key))
+        return project.findProperty(key);
+    Properties properties = new Properties()
+    properties.load(project.rootProject.file('local.properties').newDataInputStream())
+    def val = properties.getProperty(key, null)
+    if (val == null)
+        throw new Exception("""\
+                cant find value '${key}' in file 'local.properties'.  """)
+    return val
+}

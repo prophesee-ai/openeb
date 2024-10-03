@@ -34,6 +34,7 @@ TzDevice::TzDevice(std::shared_ptr<TzLibUSBBoardCommand> cmd, uint32_t dev_id, s
 TzDevice::~TzDevice() {}
 
 void TzDevice::initialize() {
+    MV_HAL_LOG_TRACE() << "TreuzellDevice - init";
     TzGenericCtrlFrame enable(TZ_PROP_DEVICE_ENABLE | TZ_WRITE_FLAG);
     enable.push_back32(tzID);
     enable.push_back32(1);
@@ -41,6 +42,7 @@ void TzDevice::initialize() {
 }
 
 void TzDevice::destroy() {
+    MV_HAL_LOG_TRACE() << "TreuzellDevice - Destroy";
     TzGenericCtrlFrame disable(TZ_PROP_DEVICE_ENABLE | TZ_WRITE_FLAG);
     disable.push_back32(tzID);
     disable.push_back32(0);
@@ -48,6 +50,7 @@ void TzDevice::destroy() {
 }
 
 void TzDevice::start() {
+    MV_HAL_LOG_TRACE() << "TreuzellDevice - Start";
     TzGenericCtrlFrame start(TZ_PROP_DEVICE_STREAM | TZ_WRITE_FLAG);
     start.push_back32(tzID);
     start.push_back32(1);
@@ -55,6 +58,7 @@ void TzDevice::start() {
 }
 
 void TzDevice::stop() {
+    MV_HAL_LOG_TRACE() << "TreuzellDevice - Stop";
     TzGenericCtrlFrame stop(TZ_PROP_DEVICE_STREAM | TZ_WRITE_FLAG);
     stop.push_back32(tzID);
     stop.push_back32(0);

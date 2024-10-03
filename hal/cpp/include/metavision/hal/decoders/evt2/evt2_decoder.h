@@ -102,21 +102,23 @@ private:
             if (type == static_cast<EventTypesUnderlying_t>(EventTypesEnum::EVT_TIME_HIGH)) {
                 timestamp new_th          = timestamp(ev->trail) << NumBitsInTimestampLSB;
                 const auto last_base_time = base_time_;
-                if (UPDATE_LOOP) {
+                if constexpr (UPDATE_LOOP) {
                     new_th += full_shift_;
                     if (has_time_loop(new_th, base_time_)) {
                         full_shift_ += TimeLoop;
                         new_th += TimeLoop;
                     }
                     base_time_ = new_th;
+                } else if constexpr (APPLY_TIMESHIFT) {
+                    base_time_ = new_th + full_shift_;
                 } else {
-                    base_time_ = APPLY_TIMESHIFT ? new_th + full_shift_ : new_th;
+                    base_time_ = new_th;
                 }
                 // avoid momentary time discrepancies when decoding event per events, time low comes
                 // right after (in an event of another type) to correct the value
                 last_timestamp_ = (base_time_ != last_base_time ? base_time_ : last_timestamp_);
-            } else if (type == static_cast<EventTypesUnderlying_t>(EventTypesEnum::CD_LOW) ||
-                       type == static_cast<EventTypesUnderlying_t>(EventTypesEnum::CD_HIGH)) { // CD
+            } else if (type == static_cast<EventTypesUnderlying_t>(EventTypesEnum::CD_OFF) ||
+                       type == static_cast<EventTypesUnderlying_t>(EventTypesEnum::CD_ON)) { // CD
                 const EVT2Event2D *ev_td = reinterpret_cast<const EVT2Event2D *>(ev);
                 last_timestamp_          = base_time_ + ev_td->timestamp;
                 last_timestamp_set_      = true;

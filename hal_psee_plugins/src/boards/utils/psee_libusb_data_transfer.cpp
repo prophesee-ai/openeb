@@ -11,7 +11,6 @@
 
 #include <assert.h>
 #include <sstream>
-#include <algorithm>
 
 #ifdef _WIN32
 #ifndef _MSC_VER
@@ -23,11 +22,10 @@
 #define WIN_CALLBACK_DECL
 #endif
 
+#include "metavision/hal/utils/data_transfer.h"
 #include "metavision/hal/utils/hal_connection_exception.h"
-#include "metavision/psee_hw_layer/boards/utils/psee_libusb_data_transfer.h"
-#include "boards/utils/config_registers_map.h"
-
 #include "metavision/hal/utils/hal_log.h"
+#include "metavision/psee_hw_layer/boards/utils/psee_libusb_data_transfer.h"
 
 namespace Metavision {
 
@@ -87,11 +85,11 @@ public:
         } catch (const std::exception &e) { MV_HAL_LOG_TRACE() << "Exception in ~AsyncTransfer:" << e.what(); }
     }
 
-    DataTransfer::BufferPtr &&get_buf() {
+    BufferPtr &&get_buf() {
         if (!completed()) {
             throw std::runtime_error("Trying to alter an ongoing transfer");
         }
-        buf_->resize(static_cast<Buffer::size_type>(transfer_->actual_length));
+        buf_->resize(static_cast<DataTransfer::DefaultBufferType::size_type>(transfer_->actual_length));
         return std::move(buf_);
     }
     libusb_transfer_status status() const {
@@ -116,7 +114,7 @@ private:
     // The USB device for which the transfer is prepared
     std::shared_ptr<LibUSBDevice> dev_;
     // The memory to be transfered from/to
-    DataTransfer::BufferPtr buf_;
+    BufferPtr buf_;
     // The underlying object for libusb
     std::unique_ptr<libusb_transfer, libusb_free_transfer_fn> transfer_;
 
@@ -128,15 +126,16 @@ const size_t PseeLibUSBDataTransfer::packet_size_        = get_packet_size();
 const size_t PseeLibUSBDataTransfer::async_transfer_num_ = get_async_transfer_number();
 const unsigned int PseeLibUSBDataTransfer::timeout_      = static_cast<unsigned int>(get_time_out());
 
-DataTransfer::BufferPool PseeLibUSBDataTransfer::make_buffer_pool(size_t default_pool_byte_size) {
-    DataTransfer::BufferPool pool =
-        DataTransfer::BufferPool::make_unbounded(PseeLibUSBDataTransfer::async_transfer_num_, get_packet_size());
+DataTransfer::DefaultBufferPool PseeLibUSBDataTransfer::make_buffer_pool(size_t default_pool_byte_size) {
+    auto pool =
+        DataTransfer::DefaultBufferPool::make_unbounded(PseeLibUSBDataTransfer::async_transfer_num_, get_packet_size());
+
     auto buffer_pool_byte_size =
         get_envar_or_default("MV_PSEE_PLUGIN_DATA_TRANSFER_BUFFER_POOL_BYTE_SIZE", default_pool_byte_size);
     if (buffer_pool_byte_size) {
         auto num_obj_pool = buffer_pool_byte_size / packet_size_;
         MV_HAL_LOG_INFO() << "Creating Fixed size data pool of : " << num_obj_pool << "x" << packet_size_ << "B";
-        pool = DataTransfer::BufferPool::make_bounded(num_obj_pool, packet_size_);
+        pool = DataTransfer::DefaultBufferPool::make_bounded(num_obj_pool, packet_size_);
     }
 
     return pool;
@@ -144,18 +143,15 @@ DataTransfer::BufferPool PseeLibUSBDataTransfer::make_buffer_pool(size_t default
 
 PseeLibUSBDataTransfer::PseeLibUSBDataTransfer(const std::shared_ptr<LibUSBDevice> dev, EpId endpoint,
                                                uint32_t raw_event_size_bytes,
-                                               const DataTransfer::BufferPool &buffer_pool) :
-    DataTransfer(raw_event_size_bytes, buffer_pool, true),
-    dev_(dev),
-    bEpCommAddress_(endpoint),
-    vtransfer_(async_transfer_num_) {}
+                                               const DataTransfer::DefaultBufferPool &buffer_pool) :
+    buffer_pool_(buffer_pool), dev_(dev), bEpCommAddress_(endpoint), vtransfer_(async_transfer_num_) {}
 
 PseeLibUSBDataTransfer::~PseeLibUSBDataTransfer() {
     // Nothing to do, just need the definition of ~AsyncTransfer where this destructor is
     // defined, to be able to delete vtransfer_
 }
 
-void PseeLibUSBDataTransfer::start_impl(BufferPtr buffer) {
+void PseeLibUSBDataTransfer::start_impl() {
     // Drop existing URB on device side
     if (auto r = dev_->clear_halt(bEpCommAddress_); r < 0) {
         throw HalConnectionException(r, libusb_error_category());
@@ -164,22 +160,22 @@ void PseeLibUSBDataTransfer::start_impl(BufferPtr buffer) {
     auto shift   = timeout_ / async_transfer_num_;
     // Queue transfers on host side
     for (auto &transfer : vtransfer_) {
+        auto buffer = buffer_pool_.acquire();
         buffer->resize(packet_size_);
         transfer.prepare(dev_, bEpCommAddress_, std::move(buffer), timeout);
         transfer.submit();
         // Timeout is counted from submit time
         // Desynchronize the first completions so that completions happen steadily
         timeout += shift;
-        buffer = get_buffer();
     }
 }
 
-void PseeLibUSBDataTransfer::run_impl() {
+void PseeLibUSBDataTransfer::run_impl(const DataTransfer &data_transfer) {
     MV_HAL_LOG_TRACE() << "poll thread running";
     timeout_cnt_ = 0;
     try {
-        while (!should_stop()) {
-            run_transfers();
+        while (!data_transfer.should_stop()) {
+            run_transfers(data_transfer);
         }
     } catch (const HalConnectionException &e) {
         if (e.code().value() == LIBUSB_TRANSFER_CANCELLED) {
@@ -193,7 +189,7 @@ void PseeLibUSBDataTransfer::run_impl() {
     MV_HAL_LOG_TRACE() << "poll thread shutting down";
 }
 
-void PseeLibUSBDataTransfer::run_transfers() {
+void PseeLibUSBDataTransfer::run_transfers(const DataTransfer &data_producer) {
     // start() queued the transfers, wait for their completion, pass the data to DataTransfer,
     // and requeue an other buffer
     for (auto &transfer : vtransfer_) {
@@ -203,13 +199,13 @@ void PseeLibUSBDataTransfer::run_transfers() {
         // generating an event
         transfer.wait_completion();
         // if we are stopping, there is no point forwarding data and requeuing buffers
-        if (should_stop()) {
+        if (data_producer.should_stop()) {
             break;
         }
 
         // There was an event and we are still streaming, check the transfer status
         switch (transfer.status()) {
-        case LIBUSB_TRANSFER_TIMED_OUT:
+        case LIBUSB_TRANSFER_TIMED_OUT: {
             timeout_cnt_++;
             if ((timeout_cnt_ % BULK_NAK_REPORT_THRESHOLD) == 0) {
                 MV_HAL_LOG_TRACE() << "\rBulk Transfer NACK " << timeout_cnt_;
@@ -217,19 +213,21 @@ void PseeLibUSBDataTransfer::run_transfers() {
             // No data, just requeue the same buffer
             transfer.submit();
             break;
-        case LIBUSB_TRANSFER_COMPLETED:
+        }
+        case LIBUSB_TRANSFER_COMPLETED: {
             timeout_cnt_ = 0;
             // Note: unlike raw libusb, partial transfers are reported as completed
-            transfer_res.first = transfer.get_buf();
             // Pass the data and get a new buffer
-            transfer_res = transfer_data(transfer_res.first);
+            data_producer.transfer_data(transfer.get_buf());
             // Ensure the buffer can receive a transfer
-            transfer_res.first->resize(packet_size_);
+            auto buff = buffer_pool_.acquire();
+            buff->resize(packet_size_);
             // Attach it to the transfer
-            transfer.prepare(dev_, bEpCommAddress_, std::move(transfer_res.first), timeout_);
+            transfer.prepare(dev_, bEpCommAddress_, std::move(buff), timeout_);
             // Requeue the transfer with the new buffer
             transfer.submit();
             break;
+        }
         default:
             throw HalConnectionException(transfer.status(), libusb_error_category());
         }

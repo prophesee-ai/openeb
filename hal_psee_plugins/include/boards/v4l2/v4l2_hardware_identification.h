@@ -12,7 +12,6 @@ class V4l2HwIdentification : public I_HW_Identification {
 public:
     V4l2HwIdentification(const V4l2Capability cap, const std::shared_ptr<I_PluginSoftwareInfo> &plugin_sw_info, const SensorDescriptor &sensor_descriptor);
 
-    virtual long get_system_id() const override;
     virtual SensorInfo get_sensor_info() const override;
     virtual std::vector<std::string> get_available_data_encoding_formats() const override;
     virtual std::string get_current_data_encoding_format() const override;

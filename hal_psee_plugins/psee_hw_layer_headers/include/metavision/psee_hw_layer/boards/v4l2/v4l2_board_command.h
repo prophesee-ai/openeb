@@ -50,17 +50,13 @@ public:
     std::vector<uint32_t> read_device_register(uint32_t device, uint32_t address, int nval = 1) override;
     void write_device_register(uint32_t device, uint32_t address, const std::vector<uint32_t> &val) override;
 
-    // @brief Create a new DataTransfer object to stream the currently opened device
-    std::unique_ptr<DataTransfer> build_data_transfer(uint32_t raw_event_size_bytes) override;
+    // @brief Create a new RawDataProducer object to stream the currently opened device
+    std::unique_ptr<DataTransfer::RawDataProducer> build_raw_data_producer(uint32_t raw_event_size_bytes) override;
+
     void transfer_tz_frame(TzCtrlFrame &req) override;
     std::shared_ptr<V4L2DeviceControl> get_device_control();
 
 private:
-    /* bool clear_endpoint(); */
-    /* bool reset_device(); */
-
-    // Board state
-    // dd
     std::shared_ptr<V4L2DeviceControl> device_;
     std::mutex tz_control_mutex_;
     std::string manufacturer;

@@ -1,0 +1,20 @@
+command_runner
+fire==0.4.0
+h5py
+kornia
+# Newer versions of networkx require python3.9 or newer
+networkx<3
+numba>=0.58.1,<0.60
+opencv-python==4.5.5.64
+pandas
+profilehooks==1.12.0
+pytest
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.2.1
+torchvision==0.17.1
+pytorch_lightning==2.2.1
+scipy
+scikit-image
+sk-video==1.1.10
+tensorboard
+importlib-metadata<=7.1,>=6.0

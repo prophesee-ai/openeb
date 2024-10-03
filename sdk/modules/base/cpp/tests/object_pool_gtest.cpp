@@ -118,7 +118,7 @@ TEST(ObjectPool_GTest, bounded_overflow) {
 
     while (!release_thread.joinable()) {}
     std::unique_lock<std::mutex> lock(acquire_success_mutex);
-    auto ret = acquire_success_cond.wait_for(lock, std::chrono::seconds(1), [&]() { return acquire_success; });
+    auto ret = acquire_success_cond.wait_for(lock, std::chrono::milliseconds(1), [&]() { return acquire_success; });
     ASSERT_FALSE(ret);
 
     // WHEN a buffer is given back in the pool

@@ -12,174 +12,136 @@
 #include <gtest/gtest.h>
 #include <metavision/sdk/base/events/event_cd.h>
 
-#include "metavision/sdk/core/algorithms/time_surface_producer_algorithm.h"
+#include "metavision/sdk/core/preprocessors/time_surface_processor.h"
+#include "metavision/sdk/core/utils/mostrecent_timestamp_buffer.h"
 
-class TimesurfaceProducerAlgorithmGTest : public ::testing::Test {
+using InputIt = std::vector<Metavision::EventCD>::const_iterator;
+
+class TimeSurfaceProcessorGTest : public ::testing::Test {
 public:
-    TimesurfaceProducerAlgorithmGTest()          = default;
-    virtual ~TimesurfaceProducerAlgorithmGTest() = default;
+    TimeSurfaceProcessorGTest()          = default;
+    virtual ~TimeSurfaceProcessorGTest() = default;
 };
 
-TEST_F(TimesurfaceProducerAlgorithmGTest, test_output_n_positive_events) {
-    Metavision::TimeSurfaceProducerAlgorithm<1> producer(3, 3);
-    Metavision::timestamp ts;
-    Metavision::MostRecentTimestampBuffer timesurface;
-
-    producer.set_output_callback([&ts, &timesurface](Metavision::timestamp output_ts,
-                                                     const Metavision::MostRecentTimestampBuffer &output_timesurface) {
-        ts          = output_ts;
-        timesurface = output_timesurface;
-    });
+TEST_F(TimeSurfaceProcessorGTest, test_output_n_positive_events) {
+    Metavision::TimeSurfaceProcessor<InputIt, 1> producer(3, 3);
+    Metavision::MostRecentTimestampBuffer timesurface(3, 3, 1);
 
     // GIVEN
-    // - a producer that produces a one-channel time surface every 5 events, and
+    // - a producer that produces a one-channel time surface, and
     // - a buffer of 6 positive events
-    producer.set_processing_n_events(5);
-
     std::vector<Metavision::EventCD> events = {{0, 0, 1, 0}, {1, 0, 1, 1}, {2, 0, 1, 2},
                                                {0, 1, 1, 3}, {1, 1, 1, 4}, {2, 1, 1, 5}};
 
     // WHEN
     // We process the events
-    producer.process_events(events.cbegin(), events.cend());
+    producer.process_events(events.cbegin(), events.cend(), timesurface);
 
     // THEN
     // One time surface is produced and
     //                |0 1 2|
-    // timesurface =  |3 4 0|
+    // timesurface =  |3 4 5|
     //                |0 0 0|
-    ASSERT_EQ(ts, 4);
     ASSERT_EQ(timesurface.at(0, 0), 0);
     ASSERT_EQ(timesurface.at(0, 1), 1);
     ASSERT_EQ(timesurface.at(0, 2), 2);
     ASSERT_EQ(timesurface.at(1, 0), 3);
     ASSERT_EQ(timesurface.at(1, 1), 4);
-    ASSERT_EQ(timesurface.at(1, 2), 0);
+    ASSERT_EQ(timesurface.at(1, 2), 5);
     ASSERT_EQ(timesurface.at(2, 0), 0);
     ASSERT_EQ(timesurface.at(2, 1), 0);
     ASSERT_EQ(timesurface.at(2, 2), 0);
 }
 
-TEST_F(TimesurfaceProducerAlgorithmGTest, test_output_n_negative_events) {
-    Metavision::TimeSurfaceProducerAlgorithm<1> producer(3, 3);
-    Metavision::timestamp ts;
-    Metavision::MostRecentTimestampBuffer timesurface;
-
-    producer.set_output_callback([&ts, &timesurface](Metavision::timestamp output_ts,
-                                                     const Metavision::MostRecentTimestampBuffer &output_timesurface) {
-        ts          = output_ts;
-        timesurface = output_timesurface;
-    });
+TEST_F(TimeSurfaceProcessorGTest, test_output_n_negative_events) {
+    Metavision::TimeSurfaceProcessor<InputIt, 1> producer(3, 3);
+    Metavision::MostRecentTimestampBuffer timesurface(3, 3, 1);
 
     // GIVEN
-    // - a producer that produces a one-channel time surface every 5 events, and
+    // - a producer that produces a one-channel time surface, and
     // - a buffer of 6 negative events
-    producer.set_processing_n_events(5);
-
     std::vector<Metavision::EventCD> events = {{0, 0, 0, 0}, {1, 0, 0, 1}, {2, 0, 0, 2},
                                                {0, 1, 0, 3}, {1, 1, 0, 4}, {2, 1, 0, 5}};
 
     // WHEN
     // We process the events
-    producer.process_events(events.cbegin(), events.cend());
+    producer.process_events(events.cbegin(), events.cend(), timesurface);
 
     // THEN
     // One time surface is produced and
     //                |0 1 2|
-    // timesurface =  |3 4 0|
+    // timesurface =  |3 4 5|
     //                |0 0 0|
-    ASSERT_EQ(ts, 4);
     ASSERT_EQ(timesurface.at(0, 0), 0);
     ASSERT_EQ(timesurface.at(0, 1), 1);
     ASSERT_EQ(timesurface.at(0, 2), 2);
     ASSERT_EQ(timesurface.at(1, 0), 3);
     ASSERT_EQ(timesurface.at(1, 1), 4);
-    ASSERT_EQ(timesurface.at(1, 2), 0);
+    ASSERT_EQ(timesurface.at(1, 2), 5);
     ASSERT_EQ(timesurface.at(2, 0), 0);
     ASSERT_EQ(timesurface.at(2, 1), 0);
     ASSERT_EQ(timesurface.at(2, 2), 0);
 }
 
-TEST_F(TimesurfaceProducerAlgorithmGTest, test_output_n_mixed_positive_and_negative_events) {
-    Metavision::TimeSurfaceProducerAlgorithm<1> producer(3, 3);
-    Metavision::timestamp ts;
-    Metavision::MostRecentTimestampBuffer timesurface;
-
-    producer.set_output_callback([&ts, &timesurface](Metavision::timestamp output_ts,
-                                                     const Metavision::MostRecentTimestampBuffer &output_timesurface) {
-        ts          = output_ts;
-        timesurface = output_timesurface;
-    });
+TEST_F(TimeSurfaceProcessorGTest, test_output_n_mixed_positive_and_negative_events) {
+    Metavision::TimeSurfaceProcessor<InputIt, 1> producer(3, 3);
+    Metavision::MostRecentTimestampBuffer timesurface(3, 3, 1);
 
     // GIVEN
-    // - a producer that produces a one-channel time surface every 5 events, and
+    // - a producer that produces a one-channel time surface, and
     // - a buffer of 6 events (mix of positive and negative)
-    producer.set_processing_n_events(5);
-
     std::vector<Metavision::EventCD> events = {{0, 0, 1, 0}, {1, 0, 0, 1}, {2, 0, 1, 2},
                                                {0, 1, 1, 3}, {1, 1, 0, 4}, {2, 1, 0, 5}};
 
     // WHEN
     // We process the events
-    producer.process_events(events.cbegin(), events.cend());
+    producer.process_events(events.cbegin(), events.cend(), timesurface);
 
     // THEN
     // One time surface is produced and
     //                |0 1 2|
-    // timesurface =  |3 4 0|
+    // timesurface =  |3 4 5|
     //                |0 0 0|
-    ASSERT_EQ(ts, 4);
     ASSERT_EQ(timesurface.at(0, 0), 0);
     ASSERT_EQ(timesurface.at(0, 1), 1);
     ASSERT_EQ(timesurface.at(0, 2), 2);
     ASSERT_EQ(timesurface.at(1, 0), 3);
     ASSERT_EQ(timesurface.at(1, 1), 4);
-    ASSERT_EQ(timesurface.at(1, 2), 0);
+    ASSERT_EQ(timesurface.at(1, 2), 5);
     ASSERT_EQ(timesurface.at(2, 0), 0);
     ASSERT_EQ(timesurface.at(2, 1), 0);
     ASSERT_EQ(timesurface.at(2, 2), 0);
 }
 
-TEST_F(TimesurfaceProducerAlgorithmGTest, test_output_n_mixed_events_two_channels) {
-    Metavision::TimeSurfaceProducerAlgorithm<2> producer(3, 3);
-    Metavision::timestamp ts;
-    Metavision::MostRecentTimestampBuffer timesurface;
-
-    producer.set_output_callback([&ts, &timesurface](Metavision::timestamp output_ts,
-                                                     const Metavision::MostRecentTimestampBuffer &output_timesurface) {
-        ts          = output_ts;
-        timesurface = output_timesurface;
-    });
+TEST_F(TimeSurfaceProcessorGTest, test_output_n_mixed_events_two_channels) {
+    Metavision::TimeSurfaceProcessor<InputIt, 2> producer(3, 3);
+    Metavision::MostRecentTimestampBuffer timesurface(3, 3, 2);
 
     // GIVEN
-    // - a producer that produces a two-channels time surface every 5 events, and
+    // - a producer that produces a two-channels time surface, and
     // - a buffer of 6 events (mix of positive and negative)
-    producer.set_processing_n_events(5);
-
     std::vector<Metavision::EventCD> events = {{0, 0, 1, 0}, {1, 0, 0, 1}, {2, 0, 1, 2},
                                                {0, 1, 1, 3}, {1, 1, 0, 4}, {2, 1, 0, 5}};
 
     // WHEN
     // We process the events
-    producer.process_events(events.cbegin(), events.cend());
+    producer.process_events(events.cbegin(), events.cend(), timesurface);
 
     // THEN
     // Two time surfaces are produced (one for each channel)
     //                                    |0 1 0|
-    // timesurface for positive events =  |0 4 0|
+    // timesurface for positive events =  |0 4 5|
     //                                    |0 0 0|
     //
     //                                    |0 0 2|
     // timesurface for negative events =  |3 0 0|
     //                                    |0 0 0|
-    ASSERT_EQ(ts, 4);
-
     ASSERT_EQ(timesurface.at(0, 0, 0), 0);
     ASSERT_EQ(timesurface.at(0, 1, 0), 1);
     ASSERT_EQ(timesurface.at(0, 2, 0), 0);
     ASSERT_EQ(timesurface.at(1, 0, 0), 0);
     ASSERT_EQ(timesurface.at(1, 1, 0), 4);
-    ASSERT_EQ(timesurface.at(1, 2, 0), 0);
+    ASSERT_EQ(timesurface.at(1, 2, 0), 5);
     ASSERT_EQ(timesurface.at(2, 0, 0), 0);
     ASSERT_EQ(timesurface.at(2, 1, 0), 0);
     ASSERT_EQ(timesurface.at(2, 2, 0), 0);
@@ -195,62 +157,13 @@ TEST_F(TimesurfaceProducerAlgorithmGTest, test_output_n_mixed_events_two_channel
     ASSERT_EQ(timesurface.at(2, 2, 1), 0);
 }
 
-TEST_F(TimesurfaceProducerAlgorithmGTest, test_output_n_us) {
-    Metavision::TimeSurfaceProducerAlgorithm<1> producer(3, 3);
-    Metavision::timestamp ts;
-    Metavision::MostRecentTimestampBuffer timesurface;
-
-    producer.set_output_callback([&ts, &timesurface](Metavision::timestamp output_ts,
-                                                     const Metavision::MostRecentTimestampBuffer &output_timesurface) {
-        ts          = output_ts;
-        timesurface = output_timesurface;
-    });
+TEST_F(TimeSurfaceProcessorGTest, test_keeping_history) {
+    Metavision::TimeSurfaceProcessor<InputIt, 1> producer(3, 3);
+    Metavision::MostRecentTimestampBuffer timesurface(3, 3, 1);
 
     // GIVEN
-    // - a producer that produces a time surface every 5us, and
-    // - a buffer of 5us of events
-    producer.set_processing_n_us(5);
-
-    std::vector<Metavision::EventCD> events = {{0, 0, 1, 0}, {1, 0, 0, 1}, {2, 0, 1, 2},
-                                               {0, 1, 1, 3}, {1, 1, 0, 4}, {2, 1, 1, 5}};
-
-    // WHEN
-    // We process the events
-    producer.process_events(events.cbegin(), events.cend());
-
-    // THEN
-    // One time surface is produced and
-    //               |0 1 2|
-    // timesurface = |3 4 0|
-    //               |0 0 0|
-    ASSERT_EQ(ts, 5);
-    ASSERT_EQ(timesurface.at(0, 0), 0);
-    ASSERT_EQ(timesurface.at(0, 1), 1);
-    ASSERT_EQ(timesurface.at(0, 2), 2);
-    ASSERT_EQ(timesurface.at(1, 0), 3);
-    ASSERT_EQ(timesurface.at(1, 1), 4);
-    ASSERT_EQ(timesurface.at(1, 2), 0);
-    ASSERT_EQ(timesurface.at(2, 0), 0);
-    ASSERT_EQ(timesurface.at(2, 1), 0);
-    ASSERT_EQ(timesurface.at(2, 2), 0);
-}
-
-TEST_F(TimesurfaceProducerAlgorithmGTest, test_keeping_history) {
-    Metavision::TimeSurfaceProducerAlgorithm<1> producer(3, 3);
-    Metavision::timestamp ts;
-    Metavision::MostRecentTimestampBuffer timesurface;
-
-    producer.set_output_callback([&ts, &timesurface](Metavision::timestamp output_ts,
-                                                     const Metavision::MostRecentTimestampBuffer &output_timesurface) {
-        ts          = output_ts;
-        timesurface = output_timesurface;
-    });
-
-    // GIVEN
-    // - a producer that produces a time surface every 4 events, and
+    // - a producer that produces a time surface, and
     // - a buffer of 9 events
-    producer.set_processing_n_events(4);
-
     // clang-format off
     std::vector<Metavision::EventCD> events = {{0, 0, 0, 0}, {1, 0, 0, 1}, {2, 0, 1, 2},
                                                {0, 1, 1, 3}, {1, 1, 1, 4}, {2, 1, 0, 5},
@@ -259,14 +172,13 @@ TEST_F(TimesurfaceProducerAlgorithmGTest, test_keeping_history) {
 
     // WHEN
     // We process the events
-    producer.process_events(events.cbegin(), events.cend());
+    producer.process_events(events.cbegin(), events.cend(), timesurface);
 
     // THEN
     // Two copies of the internal time surface are done and the last
     //               |0 1 2|         |0 0 0|
     // timesurface = |3 4 5| and not |0 4 5|
-    //               |6 7 0|         |6 7 0|
-    ASSERT_EQ(ts, 7);
+    //               |6 7 8|         |6 7 0|
     ASSERT_EQ(timesurface.at(0, 0), 0);
     ASSERT_EQ(timesurface.at(0, 1), 1);
     ASSERT_EQ(timesurface.at(0, 2), 2);
@@ -275,5 +187,5 @@ TEST_F(TimesurfaceProducerAlgorithmGTest, test_keeping_history) {
     ASSERT_EQ(timesurface.at(1, 2), 5);
     ASSERT_EQ(timesurface.at(2, 0), 6);
     ASSERT_EQ(timesurface.at(2, 1), 7);
-    ASSERT_EQ(timesurface.at(2, 2), 0);
+    ASSERT_EQ(timesurface.at(2, 2), 8);
 }

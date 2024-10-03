@@ -13,7 +13,6 @@
 #define METAVISION_HAL_RESOURCES_FOLDER_H
 
 #include <filesystem>
-#include <string>
 
 namespace Metavision {
 
@@ -28,11 +27,11 @@ public:
 
     /// @brief Returns installation path of support directories (like firmwares)
     /// @return Installation path of support directories
-    static std::string get_install_path();
+    static std::filesystem::path get_install_path();
 
     /// @brief Returns the plugins' installation path
     /// @return Plugins' installation path
-    static std::string get_plugin_install_path();
+    static std::filesystem::path get_plugin_install_path();
 };
 
 } // namespace Metavision

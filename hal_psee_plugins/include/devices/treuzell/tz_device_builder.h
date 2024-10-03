@@ -12,9 +12,6 @@
 #ifndef TZ_DEVICE_BUILDER_H
 #define TZ_DEVICE_BUILDER_H
 
-#include "metavision/hal/utils/device_config.h"
-#include "metavision/hal/utils/device_builder.h"
-
 #include <cstdint>
 #include <memory>
 #include <functional>
@@ -38,6 +35,9 @@ public:
 
     void set(std::string key, Build_Fun method, Check_Fun buildable = nullptr) {
         map[key] = {method, buildable};
+    }
+    void clear() {
+        map.clear();
     }
     bool can_build(std::shared_ptr<TzLibUSBBoardCommand>);
     bool can_build_device(std::shared_ptr<TzLibUSBBoardCommand>, uint32_t dev_id);

@@ -33,13 +33,13 @@
 #include "metavision/hal/facilities/i_trigger_out.h"
 #include "metavision/hal/plugin/plugin.h"
 #include "metavision/hal/plugin/plugin_entrypoint.h"
-#include "metavision/hal/utils/data_transfer.h"
 #include "metavision/hal/utils/device_builder.h"
 #include "metavision/hal/utils/file_discovery.h"
 #include "metavision/hal/utils/hal_software_info.h"
 #include <metavision/hal/utils/camera_discovery.h>
 
 #include "dummy_test_plugin_facilities.h"
+#include "dummy_raw_data_producer.h"
 
 using namespace Metavision;
 
@@ -95,12 +95,6 @@ struct DummyROI : public I_ROI {
     std::vector<bool> rows_, cols_;
 };
 
-struct DummyDataTransfer : public DataTransfer {
-    DummyDataTransfer() : DataTransfer(1) {}
-
-    virtual void run_impl() override {}
-};
-
 struct DummyFileHWIdentification : public I_HW_Identification {
     DummyFileHWIdentification(const std::shared_ptr<I_PluginSoftwareInfo> &plugin_sw_info,
                               const RawFileHeader &header) :
@@ -108,10 +102,6 @@ struct DummyFileHWIdentification : public I_HW_Identification {
 
     std::string get_serial() const {
         return std::string();
-    }
-
-    long get_system_id() const {
-        return 0;
     }
 
     SensorInfo get_sensor_info() const {
@@ -462,9 +452,6 @@ public:
         return "";
     }
 
-    virtual long get_system_id() const override {
-        return 0;
-    }
     virtual SensorInfo get_sensor_info() const override {
         return SensorInfo();
     }
@@ -654,16 +641,6 @@ public:
         return enabled_;
     }
 
-    virtual bool set_event_rate_threshold(uint32_t threshold) override {
-        threshold_                    = threshold;
-        thresholds_.lower_bound_start = threshold;
-        return true;
-    }
-
-    virtual uint32_t get_event_rate_threshold() const override {
-        return threshold_;
-    }
-
     virtual thresholds is_thresholds_supported() const override {
         return {1, 1, 1, 1};
     }
@@ -697,7 +674,7 @@ struct DummyCameraDiscovery : public CameraDiscovery {
         return SerialList{"__DummyTest__"};
     }
     SystemList list_available_sources() override final {
-        return SystemList{PluginCameraDescription{"__DummyTest__", ConnectionType::PROPRIETARY_LINK, 4321}};
+        return SystemList{PluginCameraDescription{"__DummyTest__", ConnectionType::PROPRIETARY_LINK}};
     }
     bool discover(DeviceBuilder &device_builder, const std::string &serial, const DeviceConfig &config) override final {
         device_builder.add_facility(std::make_unique<DummyDigitalCrop>());
@@ -717,7 +694,7 @@ struct DummyCameraDiscovery : public CameraDiscovery {
         device_builder.add_facility(std::make_unique<DummyHWIdentification>(device_builder.get_plugin_software_info()));
         device_builder.add_facility(std::make_unique<DummyGeometry>(640, 480));
         device_builder.add_facility(std::make_unique<I_EventsStream>(
-            std::make_unique<DummyDataTransfer>(),
+            std::make_unique<DummyRawDataProducer>(),
             std::make_unique<DummyHWIdentification>(device_builder.get_plugin_software_info())));
         device_builder.add_facility(make_evt3_decoder(false, 640, 480));
         device_builder.add_facility(std::make_unique<DummyCameraSynchronization>());

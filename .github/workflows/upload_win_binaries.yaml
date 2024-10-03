@@ -6,7 +6,8 @@ on:
     - cron: "15 2 1 */2 *"
 
 env:
-  win_binaries_download_address: "https://prophesee-bamboo.s3.eu-west-1.amazonaws.com/build-env/vcpkg-export-20230323-MV4.0.0.zip"
+  # TODO update for v5.0.0 release
+  win_binaries_download_address: "https://prophesee-bamboo.s3.eu-west-1.amazonaws.com/build-env/vcpkg-export-20240909-MV_V4.6.2.zip"
   ffmpeg_archive_download_address: "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full.7z"
 
 jobs:

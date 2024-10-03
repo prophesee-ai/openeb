@@ -140,9 +140,7 @@ int main(int argc, char *argv[]) {
     std::unique_ptr<Metavision::Device> device;
     try {
         device = Metavision::DeviceDiscovery::open(serial);
-    } catch (Metavision::BaseException &e) {
-        std::cerr << "Error exception: " << e.what() << std::endl;
-    }
+    } catch (Metavision::BaseException &e) { std::cerr << "Error exception: " << e.what() << std::endl; }
 
     if (!device) {
         std::cerr << "Camera opening failed." << std::endl;
@@ -223,7 +221,7 @@ int main(int argc, char *argv[]) {
 
             // This will trigger callbacks set on decoders: in our case EventAnalyzer.process_events
             if (raw_data) {
-                i_decoder->decode(raw_data->data(), raw_data->data() + raw_data->size());
+                i_decoder->decode(raw_data.begin(), raw_data.data() + raw_data.size());
             }
         }
     });

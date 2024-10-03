@@ -11,7 +11,8 @@
         "eigen3",
         { "name" : "hdf5" , "features" : ["cpp","threadsafe","tools","zlib"] },
         { "name" : "ogre", "default-features": false, "features" : ["assimp","overlay","zip"] },
-        "protobuf"
+        "protobuf",
+        "ceres"
     ],
     "vcpkg-configuration" : {
         "default-registry": {

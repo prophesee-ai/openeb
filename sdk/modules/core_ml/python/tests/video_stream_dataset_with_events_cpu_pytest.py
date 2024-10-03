@@ -12,16 +12,10 @@ import os
 import numpy as np
 import pytest
 
-try:
-    from metavision_core_ml.video_to_event.video_stream_dataset_with_events_cpu import VideoDatasetWithEventsIterator
-    from metavision_core_ml.data.scheduling import Metadata
-    imports_error = False
-except ImportError as e:
-    print(e)
-    imports_error = True
+from metavision_core_ml.video_to_event.video_stream_dataset_with_events_cpu import VideoDatasetWithEventsIterator
+from metavision_core_ml.data.scheduling import Metadata
 
 
-@pytest.mark.skipif(imports_error, reason="some imports are failing, please install requirements.txt")
 def pytestcase_load_video_with_events(tmpdir, dataset_dir):
     timestamps_filename = os.path.join(dataset_dir, "openeb", "core_ml", "ultimate_frisbee", "frames_ts.npy")
     video_filename = os.path.join(dataset_dir, "openeb", "core_ml", "ultimate_frisbee", "frames.mp4")
@@ -44,6 +38,6 @@ def pytestcase_load_video_with_events(tmpdir, dataset_dir):
                                                    discard_events_between_batches=True)
     video_dataset_it = iter(video_dataset)
     batch = next(video_dataset_it)
-    images, timestamps, target_indices, first_times, events_cd, simu_params = batch
+    _, _, _, _, _, events_cd, simu_params = batch
     print(simu_params)
     assert events_cd.size > 0

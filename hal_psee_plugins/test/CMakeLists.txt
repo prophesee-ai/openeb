@@ -11,7 +11,7 @@
 set(metavision_hal_psee_plugins_tests_src
     ${CMAKE_CURRENT_SOURCE_DIR}/device_discovery_psee_plugins_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/event_encoders_gtest.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/file_data_transfer_gtest.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/file_raw_data_producer_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/file_events_stream_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gen31_event_rate_noise_filter_module_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/i_events_stream_gtest.cpp
@@ -31,7 +31,6 @@ target_link_libraries(gtest_metavision_hal_psee_plugins
         metavision_hal_discovery
         metavision_hal_psee_plugin_obj
         MetavisionUtils::gtest-main
-        Boost::filesystem
 )
 
 # Need to set RPATH to be able to run test either from build binaries or from a .deb install
@@ -57,7 +56,6 @@ target_link_libraries(gtest_metavision_hal_psee_hw_layer
         metavision_hal_discovery
         Metavision::PSEEHWLayer
         MetavisionUtils::gtest-main
-        Boost::filesystem
 )
 
 # Need to set RPATH to be able to run test either from build binaries or from a .deb install

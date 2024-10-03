@@ -21,10 +21,7 @@ namespace Metavision {
 
 namespace {
 py::array_t<timestamp> numpy_time_surface_helper(MostRecentTimestampBuffer &time_surface, bool copy = false) {
-    std::vector<py::ssize_t> shape = {time_surface.rows(), time_surface.cols()};
-    if (time_surface.channels() != 1)
-        shape.emplace_back(time_surface.channels());
-
+    std::vector<py::ssize_t> shape = {time_surface.rows(), time_surface.cols(), time_surface.channels()};
     if (time_surface.empty() || copy)
         return py::array_t<timestamp>(shape, time_surface.ptr());
 

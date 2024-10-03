@@ -79,3 +79,43 @@ TEST_F(DummyTestPluginTest, should_have_facilities_multi_version_facility) {
     EXPECT_EQ(dummy_device->get_facility<DummyFacilityV1>(), dummy_device->get_facility<DummyFacilityV2>());
     EXPECT_EQ(dummy_device->get_facility<DummyFacilityV2>(), dummy_device->get_facility<DummyFacilityV3>());
 }
+
+TEST_F(DummyTestPluginTest, should_stream) {
+    // DummyRawDataProducer generates an incrementing pattern
+    int counter       = 0;
+    auto event_stream = dummy_device->get_facility<I_EventsStream>();
+    EXPECT_THAT(event_stream, NotNull());
+
+    event_stream->start();
+
+    do {
+        // DummyRawDataProducer sends 8 buffers of up to 128 bytes
+        // it is assumed that this test will make DummyRawDataProducer run out of buffers
+        // (it has a bounded pool and can't drop)
+        // but this depends on runner's performances
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        auto buffer = event_stream->get_latest_raw_data();
+        for (auto &data : buffer) {
+            EXPECT_EQ(data, counter++);
+        }
+    } while (event_stream->poll_buffer() > 0);
+
+    // DummyRawDataProducer sends 255 values
+    EXPECT_EQ(counter, 255);
+    event_stream->stop();
+}
+
+TEST_F(DummyTestPluginTest, can_copy_buffers_outside_of_the_pool) {
+    auto event_stream = dummy_device->get_facility<I_EventsStream>();
+    EXPECT_THAT(event_stream, NotNull());
+
+    event_stream->start();
+
+    event_stream->wait_next_buffer();
+    auto buffer = event_stream->get_latest_raw_data();
+    event_stream->stop();
+
+    DataTransfer::BufferPtr outsider = buffer.clone();
+    // A copy of a buffer shall be equal
+    EXPECT_EQ(buffer, outsider);
+}

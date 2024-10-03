@@ -23,6 +23,23 @@ class I_HW_Register;
 
 class Gen41_LL_Biases : public I_LL_Biases {
 public:
+    class Gen41LLBias : public LL_Bias_Info {
+    public:
+        Gen41LLBias(int min_recommended_value, int max_recommended_value, bool modifiable, std::string register_name,
+                    const std::string &description, const std::string &category) :
+            LL_Bias_Info(0x00, 0xFF, min_recommended_value, max_recommended_value, description, modifiable, category) {
+            register_name_ = register_name;
+        }
+
+        ~Gen41LLBias() {}
+        const std::string &get_register_name() const {
+            return register_name_;
+        }
+
+    private:
+        std::string register_name_;
+    };
+
     Gen41_LL_Biases(const DeviceConfig &device_config, const std::shared_ptr<I_HW_Register> &i_hw_register,
                     const std::string &sensor_prefix);
 
@@ -30,6 +47,8 @@ public:
 
 protected:
     const std::shared_ptr<I_HW_Register> &get_hw_register() const;
+    std::map<std::string, Gen41LLBias> &get_gen41_biases_map();
+    const std::map<std::string, Gen41LLBias> &get_gen41_biases_map() const;
 
 private:
     virtual bool set_impl(const std::string &bias_name, int bias_value) override;
@@ -38,6 +57,7 @@ private:
 
     std::shared_ptr<I_HW_Register> i_hw_register_;
     std::string base_name_;
+    std::map<std::string, Gen41_LL_Biases::Gen41LLBias> biases_map_;
 };
 
 } // namespace Metavision

@@ -12,7 +12,7 @@
 // This code sample demonstrate how to use the Metavision C++ SDK. The goal of this sample is to create a simple event
 // counter and displayer by introducing some basic concepts of the Metavision SDK.
 
-#include <metavision/sdk/driver/camera.h>
+#include <metavision/sdk/stream/camera.h>
 #include <metavision/sdk/base/events/event_cd.h>
 #include <metavision/sdk/core/algorithms/periodic_frame_generation_algorithm.h>
 #include <metavision/sdk/core/algorithms/flip_x_algorithm.h>

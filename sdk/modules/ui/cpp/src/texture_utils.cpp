@@ -52,13 +52,6 @@ unsigned int initialize_texture(const TextureOptions &options) {
     return tex_id;
 }
 
-unsigned int initialize_texture(int width, int height, bool is_gray) {
-    const TextureOptions opt = {static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height),
-                                is_gray ? TextureFormat::Gray : TextureFormat::RGB, TextureFilter::Linear,
-                                TextureFilter::Linear};
-    return initialize_texture(opt);
-}
-
 static std::unordered_map<int, int> cv_to_gl_internal_format = {
     {CV_8UC1, GL_R8}, {CV_8UC3, GL_RGB8}, {CV_8UC4, GL_RGBA8}};
 

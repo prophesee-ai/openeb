@@ -11,7 +11,6 @@
 
 #include "hal_python_binder.h"
 #include "metavision/hal/facilities/i_event_rate_activity_filter_module.h"
-#include "metavision/hal/utils/detail/warning_supression.h"
 #include "pb_doc_hal.h"
 
 namespace Metavision {
@@ -24,17 +23,7 @@ static HALFacilityPythonBinder<I_EventRateActivityFilterModule> bind(
             .def("enable", &I_EventRateActivityFilterModule::enable, py::arg("enable_filter"),
                  pybind_doc_hal["Metavision::I_EventRateActivityFilterModule::enable"])
             .def("is_enabled", &I_EventRateActivityFilterModule::is_enabled,
-                 pybind_doc_hal["Metavision::I_EventRateActivityFilterModule::is_enabled"]);
-
-        SUPRESS_DEPRECATION_WARNING(
-            class_binding
-                .def("set_event_rate_threshold", &I_EventRateActivityFilterModule::set_event_rate_threshold,
-                     py::arg("threshold_Kev_s"),
-                     pybind_doc_hal["Metavision::I_EventRateActivityFilterModule::set_event_rate_threshold"])
-                .def("get_event_rate_threshold", &I_EventRateActivityFilterModule::get_event_rate_threshold,
-                     pybind_doc_hal["Metavision::I_EventRateActivityFilterModule::get_event_rate_threshold"]););
-
-        class_binding
+                 pybind_doc_hal["Metavision::I_EventRateActivityFilterModule::is_enabled"])
             .def("get_thresholds", &I_EventRateActivityFilterModule::get_thresholds,
                  pybind_doc_hal["Metavision::I_EventRateActivityFilterModule::get_thresholds"])
 

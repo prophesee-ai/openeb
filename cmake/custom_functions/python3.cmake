@@ -36,7 +36,7 @@ function(_add_global_alias_library lib alias_lib)
         if (MSVC)
             # workaround for a bug in Python on Windows, where the debug lib links to the relase lib file with a relative path
             set_property(TARGET ${alias_lib} APPEND PROPERTY INTERFACE_LINK_DIRECTORIES "$<$<CONFIG:Debug>:$<TARGET_LINKER_FILE_DIR:${alias_lib}>>")
-        endif ()
+        endif()
     endif()
 endfunction()
 
@@ -59,7 +59,7 @@ if (COMPILE_PYTHON3_BINDINGS)
             # FindPython3.cmake stores internal variables relative to the directory in which it is called
             # If we want to call it multiple times for different python versions, it must be called from
             # different folders (see https://gitlab.kitware.com/cmake/cmake/-/issues/21797)
-            add_subdirectory(${GENERATE_FILES_DIRECTORY}/python3 ${CMAKE_BINARY_DIR}/cmake/python3/${_python_version})
+            add_subdirectory(${GENERATE_FILES_DIRECTORY}/python3 ${PROJECT_BINARY_DIR}/cmake/python3/${_python_version})
         endforeach()
     else()
         find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
@@ -70,22 +70,26 @@ if (COMPILE_PYTHON3_BINDINGS)
     endif()
     foreach (_python_version ${PYBIND11_PYTHON_VERSIONS})
         # this is the extension we need to set for the python bindings module
-        execute_process(
-            COMMAND "${PYTHON_${_python_version}_EXECUTABLE}" "-c"
-                    "from distutils import sysconfig as s; print(s.get_config_var('EXT_SUFFIX') or s.get_config_var('SO'));"
-            OUTPUT_VARIABLE PYTHON_${_python_version}_MODULE_EXTENSION
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-        )
+        if(CMAKE_CROSSCOMPILING)
+            # When cross compiling, we cannot run the python interpreter as it might be compiled for a different architecture.
+            # Therefore we ask for the user to have already set the library extension suffix.
+            if(NOT DEFINED PYTHON_${_python_version}_MODULE_EXTENSION)
+                message(FATAL_ERROR "CMake variable 'PYTHON_${_python_version}_MODULE_EXTENSION' needs to be defined. "
+                                    "One can run '$ python3-config --extension-suffix' on your targeted platform to get the actual value (eg. '.cpython-36m-x86_64-linux-gnu.so').
+                ")
+            endif()
+        else()
+            execute_process(
+                COMMAND "${PYTHON_${_python_version}_EXECUTABLE}" "-c"
+                        "import sysconfig as s; print(s.get_config_var('EXT_SUFFIX') or s.get_config_var('SO'));"
+                OUTPUT_VARIABLE PYTHON_${_python_version}_MODULE_EXTENSION
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+            )
+        endif(CMAKE_CROSSCOMPILING)
 
         # this is the path where we install our python modules for cpack DEB (system) packages ...
         execute_process(
-            # select a suitable python module path by following ranking (i.e a path that meets
-            # criteria 1. is better than 2., and a path that meets criteria 1.+2. is better than 1.+3.)
-            # 1-a path that does not contain 'local'
-            # 2-a path that contains 'dist-packages'
-            # 3-a path that contains 'site-packages'
-            COMMAND "${PYTHON_${_python_version}_EXECUTABLE}" "-c"
-                    "import site; print(sorted(site.getsitepackages(), key=lambda path: ('local' not in path)*100.0 + ('dist-packages' in path)*10.0 + ('site-packages' in path)*1.0, reverse=True)[0])"
+            COMMAND "${PYTHON_${_python_version}_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/utils/scripts/get_prefered_site_packages.py" "--site-type" "system"
             OUTPUT_VARIABLE PYTHON_${_python_version}_SYSTEM_SITE_PACKAGES
             OUTPUT_STRIP_TRAILING_WHITESPACE
         )
@@ -102,31 +106,24 @@ if (COMPILE_PYTHON3_BINDINGS)
             # Otherwise, if no module path is provided, find a proper path to install our modules
             # note : we do not use the PYTHON_SITE_PACKAGES found by pybind11, as it is wrong
             execute_process(
-                # select a suitable python module path by following ranking (i.e a path that meets
-                # criteria 1. is better than 2., and a path that meets criteria 1.+2. is better than 1.+3.)
-                # 1-the cmake install prefix
-                # 2-a path that contains 'dist-packages'
-                # 3-a path that contains 'site-packages'
-                COMMAND "${PYTHON_${_python_version}_EXECUTABLE}" "-c"
-                        "import site; print(sorted(site.getsitepackages(), key=lambda path: path.startswith('${CMAKE_INSTALL_PREFIX}')*100.0 + ('dist-packages' in path)*10.0 + ('site-packages' in path)*1.0, reverse=True)[0])"
+                COMMAND "${PYTHON_${_python_version}_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/utils/scripts/get_prefered_site_packages.py" "--site-type" "local" "--prefer-pattern" "${CMAKE_INSTALL_PREFIX}"
                 OUTPUT_VARIABLE PYTHON_${_python_version}_LOCAL_SITE_PACKAGES
                 OUTPUT_STRIP_TRAILING_WHITESPACE
             )
             file(TO_CMAKE_PATH "${PYTHON_${_python_version}_LOCAL_SITE_PACKAGES}" PYTHON_${_python_version}_LOCAL_SITE_PACKAGES)
-            # ... it must be relative
-            string(REGEX REPLACE "^${STAGING_DIR_NATIVE}/usr/" "" PYTHON_${_python_version}_LOCAL_SITE_PACKAGES "${PYTHON_${_python_version}_LOCAL_SITE_PACKAGES}")
         endif (PYTHON3_SITE_PACKAGES)
+        # ... it must be relative
         string(REGEX REPLACE "^${STAGING_DIR_NATIVE}/usr/" "" PYTHON_${_python_version}_LOCAL_SITE_PACKAGES "${PYTHON_${_python_version}_LOCAL_SITE_PACKAGES}")
     endforeach ()
 
     # this variable is used to create all python versions packages variables for cpack
     # but not all of them will be generated, only the one indicated by PYBIND11_PYTHON_VERSIONS
-    set (PYTHON3_ALL_VERSIONS "3.7;3.8;3.9;3.10")
+    set (PYTHON3_ALL_VERSIONS "3.7;3.8;3.9;3.10;3.11;3.12")
 
     # this variable is used to set the default version for package dependency, i.e this version
     # is always available for the current installation
     if (UNIX AND NOT APPLE AND (NOT DEFINED PYTHON3_DEFAULT_VERSION))
-        set (PYTHON3_DEFAULT_VERSION "3.8")
+        set (PYTHON3_DEFAULT_VERSION "3.9")
         find_program(_lsb_release_exec lsb_release)
         if (_lsb_release_exec)
             execute_process(COMMAND ${_lsb_release_exec} -cs
@@ -134,7 +131,9 @@ if (COMPILE_PYTHON3_BINDINGS)
                 OUTPUT_STRIP_TRAILING_WHITESPACE
             )
             if ("${_ubuntu_platform}" STREQUAL "jammy")
-                set (PYTHON3_DEFAULT_VERSION "3.10")
+              set (PYTHON3_DEFAULT_VERSION "3.10")
+            elseif ("${_ubuntu_platform}" STREQUAL "noble")
+              set (PYTHON3_DEFAULT_VERSION "3.12")
             endif ()
         endif()
     else()
@@ -176,7 +175,7 @@ endif()
 if (COMPILE_PYTHON3_BINDINGS)
     # pybind11 should not look for Python anymore, we already handled it
     set(PYBIND11_NOPYTHON On)
-    find_package(pybind11 REQUIRED)
+    find_package(pybind11 2.7 REQUIRED)
 
     # private helper function to install a python module for a specific python version with LOCAL and/or SYSTEM python component
     function(_install_python_bindings_for_version target_name python_version component)
@@ -299,10 +298,10 @@ if (COMPILE_PYTHON3_BINDINGS)
 
         if(WIN32 AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py)
             file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
-                DESTINATION ${CMAKE_BINARY_DIR}/py3/${CMAKE_BUILD_TYPE}/${module}
+                DESTINATION ${PROJECT_BINARY_DIR}/py3/${CMAKE_BUILD_TYPE}/${module}
                 FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
             foreach(_python_version ${PYBIND11_PYTHON_VERSIONS})
-                install(DIRECTORY ${CMAKE_BINARY_DIR}/py3/${CMAKE_BUILD_TYPE}/${module}
+                install(DIRECTORY ${PROJECT_BINARY_DIR}/py3/${CMAKE_BUILD_TYPE}/${module}
                         DESTINATION "${PYTHON_${_python_version}_LOCAL_SITE_PACKAGES}"
                         COMPONENT ${component}-python${_python_version}-local-install
                         PATTERN __pycache__ EXCLUDE)

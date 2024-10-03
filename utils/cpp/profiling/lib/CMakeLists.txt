@@ -7,9 +7,6 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-# Boost::filesystem
-find_package(Boost REQUIRED COMPONENTS filesystem system)
-
 # Create shared library for internal profiling tools:
 add_library(metavision_utils_profiling INTERFACE)
 add_library(MetavisionUtils::profiling ALIAS metavision_utils_profiling) # Create alias target to refer to
@@ -17,11 +14,6 @@ add_library(MetavisionUtils::profiling ALIAS metavision_utils_profiling) # Creat
 target_include_directories(metavision_utils_profiling
     INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
-)
-
-target_link_libraries(metavision_utils_profiling
-    INTERFACE
-        Boost::filesystem Boost::system
 )
 
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../include/"

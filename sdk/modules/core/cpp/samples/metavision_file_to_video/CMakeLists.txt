@@ -10,9 +10,9 @@
 add_executable(metavision_file_to_video metavision_file_to_video.cpp)
 target_link_libraries(metavision_file_to_video
     PRIVATE
-        MetavisionSDK::driver
+        MetavisionSDK::stream
         MetavisionSDK::core
-        Boost::program_options Boost::filesystem Threads::Threads
+        Boost::program_options Threads::Threads
         opencv_core opencv_highgui opencv_videoio
 )
 

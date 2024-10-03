@@ -7,11 +7,163 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
+import os
+import pytest
+
 import numpy as np
 import metavision_sdk_base
 import metavision_sdk_core
+from metavision_core.event_io import EventsIterator, EventDatReader
 
 # pylint: disable=no-member
+
+
+def get_cd_events_filename(dataset_dir):
+    filename_cd_events = os.path.join(
+        dataset_dir,
+        "openeb", "core", "event_io", "recording_td.dat")
+    assert os.path.isfile(filename_cd_events)
+    return filename_cd_events
+
+
+def pytestcase_EventRescalerAlgorithm():
+    events = np.zeros(2, dtype=metavision_sdk_base.EventCD)
+    events["x"] = [0, 9]
+    events["y"] = [0, 10]
+    events["t"] = [0, 10]
+
+    evt_rescaler = metavision_sdk_core.EventRescalerAlgorithm(0.5, 0.5)
+
+    rescaled_evts_array = evt_rescaler.get_empty_output_buffer()
+    evt_rescaler.process_events(events, rescaled_evts_array)
+
+    assert(rescaled_evts_array.numpy()["x"].tolist() == [0, 4])
+    assert(rescaled_evts_array.numpy()["y"].tolist() == [0, 5])
+    assert(rescaled_evts_array.numpy()["t"].tolist() == [0, 10])
+
+
+def pytestcase_EventPreprocessor(dataset_dir):
+    dat_reader = EventDatReader(get_cd_events_filename(dataset_dir))
+    height, width = dat_reader.get_size()
+
+    network_input_width = int(width // 2)
+    network_input_height = int(height // 2)
+    evt_rescaler = metavision_sdk_core.EventRescalerAlgorithm(
+        network_input_width/float(width), network_input_height/float(height))
+    evt_preproc = metavision_sdk_core.EventPreprocessor.create_HistoProcessor(input_event_width=network_input_width,
+                                                                              input_event_height=network_input_height,
+                                                                              max_incr_per_pixel=5,
+                                                                              clip_value_after_normalization=1.)
+    assert evt_preproc.get_frame_shape() == [2, 240, 320]
+    ev = dat_reader.load_delta_t(50000)
+    rescaled_evts_array = evt_rescaler.get_empty_output_buffer()
+    evt_rescaler.process_events(ev, rescaled_evts_array)
+    frame_array = evt_preproc.init_output_tensor()
+    evt_preproc.process_events(0, rescaled_evts_array, frame_array)
+    assert frame_array.shape == (2, 240, 320)
+    assert len(frame_array[frame_array != 0]) != 0
+    assert np.max(frame_array) <= 1.
+    ev = dat_reader.load_delta_t(50000)
+
+    evt_rescaler.process_events(ev, rescaled_evts_array)
+    frame_array.fill(0)
+    evt_preproc.process_events(50000, rescaled_evts_array, frame_array)
+    assert (frame_array.shape == (2, 240, 320))
+    assert (len(frame_array[frame_array != 0]) != 0)
+    assert (np.max(frame_array) <= 1.)
+
+    delta_t = 50000
+    mv_it = EventsIterator(get_cd_events_filename(dataset_dir), delta_t=delta_t)
+    height, width = mv_it.get_size()
+
+    network_input_width = int(width // 2)
+    network_input_height = int(height // 2)
+    evt_rescaler = metavision_sdk_core.EventRescalerAlgorithm(
+        network_input_width/float(width), network_input_height/float(height))
+    evt_preproc = metavision_sdk_core.EventPreprocessor.create_HistoProcessor(input_event_width=network_input_width,
+                                                                              input_event_height=network_input_height,
+                                                                              max_incr_per_pixel=5,
+                                                                              clip_value_after_normalization=1.)
+
+    rescaled_evts_array = evt_rescaler.get_empty_output_buffer()
+    frame_array = evt_preproc.init_output_tensor()
+    for idx, ev in enumerate(mv_it):
+        cur_frame_start_ts = idx * delta_t
+        if idx % 5 == 0:
+            frame_array.fill(0)
+        evt_rescaler.process_events(ev, rescaled_evts_array)
+        evt_preproc.process_events(cur_frame_start_ts, rescaled_evts_array, frame_array)
+        if idx >= 20:
+            break
+
+    # Check with wrong parameters
+    frame_array_double = frame_array.astype(np.double)
+    with pytest.raises(RuntimeError):
+        mv_it = EventsIterator(get_cd_events_filename(dataset_dir), delta_t=delta_t)
+        for idx, ev in enumerate(mv_it):
+            cur_frame_start_ts = idx * delta_t
+            if idx % 5 == 0:
+                frame_array_double.fill(0)
+            evt_rescaler.process_events(ev, rescaled_evts_array)
+            evt_preproc.process_events(cur_frame_start_ts, rescaled_evts_array,
+                                       frame_array_double)  # KO: frame_array should be double
+            if idx >= 20:
+                break
+
+    frame_wrong_size = np.zeros((evt_preproc.get_frame_width(),
+                                 evt_preproc.get_frame_height() + 1,
+                                 evt_preproc.get_frame_channels()), dtype=np.float32)
+
+    with pytest.raises(RuntimeError):
+        mv_it = EventsIterator(get_cd_events_filename(dataset_dir), delta_t=delta_t)
+        for idx, ev in enumerate(mv_it):
+            cur_frame_start_ts = idx * delta_t
+            if idx % 5 == 0:
+                frame_wrong_size.fill(0)
+            evt_rescaler.process_events(ev, rescaled_evts_array)
+            evt_preproc.process_events(cur_frame_start_ts, rescaled_evts_array,
+                                       frame_wrong_size)  # KO: height is not correct
+            if idx >= 20:
+                break
+
+    assert evt_preproc.get_frame_width() % 2 == 0
+    frame_wrong_shape = np.zeros((evt_preproc.get_frame_width() // 2,
+                                  evt_preproc.get_frame_height() * 2,
+                                  evt_preproc.get_frame_channels()), dtype=np.float32)
+    assert frame_wrong_shape.size == evt_preproc.get_frame_size()
+
+    with pytest.raises(RuntimeError):
+        mv_it = EventsIterator(get_cd_events_filename(dataset_dir), delta_t=delta_t)
+        for idx, ev in enumerate(mv_it):
+            cur_frame_start_ts = idx * delta_t
+            if idx % 5 == 0:
+                frame_wrong_shape.fill(0)
+            evt_rescaler.process_events(ev, rescaled_evts_array)
+            evt_preproc.process_events(cur_frame_start_ts, rescaled_evts_array,
+                                       frame_wrong_shape)  # KO: shape is not correct
+            if idx >= 20:
+                break
+
+    if evt_preproc.is_CHW():
+        frame_wrong_dim_order = np.zeros((evt_preproc.get_frame_height(),
+                                          evt_preproc.get_frame_width(),
+                                          evt_preproc.get_frame_channels()), dtype=np.float32)
+    else:
+        frame_wrong_dim_order = np.zeros((evt_preproc.get_frame_channels(),
+                                          evt_preproc.get_frame_height(),
+                                          evt_preproc.get_frame_width()), dtype=np.float32)
+
+    with pytest.raises(RuntimeError):
+        mv_it = EventsIterator(get_cd_events_filename(dataset_dir), delta_t=delta_t)
+        for idx, ev in enumerate(mv_it):
+            cur_frame_start_ts = idx * delta_t
+            if idx % 5 == 0:
+                frame_wrong_dim_order.fill(0)
+                evt_rescaler.process_events(ev, rescaled_evts_array)
+            evt_preproc.process_events(cur_frame_start_ts, rescaled_evts_array,
+                                       frame_wrong_dim_order)  # KO: dimension order is not correct
+            if idx >= 20:
+                break
 
 
 def pytestcase_RoiFilterAlgorithm():
@@ -258,17 +410,9 @@ def pytestcase_TimeSurfaceProducerAlgoritm():
     last_processed_timestamp = 0
     time_surface_single_channel = metavision_sdk_core.MostRecentTimestampBuffer(5, 5, 1)
 
-    ts_prod_single_channel = metavision_sdk_core.TimeSurfaceProducerAlgorithmMergePolarities(5, 5)
+    ts_prod_single_channel = metavision_sdk_core.EventPreprocessor.create_TimeSurfaceProcessor(5, 5, False)
 
-    def callback_single_channel(ts, time_surface):
-        nonlocal last_processed_timestamp
-        nonlocal time_surface_single_channel
-        last_processed_timestamp = ts
-        time_surface_single_channel.numpy()[...] = time_surface.numpy()[...]
-    ts_prod_single_channel.set_output_callback(callback_single_channel)
-
-    ts_prod_single_channel.process_events(events)
-    assert last_processed_timestamp == 6
+    ts_prod_single_channel.process_events(last_processed_timestamp, events, time_surface_single_channel.numpy())
     assert (time_surface_single_channel.numpy()[1:, :] == 0).all()
     assert time_surface_single_channel.numpy()[0, 0] == 0
     assert time_surface_single_channel.numpy()[0, 1] == 5
@@ -280,20 +424,102 @@ def pytestcase_TimeSurfaceProducerAlgoritm():
     last_processed_timestamp = 0
     time_surface_double_channel = metavision_sdk_core.MostRecentTimestampBuffer(5, 5, 2)
 
-    ts_prod_double_channel = metavision_sdk_core.TimeSurfaceProducerAlgorithmSplitPolarities(5, 5)
+    ts_prod_double_channel = metavision_sdk_core.EventPreprocessor.create_TimeSurfaceProcessor(5, 5, True)
 
-    def callback_double_channel(ts, time_surface):
-        nonlocal last_processed_timestamp
-        nonlocal time_surface_double_channel
-        last_processed_timestamp = ts
-        time_surface_double_channel.numpy()[...] = time_surface.numpy()[...]
-    ts_prod_double_channel.set_output_callback(callback_double_channel)
-
-    ts_prod_double_channel.process_events(events)
-    assert last_processed_timestamp == 6
+    ts_prod_double_channel.process_events(last_processed_timestamp, events, time_surface_double_channel.numpy())
     assert (time_surface_double_channel.numpy()[1:, :] == 0).all()
     assert (time_surface_double_channel.numpy()[0, 0] == 0).all()
     assert time_surface_double_channel.numpy()[0, 1].tolist() == [1, 5]
     assert time_surface_double_channel.numpy()[0, 2].tolist() == [0, 4]
     assert time_surface_double_channel.numpy()[0, 3].tolist() == [3, 0]
     assert (time_surface_double_channel.numpy()[0, 4] == 0).all()
+
+
+def pytestcase_RoiMaskAlgorithm(dataset_dir):
+    im = np.zeros((480, 640), dtype=np.uint8)
+    algo = metavision_sdk_core.RoiMaskAlgorithm(im)
+
+    output = algo.get_empty_output_buffer()
+
+    ev = np.zeros(3, metavision_sdk_base.EventCD)
+    ev["x"] = (10, 11, 100)
+    ev["y"] = (20, 21, 200)
+
+    algo.process_events(ev, output)
+    assert output.numpy().size == 0
+
+    im[21, 11] = 1
+    algo.set_pixel_mask(im)
+    algo.process_events(ev, output)
+    assert output.numpy().size == 1
+    assert output.numpy().tolist() == [(11, 21, 0, 0)]
+
+    algo.enable_rectangle(x0=99, y0=199, x1=101, y1=201)
+    algo.process_events(ev, output)
+    assert output.numpy().size == 2
+    assert output.numpy().tolist() == [(11, 21, 0, 0), (100, 200, 0, 0)]
+
+
+def pytestcase_RotateEventsAlgorithm(dataset_dir):
+    import math
+
+    W, H = 640, 480
+    algo = metavision_sdk_core.RotateEventsAlgorithm(
+        width_minus_one=W-1, height_minus_one=H-1, rotation=math.pi/2)
+
+    output = algo.get_empty_output_buffer()
+
+    ev = np.zeros(1, metavision_sdk_base.EventCD)
+    ev["x"] = W/2 - 10
+    ev["y"] = H/2
+
+    algo.process_events(ev, output)
+    output_np = output.numpy()
+    assert output_np.size == 1
+    assert output_np["x"] == W/2
+    assert output_np["y"] == H/2 - 10
+
+
+def pytestcase_TransposeEventsAlgorithm(dataset_dir):
+    filename_raw_events = os.path.join(dataset_dir, "openeb", "gen31_timer.raw")
+    mv_it = EventsIterator(filename_raw_events, start_ts=0, delta_t=1000,
+                           relative_timestamps=False)
+    transpose_algo = metavision_sdk_core.TransposeEventsAlgorithm()
+    transposed_buffer = transpose_algo.get_empty_output_buffer()
+    for ev in mv_it:
+        transpose_algo.process_events(ev, transposed_buffer)
+        ev_transposed = transposed_buffer.numpy()
+        assert (len(ev_transposed) == len(ev))
+        assert (ev_transposed["x"] == ev["y"]).all()
+        assert (ev_transposed["y"] == ev["x"]).all()
+        transpose_algo.process_events_(ev)
+        assert (ev_transposed == ev).all()
+        break
+
+
+def pytestcase_ContrastMapGenerationAlgorithm():
+    events = np.zeros(5, dtype=metavision_sdk_base.EventCD)
+    events["x"] = [1, 2, 3, 2, 1]
+    events["y"] = [0, 0, 0, 0, 0]
+    events["p"] = [0, 1, 0, 1, 1]
+    events["t"] = [1, 2, 3, 4, 5]
+
+    contrast_map_generator = metavision_sdk_core.ContrastMapGenerationAlgorithm(5, 5, 1.2)
+    contrast_map_generator.process_events(events)
+    contrast_map_32f = np.zeros((5, 5), np.float32)
+    contrast_map_generator.generate(contrast_map_32f)
+    contrast_map_8u = np.zeros((5, 5), np.uint8)
+    contrast_map_generator.generate(contrast_map_8u, 64, 128)
+
+
+def pytestcase_EventsIntegrationAlgorithm():
+    events = np.zeros(5, dtype=metavision_sdk_base.EventCD)
+    events["x"] = [1, 2, 3, 2, 1]
+    events["y"] = [0, 0, 0, 0, 0]
+    events["p"] = [0, 1, 0, 1, 1]
+    events["t"] = [1, 2, 3, 4, 5]
+
+    ev_integrator = metavision_sdk_core.EventsIntegrationAlgorithm(5, 5, 10, 1.2)
+    ev_integrator.process_events(events)
+    integrated_map = np.zeros((5, 5), np.uint8)
+    ev_integrator.generate(integrated_map)

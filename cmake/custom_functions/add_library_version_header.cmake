@@ -8,8 +8,8 @@
 # See the License for the specific language governing permissions and limitations under the License.
 
 set(GIT_BRANCH "main")
-set(GIT_COMMIT_ID "9c0f658666f1927050f21407f6c0f5ae2e120f1f")
-set(GIT_COMMIT_DATE "2024-07-01 15:48:10 +0200")
+set(GIT_COMMIT_ID "6abf87d7194ca70c33d4a599944765397fac3335")
+set(GIT_COMMIT_DATE "2024-10-02 17:27:00 +0200")
 
 find_program(GIT_SCM git DOC "Git version control" HINTS "C:\\Program Files\\Git\\bin\\")
 
@@ -135,17 +135,31 @@ function(add_library_version_header target_name outputfile libname)
 
     string(TOUPPER "${libname}" LIBRARY_NAME_UPPER)
 
+    set(version_file_command
+        ${CMAKE_COMMAND}
+        -DOUTPUTFILE=${outputfile}
+        -DLIBRARY_NAME_UPPER=${LIBRARY_NAME_UPPER}
+        -DLIBRARY_VERSION_MAJOR=${LIBRARY_VERSION_MAJOR}
+        -DLIBRARY_VERSION_MINOR=${LIBRARY_VERSION_MINOR}
+        -DLIBRARY_VERSION_PATCH=${LIBRARY_VERSION_PATCH}
+        -DLIBRARY_VERSION_SUFFIX=${LIBRARY_VERSION_SUFFIX}
+        -P ${cmake_script})
+
     add_custom_target(
         ${target_name} ALL
-        COMMAND ${CMAKE_COMMAND}
-                -D OUTPUTFILE=${outputfile}
-                -D LIBRARY_NAME_UPPER=${LIBRARY_NAME_UPPER}
-                -D LIBRARY_VERSION_MAJOR=${LIBRARY_VERSION_MAJOR}
-                -D LIBRARY_VERSION_MINOR=${LIBRARY_VERSION_MINOR}
-                -D LIBRARY_VERSION_PATCH=${LIBRARY_VERSION_PATCH}
-                -D LIBRARY_VERSION_SUFFIX=${LIBRARY_VERSION_SUFFIX}
-                -P ${cmake_script}
+        COMMAND ${version_file_command}
         COMMENT "Generating version file for library ${libname}"
         VERBATIM
     )
+    if (NOT EXISTS ${outputfile})
+        # Make sure version.h exist at configure then it's updated at runtime
+        execute_process(
+            COMMAND ${version_file_command}
+            ERROR_VARIABLE err
+            RESULT_VARIABLE ret
+        )
+        if(ret AND NOT ret EQUAL 0)
+            message(FATAL_ERROR "Error execuding command \n'${version_file_command}' :\n${err}")
+        endif()
+    endif()
 endfunction(add_library_version_header)

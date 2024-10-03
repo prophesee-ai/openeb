@@ -27,8 +27,8 @@ void EventEncoder<DecodedEventtype>::encode_event( // Default is Event CD
     ev_encoded->y         = ev_decoded->y;
     ev_encoded->timestamp = ev_decoded->t;
     ev_encoded->type      = ev_decoded->p ?
-                                static_cast<EventTypesUnderlying_t>(event_raw_format_traits<EvtFormat>::EnumType::CD_HIGH) :
-                                static_cast<EventTypesUnderlying_t>(event_raw_format_traits<EvtFormat>::EnumType::CD_LOW);
+                                static_cast<EventTypesUnderlying_t>(event_raw_format_traits<EvtFormat>::EnumType::CD_ON) :
+                                static_cast<EventTypesUnderlying_t>(event_raw_format_traits<EvtFormat>::EnumType::CD_OFF);
 }
 
 template<>

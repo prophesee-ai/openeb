@@ -9,8 +9,10 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
+#include <pybind11/cast.h>
 #include <pybind11/numpy.h>
 
+#include "metavision/hal/utils/data_transfer.h"
 #include "metavision/utils/pybind/deprecation_warning_exception.h"
 #include "hal_python_binder.h"
 
@@ -26,23 +28,12 @@ namespace Metavision {
 
 namespace {
 
-void decode_wrapper_diff(I_EventFrameDecoder<RawEventFrameDiff> *decoder, py::array_t<I_EventsStream::RawData> *array) {
-    py::buffer_info buf = array->request();
-    if (buf.ndim != 1) {
-        throw std::runtime_error("Decoder needs a 1 dimensional buffer of RawData. Received a " +
-                                 std::to_string(buf.ndim) + " dimensional array instead");
-    }
-    decoder->decode((I_EventsStream::RawData *)buf.ptr, (I_EventsStream::RawData *)buf.ptr + buf.size);
+void decode_wrapper_diff(I_EventFrameDecoder<RawEventFrameDiff> *decoder, py::object &raw_buffer) {
+    decoder->decode(py::cast<DataTransfer::BufferPtr>(raw_buffer));
 }
 
-void decode_wrapper_histo(I_EventFrameDecoder<RawEventFrameHisto> *decoder,
-                          py::array_t<I_EventsStream::RawData> *array) {
-    py::buffer_info buf = array->request();
-    if (buf.ndim != 1) {
-        throw std::runtime_error("Decoder needs a 1 dimensional buffer of RawData. Reeived a " +
-                                 std::to_string(buf.ndim) + " dimensional array instead");
-    }
-    decoder->decode((I_EventsStream::RawData *)buf.ptr, (I_EventsStream::RawData *)buf.ptr + buf.size);
+void decode_wrapper_histo(I_EventFrameDecoder<RawEventFrameHisto> *decoder, py::object &raw_buffer) {
+    decoder->decode(py::cast<DataTransfer::BufferPtr>(raw_buffer));
 }
 
 } /* anonymous namespace */

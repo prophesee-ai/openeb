@@ -6,17 +6,15 @@ on:
 
 env:
   #General variables
-  numpy_version: "numpy==1.23.4" # replace with only 'numpy' if no version needed
-  python_versions: 3.8
-  pybind_version: "2.6.0"
+  python_versions: 3.9
   #Windows variables
-  python_executable: "C:/hostedtoolcache/windows/Python/3.8.10/x64/python.exe" #Cmake needs this to find python on windows
+  python_executable: "C:/hostedtoolcache/windows/Python/3.9.13/x64/python.exe" #Cmake needs this to find python on windows
 
-jobs:  
+jobs:
 
-  container-ubuntu-20-job:
-    name: Build Ubuntu 20 Image
-    runs-on: ubuntu-20.04
+  container-ubuntu-22-job:
+    name: Build Ubuntu 22 Image
+    runs-on: ubuntu-22.04
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v2
@@ -34,17 +32,17 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: .
-        file: utils/containers/Dockerfile.OpenEB 
+        file: utils/containers/Dockerfile.OpenEB
         push: true
-        build-args: UBUNTU_VERSION=20.04
-        tags: prophesee/openeb:ubuntu-20.04
+        build-args: BASE_IMAGE_TAG=22.04
+        tags: prophesee/openeb:ubuntu-22.04
 
   job1:
-    name: Ubuntu 20
-    needs: container-ubuntu-20-job
-    runs-on: ubuntu-20.04
+    name: Ubuntu 22
+    needs: container-ubuntu-22-job
+    runs-on: ubuntu-22.04
     container:
-      image: prophesee/openeb:ubuntu-20.04
+      image: prophesee/openeb:ubuntu-22.04
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
@@ -53,8 +51,10 @@ jobs:
 
       - name: Build openEB
         run: |
-          cmake -B build -DBUILD_TESTING=ON
-          cmake --build build --config Release --parallel `nproc`
+          test -e /opt/prophesee/psee-py3venv/bin/activate && . /opt/prophesee/psee-py3venv/bin/activate
+          mkdir build && cd build
+          cmake .. -DBUILD_TESTING=ON
+          cmake --build . --config Release --parallel `nproc`
 
       - name: Getting datasets from storage
         uses: dawidd6/action-download-artifact@v2
@@ -69,37 +69,38 @@ jobs:
           cd build
           ctest --output-on-failure
 
-  container-ubuntu-22-job:
-      name: Build Ubuntu 22 Image
-      runs-on: ubuntu-22.04
-      steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
 
-      - name: Login to Docker Registry
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.PSEE_DOCKER_HUB_USER }}
-          password: ${{ secrets.PSEE_DOCKER_HUB_ACCESS_TOKEN }}
+  container-ubuntu-24-job:
+    name: Build Ubuntu 24 Image
+    runs-on: ubuntu-24.04
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+    - name: Login to Docker Registry
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.PSEE_DOCKER_HUB_USER }}
+        password: ${{ secrets.PSEE_DOCKER_HUB_ACCESS_TOKEN }}
 
-      - name: Build and Push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: utils/containers/Dockerfile.OpenEB
-          push: true
-          build-args: UBUNTU_VERSION=22.04
-          tags: prophesee/openeb:ubuntu-22.04
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build and Push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: utils/containers/Dockerfile.OpenEB
+        push: true
+        build-args: BASE_IMAGE_TAG=24.04
+        tags: prophesee/openeb:ubuntu-24.04
 
   job2:
-    name: Ubuntu 22
-    needs: container-ubuntu-22-job
-    runs-on: ubuntu-22.04
+    name: Ubuntu 24
+    needs: container-ubuntu-24-job
+    runs-on: ubuntu-24.04
     container:
-      image: prophesee/openeb:ubuntu-22.04
+      image: prophesee/openeb:ubuntu-24.04
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
@@ -108,9 +109,10 @@ jobs:
 
       - name: Build openEB
         run: |
+          test -e /opt/prophesee/psee-py3venv/bin/activate && . /opt/prophesee/psee-py3venv/bin/activate
           mkdir build && cd build
           cmake .. -DBUILD_TESTING=ON
-          cmake --build . --config Release --parallel 4
+          cmake --build . --config Release --parallel `nproc`
 
       - name: Getting datasets from storage
         uses: dawidd6/action-download-artifact@v2
@@ -159,7 +161,7 @@ jobs:
           cd ..
           unzip -q "vcpkg-export.zip"
           7z x ffmpeg-archive.7z
-          $python_executable -m pip install pytest $numpy_version opencv-python==4.5.5.64 torch==1.13.1 scipy sk-video==1.1.10 numba==0.56.3 h5py command_runner kornia==0.6.8 pytorch_lightning==1.8.6 pytorch_msssim==0.2.1
+          $python_executable -m pip install -r openeb/utils/python/requirements_openeb.txt
           cd openeb
 
       - name: Build openEB

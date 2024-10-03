@@ -7,6 +7,7 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
+add_subdirectory(decoders)
 add_subdirectory(device)
 add_subdirectory(facilities)
 add_subdirectory(plugin)

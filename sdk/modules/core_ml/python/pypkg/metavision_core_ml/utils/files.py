@@ -15,7 +15,7 @@ import glob
 
 VIDEO_EXTENSIONS = [".mp4", ".mov", ".m4v", ".avi"]
 IMAGE_EXTENSIONS = [".jpg", ".png"]
-
+TIFF_IMAGE_EXTENSIONS = [".tiff", ".tif"]
 
 def is_image(path):
     """Checks if a path is an image
@@ -39,6 +39,16 @@ def is_video(path):
     """
     return os.path.splitext(path)[1].lower() in VIDEO_EXTENSIONS
 
+
+def is_tiff_image(path):
+    """Checks if a path is a tiff image
+
+    Args:
+        path: file path
+    Returns:
+        is_image (bool): True or False
+    """
+    return os.path.splitext(path)[1].lower() in TIFF_IMAGE_EXTENSIONS
 
 def grab_images_and_videos(adir, recursive=True):
     """Grabs image and video files
@@ -64,6 +74,19 @@ def grab_images(adir, recursive=True):
     """
     assert os.path.isdir(adir)
     return grab_files(adir, IMAGE_EXTENSIONS, recursive=recursive)
+
+
+def grab_tiff_images(adir, recursive=True):
+    """Grabs tiff image files
+
+    Args:
+        adir: directory with tiff images
+
+    Returns:
+        files: image files
+    """
+    assert os.path.isdir(adir)
+    return grab_files(adir, TIFF_IMAGE_EXTENSIONS, recursive=recursive)
 
 
 def grab_h5s(adir, recursive=True):

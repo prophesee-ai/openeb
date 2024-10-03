@@ -106,3 +106,33 @@ TEST(BaseFrameGenerationAlgorithm_GTest, static_frame_generation_with_accumulati
     ASSERT_EQ(expected_frame.size(), frame.size());
     ASSERT_TRUE(std::equal(expected_frame.begin<uint8_t>(), expected_frame.end<uint8_t>(), frame.begin<uint8_t>()));
 }
+
+TEST(BaseFrameGenerationAlgorithm_GTest, static_frame_generation_no_accumulation_time_and_alpha) {
+    const int sensor_width               = 10;
+    const int sensor_height              = 10;
+    const timestamp accumulation_time_us = 10000;
+    cv::Mat frame(sensor_height, sensor_width, CV_8UC4);
+
+    // GIVEN the following events
+    std::vector<EventCD> events{{EventCD{5, 1, 0, accumulation_time_us - 30},
+                                 EventCD{5, 5, 0, accumulation_time_us - 10}, EventCD{5, 8, 1, accumulation_time_us}}};
+
+    // WHEN we generate a frame from the input events
+    BaseFrameGenerationAlgorithm::generate_frame_from_events(events.cbegin(), events.cend(), frame, 0,
+                                                             Metavision::ColorPalette::Dark,
+                                                             BaseFrameGenerationAlgorithm::Parameters::BGRA);
+
+    // THEN we generate a frame that holds all events
+    auto bg_color  = BaseFrameGenerationAlgorithm::bg_color_default();
+    auto off_color = BaseFrameGenerationAlgorithm::off_color_default();
+    auto on_color  = BaseFrameGenerationAlgorithm::on_color_default();
+    cv::Mat expected_frame(sensor_height, sensor_width, CV_8UC4, cv::Vec4b(bg_color[0], bg_color[1], bg_color[2], 255));
+    expected_frame.at<cv::Vec4b>(1, 5) = cv::Vec4b(off_color[0], off_color[1], off_color[2], 255);
+    expected_frame.at<cv::Vec4b>(8, 5) = cv::Vec4b(on_color[0], on_color[1], on_color[2], 255);
+    expected_frame.at<cv::Vec4b>(5, 5) = cv::Vec4b(off_color[0], off_color[1], off_color[2], 255);
+
+    ASSERT_EQ(CV_8UC4, frame.type());
+    ASSERT_EQ(expected_frame.size(), frame.size());
+    ASSERT_TRUE(
+        std::equal(expected_frame.begin<cv::Vec3b>(), expected_frame.end<cv::Vec3b>(), frame.begin<cv::Vec3b>()));
+}

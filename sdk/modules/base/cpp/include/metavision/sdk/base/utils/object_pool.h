@@ -13,7 +13,6 @@
 #define METAVISION_SDK_BASE_OBJECT_POOL_H
 
 #include <condition_variable>
-#include <exception>
 #include <memory>
 #include <mutex>
 #include <stack>
@@ -57,6 +56,10 @@ private:
     };
 
 public:
+    /// @brief The type of the stored object
+    using value_type = T;
+
+    /// @brief The type of the smart pointer used to store the object
     using ptr_type =
         typename std::conditional<acquire_shared_ptr, std::shared_ptr<T>, std::unique_ptr<T, Deleter>>::type;
 

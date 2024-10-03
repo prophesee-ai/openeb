@@ -27,6 +27,7 @@ enum DecoderProtocolViolation : HalErrorCodeType {
     NonContinuousTimeHigh,
     MissingYAddr,
     InvalidVectBase,
+    OutOfBoundsEventCoordinate,
 };
 
 inline std::ostream &operator<<(std::ostream &o, const DecoderProtocolViolation protocol_violation) {
@@ -38,7 +39,7 @@ inline std::ostream &operator<<(std::ostream &o, const DecoderProtocolViolation 
         {DecoderProtocolViolation::NonContinuousTimeHigh, "NonContinuousTimeHigh"},
         {DecoderProtocolViolation::MissingYAddr, "MissingYAddr"},
         {DecoderProtocolViolation::InvalidVectBase, "InvalidVectBase"},
-
+        {DecoderProtocolViolation::OutOfBoundsEventCoordinate, "OutOfBoundsEventCoordinate"},
     };
 
     o << protocol_violation_to_str.at(protocol_violation);

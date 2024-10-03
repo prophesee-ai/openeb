@@ -38,13 +38,6 @@ public:
     /// @return Serial number as a string
     virtual std::string get_serial() const override;
 
-    /// @brief Returns the serial number of the camera
-    ///
-    /// @return The system id as a integer
-    ///
-    /// @note this number can be used to check the compatibility of biases file for example
-    virtual long get_system_id() const override;
-
     /// @brief Returns the detail about the sensor available
     ///
     /// @return The sensor information

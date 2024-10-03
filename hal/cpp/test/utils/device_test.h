@@ -12,8 +12,6 @@
 #ifndef METAVISION_HAL_TEST_UTILS_DEVICE_TEST_H
 #define METAVISION_HAL_TEST_UTILS_DEVICE_TEST_H
 
-#include <algorithm>
-
 #include <gtest/gtest.h>
 
 #include "metavision/hal/device/device.h"
@@ -21,7 +19,6 @@
 #include "metavision/hal/facilities/i_event_decoder.h"
 #include "metavision/hal/facilities/i_events_stream.h"
 #include "metavision/hal/facilities/i_events_stream_decoder.h"
-#include "metavision/hal/facilities/i_facility.h"
 #include "metavision/hal/utils/hal_exception.h"
 #include "metavision/utils/gtest/gtest_with_tmp_dir.h"
 
@@ -71,7 +68,7 @@ protected:
         while (nb_buffers_to_process > 0) {
             if (events_stream->wait_next_buffer()) {
                 auto raw_data = events_stream->get_latest_raw_data();
-                events_stream_decoder->decode(raw_data->data(), raw_data->data() + raw_data->size());
+                events_stream_decoder->decode(raw_data);
                 nb_buffers_to_process--;
             }
         }

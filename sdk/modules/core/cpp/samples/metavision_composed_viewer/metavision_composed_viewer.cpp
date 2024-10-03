@@ -9,23 +9,22 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-// This code sample demonstrates how to use Metavision Core SDK pipeline utility to filter events and show a frame
-// combining unfiltered and filtered events. It also shows how to set a custom consuming callback on a
-// @ref FrameCompositionStage instance, so that it can consume data from multiple stages.
+// This code sample demonstrates how to use Metavision Core SDK to filter events and show a frame
+// combining unfiltered and filtered events.
 
+#include <atomic>
+#include <chrono>
 #include <functional>
 #include <boost/program_options.hpp>
 #include <metavision/sdk/core/algorithms/polarity_filter_algorithm.h>
-#include <metavision/sdk/core/pipeline/pipeline.h>
-#include <metavision/sdk/core/pipeline/frame_generation_stage.h>
-#include <metavision/sdk/core/pipeline/frame_composition_stage.h>
-#include <metavision/sdk/driver/pipeline/camera_stage.h>
+#include <metavision/sdk/core/algorithms/periodic_frame_generation_algorithm.h>
+#include <metavision/sdk/core/utils/frame_composer.h>
+#include <metavision/sdk/stream/camera.h>
 #include <metavision/sdk/ui/utils/event_loop.h>
-#include <metavision/sdk/ui/pipeline/frame_display_stage.h>
+#include <metavision/sdk/ui/utils/window.h>
 
 namespace po = boost::program_options;
 
-/// [PIPELINE_COMPOSED_BEGIN]
 int main(int argc, char *argv[]) {
     std::string event_file_path;
 
@@ -57,24 +56,21 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    // A pipeline for which all added stages will automatically be run in their own processing threads (if applicable)
-    Metavision::Pipeline p(true);
-
     // Construct a camera from a file or a live stream
     Metavision::Camera cam;
+    std::atomic<bool> should_stop = false;
     if (!event_file_path.empty()) {
         cam = Metavision::Camera::from_file(event_file_path);
     } else {
         cam = Metavision::Camera::from_first_available();
     }
-    const unsigned short width  = cam.geometry().width();
-    const unsigned short height = cam.geometry().height();
+    const unsigned short width  = cam.geometry().get_width();
+    const unsigned short height = cam.geometry().get_height();
 
     const Metavision::timestamp event_buffer_duration_ms = 2;
     const uint32_t accumulation_time_ms                  = 10;
     const int display_fps                                = 100;
 
-    /// Pipeline
     //
     //  0 (Camera) ---------------->---------------- 1 (Polarity Filter)
     //  |                                            |
@@ -90,33 +86,63 @@ int main(int argc, char *argv[]) {
     //                 5 (Display)
     //
 
-    // 0) Stage producing events from a camera
-    auto &cam_stage = p.add_stage(std::make_unique<Metavision::CameraStage>(std::move(cam), event_buffer_duration_ms));
+    Metavision::FrameComposer frame_composer;
 
-    // 1) Stage wrapping a polarity filter algorithm to keep positive events
-    auto &pol_filter_stage = p.add_algorithm_stage(std::make_unique<Metavision::PolarityFilterAlgorithm>(1), cam_stage);
+    // Left frame, plain output from the sensor
+    const auto left_image_ref = frame_composer.add_new_subimage_parameters(0, 0, {width, height}, Metavision::FrameComposer::GrayToColorOptions());
+    Metavision::PeriodicFrameGenerationAlgorithm left_frame_generator(width, height, accumulation_time_ms * 1000);
+    cam.cd().add_callback([&left_frame_generator](const Metavision::EventCD *begin, const Metavision::EventCD *end) {
+                              left_frame_generator.process_events(begin, end);
+                          });
+    left_frame_generator.set_output_callback(
+        [&left_image_ref, &frame_composer](Metavision::timestamp t, cv::Mat &frame_data) {
+            if (!frame_data.empty()) {
+                frame_composer.update_subimage(left_image_ref, frame_data);
+            }
+        });
 
-    // 2,3) Stages generating frames from the previous stages
-    auto &left_frame_stage =
-        p.add_stage(std::make_unique<Metavision::FrameGenerationStage>(width, height, accumulation_time_ms), cam_stage);
-    auto &right_frame_stage = p.add_stage(
-        std::make_unique<Metavision::FrameGenerationStage>(width, height, accumulation_time_ms), pol_filter_stage);
+    // Right frame, output only positive events
+    const auto right_image_ref = frame_composer.add_new_subimage_parameters(width + 10, 0, {width, height}, Metavision::FrameComposer::GrayToColorOptions());
+    Metavision::PeriodicFrameGenerationAlgorithm right_frame_generator(width, height, accumulation_time_ms * 1000);
+    Metavision::PolarityFilterAlgorithm pol_filter(1);
+    cam.cd().add_callback([&pol_filter, &right_frame_generator](const Metavision::EventCD *begin, const Metavision::EventCD *end) {
+                              std::vector<Metavision::EventCD> pol_filter_out;
+                              pol_filter.process_events(begin, end, std::back_inserter(pol_filter_out));
+                              right_frame_generator.process_events(pol_filter_out.begin(), pol_filter_out.end());
+                          });
+    right_frame_generator.set_output_callback(
+        [&right_image_ref, &frame_composer](Metavision::timestamp t, cv::Mat &frame_data) {
+            if (!frame_data.empty()) {
+                frame_composer.update_subimage(right_image_ref, frame_data);
+            }
+        });
 
-    // 4) Stage generating a combined frame
-    auto &full_frame_stage = p.add_stage(std::make_unique<Metavision::FrameCompositionStage>(display_fps));
-    full_frame_stage.add_previous_frame_stage(left_frame_stage, 0, 0, width, height);
-    full_frame_stage.add_previous_frame_stage(right_frame_stage, width + 10, 0, width, height);
 
-    // 5) Stage displaying the combined frame
-    const auto full_width  = full_frame_stage.frame_composer().get_total_width();
-    const auto full_height = full_frame_stage.frame_composer().get_total_height();
-    auto &disp_stage       = p.add_stage(
-        std::make_unique<Metavision::FrameDisplayStage>("CD & noise filtered CD events", full_width, full_height),
-        full_frame_stage);
+    Metavision::Window window("CD & noise filtered CD events", frame_composer.get_total_width(), frame_composer.get_total_height(),
+                              Metavision::Window::RenderMode::BGR);
+    window.set_keyboard_callback([&should_stop](Metavision::UIKeyEvent key, int scancode, Metavision::UIAction action, int mods) {
+        if (action == Metavision::UIAction::RELEASE) {
+            switch (key) {
+            case Metavision::UIKeyEvent::KEY_ESCAPE:
+            case Metavision::UIKeyEvent::KEY_Q:
+                should_stop = true;
+                break;
+            }
+        }
+    });
 
-    // Run the pipeline and wait for its completion
-    p.run();
+    const auto period_us = std::chrono::microseconds(1000000 / display_fps);
+    auto last_frame_update = std::chrono::high_resolution_clock::now() - period_us;
+    cam.start();
+    while (!should_stop && cam.is_running()) {
+        if (std::chrono::high_resolution_clock::now() - last_frame_update >= period_us
+            && !frame_composer.get_full_image().empty()) {
+            window.show(frame_composer.get_full_image());
+            last_frame_update = std::chrono::high_resolution_clock::now();
+        }
+        Metavision::EventLoop::poll_and_dispatch();
+    }
+    cam.stop();
 
     return 0;
 }
-/// [PIPELINE_COMPOSED_END]

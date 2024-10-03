@@ -23,6 +23,7 @@
 #include "metavision/hal/decoders/evt2/evt2_decoder.h"
 #include "metavision/hal/decoders/evt21/evt21_decoder.h"
 #include "metavision/hal/decoders/evt3/evt3_decoder.h"
+#include "metavision/hal/decoders/evt4/evt4_decoder.h"
 #include "metavision/hal/decoders/ehc/ehc_decoder.h"
 #include "metavision/hal/decoders/mtr/mtr_decoder.h"
 #include "metavision/hal/utils/hal_log.h"
@@ -61,13 +62,23 @@ static std::pair<unsigned, unsigned> get_pixel_layout(const std::string &layout_
 }
 
 std::shared_ptr<I_EventsStreamDecoder> make_decoder(DeviceBuilder &device_builder, const StreamFormat &format,
-                                                    size_t &raw_size_bytes, bool do_time_shifting) {
+                                                    size_t &raw_size_bytes, bool do_time_shifting, const Metavision::DeviceConfig &config) {
     std::shared_ptr<I_EventsStreamDecoder> decoder;
     std::shared_ptr<I_Decoder> frame_decoder;
     auto i_geometry = device_builder.add_facility(format.geometry());
 
     raw_size_bytes = 0;
-    if (format.name() == "EVT3") {
+    if (format.name() == "EVT4") {
+        auto cd_decoder           = device_builder.add_facility(std::make_unique<I_EventDecoder<EventCD>>());
+        auto ext_trig_decoder     = device_builder.add_facility(std::make_unique<I_EventDecoder<EventExtTrigger>>());
+        auto erc_count_ev_decoder = device_builder.add_facility(std::make_unique<I_EventDecoder<EventERCCounter>>());
+
+        decoder = device_builder.add_facility(make_evt4_decoder(do_time_shifting, i_geometry->get_width(),
+                                                                i_geometry->get_height(), cd_decoder, ext_trig_decoder,
+                                                                erc_count_ev_decoder));
+
+        raw_size_bytes = decoder->get_raw_event_size_bytes();
+    } else if (format.name() == "EVT3") {
         auto cd_decoder           = device_builder.add_facility(std::make_unique<I_EventDecoder<EventCD>>());
         auto ext_trig_decoder     = device_builder.add_facility(std::make_unique<I_EventDecoder<EventExtTrigger>>());
         auto erc_count_ev_decoder = device_builder.add_facility(std::make_unique<I_EventDecoder<EventERCCounter>>());
@@ -85,19 +96,36 @@ std::shared_ptr<I_EventsStreamDecoder> make_decoder(DeviceBuilder &device_builde
             device_builder.add_facility(std::make_unique<EVT2Decoder>(do_time_shifting, cd_decoder, ext_trig_decoder));
         raw_size_bytes = decoder->get_raw_event_size_bytes();
     } else if (format.name() == "EVT21") {
-        auto cd_decoder           = device_builder.add_facility(std::make_unique<I_EventDecoder<EventCD>>());
+            
         auto ext_trig_decoder     = device_builder.add_facility(std::make_unique<I_EventDecoder<EventExtTrigger>>());
         auto erc_count_ev_decoder = device_builder.add_facility(std::make_unique<I_EventDecoder<EventERCCounter>>());
         auto endianness           = format["endianness"];
 
-        if (endianness == "legacy") {
-            decoder = device_builder.add_facility(std::make_unique<EVT21LegacyDecoder>(
-                do_time_shifting, cd_decoder, ext_trig_decoder, erc_count_ev_decoder));
-        } else {
+        auto evt21_keep_vectors = config.get<bool>("evt21_keep_vectors");
+
+        if (evt21_keep_vectors){
+            if (endianness != "little"){
+                throw std::invalid_argument("Value for option 'endianness` not supported when option `evt21_keep_vectors=true` is set"); 
+            }
+
+            auto cd_vector_decoder = device_builder.add_facility(std::make_unique<I_EventDecoder<EventCDVector>>());
+
             decoder = device_builder.add_facility(
-                std::make_unique<EVT21Decoder>(do_time_shifting, cd_decoder, ext_trig_decoder, erc_count_ev_decoder));
+                    std::make_unique<EVT21VectorizedDecoder>(do_time_shifting, cd_vector_decoder, ext_trig_decoder, erc_count_ev_decoder));
+
+        }else{
+            auto cd_decoder = device_builder.add_facility(std::make_unique<I_EventDecoder<EventCD>>());
+
+            if (endianness == "legacy") {
+                decoder = device_builder.add_facility(std::make_unique<EVT21LegacyDecoder>(
+                    do_time_shifting, cd_decoder, ext_trig_decoder, erc_count_ev_decoder));
+            } else {
+                decoder = device_builder.add_facility(
+                    std::make_unique<EVT21Decoder>(do_time_shifting, cd_decoder, ext_trig_decoder, erc_count_ev_decoder));
+            }
         }
         raw_size_bytes = decoder->get_raw_event_size_bytes();
+
     } else if (format.name() == "HISTO3D") {
         auto pixel_layout = get_pixel_layout(format["pixellayout"]);
         int pixel_bytes;
@@ -130,7 +158,7 @@ std::shared_ptr<I_EventsStreamDecoder> make_decoder(DeviceBuilder &device_builde
     } else if (format.name().rfind("MTR") == 0) {
         auto mtr_decoder = mtr_decoder_from_format(*i_geometry, format.name());
         if (mtr_decoder) {
-            frame_decoder = device_builder.add_facility(std::move(mtr_decoder));
+            frame_decoder  = device_builder.add_facility(std::move(mtr_decoder));
             raw_size_bytes = frame_decoder->get_raw_event_size_bytes();
         }
     }
