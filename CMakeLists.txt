@@ -448,11 +448,6 @@ if (METAVISION_SDK_ADVANCED_MODULES_AVAILABLE)
                 DESTINATION share/metavision/licensing
                 COMPONENT metavision-sdk-advanced-license)
     endif()
-else ()
-    # Installing metavision open
-    install(FILES ${PROJECT_SOURCE_DIR}/licensing/LICENSE_OPEN
-            DESTINATION share/metavision/licensing
-            COMPONENT metavision-sdk-base-lib)
 endif (METAVISION_SDK_ADVANCED_MODULES_AVAILABLE)
 
 ################################
