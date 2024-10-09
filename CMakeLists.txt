@@ -15,6 +15,8 @@ if(NOT CMAKE_BUILD_TYPE)
         "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
 
+option(BUILD_TESTING "Build OpenEB's test suite" OFF)
+
 cmake_minimum_required(VERSION 3.5)
 
 project(metavision VERSION 5.0.0)

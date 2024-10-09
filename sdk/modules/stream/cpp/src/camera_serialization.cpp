@@ -703,7 +703,11 @@ std::ostream &save_device(const Device &d, std::ostream &os) {
 
     google::protobuf::util::JsonPrintOptions options;
     options.add_whitespace                = true;
+    #if (GOOGLE_PROTOBUF_VERSION >= 5026000)
+    options.always_print_fields_with_no_presence = true;
+    #else
     options.always_print_primitive_fields = true;
+    #endif
     options.preserve_proto_field_names    = true;
 
     std::string json;
