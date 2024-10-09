@@ -18,9 +18,6 @@
 #define GL_SILENCE_DEPRECATION
 #include <OpenGL/gl3.h>
 #else
-#if defined(WIN32)
-#include <Windows.h>
-#endif
 #include <GL/glew.h>
 #include <GL/gl.h>
 #endif
