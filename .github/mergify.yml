@@ -5,6 +5,8 @@ queue_rules:
       - "#review-requested=0"
       - "#changes-requested-reviews-by=0"
       - label=ready-to-merge
+    update_method: rebase
+    merge_method: fast-forward
 
 pull_request_rules:
   - name: Automatic merge on approval & CI
@@ -16,5 +18,3 @@ pull_request_rules:
     actions:
       queue:
         name: default
-        method: fast-forward
-        update_method: rebase
