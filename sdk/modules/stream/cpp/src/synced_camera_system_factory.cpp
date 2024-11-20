@@ -10,6 +10,7 @@
  **********************************************************************************************************************/
 
 #include <filesystem>
+#include <iomanip>
 
 #include "metavision/hal/facilities/i_camera_synchronization.h"
 #include "metavision/sdk/stream/camera.h"

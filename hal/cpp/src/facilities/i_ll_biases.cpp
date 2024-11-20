@@ -10,6 +10,7 @@
  **********************************************************************************************************************/
 
 #include <fstream>
+#include <iomanip>
 #include <memory>
 
 #include "metavision/sdk/base/utils/generic_header.h"

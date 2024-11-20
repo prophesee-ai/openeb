@@ -12,6 +12,7 @@
 #include <iostream>
 #include <cmath> // floor
 #include <fstream>
+#include <iomanip>
 
 #include "metavision/psee_hw_layer/devices/genx320/genx320_roi_driver.h"
 #include "metavision/hal/utils/hal_log.h"
