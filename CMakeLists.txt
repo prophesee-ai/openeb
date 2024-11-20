@@ -156,6 +156,9 @@ if (MSVC)
     find_path(VCPKG_INCLUDE_DIR dirent.h)
     include_directories(${VCPKG_INCLUDE_DIR})
 elseif (NOT ANDROID AND "${TARGET_PLATFORM}" STREQUAL "")
+    # Needed when building with GCC < 9
+    link_libraries(stdc++fs)
+
     # Platforms with their own toolchains should define their own compile flags
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Werror=type-limits -Werror=sign-compare -Werror=implicit-fallthrough -Werror=unused-function -Werror=unused-but-set-variable -Werror=dangling-else -Werror=sequence-point -Werror=uninitialized")
