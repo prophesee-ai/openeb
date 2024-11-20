@@ -335,7 +335,7 @@ cv::String VideoWriter::getBackendName() const {
     if (writer_) {
         return "VideoWriter";
     }
-#if CV_MAJOR_VERSION >= 3 && CV_MINOR_VERSION == 2
+#if CV_MAJOR_VERSION >= 3 && CV_MINOR_VERSION >= 2
     MV_SDK_LOG_ERROR() << "VIDEOIO: VideoWriter does not implement :" << Metavision::Log::function;
     return "";
 #else
@@ -348,7 +348,7 @@ void VideoWriter::write(cv::InputArray image) {
         writer_->write(image);
         return;
     }
-#if CV_MAJOR_VERSION >= 3 && CV_MINOR_VERSION == 2
+#if CV_MAJOR_VERSION >= 3 && CV_MINOR_VERSION >= 2
     cv::VideoWriter::write(image.getMat(-1));
 #else
     cv::VideoWriter::write(image);
@@ -369,7 +369,7 @@ VideoWriter &VideoWriter::operator<<(const cv::UMat &image) {
         return *this;
     }
 
-#if CV_MAJOR_VERSION >= 3 && CV_MINOR_VERSION == 2
+#if CV_MAJOR_VERSION >= 3 && CV_MINOR_VERSION >= 2
     MV_SDK_LOG_ERROR() << "VideoWriter :" << Metavision::Log::function << "not implemented";
     return *this;
 #else
