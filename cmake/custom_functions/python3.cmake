@@ -113,7 +113,7 @@ if (COMPILE_PYTHON3_BINDINGS)
             file(TO_CMAKE_PATH "${PYTHON_${_python_version}_LOCAL_SITE_PACKAGES}" PYTHON_${_python_version}_LOCAL_SITE_PACKAGES)
         endif (PYTHON3_SITE_PACKAGES)
         # ... it must be relative
-        string(REGEX REPLACE "^${STAGING_DIR_NATIVE}/usr/" "" PYTHON_${_python_version}_LOCAL_SITE_PACKAGES "${PYTHON_${_python_version}_LOCAL_SITE_PACKAGES}")
+        string(REGEX REPLACE "^${STAGING_DIR_NATIVE}/usr/(local/)?" "" PYTHON_${_python_version}_LOCAL_SITE_PACKAGES "${PYTHON_${_python_version}_LOCAL_SITE_PACKAGES}")
     endforeach ()
 
     # this variable is used to create all python versions packages variables for cpack
