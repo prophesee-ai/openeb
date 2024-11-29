@@ -57,7 +57,7 @@ jobs:
           cmake --build . --config Release --parallel `nproc`
 
       - name: Getting datasets from storage
-        uses: dawidd6/action-download-artifact@v2
+        uses: dawidd6/action-download-artifact@v6
         with:
           workflow: upload_datasets.yaml
           workflow_conclusion: success
@@ -115,7 +115,7 @@ jobs:
           cmake --build . --config Release --parallel `nproc`
 
       - name: Getting datasets from storage
-        uses: dawidd6/action-download-artifact@v2
+        uses: dawidd6/action-download-artifact@v6
         with:
           workflow: upload_datasets.yaml
           workflow_conclusion: success
@@ -140,7 +140,7 @@ jobs:
           python-version: ${{ env.python_versions }}
 
       - name: Download vcpkg binaries
-        uses: dawidd6/action-download-artifact@v2
+        uses: dawidd6/action-download-artifact@v6
         with:
           workflow: upload_win_binaries.yaml
           workflow_conclusion: success
@@ -148,7 +148,7 @@ jobs:
           path: ".."
 
       - name: Download ffmpeg archive
-        uses: dawidd6/action-download-artifact@v2
+        uses: dawidd6/action-download-artifact@v6
         with:
           workflow: upload_win_binaries.yaml
           workflow_conclusion: success
@@ -176,7 +176,7 @@ jobs:
           cmake --build . --config Release --parallel 4
 
       - name: Getting datasets from storage
-        uses: dawidd6/action-download-artifact@v2
+        uses: dawidd6/action-download-artifact@v6
         with:
           workflow: upload_datasets.yaml
           workflow_conclusion: success
