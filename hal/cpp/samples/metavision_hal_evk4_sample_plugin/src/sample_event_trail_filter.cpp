@@ -71,14 +71,14 @@ bool SampleEventTrailFilter::enable(bool state) {
         write_register(*usb_connection_, 0x0000D004, 0x01);
         // trail_param to 0
         write_register(*usb_connection_, 0x0000D008, 0x00);
-        // ToDo we should update the value of stc_threshold and disable_stc_cut_trail as well
+        // For a fully functional facility, stc_threshold and disable_stc_cut_trail should also be updated
 
     } else if (filtering_type_ == Metavision::I_EventTrailFilterModule::Type::TRAIL) {
         // stc_enable to 0
         write_register(*usb_connection_, 0x0000D004, 0x00);
         // trail_param to 1
         write_register(*usb_connection_, 0x0000D008, 0x01);
-        // ToDo we should update the value of trail_threshold  as well
+        // For a fully functional facility, trail_threshold should also be updated
     }
 
     // We write 101 (5) to stc/pipeline_control to enable the block

@@ -52,6 +52,15 @@ public:
                 });
         }
 
+        I_EventDecoder<EventMonitoring> *i_monitoring_events_decoder =
+            device.get_facility<I_EventDecoder<EventMonitoring>>();
+        if (i_monitoring_events_decoder) {
+            i_monitoring_events_decoder->add_event_buffer_callback(
+                [this](const EventMonitoring *begin, const EventMonitoring *end) {
+                    reader_.notify_events_buffer(begin, end);
+                });
+        }
+
         auto i_histogram_decoder = device.get_facility<I_EventFrameDecoder<RawEventFrameHisto>>();
         if (i_histogram_decoder) {
             i_histogram_decoder->add_event_frame_callback(

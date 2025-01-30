@@ -157,6 +157,13 @@ struct EVT2TimeHigh {
 static_assert(sizeof(EVT2TimeHigh) == 4,
               "The size of the packed struct EVT2TimeHigh is not the expected one (which is 4 bytes)");
 
+struct EVT2Continued {
+    std::uint32_t data : 28;
+    std::uint32_t type : 4;
+};
+static_assert(sizeof(EVT2Continued) == 4,
+              "The size of the packed struct EVT2Continued is not the expected one (which is 4 bytes)");
+
 struct EVT2EvType {
     std::uint32_t unused : 28;
     std::uint32_t type : 4;
@@ -170,9 +177,15 @@ union EVT2RawEvent {
     EVT2Event2D cd;
     EVT2TimeHigh th;
     EVT2EventExtTrigger trig;
+    EVT2EventMonitor monitoring;
 };
 static_assert(sizeof(EVT2RawEvent) == 4,
               "The size of the packed union EVT2RawEvent is not the expected one (which is 4 bytes)");
+
+enum EVT2EventMasterEventTypes : uint16_t {
+    MASTER_IN_CD_EVENT_COUNT           = 0x0014,
+    MASTER_RATE_CONTROL_CD_EVENT_COUNT = 0x0016,
+};
 
 } // namespace Metavision
 

@@ -66,6 +66,7 @@ std::string human_readable_time(Metavision::timestamp t) {
 
 int main(int argc, char *argv[]) {
     std::string in_file_path;
+    bool disable_ts_shifting = false;
 
     const std::string program_desc("Application to get information about an event file\n");
 
@@ -74,6 +75,7 @@ int main(int argc, char *argv[]) {
     options_desc.add_options()
         ("help,h", "Produce help message.")
         ("input-event-file,i", po::value<std::string>(&in_file_path)->required(), "Path to input event file (RAW, DAT or HDF5).")
+        ("disable-timestamp-shifting,d", po::bool_switch(&disable_ts_shifting), "Disable shifting all event timestamps in a RAW file to be relative to the timestamp of the first event, preserving their original absolute values")
         ;
     // clang-format on
 
@@ -103,6 +105,7 @@ int main(int argc, char *argv[]) {
     Metavision::Camera camera;
     try {
         auto hints = Metavision::FileConfigHints().real_time_playback(false);
+        hints.set("time_shift", !disable_ts_shifting);
         camera     = Metavision::Camera::from_file(in_file_path, hints);
     } catch (Metavision::CameraException &e) {
         MV_LOG_ERROR() << e.what();

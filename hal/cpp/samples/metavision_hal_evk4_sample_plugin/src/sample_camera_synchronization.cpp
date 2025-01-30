@@ -42,8 +42,7 @@ bool SampleCameraSynchronization::set_mode_master() {
 }
 
 bool SampleCameraSynchronization::set_mode_slave() {
-    // TODO: when testing with metavision_hal_sync, the camera streams in slave mode without master sending signal
-    // There must be a problem in the Slave Mode configuration
+    // This code is baseline that should be checked and enhanced by reviewing the datasheet and Prophesee plugin code.
 
     // First, update register 0x00009008 (ro/time_base_ctrl) which has a default value of 0x00000640
     // We write the following bits (0 being the least significant one):

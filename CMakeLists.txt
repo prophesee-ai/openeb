@@ -15,11 +15,11 @@ if(NOT CMAKE_BUILD_TYPE)
         "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
 
-option(BUILD_TESTING "Build OpenEB's test suite" OFF)
+option(BUILD_TESTING "Build test suites" OFF)
 
 cmake_minimum_required(VERSION 3.5)
 
-project(metavision VERSION 5.0.0)
+project(metavision VERSION 5.1.0)
 set(PROJECT_VERSION_SUFFIX "")
 
 if(PROJECT_VERSION_SUFFIX STREQUAL "")
@@ -89,7 +89,7 @@ if (ANDROID)
         # Setup 3rd party prebuilt libraries dir
         set(ANDROID_PREBUILT_3RDPARTY_EXTRACT_DIR ${GENERATE_FILES_DIRECTORY}/android/3rdparty)
         if (NOT EXISTS ${ANDROID_PREBUILT_3RDPARTY_EXTRACT_DIR})
-            lfs_download(${PREBUILT_BASE_DIR}/${PREBUILT_FILENAME} COMPILATION)
+            lfs_download(COMPILATION IMMEDIATE ${PREBUILT_BASE_DIR}/${PREBUILT_FILENAME})
             message(STATUS "Unpacking ${PREBUILT_BASE_DIR}/${PREBUILT_FILENAME} in ${ANDROID_PREBUILT_3RDPARTY_EXTRACT_DIR}")
             file(MAKE_DIRECTORY ${ANDROID_PREBUILT_3RDPARTY_EXTRACT_DIR})
             execute_process(
@@ -298,6 +298,9 @@ if (BUILD_TESTING)
     lfs_download(datasets/openeb/aer_4bits.raw VALIDATION)
     lfs_download(datasets/openeb/0101_cm_mtr12_output.raw VALIDATION)
     lfs_download(datasets/openeb/0101_cm_mtru_output.raw VALIDATION)
+    lfs_download(datasets/openeb/lifo_evt21.raw VALIDATION)
+    lfs_download(datasets/openeb/lifo_evt2.raw VALIDATION)
+    lfs_download(datasets/openeb/lifo_evt3.raw VALIDATION)
     lfs_download(datasets/openeb/synced/recording_master.raw VALIDATION)
     lfs_download(datasets/openeb/synced/recording_slave_0.raw VALIDATION)
     lfs_download(datasets/openeb/synced/recording_slave_1.raw VALIDATION)
@@ -369,32 +372,35 @@ endif(CODE_COVERAGE)
 
 ################################################### Detect which SDK modules are available
 
-set(METAVISION_SDK_MODULES_OPEN base core stream CACHE STRING "SDK Open modules")
+set(METAVISION_SDK_MODULES_OPEN base core stream)
 if (COMPILE_PYTHON3_BINDINGS)
     list(APPEND METAVISION_SDK_MODULES_OPEN core_ml)
 endif (COMPILE_PYTHON3_BINDINGS)
-set(METAVISION_SDK_MODULES_ADVANCED analytics cv ml CACHE STRING "SDK Advanced modules")
-
+set(METAVISION_SDK_MODULES_ADVANCED analytics cv ml)
 if (NOT ANDROID)
     list(APPEND METAVISION_SDK_MODULES_OPEN ui)
-
     if(NOT DISABLE_METAVISION_SDK_MODULE_CALIBRATION_AND_CV3D)
         list(APPEND METAVISION_SDK_MODULES_ADVANCED calibration cv3d)
     endif()
 endif (NOT ANDROID)
+
+if(NOT EXISTS METAVISION_SELECTED_MODULES)
+    set(METAVISION_SELECTED_MODULES "${METAVISION_SDK_MODULES_OPEN};${METAVISION_SDK_MODULES_ADVANCED}" CACHE STRING "Metavision SDK modules selected for compilation")
+endif()
 
 set(METAVISION_SDK_MODULES_AVAILABLE)
 foreach(metavision_modules_set OPEN ADVANCED)
     set(METAVISION_SDK_${metavision_modules_set}_MODULES_AVAILABLE)
     message(STATUS "Building METAVISION_SDK_MODULES_${metavision_modules_set} modules : ${METAVISION_SDK_MODULES_${metavision_modules_set}}")
     foreach(module_name IN LISTS METAVISION_SDK_MODULES_${metavision_modules_set})
-        if ((NOT METAVISION_SELECTED_MODULES OR ${module_name} IN_LIST METAVISION_SELECTED_MODULES)
-            AND EXISTS "${CMAKE_CURRENT_LIST_DIR}/sdk/modules/${module_name}/CMakeLists.txt")
+        if (${module_name} IN_LIST METAVISION_SELECTED_MODULES AND EXISTS "${CMAKE_CURRENT_LIST_DIR}/sdk/modules/${module_name}/CMakeLists.txt")
             list(APPEND METAVISION_SDK_${metavision_modules_set}_MODULES_AVAILABLE "${module_name}")
         endif()
     endforeach()
     list(APPEND METAVISION_SDK_MODULES_AVAILABLE ${METAVISION_SDK_${metavision_modules_set}_MODULES_AVAILABLE})
 endforeach()
+message(STATUS "METAVISION_SELECTED_MODULES=${METAVISION_SELECTED_MODULES}")
+message(STATUS "METAVISION_SDK_MODULES_AVAILABLE=${METAVISION_SDK_MODULES_AVAILABLE}")
 
 ################################################### COMPILATION
 

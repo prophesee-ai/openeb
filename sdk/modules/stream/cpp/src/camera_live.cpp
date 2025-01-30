@@ -28,6 +28,7 @@
 #include "metavision/sdk/stream/internal/erc_counter_internal.h"
 #include "metavision/sdk/stream/internal/frame_diff_internal.h"
 #include "metavision/sdk/stream/internal/frame_histo_internal.h"
+#include "metavision/sdk/stream/internal/monitoring_internal.h"
 #include "metavision/sdk/stream/internal/raw_data_internal.h"
 
 namespace Metavision {
@@ -263,6 +264,18 @@ void LivePrivate::init() {
                 cb(h);
             }
         });
+    }
+
+    I_EventDecoder<EventMonitoring> *i_monitoring_events_decoder =
+        device_->get_facility<I_EventDecoder<EventMonitoring>>();
+    if (i_monitoring_events_decoder) {
+        monitoring_.reset(Monitoring::Private::build(index_manager_));
+        i_monitoring_events_decoder->add_event_buffer_callback(
+            [this](const EventMonitoring *begin, const EventMonitoring *end) {
+                for (auto &&cb : monitoring_->get_pimpl().get_cbs()) {
+                    cb(begin, end);
+                }
+            });
     }
 
     if (!i_decoder_) {

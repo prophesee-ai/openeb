@@ -238,7 +238,7 @@ endfunction(cmake_parse_arguments_only)
 #
 include(CMakeParseArguments)
 function(MetavisionSDK_add_module module_name)
-    set(multiValueArgs SOURCES EXTRA_REQUIRED_PACKAGE REQUIRED_METAVISION_SDK_MODULES VARIABLE_TO_SET)
+    set(multiValueArgs SOURCES EXTRA_REQUIRED_PACKAGE REQUIRED_METAVISION_SDK_MODULES VARIABLE_TO_SET VARIABLE_TO_SET_WIN32)
     cmake_parse_arguments(PARSED_ARGS "INTERFACE_LIBRARY" "" "${multiValueArgs}" ${ARGN})
 
     # Check validity of input args
@@ -367,6 +367,14 @@ function(MetavisionSDK_add_module module_name)
     foreach(variable_to_set ${PARSED_ARGS_VARIABLE_TO_SET})
         set(config_file_text "${config_file_text}set(${variable_to_set})\n")
     endforeach(variable_to_set)
+
+    if(PARSED_ARGS_VARIABLE_TO_SET_WIN32)
+    string(APPEND config_file_text "if(WIN32)\n")
+      foreach(win32_variable_to_set ${PARSED_ARGS_VARIABLE_TO_SET_WIN32})
+        string(APPEND config_file_text "  set(${win32_variable_to_set})\n")
+      endforeach(win32_variable_to_set)
+      string(APPEND config_file_text "endif(WIN32)\n\n")
+    endif(PARSED_ARGS_VARIABLE_TO_SET_WIN32)
 
     foreach(extra_package ${PARSED_ARGS_EXTRA_REQUIRED_PACKAGE})
         set(config_file_text "${config_file_text}find_package(${extra_package} REQUIRED QUIET)\n")

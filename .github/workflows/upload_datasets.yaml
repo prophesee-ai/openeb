@@ -8,7 +8,8 @@ on:
 env:
   # we are not using an official share URL from KDrive. We found it by analyzing the http requests.
   # we hope it will continue to work in the future.
-  dataset_download_address: "https://prophesee-bamboo.s3.eu-west-1.amazonaws.com/datasets/openeb/openeb-dataset_v5.0.0.zip"
+  dataset_download_address: "https://prophesee-bamboo.s3.eu-west-1.amazonaws.com/datasets/openeb/openeb-dataset_v5.1.0.zip"
+
 jobs:
   get_artifacts:
     name: Get Datasets

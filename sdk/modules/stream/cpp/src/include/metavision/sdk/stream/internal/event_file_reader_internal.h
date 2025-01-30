@@ -33,6 +33,7 @@ public:
     size_t add_read_callback(const EventsBufferReadCallback<EventCD> &cb);
     size_t add_read_callback(const EventsBufferReadCallback<EventExtTrigger> &cb);
     size_t add_read_callback(const EventsBufferReadCallback<EventERCCounter> &cb);
+    size_t add_read_callback(const EventsBufferReadCallback<EventMonitoring> &cb);
     size_t add_read_callback(const EventFrameReadCallback<RawEventFrameHisto> &cb);
     size_t add_read_callback(const EventFrameReadCallback<RawEventFrameDiff> &cb);
     size_t add_read_callback(const EventFrameReadCallback<PointCloud> &cb);
@@ -46,6 +47,7 @@ public:
     void notify_events_buffer(const EventCD *begin, const EventCD *end);
     void notify_events_buffer(const EventExtTrigger *begin, const EventExtTrigger *end);
     void notify_events_buffer(const EventERCCounter *begin, const EventERCCounter *end);
+    void notify_events_buffer(const EventMonitoring *begin, const EventMonitoring *end);
     void notify_event_frame(const RawEventFrameHisto &h);
     void notify_event_frame(const RawEventFrameDiff &d);
     void notify_event_frame(const PointCloud &pc);
@@ -66,6 +68,7 @@ public:
     CallbackManager<EventsBufferReadCallback<EventCD>, size_t> cd_buffer_cb_mgr_;
     CallbackManager<EventsBufferReadCallback<EventExtTrigger>, size_t> ext_trigger_buffer_cb_mgr_;
     CallbackManager<EventsBufferReadCallback<EventERCCounter>, size_t> erc_counter_buffer_cb_mgr_;
+    CallbackManager<EventsBufferReadCallback<EventMonitoring>, size_t> monitoring_buffer_cb_mgr_;
     CallbackManager<EventFrameReadCallback<RawEventFrameHisto>, size_t> histogram_cb_mgr_;
     CallbackManager<EventFrameReadCallback<RawEventFrameDiff>, size_t> diff_cb_mgr_;
     CallbackManager<EventFrameReadCallback<PointCloud>, size_t> pointcloud_cb_mgr_;

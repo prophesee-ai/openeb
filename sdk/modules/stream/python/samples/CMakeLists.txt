@@ -9,4 +9,5 @@
 
 add_subdirectory(metavision_camera_stream_slicer)
 add_subdirectory(metavision_raw_evt_encoder)
+add_subdirectory(metavision_sdk_get_started)
 add_subdirectory(metavision_synced_camera_streams_slicer)

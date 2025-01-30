@@ -15,9 +15,11 @@
 #include <atomic>
 #include <algorithm>
 #include <mutex>
+#include <set>
 
 #include "metavision/sdk/base/events/event_cd.h"
 #include "metavision/sdk/base/events/event_erc_counter.h"
+#include "metavision/sdk/base/events/event_monitoring.h"
 #include "metavision/sdk/base/utils/detail/bitinstructions.h"
 #include "metavision/hal/facilities/i_event_decoder.h"
 #include "metavision/hal/decoders/base/event_base.h"
@@ -50,12 +52,22 @@ public:
         const std::shared_ptr<I_EventDecoder<EventExtTrigger>> &event_ext_trigger_decoder =
             std::shared_ptr<I_EventDecoder<EventExtTrigger>>(),
         const std::shared_ptr<I_EventDecoder<EventERCCounter>> &erc_count_event_decoder =
-            std::shared_ptr<I_EventDecoder<EventERCCounter>>()) :
+            std::shared_ptr<I_EventDecoder<EventERCCounter>>(),
+        const std::shared_ptr<I_EventDecoder<EventMonitoring>> &event_monitoring_decoder =
+            std::shared_ptr<I_EventDecoder<EventMonitoring>>(),
+        const std::set<uint16_t> &monitoring_id_blacklist = std::set<uint16_t>()) :
         I_EventsStreamDecoder(time_shifting_enabled, event_cd_decoder, event_ext_trigger_decoder,
                               erc_count_event_decoder),
         validator(height, width),
-        height_(height) {
+        height_(height),
+        event_monitoring_decoder_(event_monitoring_decoder),
+        monitoring_id_blacklist_(monitoring_id_blacklist) {
         last_timestamp_.time = 0;
+
+        if (event_monitoring_decoder_) {
+            monitoring_event_forwarder_.reset(
+                new DecodedEventForwarder<EventMonitoring, 1>(event_monitoring_decoder_.get()));
+        }
     }
 
     virtual bool get_timestamp_shift(timestamp &ts_shift) const override {
@@ -153,6 +165,7 @@ private:
         auto &cd_forwarder        = cd_event_forwarder();
         auto &trigger_forwarder   = trigger_event_forwarder();
         auto &erc_count_forwarder = erc_count_event_forwarder();
+        auto &monitoring_forwarder = *monitoring_event_forwarder_;
         for (; cur_raw_ev != raw_ev_end;) {
             const uint16_t type = cur_raw_ev->type;
             if (type == static_cast<EventTypesUnderlying_t>(EventTypesEnum::EVT_ADDR_X)) {
@@ -235,34 +248,38 @@ private:
                 ++cur_raw_ev;
             } else if (type == static_cast<EventTypesUnderlying_t>(EventTypesEnum::OTHERS)) {
                 const uint16_t master_type = cur_raw_ev->content;
-                bool is_out_count_evt      = false;
 
-                switch (master_type) {
-                case static_cast<uint16_t>(Evt3MasterEventTypes::MASTER_RATE_CONTROL_CD_EVENT_COUNT):
-                    is_out_count_evt = true;
-                    [[fallthrough]];
-                case static_cast<uint16_t>(Evt3MasterEventTypes::MASTER_IN_CD_EVENT_COUNT): {
-                    constexpr uint32_t evt_size = 1 + sizeof(Evt3Raw::Event_Continue12_12_4) / sizeof(RawEvent);
-                    if (cur_raw_ev + evt_size > raw_ev_end) {
-                        // Not enough raw data to decode the continue events. Stop decoding this buffer and return the
-                        // amount of data missing to wait for to be able to decode on the next call
-                        return std::distance(raw_ev_end, cur_raw_ev + evt_size);
-                    }
+                if (monitoring_id_blacklist_.count(master_type) > 0) {
                     ++cur_raw_ev;
-                    int next_offset;
-                    if (validator.validate_continue_12_12_4_pattern(cur_raw_ev, next_offset)) {
-                        const Evt3Raw::Event_Continue12_12_4 *data =
-                            reinterpret_cast<const Evt3Raw::Event_Continue12_12_4 *>(cur_raw_ev);
-                        erc_count_forwarder.forward(last_timestamp<DO_TIMESHIFT>(),
-                                                    Evt3Raw::Event_Continue12_12_4::decode(*data), is_out_count_evt);
-                    }
-                    cur_raw_ev += next_offset;
-                    break;
+                    continue;
                 }
-                default:
-                    // Unhandled sys event
-                    ++cur_raw_ev;
-                    break;
+
+                constexpr uint32_t evt_size = 1 + sizeof(Evt3Raw::Event_Continue12_12_4) / sizeof(RawEvent);
+                if (cur_raw_ev + evt_size > raw_ev_end) {
+                    // Not enough raw data to decode potential continue events. Stop decoding this buffer and return the
+                    // amount of data missing to wait for to be able to decode on the next call
+                    return std::distance(raw_ev_end, cur_raw_ev + evt_size);
+                }
+
+                uint32_t payload = 0x0;
+
+                ++cur_raw_ev;
+                if (cur_raw_ev->type == static_cast<EventTypesUnderlying_t>(EventTypesEnum::CONTINUED_12)) {
+                    int next_offset;
+                    if (!validator.validate_continue_12_12_4_pattern(cur_raw_ev, next_offset)) {
+                        cur_raw_ev += next_offset;
+                        continue;
+                    }
+                    payload = Evt3Raw::Event_Continue12_12_4::decode(
+                        *reinterpret_cast<const Evt3Raw::Event_Continue12_12_4 *>(cur_raw_ev));
+                    cur_raw_ev += next_offset;
+                }
+
+                monitoring_forwarder.forward(last_timestamp<DO_TIMESHIFT>(), master_type, payload);
+                if (master_type == static_cast<uint16_t>(Evt3MasterEventTypes::MASTER_RATE_CONTROL_CD_EVENT_COUNT)) {
+                    erc_count_forwarder.forward(last_timestamp<DO_TIMESHIFT>(), payload, true);
+                } else if (master_type == static_cast<uint16_t>(Evt3MasterEventTypes::MASTER_IN_CD_EVENT_COUNT)) {
+                    erc_count_forwarder.forward(last_timestamp<DO_TIMESHIFT>(), payload, false);
                 }
             } else {
                 // The objective is to reduce the number of possible cases
@@ -368,6 +385,9 @@ private:
     uint32_t height_           = 65536;
     std::vector<RawEvent> incomplete_multiword_raw_event_;
     std::ptrdiff_t raw_events_missing_count_{0};
+    std::shared_ptr<I_EventDecoder<EventMonitoring>> event_monitoring_decoder_;
+    std::unique_ptr<DecodedEventForwarder<EventMonitoring, 1>> monitoring_event_forwarder_;
+    const std::set<uint16_t> monitoring_id_blacklist_;
 };
 
 } // namespace detail
@@ -396,19 +416,25 @@ inline std::unique_ptr<I_EventsStreamDecoder> make_evt3_decoder(
     const std::shared_ptr<I_EventDecoder<EventExtTrigger>> &event_ext_trigger_decoder =
         std::shared_ptr<I_EventDecoder<EventExtTrigger>>(),
     const std::shared_ptr<I_EventDecoder<EventERCCounter>> &erc_count_event_decoder =
-        std::shared_ptr<I_EventDecoder<EventERCCounter>>()) {
-    std::unique_ptr<I_EventsStreamDecoder> decoder = std::make_unique<EVT3Decoder>(
-        time_shifting_enabled, height, width, event_cd_decoder, event_ext_trigger_decoder, erc_count_event_decoder);
+        std::shared_ptr<I_EventDecoder<EventERCCounter>>(),
+    const std::shared_ptr<I_EventDecoder<EventMonitoring>> &monitoring_event_decoder =
+        std::shared_ptr<I_EventDecoder<EventMonitoring>>(),
+    const std::set<uint16_t> &monitoring_id_blacklist = std::set<uint16_t>()) {
+    std::unique_ptr<I_EventsStreamDecoder> decoder =
+        std::make_unique<EVT3Decoder>(time_shifting_enabled, height, width, event_cd_decoder, event_ext_trigger_decoder,
+                                      erc_count_event_decoder, monitoring_event_decoder, monitoring_id_blacklist);
 
     if (std::getenv("MV_FLAGS_EVT3_THROW_ON_NON_MONOTONIC_TIME_HIGH") || std::getenv("MV_FLAGS_EVT3_ROBUST_DECODER")) {
         MV_HAL_LOG_INFO() << "Using EVT3 Robust decoder.";
         decoder = std::make_unique<RobustEVT3Decoder>(time_shifting_enabled, height, width, event_cd_decoder,
-                                                      event_ext_trigger_decoder, erc_count_event_decoder);
+                                                      event_ext_trigger_decoder, erc_count_event_decoder,
+                                                      monitoring_event_decoder, monitoring_id_blacklist);
 
     } else if (std::getenv("MV_FLAGS_EVT3_UNSAFE_DECODER")) {
         MV_HAL_LOG_INFO() << "Using EVT3 Unsafe decoder.";
         decoder = std::make_unique<UnsafeEVT3Decoder>(time_shifting_enabled, height, width, event_cd_decoder,
-                                                      event_ext_trigger_decoder, erc_count_event_decoder);
+                                                      event_ext_trigger_decoder, erc_count_event_decoder,
+                                                      monitoring_event_decoder, monitoring_id_blacklist);
     }
 
     if (std::getenv("MV_FLAGS_EVT3_THROW_ON_NON_MONOTONIC_TIME_HIGH")) {

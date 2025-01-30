@@ -19,6 +19,7 @@
 #include "metavision/sdk/base/events/event_cd.h"
 #include "metavision/sdk/base/events/event_erc_counter.h"
 #include "metavision/sdk/base/events/event_ext_trigger.h"
+#include "metavision/sdk/base/events/event_monitoring.h"
 #include "metavision/sdk/base/events/event_pointcloud.h"
 #include "metavision/sdk/base/events/raw_event_frame_diff.h"
 #include "metavision/sdk/base/events/raw_event_frame_histo.h"
@@ -68,6 +69,10 @@ public:
     /// @brief Adds a "reading callback" called when a buffer of events has been read
     /// @overload
     size_t add_read_callback(const EventsBufferReadCallback<EventERCCounter> &cb);
+
+    /// @brief Adds a "reading callback" called when a buffer of events has been read
+    /// @overload
+    size_t add_read_callback(const EventsBufferReadCallback<EventMonitoring> &cb);
 
     /// @brief Adds a "reading callback" called when a histogram has been read
     /// @overload
@@ -141,6 +146,7 @@ protected:
     void notify_events_buffer(const EventCD *, const EventCD *);
     void notify_events_buffer(const EventExtTrigger *, const EventExtTrigger *);
     void notify_events_buffer(const EventERCCounter *, const EventERCCounter *);
+    void notify_events_buffer(const EventMonitoring *, const EventMonitoring *);
     void notify_event_frame(const RawEventFrameHisto &);
     void notify_event_frame(const RawEventFrameDiff &);
     void notify_event_frame(const PointCloud &);

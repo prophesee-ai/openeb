@@ -10,7 +10,7 @@
  **********************************************************************************************************************/
 
 // This code sample demonstrates how to use Metavision SDK Stream to convert an event file
-// to a CSV formatted event file.
+// to separate CSV files for events and triggers
 
 #include <fstream>
 #include <thread>
@@ -22,43 +22,66 @@
 
 class CSVWriter {
 public:
-    CSVWriter(std::string &filename) : ofs_(filename) {
-        if (!ofs_.is_open()) {
-            MV_LOG_ERROR() << "Unable to write in" << filename;
-        }
-    };
-    // this function will be associated to the camera callback
-    void write(const Metavision::EventCD *begin, const Metavision::EventCD *end) {
+    CSVWriter(const std::string &filename) : filename_(filename) {}
+    // these functions will be associated to the camera callback
+    void write_cd(const Metavision::EventCD *begin, const Metavision::EventCD *end) {
+        ensure_file_opened();
         for (const Metavision::EventCD *ev = begin; ev != end; ++ev) {
             ofs_ << ev->x << "," << ev->y << "," << ev->p << "," << ev->t << "\n";
         }
     }
 
+    void write_trigger(const Metavision::EventExtTrigger *begin, const Metavision::EventExtTrigger *end) {
+        ensure_file_opened();
+        for (const Metavision::EventExtTrigger *ev = begin; ev != end; ++ev) {
+            ofs_ << ev->p << "," << ev->id << "," << ev->t << "\n";
+        }
+    }
+
+    bool is_open() const {
+        return ofs_.is_open();
+    }
+
 private:
+    void ensure_file_opened() {
+        if (!ofs_.is_open()) {
+            ofs_.open(filename_);
+            if (!ofs_.is_open()) {
+                MV_LOG_ERROR() << "Unable to write in" << filename_;
+            }
+        }
+    }
+
     std::ofstream ofs_;
+    std::string filename_;
 };
 
 namespace po = boost::program_options;
 
 int main(int argc, char *argv[]) {
     std::string event_file_path;
-    std::string out_file_path;
+    std::string cd_file_path;
+    std::string trigger_file_path;
+    bool disable_ts_shifting = false;
 
     const std::string program_desc(
-        "Code sample demonstrating how to use Metavision SDK Stream to convert a file to a CSV formatted"
-        " file.\n");
+        "Code sample demonstrating how to use Metavision SDK Stream to convert an event file "
+        "to CSV files for events and triggers.\n");
 
     po::options_description options_desc("Options");
     // clang-format off
     options_desc.add_options()
         ("help,h", "Produce help message.")
         ("input-event-file,i", po::value<std::string>(&event_file_path)->required(), "Path to the input event file.")
-        ("output-file,o", po::value<std::string>(&out_file_path)->default_value(""), "Path to the output CSV file.")
+        ("output-file,o", po::value<std::string>(&cd_file_path)->default_value(""),
+         "Path to the output CSV file for CD events. If trigger events are found, this path will be used as the base name for the output trigger CSV file.")
+        ("disable-timestamp-shifting,d", po::bool_switch(&disable_ts_shifting), "Disable shifting all event timestamps in a RAW file to be relative to the timestamp of the first event, preserving their original absolute values")
         ;
     // clang-format on
 
     po::variables_map vm;
     po::store(po::command_line_parser(argc, argv).options(options_desc).run(), vm);
+
     if (vm.count("help")) {
         MV_LOG_INFO() << program_desc;
         MV_LOG_INFO() << options_desc;
@@ -74,16 +97,18 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // get the base of the input filename and the path
-    if (out_file_path.empty()) {
-        const std::string output_base = std::regex_replace(event_file_path, std::regex("\\.[^.]*$"), "");
-        out_file_path                 = output_base + ".csv";
+    // build the output files paths
+    if (cd_file_path.empty()) {
+        cd_file_path = std::filesystem::path(event_file_path).replace_extension(".csv").string();
     }
+    trigger_file_path = std::filesystem::path(cd_file_path).replace_extension().string() + "_triggers.csv";
 
-    // open the file that was passed
+    // open the input file
     Metavision::Camera cam;
     try {
-        cam = Metavision::Camera::from_file(event_file_path, Metavision::FileConfigHints().real_time_playback(false));
+        auto hints = Metavision::FileConfigHints().real_time_playback(false);
+        hints.set("time_shift", !disable_ts_shifting);
+        cam = Metavision::Camera::from_file(event_file_path, hints);
     } catch (Metavision::CameraException &e) {
         MV_LOG_ERROR() << e.what();
         return 1;
@@ -92,7 +117,7 @@ int main(int argc, char *argv[]) {
     // setup feedback to be provided on processing progression
     using namespace std::chrono_literals;
     auto log = MV_LOG_INFO() << Metavision::Log::no_space << Metavision::Log::no_endline;
-    log << "Writing to " << out_file_path << "\n";
+    log << "Writing to " << cd_file_path << "\n";
     const std::string message("Writing CSV file...");
     log << message << std::flush;
     int dots                   = 0;
@@ -107,11 +132,20 @@ int main(int argc, char *argv[]) {
         }
     };
 
-    // to write the events, we add a callback that will be called periodically to give access to the latest events
-    CSVWriter writer(out_file_path);
+    // setup writers
+    CSVWriter cd_writer(cd_file_path);
+    CSVWriter trigger_writer(trigger_file_path);
+
+    // to write the CD events, we add a callback that will be called periodically to give access to the latest events
     cam.cd().add_callback([&](const Metavision::EventCD *ev_begin, const Metavision::EventCD *ev_end) {
-        writer.write(ev_begin, ev_end);
         progress_feedback_fct();
+        cd_writer.write_cd(ev_begin, ev_end);
+    });
+
+    // callback for External Trigger events
+    cam.ext_trigger().add_callback(
+        [&](const Metavision::EventExtTrigger *ev_begin, const Metavision::EventExtTrigger *ev_end) {
+            trigger_writer.write_trigger(ev_begin, ev_end);
     });
 
     cam.start();
@@ -120,7 +154,11 @@ int main(int argc, char *argv[]) {
     while (cam.is_running()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     };
+
     log << "\rDone!                    " << std::endl;
+    if (trigger_writer.is_open()) {
+        MV_LOG_INFO() << "Trigger events written to" << trigger_file_path;
+    };
 
     return 0;
 }

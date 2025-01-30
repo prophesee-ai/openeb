@@ -12,9 +12,14 @@
 #ifndef METAVISION_HAL_EVT2_DECODER_H
 #define METAVISION_HAL_EVT2_DECODER_H
 
+#include <cstdint>
+#include <set>
+
 #include "metavision/hal/facilities/i_events_stream_decoder.h"
 #include "metavision/sdk/base/events/event_cd.h"
+#include "metavision/sdk/base/events/event_erc_counter.h"
 #include "metavision/sdk/base/events/event_ext_trigger.h"
+#include "metavision/sdk/base/events/event_monitoring.h"
 #include "metavision/hal/facilities/i_event_decoder.h"
 #include "metavision/hal/decoders/base/event_base.h"
 #include "metavision/hal/decoders/evt2/evt2_event_types.h"
@@ -36,8 +41,21 @@ public:
         bool time_shifting_enabled,
         const std::shared_ptr<I_EventDecoder<EventCD>> &event_cd_decoder = std::shared_ptr<I_EventDecoder<EventCD>>(),
         const std::shared_ptr<I_EventDecoder<EventExtTrigger>> &event_ext_trigger_decoder =
-            std::shared_ptr<I_EventDecoder<EventExtTrigger>>()) :
-        I_EventsStreamDecoder(time_shifting_enabled, event_cd_decoder, event_ext_trigger_decoder) {}
+            std::shared_ptr<I_EventDecoder<EventExtTrigger>>(),
+        const std::shared_ptr<I_EventDecoder<EventERCCounter>> &event_erc_counter_decoder =
+            std::shared_ptr<I_EventDecoder<EventERCCounter>>(),
+        const std::shared_ptr<I_EventDecoder<EventMonitoring>> &event_monitoring_decoder =
+            std::shared_ptr<I_EventDecoder<EventMonitoring>>(),
+        const std::set<uint16_t> &monitoring_id_blacklist = std::set<uint16_t>()) :
+        I_EventsStreamDecoder(time_shifting_enabled, event_cd_decoder, event_ext_trigger_decoder,
+                              event_erc_counter_decoder),
+        event_monitoring_decoder_(event_monitoring_decoder),
+        monitoring_id_blacklist_(monitoring_id_blacklist) {
+        if (event_monitoring_decoder_) {
+            monitoring_event_forwarder_.reset(
+                new DecodedEventForwarder<EventMonitoring, 1>(event_monitoring_decoder_.get()));
+        }
+    }
 
     virtual bool get_timestamp_shift(timestamp &ts_shift) const override {
         ts_shift = shift_th_;
@@ -96,6 +114,18 @@ private:
     void decode_events_buffer(const RawEvent *&cur_raw_ev, const RawEvent *const raw_ev_end) {
         auto &cd_forwarder      = cd_event_forwarder();
         auto &trigger_forwarder = trigger_event_forwarder();
+
+        // Check if last buffer ended with a possibly incomplete monitoring event
+        if (pending_other_.raw != 0x0 && cur_raw_ev != raw_ev_end) {
+            const EVT2Continued *ev_cont = nullptr;
+            if (cur_raw_ev->type == static_cast<EventTypesUnderlying_t>(EVT2EventTypes::CONTINUED)) {
+                ev_cont = reinterpret_cast<const EVT2Continued *>(cur_raw_ev);
+                ++cur_raw_ev;
+            }
+            decode_monitoring_event(pending_other_.monitoring, ev_cont);
+            pending_other_.raw = 0x0;
+        }
+
         for (; cur_raw_ev != raw_ev_end; ++cur_raw_ev) {
             const EventBase::RawEvent *ev = reinterpret_cast<const EventBase::RawEvent *>(cur_raw_ev);
             const unsigned int type       = ev->type;
@@ -130,8 +160,40 @@ private:
                 last_timestamp_set_                   = true;
                 trigger_forwarder.forward(static_cast<short>(ev_ext_raw->value), last_timestamp_,
                                           static_cast<short>(ev_ext_raw->id));
+            } else if (type == static_cast<EventTypesUnderlying_t>(EventTypesEnum::OTHER)) {
+                const EVT2EventMonitor *ev_monitor = reinterpret_cast<const EVT2EventMonitor *>(ev);
+                if (monitoring_id_blacklist_.count(ev_monitor->subtype) == 0) {
+                    last_timestamp_     = base_time_ + ev_monitor->timestamp;
+                    last_timestamp_set_ = true;
+
+                    if (ev + 1 != raw_ev_end) {
+                        const EVT2Continued *ev_cont = nullptr;
+                        if ((ev + 1)->type == static_cast<EventTypesUnderlying_t>(EVT2EventTypes::CONTINUED)) {
+                            ++cur_raw_ev;
+                            ev_cont = reinterpret_cast<const EVT2Continued *>(cur_raw_ev);
+                        }
+                        decode_monitoring_event(*ev_monitor, ev_cont);
+                    } else {
+                        // Need to wait for next buffer
+                        pending_other_.monitoring = *ev_monitor;
+                    }
+                }
             }
         }
+    }
+
+    void decode_monitoring_event(const EVT2EventMonitor &ev_monitor, const EVT2Continued *ev_continued) {
+        auto &erc_count_forwarder  = erc_count_event_forwarder();
+        auto &monitoring_forwarder = *monitoring_event_forwarder_;
+
+        if (ev_continued && ev_monitor.subtype == EVT2EventMasterEventTypes::MASTER_IN_CD_EVENT_COUNT ||
+            ev_monitor.subtype == EVT2EventMasterEventTypes::MASTER_RATE_CONTROL_CD_EVENT_COUNT) {
+            const uint32_t count = ev_continued->data & ((1U << 22) - 1);
+            erc_count_forwarder.forward(last_timestamp_, count,
+                                        ev_monitor.subtype ==
+                                            EVT2EventMasterEventTypes::MASTER_RATE_CONTROL_CD_EVENT_COUNT);
+        }
+        monitoring_forwarder.forward(last_timestamp_, ev_monitor.subtype, ev_continued ? ev_continued->data : 0x0);
     }
 
     static bool buffer_has_time_loop(const RawEvent *const cur_raw_ev, const RawEvent *const raw_ev_end_,
@@ -162,6 +224,9 @@ private:
         if (is_time_shifting_enabled() && !shift_set_) {
             return false;
         }
+
+        pending_other_.raw = 0x0;
+
         if (t >= 0) {
             constexpr int min_timer_high_val = (1 << NumBitsInTimestampLSB);
             base_time_                       = min_timer_high_val * (t / min_timer_high_val);
@@ -197,6 +262,11 @@ private:
     timestamp full_shift_{
         0}; // includes loop and shift_th in one single variable. Must be signed typed as shift can be negative.
     bool shift_set_{false};
+
+    std::shared_ptr<I_EventDecoder<EventMonitoring>> event_monitoring_decoder_;
+    std::unique_ptr<DecodedEventForwarder<EventMonitoring, 1>> monitoring_event_forwarder_;
+    const std::set<uint16_t> monitoring_id_blacklist_;
+    EVT2RawEvent pending_other_{0x0};
 };
 
 } // namespace Metavision

@@ -19,8 +19,8 @@
 #include <optional>
 #include <thread>
 #include <boost/program_options.hpp>
-#include "metavision/sdk/base/events/event_cd.h"
-#include "metavision/sdk/base/utils/object_pool.h"
+#include <metavision/sdk/base/events/event_cd.h>
+#include <metavision/sdk/base/utils/object_pool.h>
 #include <metavision/sdk/base/utils/log.h>
 #include <metavision/sdk/core/algorithms/periodic_frame_generation_algorithm.h>
 #include <metavision/sdk/ui/utils/window.h>

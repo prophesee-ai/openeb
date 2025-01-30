@@ -9,26 +9,37 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-#include "hal_python_binder.h"
-#include "metavision/hal/utils/raw_file_config.h"
-#include "metavision/utils/pybind/deprecation_warning_exception.h"
-#include "pb_doc_hal.h"
+#include "metavision/sdk/stream/monitoring.h"
+
+#include "metavision/sdk/stream/internal/monitoring_internal.h"
+#include "metavision/sdk/core/utils/index_manager.h"
+#include "metavision/sdk/stream/internal/callback_tag_ids.h"
 
 namespace Metavision {
 
-static HALClassPythonBinder<RawFileConfig> bind(
-    [](auto &module, auto &class_binding) {
-        class_binding.def(py::init<>())
-            .def(py::init<const RawFileConfig &>())
-            .def_readwrite("n_events_to_read", &RawFileConfig::n_events_to_read_,
-                           pybind_doc_hal["Metavision::RawFileConfig::n_events_to_read_"])
-            .def_readwrite("n_read_buffers", &RawFileConfig::n_read_buffers_,
-                           pybind_doc_hal["Metavision::RawFileConfig::n_read_buffers_"])
-            .def_readwrite("do_time_shifting", &RawFileConfig::do_time_shifting_,
-                           pybind_doc_hal["Metavision::RawFileConfig::do_time_shifting_"])
-            .def_readwrite("build_index", &RawFileConfig::build_index_,
-                           pybind_doc_hal["Metavision::RawFileConfig::build_index_"]);
-    },
-    "RawFileConfig", pybind_doc_hal["Metavision::RawFileConfig"]);
+Monitoring *Monitoring::Private::build(IndexManager &index_manager) {
+    return new Monitoring(new Private(index_manager));
+}
+
+Monitoring::Private::Private(IndexManager &index_manager) :
+    CallbackManager<EventsMonitoringCallback>(index_manager, CallbackTagIds::DECODE_CALLBACK_TAG_ID) {}
+
+Monitoring::Private::~Private() {}
+
+Monitoring::~Monitoring() {}
+
+CallbackId Monitoring::add_callback(const EventsMonitoringCallback &cb) {
+    return pimpl_->add_callback(cb);
+}
+
+bool Monitoring::remove_callback(CallbackId callback_id) {
+    return pimpl_->remove_callback(callback_id);
+}
+
+Monitoring::Private &Monitoring::get_pimpl() {
+    return *pimpl_;
+}
+
+Monitoring::Monitoring(Private *pimpl) : pimpl_(pimpl) {}
 
 } // namespace Metavision
