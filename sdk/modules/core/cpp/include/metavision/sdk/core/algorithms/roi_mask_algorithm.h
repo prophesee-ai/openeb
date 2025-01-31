@@ -126,7 +126,7 @@ inline bool RoiMaskAlgorithm::operator()(int x, int y) const {
         return true;
 
     const auto found = std::find_if(std::cbegin(rectangles_), std::cend(rectangles_), [&](const cv::Rect &rectangle) {
-        return rectangle.contains({x, y});
+        return rectangle.contains(cv::Point{x, y});
     });
     return (found != std::cend(rectangles_));
 }
