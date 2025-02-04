@@ -59,7 +59,7 @@ public:
     void notify(DecoderProtocolViolation violation) {
         if (notifiers_map_.empty()) {
             std::ostringstream oss;
-            oss << "Evt3 protocol violation detected : " << violation;
+            oss << "Evt3 protocol violation detected: " << violation;
             if (violation == DecoderProtocolViolation::NonMonotonicTimeHigh) {
                 MV_HAL_LOG_ERROR() << oss.str();
             } else {

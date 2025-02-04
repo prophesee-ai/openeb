@@ -134,7 +134,7 @@ bool Camera::Private::stop() {
     try {
         stop_impl();
     } catch (const HalConnectionException &) {
-        // The implementation (probably in a plugin) reported an error. It is unknown wether the run thread will
+        // The implementation (probably in a plugin) reported an error. It is unknown whether the run thread will
         // terminate properly. If we join on it, we may wait forever, but if we don't, the thread remains joinable
         // and a future call to stop() may wait for the thread to be running while it is already stopped.
         // Detaching the thread makes it non-joinable, preserving Metavision execution, while preserving the
@@ -268,6 +268,14 @@ FrameDiff &Camera::Private::frame_diff() {
     return *frame_diff_;
 }
 
+Monitoring &Camera::Private::monitoring() {
+    check_initialization();
+    if (!monitoring_) {
+        throw CameraException(UnsupportedFeatureErrors::MonitoringUnavailable);
+    }
+    return *monitoring_;
+}
+
 OfflineStreamingControl &Camera::Private::offline_streaming_control() {
     throw CameraException(CameraErrorCode::CameraNotInitialized);
 }
@@ -352,6 +360,9 @@ bool Camera::Private::stop_recording_impl(const std::filesystem::path &file_path
             }
             if (erc_counter_) {
                 erc_counter_->remove_callback(it->second);
+            }
+            if (monitoring_) {
+                monitoring_->remove_callback(it->second);
             }
         }
         return true;
@@ -609,6 +620,10 @@ FrameHisto &Camera::frame_histo() {
 
 FrameDiff &Camera::frame_diff() {
     return pimpl_->frame_diff();
+}
+
+Monitoring &Camera::monitoring() {
+    return pimpl_->monitoring();
 }
 
 CallbackId Camera::add_runtime_error_callback(RuntimeErrorCallback error_callback) {

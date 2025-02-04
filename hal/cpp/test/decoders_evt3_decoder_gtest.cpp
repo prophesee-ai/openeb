@@ -28,10 +28,12 @@ using namespace ::testing;
 using EventCdDecoder  = I_EventDecoder<EventCD>;
 using EventExtDecoder = I_EventDecoder<EventExtTrigger>;
 using EventErcDecoder = I_EventDecoder<EventERCCounter>;
+using EventMonitoringDecoder = I_EventDecoder<EventMonitoring>;
 
 using EventCdBuffer  = std::vector<EventCD>;
 using EventExtBuffer = std::vector<EventExtTrigger>;
 using EventErcBuffer = std::vector<EventERCCounter>;
+using EventMonitoringBuffer = std::vector<EventMonitoring>;
 
 using DataBuffer = std::vector<uint16_t>;
 
@@ -84,10 +86,11 @@ ostream &operator<<(ostream &o, const vector<T> &evt) {
 }
 } // namespace std
 
-using DecodedBuffers = std::tuple<EventCdBuffer, EventExtBuffer, EventErcBuffer>;
+using DecodedBuffers = std::tuple<EventCdBuffer, EventExtBuffer, EventErcBuffer, EventMonitoringBuffer>;
 
 DecodedBuffers decode_buffer(const DataBuffer &data, I_Decoder &decoder, EventCdDecoder &event_cd_decoder,
-                             EventExtDecoder &event_ext_decoder, EventErcDecoder &event_erc_decoder) {
+                             EventExtDecoder &event_ext_decoder, EventErcDecoder &event_erc_decoder,
+                             EventMonitoringDecoder &event_monitoring_decoder) {
     std::vector<EventCD> event_cd_buffer;
     auto cd_cb_id = event_cd_decoder.add_event_buffer_callback(
         [&](auto beg, auto end) { std::copy(beg, end, std::back_inserter(event_cd_buffer)); });
@@ -100,13 +103,18 @@ DecodedBuffers decode_buffer(const DataBuffer &data, I_Decoder &decoder, EventCd
     auto erc_cb_id = event_erc_decoder.add_event_buffer_callback(
         [&](auto beg, auto end) { std::copy(beg, end, std::back_inserter(event_erc_buffer)); });
 
+    std::vector<EventMonitoring> event_monitoring_buffer;
+    auto monitoring_cb_id = event_monitoring_decoder.add_event_buffer_callback(
+        [&](auto beg, auto end) { std::copy(beg, end, std::back_inserter(event_monitoring_buffer)); });
+
     decoder.decode(cbegin(data), cend(data));
 
     event_cd_decoder.remove_callback(cd_cb_id);
     event_ext_decoder.remove_callback(ext_cb_id);
     event_erc_decoder.remove_callback(erc_cb_id);
+    event_monitoring_decoder.remove_callback(monitoring_cb_id);
 
-    return std::make_tuple(event_cd_buffer, event_ext_buffer, event_erc_buffer);
+    return std::make_tuple(event_cd_buffer, event_ext_buffer, event_erc_buffer, event_monitoring_buffer);
 }
 
 TEST(Evt3_decoder, should_construct_evt3_decoder) {
@@ -117,8 +125,10 @@ struct Evt3DecoderTest : public ::testing::Test {
     std::shared_ptr<EventCdDecoder> event_cd_decoder   = std::make_shared<EventCdDecoder>();
     std::shared_ptr<EventExtDecoder> event_ext_decoder = std::make_shared<EventExtDecoder>();
     std::shared_ptr<EventErcDecoder> event_erc_decoder = std::make_shared<EventErcDecoder>();
+    std::shared_ptr<EventMonitoringDecoder> event_monitoring_decoder = std::make_shared<EventMonitoringDecoder>();
 
-    EVT3Decoder decoder{false, 100, 100, event_cd_decoder, event_ext_decoder, event_erc_decoder};
+    EVT3Decoder decoder{false, 100, 100, event_cd_decoder, event_ext_decoder, event_erc_decoder,
+        event_monitoring_decoder};
 
     template<class T>
     using StrictMockFunction = StrictMock<MockFunction<T>>;
@@ -129,12 +139,14 @@ struct Evt3DecoderTest : public ::testing::Test {
     }
 
     DecodedBuffers decode(DataBuffer &&data) {
-        return decode_buffer(data, decoder, *event_cd_decoder, *event_ext_decoder, *event_erc_decoder);
+        return decode_buffer(data, decoder, *event_cd_decoder, *event_ext_decoder, *event_erc_decoder,
+                             *event_monitoring_decoder);
     }
 
     template<class T>
     T decode(DataBuffer &&data) {
-        auto events_buffers = decode_buffer(data, decoder, *event_cd_decoder, *event_ext_decoder, *event_erc_decoder);
+        auto events_buffers = decode_buffer(data, decoder, *event_cd_decoder, *event_ext_decoder, *event_erc_decoder,
+                                            *event_monitoring_decoder);
         return std::get<T>(events_buffers);
     }
 };
@@ -351,8 +363,10 @@ struct Evt3RobustDecoderTest : public ::testing::Test {
     std::shared_ptr<EventCdDecoder> event_cd_decoder   = std::make_shared<EventCdDecoder>();
     std::shared_ptr<EventExtDecoder> event_ext_decoder = std::make_shared<EventExtDecoder>();
     std::shared_ptr<EventErcDecoder> event_erc_decoder = std::make_shared<EventErcDecoder>();
+    std::shared_ptr<EventMonitoringDecoder> event_monitoring_decoder = std::make_shared<EventMonitoringDecoder>();
 
-    RobustEVT3Decoder robust_decoder{false, 100, 100, event_cd_decoder, event_ext_decoder, event_erc_decoder};
+    RobustEVT3Decoder robust_decoder{false, 100, 100, event_cd_decoder, event_ext_decoder, event_erc_decoder,
+        event_monitoring_decoder};
 
     template<class T>
     using StrictMockFunction = StrictMock<MockFunction<T>>;
@@ -363,13 +377,14 @@ struct Evt3RobustDecoderTest : public ::testing::Test {
     }
 
     DecodedBuffers decode(DataBuffer &&data) {
-        return decode_buffer(data, robust_decoder, *event_cd_decoder, *event_ext_decoder, *event_erc_decoder);
+        return decode_buffer(data, robust_decoder, *event_cd_decoder, *event_ext_decoder, *event_erc_decoder,
+                             *event_monitoring_decoder);
     }
 
     template<class T>
     T decode(DataBuffer &&data) {
-        auto events_buffers =
-            decode_buffer(data, robust_decoder, *event_cd_decoder, *event_ext_decoder, *event_erc_decoder);
+        auto events_buffers = decode_buffer(data, robust_decoder, *event_cd_decoder, *event_ext_decoder,
+                                            *event_erc_decoder, *event_monitoring_decoder);
         return std::get<T>(events_buffers);
     }
 };

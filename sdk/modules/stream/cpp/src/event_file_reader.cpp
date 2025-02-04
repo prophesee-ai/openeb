@@ -20,6 +20,7 @@ EventFileReader::Private::Private(EventFileReader &reader, const std::filesystem
     cd_buffer_cb_mgr_(cb_id_mgr_, CallbackTagIds::READ_CALLBACK_TAG_ID),
     ext_trigger_buffer_cb_mgr_(cb_id_mgr_, CallbackTagIds::READ_CALLBACK_TAG_ID),
     erc_counter_buffer_cb_mgr_(cb_id_mgr_, CallbackTagIds::READ_CALLBACK_TAG_ID),
+    monitoring_buffer_cb_mgr_(cb_id_mgr_, CallbackTagIds::READ_CALLBACK_TAG_ID),
     histogram_cb_mgr_(cb_id_mgr_, CallbackTagIds::READ_CALLBACK_TAG_ID),
     diff_cb_mgr_(cb_id_mgr_, CallbackTagIds::READ_CALLBACK_TAG_ID),
     pointcloud_cb_mgr_(cb_id_mgr_, CallbackTagIds::READ_CALLBACK_TAG_ID),
@@ -77,6 +78,13 @@ void EventFileReader::Private::notify_events_buffer(const EventExtTrigger *begin
 
 void EventFileReader::Private::notify_events_buffer(const EventERCCounter *begin, const EventERCCounter *end) {
     auto cbs = erc_counter_buffer_cb_mgr_.get_cbs();
+    for (auto &cb : cbs) {
+        cb(begin, end);
+    }
+}
+
+void EventFileReader::Private::notify_events_buffer(const EventMonitoring *begin, const EventMonitoring *end) {
+    auto cbs = monitoring_buffer_cb_mgr_.get_cbs();
     for (auto &cb : cbs) {
         cb(begin, end);
     }
@@ -235,6 +243,10 @@ void EventFileReader::notify_events_buffer(const EventExtTrigger *begin, const E
 }
 
 void EventFileReader::notify_events_buffer(const EventERCCounter *begin, const EventERCCounter *end) {
+    return pimpl_->notify_events_buffer(begin, end);
+}
+
+void EventFileReader::notify_events_buffer(const EventMonitoring *begin, const EventMonitoring *end) {
     return pimpl_->notify_events_buffer(begin, end);
 }
 

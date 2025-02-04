@@ -18,6 +18,7 @@
 #include "metavision/utils/gtest/gtest_with_tmp_dir.h"
 #include "metavision/utils/gtest/gtest_custom.h"
 #include "metavision/sdk/base/events/event_cd.h"
+#include "metavision/sdk/base/events/event_monitoring.h"
 #include "metavision/sdk/base/events/event_pointcloud.h"
 #include "metavision/sdk/base/events/raw_event_frame_diff.h"
 #include "metavision/sdk/base/events/raw_event_frame_histo.h"
@@ -1600,4 +1601,151 @@ TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_mtru_nominal) {
 
     // THEN We decode the same MTR data that are encoded in the RAW file
     ASSERT_EQ(378, received_event_frame_count);
+}
+
+TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_evt2_monitoring_events) {
+    // GIVEN a RAW file in EVT2 format with a known content
+    std::string dataset_file_path =
+        (std::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" /
+         "lifo_evt2.raw").string();
+
+    size_t received_cd_event_count = 0;
+    size_t received_monitoring_event_count = 0;
+    RawFileConfig cfg;
+    cfg.do_time_shifting_ = false;
+    std::unique_ptr<Device> device(DeviceDiscovery::open_raw_file(dataset_file_path, cfg));
+
+    ASSERT_TRUE(device) << "Failed to open raw file";
+
+    // AND a PSEE decoder of CD & monitoring events
+    auto decoder    = device->get_facility<I_EventsStreamDecoder>();
+    auto cd_decoder = device->get_facility<I_EventDecoder<EventCD>>();
+    auto monitoring_decoder = device->get_facility<I_EventDecoder<EventMonitoring>>();
+    auto es         = device->get_facility<I_EventsStream>();
+
+    ASSERT_NE(nullptr, decoder);
+    ASSERT_NE(nullptr, cd_decoder);
+    ASSERT_NE(nullptr, es);
+
+    cd_decoder->add_event_buffer_callback(
+        [&](auto ev_begin, auto ev_end) { received_cd_event_count += std::distance(ev_begin, ev_end); });
+
+    monitoring_decoder->add_event_buffer_callback(
+        [&](auto ev_begin, auto ev_end) {
+            for (auto it = ev_begin; it < ev_end; ++it) {
+                // 0x42 = MASTER_ANA_LIFO_ON
+                ASSERT_EQ(0x42, it->type_id);
+            }
+            received_monitoring_event_count += std::distance(ev_begin, ev_end); });
+
+
+    es->start();
+
+    // WHEN we stream and decode the events in the file
+    while (es->wait_next_buffer() >= 0) {
+        auto raw_buffer = es->get_latest_raw_data();
+        decoder->decode(raw_buffer);
+    }
+
+    // THEN We decode the same data CD & triggers that are encoded in the RAW file
+    ASSERT_EQ(8314158, received_cd_event_count);
+    ASSERT_EQ(493, received_monitoring_event_count);
+}
+
+TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_evt21_monitoring_events) {
+    // GIVEN a RAW file in EVT21 format with a known content
+    std::string dataset_file_path =
+        (std::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" /
+         "lifo_evt21.raw").string();
+
+    size_t received_cd_event_count = 0;
+    size_t received_monitoring_event_count = 0;
+    RawFileConfig cfg;
+    cfg.do_time_shifting_ = false;
+    std::unique_ptr<Device> device(DeviceDiscovery::open_raw_file(dataset_file_path, cfg));
+
+    ASSERT_TRUE(device) << "Failed to open raw file";
+
+    // AND a PSEE decoder of CD & monitoring events
+    auto decoder    = device->get_facility<I_EventsStreamDecoder>();
+    auto cd_decoder = device->get_facility<I_EventDecoder<EventCD>>();
+    auto monitoring_decoder = device->get_facility<I_EventDecoder<EventMonitoring>>();
+    auto es         = device->get_facility<I_EventsStream>();
+
+    ASSERT_NE(nullptr, decoder);
+    ASSERT_NE(nullptr, cd_decoder);
+    ASSERT_NE(nullptr, es);
+
+    cd_decoder->add_event_buffer_callback(
+        [&](auto ev_begin, auto ev_end) { received_cd_event_count += std::distance(ev_begin, ev_end); });
+
+    monitoring_decoder->add_event_buffer_callback(
+        [&](auto ev_begin, auto ev_end) {
+            for (auto it = ev_begin; it < ev_end; ++it) {
+                // 0x42 = MASTER_ANA_LIFO_ON
+                ASSERT_EQ(0x42, it->type_id);
+            }
+            received_monitoring_event_count += std::distance(ev_begin, ev_end); });
+
+
+    es->start();
+
+    // WHEN we stream and decode the events in the file
+    while (es->wait_next_buffer() >= 0) {
+        auto raw_buffer = es->get_latest_raw_data();
+        decoder->decode(raw_buffer);
+    }
+
+    // THEN We decode the same data CD & triggers that are encoded in the RAW file
+    ASSERT_EQ(8314158, received_cd_event_count);
+    ASSERT_EQ(493, received_monitoring_event_count);
+}
+
+TEST_F_WITH_DATASET(PseeRawFileDecoder_Gtest, decode_evt3_monitoring_events) {
+    // GIVEN a RAW file in EVT3 format with a known content
+    std::string dataset_file_path =
+        (std::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" /
+         "lifo_evt3.raw").string();
+
+    size_t received_cd_event_count = 0;
+    size_t received_monitoring_event_count = 0;
+    RawFileConfig cfg;
+    cfg.do_time_shifting_ = false;
+    std::unique_ptr<Device> device(DeviceDiscovery::open_raw_file(dataset_file_path, cfg));
+
+    ASSERT_TRUE(device) << "Failed to open raw file";
+
+    // AND a PSEE decoder of CD & monitoring events
+    auto decoder    = device->get_facility<I_EventsStreamDecoder>();
+    auto cd_decoder = device->get_facility<I_EventDecoder<EventCD>>();
+    auto monitoring_decoder = device->get_facility<I_EventDecoder<EventMonitoring>>();
+    auto es         = device->get_facility<I_EventsStream>();
+
+    ASSERT_NE(nullptr, decoder);
+    ASSERT_NE(nullptr, cd_decoder);
+    ASSERT_NE(nullptr, es);
+
+    cd_decoder->add_event_buffer_callback(
+        [&](auto ev_begin, auto ev_end) { received_cd_event_count += std::distance(ev_begin, ev_end); });
+
+    monitoring_decoder->add_event_buffer_callback(
+        [&](auto ev_begin, auto ev_end) {
+            for (auto it = ev_begin; it < ev_end; ++it) {
+                // 0x42 = MASTER_ANA_LIFO_ON
+                ASSERT_EQ(0x42, it->type_id);
+            }
+            received_monitoring_event_count += std::distance(ev_begin, ev_end); });
+
+
+    es->start();
+
+    // WHEN we stream and decode the events in the file
+    while (es->wait_next_buffer() >= 0) {
+        auto raw_buffer = es->get_latest_raw_data();
+        decoder->decode(raw_buffer);
+    }
+
+    // THEN We decode the same data CD & triggers that are encoded in the RAW file
+    ASSERT_EQ(8314158, received_cd_event_count);
+    ASSERT_EQ(493, received_monitoring_event_count);
 }

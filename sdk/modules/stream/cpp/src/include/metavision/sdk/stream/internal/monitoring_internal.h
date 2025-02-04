@@ -9,26 +9,28 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-#include "hal_python_binder.h"
-#include "metavision/hal/utils/raw_file_config.h"
-#include "metavision/utils/pybind/deprecation_warning_exception.h"
-#include "pb_doc_hal.h"
+#ifndef METAVISION_SDK_STREAM_MONITORING_INTERNAL_H
+#define METAVISION_SDK_STREAM_MONITORING_INTERNAL_H
+
+#include <list>
+#include <map>
+#include <mutex>
+
+#include "metavision/sdk/core/utils/callback_manager.h"
 
 namespace Metavision {
 
-static HALClassPythonBinder<RawFileConfig> bind(
-    [](auto &module, auto &class_binding) {
-        class_binding.def(py::init<>())
-            .def(py::init<const RawFileConfig &>())
-            .def_readwrite("n_events_to_read", &RawFileConfig::n_events_to_read_,
-                           pybind_doc_hal["Metavision::RawFileConfig::n_events_to_read_"])
-            .def_readwrite("n_read_buffers", &RawFileConfig::n_read_buffers_,
-                           pybind_doc_hal["Metavision::RawFileConfig::n_read_buffers_"])
-            .def_readwrite("do_time_shifting", &RawFileConfig::do_time_shifting_,
-                           pybind_doc_hal["Metavision::RawFileConfig::do_time_shifting_"])
-            .def_readwrite("build_index", &RawFileConfig::build_index_,
-                           pybind_doc_hal["Metavision::RawFileConfig::build_index_"]);
-    },
-    "RawFileConfig", pybind_doc_hal["Metavision::RawFileConfig"]);
+class IndexGenerator;
+
+class Monitoring::Private : public CallbackManager<EventsMonitoringCallback> {
+public:
+    Private(IndexManager &index_manager);
+
+    virtual ~Private();
+
+    static Monitoring *build(IndexManager &index_manager);
+};
 
 } // namespace Metavision
+
+#endif // METAVISION_SDK_STREAM_MONITORING_INTERNAL_H

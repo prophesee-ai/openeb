@@ -67,6 +67,12 @@ std::shared_ptr<I_EventsStreamDecoder> make_decoder(DeviceBuilder &device_builde
     std::shared_ptr<I_Decoder> frame_decoder;
     auto i_geometry = device_builder.add_facility(format.geometry());
 
+    // Set of monitoring Subtypes that have more than one CONTINUED
+    // Not supported by current decoders
+    std::set<uint16_t> monitoring_id_blacklist = {
+        0x0000, 0x0001, 0x0002, 0x0003, 0x0004, 0x0005, 0x0006, 0x0007, 0x0008, 0x0009,
+    };
+
     raw_size_bytes = 0;
     if (format.name() == "EVT4") {
         auto cd_decoder           = device_builder.add_facility(std::make_unique<I_EventDecoder<EventCD>>());
@@ -82,24 +88,29 @@ std::shared_ptr<I_EventsStreamDecoder> make_decoder(DeviceBuilder &device_builde
         auto cd_decoder           = device_builder.add_facility(std::make_unique<I_EventDecoder<EventCD>>());
         auto ext_trig_decoder     = device_builder.add_facility(std::make_unique<I_EventDecoder<EventExtTrigger>>());
         auto erc_count_ev_decoder = device_builder.add_facility(std::make_unique<I_EventDecoder<EventERCCounter>>());
+        auto monitoring_ev_decoder = device_builder.add_facility(std::make_unique<I_EventDecoder<EventMonitoring>>());
 
-        decoder = device_builder.add_facility(make_evt3_decoder(do_time_shifting, i_geometry->get_height(),
-                                                                i_geometry->get_width(), cd_decoder, ext_trig_decoder,
-                                                                erc_count_ev_decoder));
+        decoder = device_builder.add_facility(
+            make_evt3_decoder(do_time_shifting, i_geometry->get_height(), i_geometry->get_width(), cd_decoder,
+                              ext_trig_decoder, erc_count_ev_decoder, monitoring_ev_decoder, monitoring_id_blacklist));
 
         raw_size_bytes = decoder->get_raw_event_size_bytes();
     } else if (format.name() == "EVT2") {
         auto cd_decoder       = device_builder.add_facility(std::make_unique<I_EventDecoder<EventCD>>());
         auto ext_trig_decoder = device_builder.add_facility(std::make_unique<I_EventDecoder<EventExtTrigger>>());
+        auto erc_count_ev_decoder = device_builder.add_facility(std::make_unique<I_EventDecoder<EventERCCounter>>());
+        auto monitoring_ev_decoder = device_builder.add_facility(std::make_unique<I_EventDecoder<EventMonitoring>>());
 
-        decoder =
-            device_builder.add_facility(std::make_unique<EVT2Decoder>(do_time_shifting, cd_decoder, ext_trig_decoder));
+        decoder = device_builder.add_facility(
+            std::make_unique<EVT2Decoder>(do_time_shifting, cd_decoder, ext_trig_decoder, erc_count_ev_decoder,
+                                          monitoring_ev_decoder, monitoring_id_blacklist));
         raw_size_bytes = decoder->get_raw_event_size_bytes();
     } else if (format.name() == "EVT21") {
             
         auto ext_trig_decoder     = device_builder.add_facility(std::make_unique<I_EventDecoder<EventExtTrigger>>());
         auto erc_count_ev_decoder = device_builder.add_facility(std::make_unique<I_EventDecoder<EventERCCounter>>());
-        auto endianness           = format["endianness"];
+        auto monitoring_ev_decoder = device_builder.add_facility(std::make_unique<I_EventDecoder<EventMonitoring>>());
+        auto endianness = format["endianness"];
 
         auto evt21_keep_vectors = config.get<bool>("evt21_keep_vectors");
 
@@ -110,18 +121,21 @@ std::shared_ptr<I_EventsStreamDecoder> make_decoder(DeviceBuilder &device_builde
 
             auto cd_vector_decoder = device_builder.add_facility(std::make_unique<I_EventDecoder<EventCDVector>>());
 
-            decoder = device_builder.add_facility(
-                    std::make_unique<EVT21VectorizedDecoder>(do_time_shifting, cd_vector_decoder, ext_trig_decoder, erc_count_ev_decoder));
+            decoder = device_builder.add_facility(std::make_unique<EVT21VectorizedDecoder>(
+                do_time_shifting, cd_vector_decoder, ext_trig_decoder, erc_count_ev_decoder, monitoring_ev_decoder,
+                monitoring_id_blacklist));
 
         }else{
             auto cd_decoder = device_builder.add_facility(std::make_unique<I_EventDecoder<EventCD>>());
 
             if (endianness == "legacy") {
                 decoder = device_builder.add_facility(std::make_unique<EVT21LegacyDecoder>(
-                    do_time_shifting, cd_decoder, ext_trig_decoder, erc_count_ev_decoder));
+                    do_time_shifting, cd_decoder, ext_trig_decoder, erc_count_ev_decoder, monitoring_ev_decoder,
+                    monitoring_id_blacklist));
             } else {
                 decoder = device_builder.add_facility(
-                    std::make_unique<EVT21Decoder>(do_time_shifting, cd_decoder, ext_trig_decoder, erc_count_ev_decoder));
+                    std::make_unique<EVT21Decoder>(do_time_shifting, cd_decoder, ext_trig_decoder, erc_count_ev_decoder,
+                                                   monitoring_ev_decoder, monitoring_id_blacklist));
             }
         }
         raw_size_bytes = decoder->get_raw_event_size_bytes();

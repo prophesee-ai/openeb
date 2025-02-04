@@ -26,7 +26,7 @@ register_gtest(TEST hal-toy-sample-plugin-test-lib
                TARGET gtest_metavision_hal_toy_sample_plugin
                HAL_PLUGIN_PATH "${HAL_BUILD_PLUGIN_PATH}/sample")
 
-set(apps_to_test metavision_platform_info metavision_file_info metavision_hal_raw_cutter metavision_file_to_csv metavision_file_to_dat)
+set(apps_to_test metavision_platform_info metavision_file_info metavision_hal_raw_cutter metavision_file_to_dat)
 # TODO MV-167 : add app metavision_hal_ls in list above
 foreach(app_name IN LISTS apps_to_test)
     string(REPLACE "_" "-" test_name "${app_name}")

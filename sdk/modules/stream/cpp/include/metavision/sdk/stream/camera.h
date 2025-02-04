@@ -52,6 +52,9 @@
 // Metavision SDK Stream FrameHisto handler class
 #include "metavision/sdk/stream/frame_histo.h"
 
+// Metavision SDK Stream Monitoring handler class
+#include "metavision/sdk/stream/monitoring.h"
+
 // Metavision SDK Stream RAW data handler class
 #include "metavision/sdk/stream/raw_data.h"
 
@@ -288,6 +291,10 @@ public:
     /// @brief Gets class to handle RawEventFrameDiff
     /// @throw CameraException if the camera has not been initialized.
     FrameDiff &frame_diff();
+
+    /// @brief Gets class to handle Monitoring
+    /// @throw CameraException if the camera has not been initialized.
+    Monitoring &monitoring();
 
     /// @brief Registers a callback that will be called when a runtime error occurs
     ///

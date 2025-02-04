@@ -25,6 +25,7 @@ target_sources(metavision_sdk_stream PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/frame_histo.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/hdf5_event_file_reader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/hdf5_event_file_writer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/monitoring.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/offline_streaming_control.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/raw_data.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/raw_event_file_logger.cpp

@@ -252,8 +252,19 @@ int main(int argc, char *argv[]) {
     Metavision::I_EventRateActivityFilterModule *i_event_rate_activity_filter_module =
         device->get_facility<Metavision::I_EventRateActivityFilterModule>();
     if (i_event_rate_activity_filter_module) {
+        Metavision::I_EventRateActivityFilterModule::thresholds NFL_ths;
+        NFL_ths.lower_bound_start = 0;
+        NFL_ths.lower_bound_stop = 0;
+        NFL_ths.upper_bound_start = 100000000;
+        NFL_ths.upper_bound_stop = 110000000;
+        i_event_rate_activity_filter_module->set_thresholds(NFL_ths);
+        i_event_rate_activity_filter_module->enable(true);
         std::cout << "Event rate activity filter: streaming from "
-                  << i_event_rate_activity_filter_module->get_thresholds().lower_bound_start << " Kev/s" << std::endl;
+                  << i_event_rate_activity_filter_module->get_thresholds().lower_bound_start/1000 << " - "
+                  << i_event_rate_activity_filter_module->get_thresholds().lower_bound_stop/1000 << " Kev/s, up to "
+                  << i_event_rate_activity_filter_module->get_thresholds().upper_bound_start/1000000 << " - "
+                  << i_event_rate_activity_filter_module->get_thresholds().upper_bound_stop/1000000 << " Mev/s"
+                  << std::endl;
     }
 
     auto tokenize = [](std::string str, std::string separator) {

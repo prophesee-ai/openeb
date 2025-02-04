@@ -12,7 +12,7 @@ Metavision SDK Get Started.
 """
 
 
-from metavision_core.event_io import EventsIterator
+from metavision_sdk_stream import Camera, CameraStreamSlicer
 
 
 def parse_args():
@@ -21,40 +21,41 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Metavision SDK Get Started sample.',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
-        '-i', '--input-event-file', dest='event_file_path', default="",
-        help="Path to input event file (RAW or HDF5). If not specified, the camera live stream is used. "
-        "If it's a camera serial number, it will try to open that camera instead.")
+        '-i', '--input-event-file',
+        help="Path to input event file (RAW or HDF5). If not specified, the camera live stream is used.")
     args = parser.parse_args()
     return args
 
 
 def main():
-    """ Main """
     args = parse_args()
 
-    # Events iterator on Camera or event file
-    mv_iterator = EventsIterator(input_path=args.event_file_path, delta_t=1000)
+    if args.input_event_file:
+        camera = Camera.from_file(args.input_event_file)
+    else:
+        camera = Camera.from_first_available()
 
     global_counter = 0  # This will track how many events we processed
     global_max_t = 0  # This will track the highest timestamp we processed
 
-    # Process events
-    for evs in mv_iterator:
-        print("----- New event buffer! -----")
-        if evs.size == 0:
-            print("The current event buffer is empty.")
+    slicer = CameraStreamSlicer(camera.move())
+    for slice in slicer:
+        print("----- New event slice! -----")
+        if slice.events.size == 0:
+            print("The current event slice is empty.")
         else:
-            min_t = evs['t'][0]   # Get the timestamp of the first event of this callback
-            max_t = evs['t'][-1]  # Get the timestamp of the last event of this callback
+            min_t = slice.events['t'][0]   # Get the timestamp of the first event of this slice
+            max_t = slice.events['t'][-1]  # Get the timestamp of the last event of this callback
             global_max_t = max_t  # Events are ordered by timestamp, so the current last event has the highest timestamp
 
-            counter = evs.size  # Local counter
+            counter = slice.events.size  # Local counter
             global_counter += counter  # Increase global counter
 
-            print(f"There were {counter} events in this event buffer.")
+            print(f"There were {counter} events in this event slice.")
             print(f"There were {global_counter} total events up to now.")
-            print(f"The current event buffer included events from {min_t} to {max_t} microseconds.")
-            print("----- End of the event buffer! -----")
+            print(f"The current event slice included events from {min_t} to {max_t} microseconds.")
+            print("----- End of the event slice! -----")
+
 
     # Print the global statistics
     duration_seconds = global_max_t / 1.0e6
@@ -62,7 +63,6 @@ def main():
     print(f"The total duration was {duration_seconds:.2f} seconds.")
     if duration_seconds >= 1:  # No need to print this statistics if the total duration was too short
         print(f"There were {global_counter / duration_seconds :.2f} events per second on average.")
-
 
 if __name__ == "__main__":
     main()

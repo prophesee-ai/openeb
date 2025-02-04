@@ -59,6 +59,7 @@ public:
     ERCCounter &erc_counter();
     FrameHisto &frame_histo();
     FrameDiff &frame_diff();
+    Monitoring &monitoring();
 
     const CameraGeneration &generation() const;
 
@@ -106,6 +107,7 @@ public:
     std::unique_ptr<ERCCounter> erc_counter_;
     std::unique_ptr<FrameHisto> frame_histo_;
     std::unique_ptr<FrameDiff> frame_diff_;
+    std::unique_ptr<Monitoring> monitoring_;
 
     std::unique_ptr<RawData> raw_data_;
     std::unique_ptr<CameraGeneration> generation_;
