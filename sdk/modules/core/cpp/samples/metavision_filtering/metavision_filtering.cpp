@@ -141,6 +141,8 @@ int main(int argc, char *argv[]) {
             case Metavision::UIKeyEvent::KEY_Q:
                 should_stop = true;
                 break;
+            default:
+                break;
             }
         }
     });
