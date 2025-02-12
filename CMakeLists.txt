@@ -157,7 +157,9 @@ if (MSVC)
     include_directories(${VCPKG_INCLUDE_DIR})
 elseif (NOT ANDROID AND "${TARGET_PLATFORM}" STREQUAL "")
     # Needed when building with GCC < 9
-    link_libraries(stdc++fs)
+    if (CMAKE_COMPILER_IS_GNUCC AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.0)
+        link_libraries(stdc++fs)
+    endif()
 
     # Platforms with their own toolchains should define their own compile flags
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
