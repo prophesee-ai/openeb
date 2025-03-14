@@ -29,9 +29,6 @@ using TriggerBuffer = std::vector<EventExtTrigger>;
 struct Slice {
     using ConditionStatus = EventBufferReslicerAlgorithm::ConditionStatus;
 
-    /// @brief Default constructor
-    Slice() = default;
-
     /// @brief Comparison operator
     /// @param other Slice to compare with
     /// @return True if the two slices are equal, false otherwise
