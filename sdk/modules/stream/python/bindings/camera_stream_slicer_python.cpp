@@ -22,7 +22,7 @@ namespace Metavision {
 
 void export_camera_stream_slicer(py::module &m) {
     py::class_<Slice>(m, "Slice", pybind_doc_stream["Metavision::Slice"])
-        .def(py::init<>(), pybind_doc_stream["Metavision::Slice::Slice()=default"])
+        .def(py::init<>())
         .def("__eq__", &Slice::operator==, pybind_doc_stream["Metavision::Slice::operator==(const Slice &other) const"],
              py::arg("other"))
         .def_property_readonly(

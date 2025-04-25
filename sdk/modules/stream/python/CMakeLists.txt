@@ -18,7 +18,9 @@ endif(GENERATE_DOC_PYTHON_BINDINGS)
 add_subdirectory(samples)
 
 # Tests
-add_subdirectory(tests)
+if (BUILD_TESTING)
+    add_subdirectory(tests)
+endif (BUILD_TESTING)
 
 # Cpack
 add_cpack_component(PUBLIC metavision-sdk-stream-python-samples)

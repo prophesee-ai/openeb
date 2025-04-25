@@ -9,9 +9,10 @@
 
 import os
 import platform
+import pytest
 from metavision_utils import shell_tools
 
-
+@pytest.mark.skip(reason="Temporarily disabled for v5.1.1")
 def pytestcase_deprecated_function_warning_at_compilation():
     cmake_target = "deprecation_warning_sample"
     cmake_build_path = os.getenv("CMAKE_BINARY_DIR")

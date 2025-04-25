@@ -21,7 +21,9 @@ if (GENERATE_DOC_PYTHON_BINDINGS)
 endif(GENERATE_DOC_PYTHON_BINDINGS)
 
 # Tests
-add_subdirectory(tests)
+if (BUILD_TESTING)
+    add_subdirectory(tests)
+endif (BUILD_TESTING)
 
 # Cpack
 add_cpack_component(PUBLIC metavision-sdk-core-python metavision-sdk-core-python-samples)

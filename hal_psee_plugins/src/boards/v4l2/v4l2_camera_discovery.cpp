@@ -34,25 +34,22 @@
 #include "metavision/hal/utils/hal_log.h"
 #include "metavision/psee_hw_layer/utils/psee_format.h"
 #include "metavision/psee_hw_layer/boards/v4l2/v4l2_board_command.h"
+#include <filesystem>
 
 #include "utils/make_decoder.h"
 
 namespace Metavision {
 
 V4l2CameraDiscovery::V4l2CameraDiscovery() {
-    std::vector<std::string> device_path = {
-        // We might want to iterate over all /dev/mediaX files
-        // "/dev/media0", "/dev/media1", "/dev/media2", "/dev/media3", "/dev/media4",
-        //
-        // Because Thor96 doesn't support proper v4l2 device discovery mechanism, let's hard-code it for now
-        "/dev/video0",
-    };
-
-    for (auto device_name : device_path) {
-        try {
-            devices_.emplace_back(std::make_shared<V4L2BoardCommand>(device_name));
-        } catch (std::exception &e) {
-            MV_HAL_LOG_TRACE() << "Cannot open V4L2 device '" << device_name << "' (err: " << e.what();
+    for (const auto &entry : std::filesystem::directory_iterator("/dev/")) {
+        if (entry.path().string().find("/dev/media") == 0) {
+            try {
+                devices_.emplace_back(std::make_shared<V4L2BoardCommand>(entry.path()));
+            } catch (const std::exception &e) {
+                // This does not have to crash because only valid devices are added.
+                MV_HAL_LOG_TRACE() << "Discarding " << entry.path().string();
+                MV_HAL_LOG_TRACE() << e.what();
+            }
         }
     }
 }
@@ -93,9 +90,9 @@ bool V4l2CameraDiscovery::discover(DeviceBuilder &device_builder, const std::str
     } catch (std::exception &e) { MV_HAL_LOG_ERROR() << "Failed to build streaming facilities :" << e.what(); }
 
     if (res) {
-        MV_HAL_LOG_INFO() << "V4l2 Discovery with great success +1";
+        MV_HAL_LOG_TRACE() << "V4l2 Discovery with great success +1";
     } else {
-        MV_HAL_LOG_INFO() << "V4l2 Discovery failed with horrible failure -1";
+        MV_HAL_LOG_TRACE() << "V4l2 Discovery failed with horrible failure -1";
     }
     return res;
 }

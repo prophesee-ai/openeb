@@ -13,4 +13,8 @@ endif()
  
 target_sources(metavision_psee_hw_layer_obj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/v4l2_device_builder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/v4l2_ll_biases.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/v4l2_erc.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/v4l2_roi_interface.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/v4l2_crop.cpp
 )

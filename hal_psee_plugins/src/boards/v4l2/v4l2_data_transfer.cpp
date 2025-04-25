@@ -72,7 +72,7 @@ V4l2RequestBuffers V4l2DataTransfer::request_buffers(uint32_t nb_buffers) {
 }
 
 void V4l2DataTransfer::start_impl() {
-    MV_HAL_LOG_INFO() << "V4l2DataTransfer - start_impl() ";
+    MV_HAL_LOG_TRACE() << "V4l2DataTransfer - start_impl() ";
 
     // DMA usually need 2 buffers to run, to be able to quickly switch from one transfer to the next
     // The way datatransfer is built, run_impl sequentially dequeue a buffer, pass it to EventStream, query another
@@ -103,7 +103,7 @@ void V4l2DataTransfer::start_impl() {
 }
 
 void V4l2DataTransfer::run_impl(const DataTransfer &data_transfer) {
-    MV_HAL_LOG_INFO() << "V4l2DataTransfer - run_impl() ";
+    MV_HAL_LOG_TRACE() << "V4l2DataTransfer - run_impl() ";
     struct pollfd fds[1];
 
     fds[0].fd      = fd_;

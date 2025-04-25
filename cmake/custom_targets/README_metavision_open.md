@@ -65,7 +65,7 @@ and in your environment variables (`PATH`, `PYTHONPATH` and `LD_LIBRARY_PATH`) t
 To retrieve OpenEB source code, you can just clone the [GitHub repository](https://github.com/prophesee-ai/openeb):
 
 ```bash
-git clone https://github.com/prophesee-ai/openeb.git --branch 5.1.0
+git clone https://github.com/prophesee-ai/openeb.git --branch 5.1.1
 ```
 
 In the following sections, absolute path to this directory is called ``OPENEB_SRC_DIR``
@@ -252,7 +252,7 @@ Remove the folders where you installed Metavision artifacts (check both the `bui
 To retrieve OpenEB source code, you can just clone the [GitHub repository](https://github.com/prophesee-ai/openeb):
 
 ```bash
-git clone https://github.com/prophesee-ai/openeb.git --branch 5.1.0
+git clone https://github.com/prophesee-ai/openeb.git --branch 5.1.1
 ```
 
 In the following sections, absolute path to this directory is called ``OPENEB_SRC_DIR``

@@ -16,6 +16,8 @@ if (GENERATE_DOC_PYTHON_BINDINGS)
 endif (GENERATE_DOC_PYTHON_BINDINGS)
 
 # Add tests
-add_subdirectory(tests)
+if (BUILD_TESTING)
+    add_subdirectory(tests)
+endif (BUILD_TESTING)
 
 add_python_cpack_components(PUBLIC metavision-sdk-base)

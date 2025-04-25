@@ -62,7 +62,7 @@ static HALFacilityPythonBinder<I_EventsStreamDecoder> bind(
                         py::gil_scoped_acquire acquire;
                         object(base_time);
                     };
-                    self.add_time_callback(gil_cb);
+                    return self.add_time_callback(gil_cb);
                 },
                 py::arg("cb"), pybind_doc_hal["Metavision::I_EventsStreamDecoder::add_time_callback"])
             .def("remove_callback", &I_EventsStreamDecoder::remove_time_callback, py::arg("callback_id"),
