@@ -78,7 +78,7 @@ void CDFrameGenerator::add_events(const EventCD *begin, const EventCD *end) {
 void CDFrameGenerator::set_display_accumulation_time_us(timestamp display_accumulation_time_us) {
     std::lock_guard<std::mutex> lock(processing_mutex_);
     accumulation_time_us_ = display_accumulation_time_us;
-    notify_slice_us_      = std::max(timestamp(100), display_accumulation_time_us / 3);
+    notify_slice_us_      = timestamp(100);
 }
 
 bool CDFrameGenerator::generate() {
