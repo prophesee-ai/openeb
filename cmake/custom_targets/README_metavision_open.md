@@ -84,7 +84,7 @@ Install the following dependencies:
 sudo apt update
 sudo apt -y install apt-utils build-essential software-properties-common wget unzip curl git cmake
 sudo apt -y install libopencv-dev libboost-all-dev libusb-1.0-0-dev libprotobuf-dev protobuf-compiler
-sudo apt -y install libhdf5-dev hdf5-tools libglew-dev libglfw3-dev libcanberra-gtk-module ffmpeg 
+sudo apt -y install libhdf5-dev hdf5-tools libglew-dev libglfw3-dev libcanberra-gtk-module ffmpeg
 ```
 
 Optionally, if you want to run the tests, you need to install Google Gtest and Gmock packages.
@@ -214,7 +214,7 @@ or you can stream data from your Prophesee-compatible event-based camera.
 
 Running the test suite is a sure-fire way to ensure you did everything well with your compilation and installation process.
 
- * Download [the files](https://kdrive.infomaniak.com/app/share/975517/2aa2545c-6b12-4478-992b-df2acfb81b38) necessary to run the tests.
+ * Download [the files](https://kdrive.infomaniak.com/app/share/975517/0b7e3395-374a-4552-86d0-8aa4527392b3) necessary to run the tests.
    Click `Download` on the top right folder. Beware of the size of the obtained archive which weighs around 1.5 Gb.
 
  * Extract and put the content of this archive to `<OPENEB_SRC_DIR>/datasets`. 
@@ -449,7 +449,7 @@ or you can deploy the OpenEB files (applications, samples, libraries etc.) in a 
 Prophesee camera plugins are included in OpenEB, but you need to install the drivers
 for the cameras to be available on Windows. To do so, follow this procedure:
 
-1. download [wdi-simple.exe from our file server](https://kdrive.infomaniak.com/app/share/975517/4f59e852-af5e-4e00-90fc-f213aad20edd)
+1. download [wdi-simple.exe from our file server](https://kdrive.infomaniak.com/app/share/975517/cb164518-e68f-49fd-a6a1-eea693783bd2)
 2. execute the following commands in a Command Prompt launched as an administrator:
 
 ```bash
@@ -477,7 +477,7 @@ or you can stream data from your Prophesee-compatible event-based camera.
 
 Running the test suite is a sure-fire way to ensure you did everything well with your compilation and installation process.
 
- * Download [the files](https://kdrive.infomaniak.com/app/share/975517/2aa2545c-6b12-4478-992b-df2acfb81b38) necessary to run the tests.
+ * Download [the files](https://kdrive.infomaniak.com/app/share/975517/0b7e3395-374a-4552-86d0-8aa4527392b3) necessary to run the tests.
    Click `Download` on the top right folder. Beware of the size of the obtained archive which weighs around 1.5 Gb.
    
  * Extract and put the content of this archive to `<OPENEB_SRC_DIR>/datasets`. 
