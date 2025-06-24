@@ -13,6 +13,7 @@
 #define METAVISION_HAL_SAMPLE_DIGITAL_CROP_H
 
 #include <memory>
+#include <cstdint>
 
 #include <metavision/hal/facilities/i_digital_crop.h>
 
