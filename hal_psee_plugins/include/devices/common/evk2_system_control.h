@@ -14,6 +14,7 @@
 
 #include <string>
 #include <memory>
+#include <cstdint>
 
 namespace Metavision {
 

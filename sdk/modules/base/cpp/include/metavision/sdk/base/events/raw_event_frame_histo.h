@@ -15,6 +15,7 @@
 #include <memory>
 #include <stdexcept>
 #include <vector>
+#include <cstdint>
 
 #include "metavision/sdk/base/events/detail/event_traits.h"
 

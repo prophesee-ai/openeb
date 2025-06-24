@@ -13,6 +13,7 @@
 #define METAVISION_SDK_BASE_EVENT_ERC_COUNTER_H
 
 #include <ostream>
+#include <cstdint>
 #include "metavision/sdk/base/utils/detail/struct_pack.h"
 #include "metavision/sdk/base/utils/timestamp.h"
 #include "metavision/sdk/base/events/detail/event_traits.h"
