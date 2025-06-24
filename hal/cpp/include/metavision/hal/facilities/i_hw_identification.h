@@ -15,6 +15,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <cstdint>
 
 #include "metavision/hal/utils/device_config.h"
 #include "metavision/hal/utils/raw_file_header.h"

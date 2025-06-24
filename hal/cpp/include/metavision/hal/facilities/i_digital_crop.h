@@ -13,6 +13,7 @@
 #define METAVISION_HAL_FACILITY_DIGITAL_CROP_H
 
 #include "metavision/hal/facilities/i_registrable_facility.h"
+#include <cstdint>
 
 namespace Metavision {
 
