@@ -68,9 +68,17 @@ void CDFrameGenerator::add_events(const EventCD *begin, const EventCD *end) {
     // Note: one could call frame_generation_algorithm->process_events directly but it may have a high overhead
     // depending on the inputs.and decreases the performance. Better ensure that bigger chunks of data are processed
     events_back_.insert(events_back_.end(), begin, end);
-    if (std::prev(end)->t > next_notify_us_) {
+    
+    // if (std::prev(end)->t > next_notify_us_) {
+    //    events_available_ = true;
+    //    next_notify_us_   = notify_slice_us_ * (1 + begin->t / notify_slice_us_);
+    //    events_available_cond_.notify_all();
+    //}
+
+    auto current_time = std::prev(end)->t;
+    if (current_time >= next_notify_us_) {
         events_available_ = true;
-        next_notify_us_   = notify_slice_us_ * (1 + begin->t / notify_slice_us_);
+        next_notify_us_   = notify_slice_us_; // * (1 + begin->t / notify_slice_us_);
         events_available_cond_.notify_all();
     }
 }
