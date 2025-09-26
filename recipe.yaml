@@ -11,23 +11,28 @@ source:
 
 build:
   number: 0
-  skip: win
+  skip:
+  - win
+  - cuda_compiler_version == "None"
+  - cuda_compiler_version == "11.8"
   script: build.sh
 
 requirements:
   build:
     - ${{ compiler('c') }}
     - ${{ compiler('cxx') }}
-    - compilers
+    - ${{ compiler('cuda') }}
+    - ${{ stdlib('c') }}
+#     - compilers
     - cmake >=3.12
     - ninja
     - pkg-config
-    - libgl-devel
-    - libglx-devel
-    - kernel-headers_linux-64 >= 5.14.0
+#     - libgl-devel
+#     - libglx-devel
+#     - kernel-headers_linux-64 >= 5.14.0
     - openlibm
     - libopenlibm4
-    - sysroot_linux-64 >= 2.28
+#     - sysroot_linux-64 >= 2.28
 
 
   host:
@@ -44,17 +49,17 @@ requirements:
     - libglu
     - glew
     - glfw
-    - libgcc >=13
-    - libstdcxx >=13
+#     - libgcc >=13
+#     - libstdcxx >=13
     - mesalib
     - libegl
     - libgl-devel
     - libglx-devel
     - openlibm
-    - compilers
-    - kernel-headers_linux-64 >= 5.14.0
-    - libopenlibm4
-    - sysroot_linux-64 >= 2.28
+#     - compilers
+#     - kernel-headers_linux-64 >= 5.14.0
+#     - libopenlibm4
+#     - sysroot_linux-64 >= 2.28
 
 
   run:

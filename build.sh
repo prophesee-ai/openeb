@@ -14,6 +14,8 @@ cmake ${CMAKE_ARGS} \
     -DBUILD_TESTING=OFF \
     -DCODE_COVERAGE=OFF \
     -DGENERATE_DOC=OFF \
+    -DPython3_EXECUTABLE="$PYTHON" \
+    -DUDEV_RULES_SYSTEM_INSTALL=OFF \
     ..
 
 # Build and install
