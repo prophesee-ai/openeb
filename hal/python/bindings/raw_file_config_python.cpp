@@ -24,7 +24,7 @@ static HALClassPythonBinder<RawFileConfig> bind(
                            pybind_doc_hal["Metavision::RawFileConfig::n_events_to_read_"])
             .def_readwrite("n_read_buffers", &RawFileConfig::n_read_buffers_,
                            pybind_doc_hal["Metavision::RawFileConfig::n_read_buffers_"])
-            .def_readwrite("build_index", &RawFileConfig::build_index, pybind_doc_hal["Metavision::RawFileConfig::build_index_"])
+            .def_readwrite("build_index", &RawFileConfig::build_index_, pybind_doc_hal["Metavision::RawFileConfig::build_index_"])
             .def_readwrite("do_time_shifting", &RawFileConfig::do_time_shifting_,
                            pybind_doc_hal["Metavision::RawFileConfig::do_time_shifting_"]);
     },
