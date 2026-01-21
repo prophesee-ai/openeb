@@ -1,0 +1,80 @@
+context:
+  name: OpenEB
+  version: 5.1.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/prophesee-ai/openeb
+
+build:
+  number: 0
+  skip:
+  - win
+  - cuda_compiler_version == "None"
+  - cuda_compiler_version == "11.8"
+  script: build.sh
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ compiler('cuda') }}
+    - ${{ stdlib('c') }}
+#     - compilers
+    - cmake >=3.12
+    - ninja
+    - pkg-config
+#     - libgl-devel
+#     - libglx-devel
+#     - kernel-headers_linux-64 >= 5.14.0
+    - openlibm
+    - libopenlibm4
+#     - sysroot_linux-64 >= 2.28
+
+
+  host:
+    - python
+    - pip
+    - pybind11
+    - boost
+    - libusb
+    - opencv
+    - hdf5
+    - eigen
+    - zlib
+    - libgl
+    - libglu
+    - glew
+    - glfw
+#     - libgcc >=13
+#     - libstdcxx >=13
+    - mesalib
+    - libegl
+    - libgl-devel
+    - libglx-devel
+    - openlibm
+#     - compilers
+#     - kernel-headers_linux-64 >= 5.14.0
+#     - libopenlibm4
+#     - sysroot_linux-64 >= 2.28
+
+
+  run:
+    - python
+    - numpy
+    - opencv
+    - boost
+    - libusb
+    - hdf5
+
+about:
+  license: Apache-2.0
+  license_file: licensing/LICENSE_OPEN
+  summary: "Prophesee Metavision SDK - OpenEB event-based vision software framework."
+
+extra:
+  recipe-maintainers:
+    - gokulbnr
