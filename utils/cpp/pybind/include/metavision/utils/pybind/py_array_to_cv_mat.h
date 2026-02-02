@@ -86,6 +86,26 @@ inline cv::Mat to_cv_mat(const py::array &in) {
     return cv::Mat(shape[0], shape[1], CV_MAKETYPE(cv_depth, num_channels), in.request().ptr, strides[0]);
 }
 
+/// @brief Creates a cv::Mat_<T> view using the memory stored inside a py::array_t<T>
+/// @param in Input array. Should be 2 dimensions & monochannel: (H, W)
+template<typename T>
+inline cv::Mat_<T> to_cv_mat_(const py::array &in) {
+    if (!py::isinstance<py::array_t<T>>(in)) {
+        throw std::invalid_argument("Incompatible input dtype.");
+    }
+    const int num_dims = static_cast<size_t>(in.ndim());
+    if (num_dims != 2) {
+        std::ostringstream oss;
+        oss << "Invalid number of dimensions (should be 2): " << num_dims;
+        throw std::invalid_argument(oss.str());
+    }
+
+    const auto &shape   = in.shape();
+    const auto &strides = in.strides();
+
+    return cv::Mat_<T>(shape[0], shape[1], reinterpret_cast<T *>(in.request().ptr), strides[0]);
+}
+
 } // namespace Metavision
 
 #endif // METAVISION_UTILS_PYBIND_PY_ARRAY_TO_CV_MAT_H

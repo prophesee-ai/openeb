@@ -7,15 +7,16 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-project(metavision_riscv_logger)
-
 cmake_minimum_required(VERSION 3.5)
+
+project(metavision_riscv_logger)
 
 set(CMAKE_CXX_STANDARD 17)
 
 find_package(MetavisionSDK COMPONENTS base REQUIRED)
 find_package(MetavisionHAL COMPONENTS REQUIRED)
 find_package(Boost COMPONENTS program_options REQUIRED)
+add_compile_definitions(BOOST_BIND_GLOBAL_PLACEHOLDERS) ## needed to get rid of warning `#pragma message: The practice of declaring the Bind placeholders (_1, _2, ...)`
 
 add_executable(metavision_riscv_logger metavision_riscv_logger.cpp)
 target_link_libraries(metavision_riscv_logger PRIVATE Metavision::HAL_discovery MetavisionSDK::base Boost::program_options)

@@ -41,14 +41,6 @@ std::string TzHWIdentification::get_serial() const {
     return icmd_->get_serial();
 }
 
-long TzHWIdentification::get_system_id() const {
-    for (auto dev : devices_) {
-        if (auto main_dev = dynamic_cast<TzMainDevice *>(dev.get()))
-            return main_dev->get_system_id();
-    }
-    return 0;
-}
-
 I_HW_Identification::SensorInfo TzHWIdentification::get_sensor_info() const {
     for (auto dev : devices_) {
         if (auto main_dev = dynamic_cast<TzMainDevice *>(dev.get()))

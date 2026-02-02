@@ -14,7 +14,7 @@
 // NOTE: this file is just here to ease the integration with the docs. The main sample is metavision_sdk_get_started.cpp
 // NOTE: if you modify this file, please check that the docs references are correct (line numbers)
 
-#include <metavision/sdk/driver/camera.h>
+#include <metavision/sdk/stream/camera.h>
 #include <metavision/sdk/base/events/event_cd.h>
 
 // this function will be associated to the camera callback

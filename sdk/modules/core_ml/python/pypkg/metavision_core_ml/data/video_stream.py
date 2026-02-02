@@ -14,6 +14,10 @@ import os
 import random
 import numpy as np
 import cv2
+# Temporary solution to fix the numpy deprecated alias in skvideo: https://github.com/scikit-video/scikit-video/issues/154#issuecomment-1445239790
+# Will be deleted in MV-2134 when skvideo makes the correction
+np.float = np.float64
+np.int = np.int_
 import skvideo.io
 
 

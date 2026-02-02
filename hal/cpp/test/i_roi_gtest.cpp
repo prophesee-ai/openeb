@@ -13,12 +13,9 @@
 #include <numeric>
 #include <atomic>
 #include <chrono>
-#include <condition_variable>
 
 #include "metavision/sdk/base/events/event_cd.h"
-#include "metavision/utils/gtest/gtest_with_tmp_dir.h"
 #include "metavision/utils/gtest/gtest_custom.h"
-#include "metavision/hal/utils/hal_exception.h"
 #include "metavision/hal/device/device_discovery.h"
 #include "metavision/hal/device/device.h"
 #include "metavision/hal/facilities/i_camera_synchronization.h"
@@ -116,7 +113,7 @@ TEST_F_WITH_CAMERA(I_ROI_GTest, roi_columns_lines_with_camera) {
             // Flush first events
             continue;
         }
-        decoder->decode(buffer->data(), buffer->data() + buffer->size());
+        decoder->decode(buffer);
     }
 }
 
@@ -147,7 +144,6 @@ TEST_F_WITH_CAMERA(I_ROI_GTest, roi_rectangle_with_camera) {
             FAIL();
         }
 
-        long n_bytes;
         auto buffer = es->get_latest_raw_data();
 
         if (std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - tnow).count() <
@@ -155,7 +151,7 @@ TEST_F_WITH_CAMERA(I_ROI_GTest, roi_rectangle_with_camera) {
             // Flush first events
             continue;
         }
-        decoder->decode(buffer->data(), buffer->data() + buffer->size());
+        decoder->decode(buffer);
     }
 }
 
@@ -195,7 +191,6 @@ TEST_F_WITH_CAMERA(I_ROI_GTest, several_roi_rectangle_with_camera) {
             FAIL();
         }
 
-        long n_bytes;
         auto buffer = es->get_latest_raw_data();
 
         if (std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - tnow).count() <
@@ -203,6 +198,6 @@ TEST_F_WITH_CAMERA(I_ROI_GTest, several_roi_rectangle_with_camera) {
             // Flush first events
             continue;
         }
-        decoder->decode(buffer->data(), buffer->data() + buffer->size());
+        decoder->decode(buffer);
     }
 }

@@ -8,7 +8,7 @@
 # See the License for the specific language governing permissions and limitations under the License.
 
 lfs_download("datasets/openeb/core_ml" VALIDATION)
-lfs_download("sdk/modules/core_ml/python/models/corner_detection_10_heatmaps.ckpt" VALIDATION)
+lfs_download("sdk/modules/core_ml/models/corner_detection_10_heatmaps.ckpt" VALIDATION)
 
 get_filename_component(CORE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../core/python/pypkg" ABSOLUTE)
 get_filename_component(CORE_ML_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../pypkg" ABSOLUTE)

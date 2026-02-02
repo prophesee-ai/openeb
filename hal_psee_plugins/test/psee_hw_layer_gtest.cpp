@@ -9,8 +9,8 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
+#include <filesystem>
 #include <gtest/gtest.h>
-#include <boost/filesystem.hpp>
 
 #include "metavision/utils/gtest/gtest_custom.h"
 
@@ -31,7 +31,7 @@ public:
 TEST_F_WITH_DATASET(PseeBase_Gtest, cast_facility) {
     // Read the dataset provided
     std::string dataset_file_path =
-        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen4_evt3_hand.raw").string();
+        (std::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen4_evt3_hand.raw").string();
 
     auto device = DeviceDiscovery::open_raw_file(dataset_file_path);
     ASSERT_TRUE(device != nullptr);

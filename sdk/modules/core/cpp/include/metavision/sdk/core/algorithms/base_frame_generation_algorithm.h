@@ -76,12 +76,13 @@ public:
     /// event source, and the color corresponding to the given @p palette (3 channels by default)
     /// @param accumulation_time_us Time range of events to update the frame with (in us)
     /// @param palette The Prophesee's color palette to use
+    /// @param flags A combination of Parameters
     /// @note Even if there's no events, a frame filled with the background color will be generated
     /// @throw invalid_argument if @p frame does not have the expected type (CV_8U or CV_8UC3)
     template<typename EventIt>
     static void generate_frame_from_events(EventIt it_begin, EventIt it_end, cv::Mat &frame,
                                            const uint32_t accumulation_time_us     = 0,
-                                           const Metavision::ColorPalette &palette = default_palette());
+                                           const Metavision::ColorPalette &palette = default_palette(), int flags = 0);
 
     /// @brief Sets the color used to generate the frame
     /// @param bg_color Color used as background, when no events were received for a pixel

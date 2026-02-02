@@ -18,6 +18,10 @@ from metavision_core_ml.video_to_event.simulator import EventSimulator
 from metavision_core_ml.data.video_stream import TimedVideoStream
 from metavision_sdk_core import SharedCdEventsBufferProducer as EventsBufferProducer
 from collections import deque
+# Temporary solution to fix the numpy deprecated alias in skvideo: https://github.com/scikit-video/scikit-video/issues/154#issuecomment-1445239790
+# Will be deleted in MV-2134 when skvideo makes the correction
+np.float = np.float64
+np.int = np.int_
 import skvideo.io
 import cv2
 

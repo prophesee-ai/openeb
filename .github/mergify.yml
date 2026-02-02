@@ -5,16 +5,16 @@ queue_rules:
       - "#review-requested=0"
       - "#changes-requested-reviews-by=0"
       - label=ready-to-merge
+    update_method: rebase
+    merge_method: fast-forward
 
 pull_request_rules:
   - name: Automatic merge on approval & CI
     conditions:
-      - check-success=Ubuntu 20
       - check-success=Ubuntu 22
+      - check-success=Ubuntu 24
       - check-success=Windows
       - and: *ChecksQueue
     actions:
       queue:
         name: default
-        method: fast-forward
-        update_method: rebase

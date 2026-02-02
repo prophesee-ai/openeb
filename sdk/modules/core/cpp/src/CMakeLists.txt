@@ -8,22 +8,26 @@
 # See the License for the specific language governing permissions and limitations under the License.
 
 target_sources(metavision_sdk_core PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/adaptive_rate_events_splitter_algorithm.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/base_frame_generation_algorithm.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/cd_frame_generator.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/cv_video_recorder.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/data_synchronizer_from_triggers.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/event_buffer_reslicer_algorithm.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/event_frame_diff_generation_algorithm.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/event_frame_histo_generation_algorithm.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/fast_math_functions.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/misc.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/on_demand_frame_generation_algorithm.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/periodic_frame_generation_algorithm.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/rate_estimator.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/raw_event_frame_converter.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/simple_displayer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/threaded_process.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/time_decay_frame_generation_algorithm.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/video_writer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/algorithms/adaptive_rate_events_splitter_algorithm.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/algorithms/base_frame_generation_algorithm.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/algorithms/contrast_map_generation_algorithm.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/algorithms/event_buffer_reslicer_algorithm.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/algorithms/events_integration_algorithm.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/algorithms/on_demand_frame_generation_algorithm.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/algorithms/periodic_frame_generation_algorithm.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/algorithms/time_decay_frame_generation_algorithm.cpp
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/preprocessors/json_parser.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/preprocessors/event_preprocessor_type.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/preprocessors/tensor.cpp
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/utils/cd_frame_generator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/utils/cv_video_recorder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/utils/data_synchronizer_from_triggers.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/utils/fast_math_functions.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/utils/misc.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/utils/rate_estimator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/utils/raw_event_frame_converter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/utils/threaded_process.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/utils/video_writer.cpp
 )

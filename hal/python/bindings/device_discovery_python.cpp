@@ -9,7 +9,9 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
+#include <filesystem>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl/filesystem.h>
 
 #include "hal_python_binder.h"
 #include "metavision/hal/device/device_discovery.h"
@@ -29,11 +31,12 @@ std::shared_ptr<Device> open_with_config_wrapper(const std::string &serial, Devi
     return std::shared_ptr<Device>(DeviceDiscovery::open(serial, config));
 }
 
-std::shared_ptr<Device> open_raw_file_with_only_filename(const std::string &raw_file) {
+std::shared_ptr<Device> open_raw_file_with_only_filename(const std::filesystem::path &raw_file) {
     return std::shared_ptr<Device>(DeviceDiscovery::open_raw_file(raw_file));
 }
 
-std::shared_ptr<Device> open_raw_file_with_config_wrapper(const std::string &raw_file, RawFileConfig &file_config) {
+std::shared_ptr<Device> open_raw_file_with_config_wrapper(const std::filesystem::path &raw_file,
+                                                          const RawFileConfig &file_config) {
     return std::shared_ptr<Device>(DeviceDiscovery::open_raw_file(raw_file, file_config));
 }
 
@@ -50,8 +53,7 @@ static HALGenericPythonBinder bind_connection_type([](auto &module) {
 static HALClassPythonBinder<PluginCameraDescription> bind_plugin_camera_desc(
     [](auto &module, auto &class_binding) {
         class_binding.def_readonly("serial", &PluginCameraDescription::serial_)
-            .def_readonly("connection", &PluginCameraDescription::connection_)
-            .def_readonly("system_id", &PluginCameraDescription::system_id_);
+            .def_readonly("connection", &PluginCameraDescription::connection_);
     },
     "PluginCameraDescription");
 
@@ -73,13 +75,17 @@ static HALGenericPythonBinder bind([](auto &module) {
                 py::arg("config"),
                 pybind_doc_hal
                     ["Metavision::DeviceDiscovery::open(const std::string &serial, const DeviceConfig &config)"])
-            .def_static("open_raw_file", &open_raw_file_with_only_filename, py::return_value_policy::take_ownership,
-                        py::arg("raw_file"),
-                        pybind_doc_hal["Metavision::DeviceDiscovery::open_raw_file(const std::string &raw_file)"])
-            .def_static("open_raw_file", &open_raw_file_with_config_wrapper, py::return_value_policy::take_ownership,
-                        py::arg("raw_file"), py::arg("file_config"),
-                        pybind_doc_hal["Metavision::DeviceDiscovery::open_raw_file(const std::string &raw_file, "
-                                       "const RawFileConfig &file_config)"])
+            .def_static(
+                "open_raw_file", py::overload_cast<const std::filesystem::path &>(&open_raw_file_with_only_filename),
+                py::return_value_policy::take_ownership, py::arg("raw_file"),
+                pybind_doc_hal["Metavision::DeviceDiscovery::open_raw_file(const std::filesystem::path &raw_file)"])
+            .def_static(
+                "open_raw_file",
+                py::overload_cast<const std::filesystem::path &, const RawFileConfig &>(
+                    &open_raw_file_with_config_wrapper),
+                py::return_value_policy::take_ownership, py::arg("raw_file"), py::arg("file_config"),
+                pybind_doc_hal["Metavision::DeviceDiscovery::open_raw_file(const std::filesystem::path &raw_file, "
+                               "const RawFileConfig &file_config)"])
             .def_static(
                 "list",
                 +[]() {

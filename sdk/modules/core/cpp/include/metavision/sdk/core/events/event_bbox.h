@@ -9,8 +9,8 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-#ifndef METAVISION_SDK_ML_EVENT_BBOX_H
-#define METAVISION_SDK_ML_EVENT_BBOX_H
+#ifndef METAVISION_SDK_CORE_EVENT_BBOX_H
+#define METAVISION_SDK_CORE_EVENT_BBOX_H
 
 #include <limits>
 #include <ostream>

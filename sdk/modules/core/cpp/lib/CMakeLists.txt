@@ -12,7 +12,7 @@ MetavisionSDK_add_module(core
         PUBLIC
             base
     EXTRA_REQUIRED_PACKAGE "OpenCV COMPONENTS core imgproc highgui videoio"
-    EXTRA_REQUIRED_PACKAGE "Boost COMPONENTS timer filesystem"
+    EXTRA_REQUIRED_PACKAGE "Boost COMPONENTS timer"
     EXTRA_REQUIRED_PACKAGE "Threads"
 )
 
@@ -29,7 +29,6 @@ target_link_libraries(metavision_sdk_core
         opencv_highgui
         opencv_videoio
         Boost::boost # Target for header-only dependencies
-        Boost::filesystem
         Boost::timer
         Threads::Threads
 )

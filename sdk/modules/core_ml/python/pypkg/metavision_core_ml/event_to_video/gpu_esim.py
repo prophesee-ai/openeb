@@ -56,7 +56,7 @@ class GPUEBSIM(object):
     Simulated Events on GPU
 
     Args:
-        dataloader: video-clips datalodaer
+        dataloader: video-clips dataloader
         simulator: gpu-simulator
         batch_times: number of rounds per batch
         event_volume_depth: number of timesteps per round

@@ -18,11 +18,13 @@
 #include <map>
 #include <array>
 
+#include "metavision/hal/utils/data_transfer.h"
 #include "metavision/sdk/base/utils/timestamp.h"
 #include "metavision/hal/facilities/i_decoder.h"
 #include "metavision/hal/facilities/i_event_decoder.h"
 #include "metavision/hal/facilities/i_registrable_facility.h"
 #include "metavision/sdk/base/events/event_cd.h"
+#include "metavision/sdk/base/events/event_cd_vector.h"
 #include "metavision/sdk/base/events/event_erc_counter.h"
 #include "metavision/sdk/base/events/event_ext_trigger.h"
 
@@ -51,12 +53,31 @@ public:
         const std::shared_ptr<I_EventDecoder<EventERCCounter>> &erc_count_event_decoder =
             std::shared_ptr<I_EventDecoder<EventERCCounter>>());
 
+    /// @brief Constructor
+    /// @param time_shifting_enabled If true, the timestamp of the decoded events will be shifted by the value of first
+    /// event
+    /// @param event_cd_vector_decoder Optional decoder of CD vector events
+    /// @param event_ext_trigger_decoder Optional decoder of trigger events
+    /// @param erc_count_event_decoder Optional decoder of ERC counter events
+    I_EventsStreamDecoder(
+        bool time_shifting_enabled,
+        const std::shared_ptr<I_EventDecoder<EventCDVector>> &event_cd_vector_decoder = std::shared_ptr<I_EventDecoder<EventCDVector>>(),
+        const std::shared_ptr<I_EventDecoder<EventExtTrigger>> &event_ext_trigger_decoder =
+            std::shared_ptr<I_EventDecoder<EventExtTrigger>>(),
+        const std::shared_ptr<I_EventDecoder<EventERCCounter>> &erc_count_event_decoder =
+            std::shared_ptr<I_EventDecoder<EventERCCounter>>());
+
     /// @brief Decodes raw data. Identifies the events in the buffer and dispatches it to the instance of @ref
     /// I_EventDecoder corresponding to each event type.
     /// @warning It is mandatory to pass strictly consecutive buffers from the same source to this method
     /// @param raw_data_begin Pointer on first event
     /// @param raw_data_end Pointer after the last event
     void decode(const RawData *const raw_data_begin, const RawData *const raw_data_end) override;
+
+    /// @brief Decode a BufferPtr of raw data
+    /// Convenience method built on top of the iterator decode method version
+    /// @param raw_buffer BufferPtr of raw data
+    void decode(const DataTransfer::BufferPtr &raw_buffer);
 
     /// @brief Adds a function that will be called from time to time, giving current timestamp
     /// @param cb Callback to add
@@ -97,19 +118,6 @@ public:
     ///          decoder implementation (e.g EVT2Decoder::reset_last_timestamp_impl,
     ///          EVT21Decoder::reset_last_timestamp_impl and EVT3Decoder::reset_last_timestamp_impl)
     bool reset_last_timestamp(const Metavision::timestamp &timestamp);
-
-    /// @brief Resets the decoder last timestamp
-    /// @param timestamp Timestamp to reset the decoder to
-    /// @return true if the reset operation could complete, false otherwise.
-    /// @note After this call has succeeded, that @ref get_last_timestamp returns @p timestamp
-    /// @warning If time shifting is enabled, the @p timestamp must be in the shifted time reference
-    /// @warning Additional care may be required regarding the expected content of the data to be decoded
-    ///          after this function has been called. Refer to the constraints and limitations of a specific
-    ///          decoder implementation (e.g EVT2Decoder::reset_timestamp_impl, EVT21Decoder::reset_timestamp_impl and
-    ///          EVT3Decoder::reset_timestamp_impl)
-    [[deprecated("'I_EventsStream::reset_timestamp' is deprecated since v4.6.0, "
-                 "please use 'I_EventsStream::reset_last_timestamp' instead.")]]
-    bool reset_timestamp(const Metavision::timestamp &timestamp);
 
     /// @brief Resets the decoder timestamp shift
     /// @param shift Timestamp shift to reset the decoder to
@@ -163,8 +171,9 @@ protected:
         typename std::array<Event, BUFFER_SIZE>::iterator ev_it_;
     };
 
-    /// @brief Gets the reference to the forwarder of CD events
-    DecodedEventForwarder<EventCD> &cd_event_forwarder();
+    /// @brief Gets the reference to the forwarder of CD events of OutputCDType
+    template<typename OutputCDType = EventCD>
+    DecodedEventForwarder<OutputCDType> &cd_event_forwarder();
 
     /// @brief Gets the reference to the forwarder of trigger events
     DecodedEventForwarder<EventExtTrigger, 1> &trigger_event_forwarder();
@@ -194,19 +203,7 @@ private:
     /// @return True if the reset operation could complete, false otherwise.
     /// @note It is expected after this call has succeeded, that @ref get_last_timestamp returns @p timestamp
     /// @warning If time shifting is enabled, the @p timestamp must be in the shifted time reference
-    virtual bool reset_last_timestamp_impl(const Metavision::timestamp &timestamp);
-
-    /// @brief Implementation of "reset the decoder last timestamp" operation
-    /// @param timestamp Timestamp to reset the decoder to
-    ///        If >= 0, reset the decoder last timestamp to the actual value @p timestamp
-    ///        If < 0, reset the decoder internal state so that the last timestamp will be found from the
-    ///        next buffer of events to decoder (the timestamp shift and overflow loop counter is not reset)
-    /// @return True if the reset operation could complete, false otherwise.
-    /// @note It is expected after this call has succeeded, that @ref get_last_timestamp returns @p timestamp
-    /// @warning If time shifting is enabled, the @p timestamp must be in the shifted time reference
-    [[deprecated("'I_EventsStream::reset_timestamp_impl' is deprecated since v4.6.0, "
-                 "please use 'I_EventsStream::reset_last_timestamp_impl' instead.")]]
-    virtual bool reset_timestamp_impl(const Metavision::timestamp &timestamp);
+    virtual bool reset_last_timestamp_impl(const Metavision::timestamp &timestamp) = 0;
 
     /// @brief Implementation of "reset the decoder timestamp shift" operation
     /// @param shift Timestamp shift to reset the decoder to
@@ -222,6 +219,9 @@ private:
 
     std::shared_ptr<I_EventDecoder<EventCD>> cd_event_decoder_;
     std::unique_ptr<DecodedEventForwarder<EventCD>> cd_event_forwarder_;
+    
+    std::shared_ptr<I_EventDecoder<EventCDVector>> cd_event_vector_decoder_;
+    std::unique_ptr<DecodedEventForwarder<EventCDVector>> cd_event_vector_forwarder_;
 
     std::shared_ptr<I_EventDecoder<EventExtTrigger>> ext_trigger_event_decoder_;
     std::unique_ptr<DecodedEventForwarder<EventExtTrigger, 1>> trigger_event_forwarder_;

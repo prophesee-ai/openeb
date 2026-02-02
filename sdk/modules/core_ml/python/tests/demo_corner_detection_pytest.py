@@ -20,8 +20,8 @@ def pytestcase_demo_corner_detection(tmpdir, dataset_dir):
     """
     video_path = os.path.join(tmpdir, "demo_video.avi")
     datfile = os.path.join(dataset_dir, "openeb/core_ml/corner_detection/guernica_small_for_pytest.dat")
-
-    models_dir = os.path.join(dataset_dir, '..', 'sdk', 'modules', 'core_ml', 'python', 'models')
+    
+    models_dir = os.path.join(dataset_dir, '..', 'sdk', 'modules', 'core_ml', 'models')
     checkpoint = os.path.join(models_dir, "corner_detection_10_heatmaps.ckpt")
 
     assert os.path.exists(checkpoint)
@@ -30,14 +30,14 @@ def pytestcase_demo_corner_detection(tmpdir, dataset_dir):
     samples_dir = os.path.join(dataset_dir, '..', 'sdk', 'modules', 'core_ml', 'python', 'samples')
     demo_path = os.path.join(samples_dir, "demo_corner_detection/demo_corner_detection.py")
     assert os.path.exists(demo_path)
-    execute_cmd('{} {} \
-                         {} \
-                         {} \
-                         --video-path {} \
-                         --use-multi-time-steps \
-                         --save-corners \
-                         --cpu'.format(sys.executable, demo_path, datfile, checkpoint, video_path),
-                env=os.environ.copy())
+    command_line = '{} {} \
+                    {} \
+                    {} \
+                    --video-path {} \
+                    --use-multi-time-steps \
+                    --save-corners \
+                    --cpu'.format(sys.executable, demo_path, datfile, checkpoint, video_path)
+    execute_cmd(command_line, env=os.environ.copy())
 
     assert os.path.exists(video_path)
     assert os.path.exists(video_path.replace(".avi", ".csv"))

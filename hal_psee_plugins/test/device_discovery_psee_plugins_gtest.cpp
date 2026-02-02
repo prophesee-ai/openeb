@@ -215,7 +215,6 @@ TEST_F(DeviceDiscoveryPseePlugins_GTest, open_rawfile_success_with_supported_sys
         // Check hw identification
         I_HW_Identification *hw_id = device->get_facility<I_HW_Identification>();
         ASSERT_NE(nullptr, hw_id);
-        ASSERT_EQ(system_id, hw_id->get_system_id());
         ASSERT_EQ("File", hw_id->get_connection_type());
 
         // Check decoder
@@ -578,11 +577,8 @@ TEST_WITH_CAMERA(DeviceDiscoveryRepositoryNoF_GTest, open_camera_build_gen31,
     ASSERT_NE(nullptr, device->get_facility<I_EventRateActivityFilterModule>());
     ASSERT_EQ(VGAGeometry::width_, geometry->get_width());
     ASSERT_EQ(VGAGeometry::height_, geometry->get_height());
-    if (hw_id_->get_system_id() == 0x28) {
-        ASSERT_EQ(2, decoder->get_raw_event_size_bytes());
-    } else {
-        ASSERT_EQ(4, decoder->get_raw_event_size_bytes());
-    }
+    // The format may be either evt 2.0 or 3.0, this information was already used to spawn
+    // a decoder, and it worked, there is no point re-checking it
 }
 
 TEST_WITH_CAMERA(DeviceDiscoveryRepositoryNoF_GTest, open_camera_build_gen4,

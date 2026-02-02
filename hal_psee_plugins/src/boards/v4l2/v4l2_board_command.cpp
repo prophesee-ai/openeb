@@ -27,49 +27,15 @@
 #include "boards/v4l2/v4l2_device.h"
 #include "boards/v4l2/v4l2_data_transfer.h"
 #include "metavision/psee_hw_layer/boards/v4l2/v4l2_board_command.h"
-#include "boards/treuzell/treuzell_command_definition.h"
-#include "metavision/psee_hw_layer/boards/treuzell/tz_control_frame.h"
-#include "devices/utils/device_system_id.h"
 #include "metavision/hal/utils/hal_exception.h"
 #include "utils/psee_hal_plugin_error_code.h"
-
-#ifdef USE_JAVA_BINDINGS
-#include "is_usb_java.h"
-#endif
-
-#define PSEE_EVK_PROTOCOL 0
-
-#define TZ_MAX_ANSWER_SIZE 1024
 
 namespace Metavision {
 
 V4L2BoardCommand::V4L2BoardCommand(std::string device_path) {
-    // TODO: based on the /dev/mediaX device (not available with thor96 psee eb driver), extract the pipeline topology,
-    // extract the /dev/videoX and /dev/v4l-subdevX associated entities, and populate the DataTransfer with it and board
-    // command with them. Right now, we'll just hard code data transfer with /dev/video0 and the board command with
-    // /dev/v4l-subdev1 ¯\_(ツ)_/¯ more details in:
-    // https://github.com/gjasny/v4l-utils/blob/master/utils/media-ctl/media-ctl.c#L526 As of today, it is also not
-    // possible to use the `v4l2-dbg -d /dev/video0 -c subdev1` way to interact with the sensor. (with the
-    // V4L2_CHIP_MATCH_SUBDEV subdev index matching method) One needs to directly use the /dev/v4l-subdevX device.
-    // (v4l2-dbg -d /dev/v4l-subdev1)
     struct stat st;
-
     device_ = std::make_shared<V4L2DeviceControl>(device_path);
-
-    // TODO: get video_path_ and sensor_subdev_path_ from media_path when available.
-    // Hack for now, let's just dismiss the /dev/mediaX device and hardcode the video and sensor subdev path.
-
-    // and now for sensor_fd_:
-    if (-1 == stat("/dev/v4l-subdev1", &st))
-        raise_error("Cannot identify device /dev/v4l-subdev1.");
-
-    if (!S_ISCHR(st.st_mode))
-        throw std::runtime_error("/dev/v4l-subdev1 is not a device");
-
-    sensor_fd_ = open("/dev/v4l-subdev1", O_RDWR);
-    if (-1 == sensor_fd_) {
-        raise_error("Cannot open device /dev/v4l-subdev1");
-    };
+    sensor_fd_ = device_->get_sensor_entity()->fd;
 }
 
 V4L2BoardCommand::~V4L2BoardCommand() {}
@@ -117,8 +83,8 @@ unsigned int V4L2BoardCommand::get_device_count() {
 
 std::vector<uint32_t> V4L2BoardCommand::read_device_register(uint32_t device, uint32_t address, int nval) {
     std::vector<uint32_t> res;
-    struct v4l2_dbg_match match;
-    struct v4l2_dbg_register get_reg;
+    struct v4l2_dbg_match match      = {0};
+    struct v4l2_dbg_register get_reg = {0};
     int i, retval;
 
     match.type    = V4L2_CHIP_MATCH_BRIDGE;
@@ -137,8 +103,8 @@ std::vector<uint32_t> V4L2BoardCommand::read_device_register(uint32_t device, ui
 }
 
 void V4L2BoardCommand::write_device_register(uint32_t device, uint32_t address, const std::vector<uint32_t> &val) {
-    struct v4l2_dbg_match match;
-    struct v4l2_dbg_register set_reg;
+    struct v4l2_dbg_match match      = {0};
+    struct v4l2_dbg_register set_reg = {0};
     int i, retval;
 
     match.type    = V4L2_CHIP_MATCH_BRIDGE;
@@ -158,12 +124,19 @@ std::shared_ptr<V4L2DeviceControl> V4L2BoardCommand::get_device_control() {
     return device_;
 }
 
-std::unique_ptr<DataTransfer> V4L2BoardCommand::build_data_transfer(uint32_t raw_event_size_bytes) {
+std::unique_ptr<DataTransfer::RawDataProducer>
+    V4L2BoardCommand::build_raw_data_producer(uint32_t raw_event_size_bytes) {
     // TODO: based on the /dev/mediaX device (not available with thor96 psee eb driver), extract the pipeline topology,
     // extract the /dev/videoX associated entity, and populate the DataTransfer with it.
     // Right now, we'll just hard code it to /dev/video0 ¯\_(ツ)_/¯
     // more details in: https://github.com/gjasny/v4l-utils/blob/master/utils/media-ctl/media-ctl.c#L526
-    return std::make_unique<V4l2DataTransfer>(device_, raw_event_size_bytes);
+
+    // If the environment set a heap, us it, otherwise, use the driver's allocator
+    if (std::getenv("V4L2_HEAP"))
+        return std::make_unique<V4l2DataTransfer>(device_->get_video_entity()->fd, raw_event_size_bytes, "/dev/dma_heap",
+                                                  std::getenv("V4L2_HEAP"));
+    else
+        return std::make_unique<V4l2DataTransfer>(device_->get_video_entity()->fd, raw_event_size_bytes);
 }
 
 } // namespace Metavision

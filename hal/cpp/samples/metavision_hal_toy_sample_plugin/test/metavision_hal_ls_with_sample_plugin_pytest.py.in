@@ -1,0 +1,94 @@
+#!/usr/bin/env python
+
+# Copyright (c) Prophesee S.A.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+# on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and limitations under the License.
+
+
+import pytest
+from metavision_utils import shell_tools, pytest_tools
+
+
+def pytestcase_test_metavision_hal_ls_with_sample_plugin_short():
+    '''
+    Checks output of metavision_hal_ls application when using sample plugin
+    '''
+
+    cmd = "./metavision_hal_ls"
+    output, error_code = pytest_tools.run_cmd_setting_mv_log_file(cmd)
+
+    # Check app exited without error
+    assert error_code == 0
+
+    # Check expected output
+    assert output.strip() == "Device detected: SampleIntegratorName:hal_toy_sample_plugin:000000"
+
+
+def pytestcase_test_metavision_hal_ls_with_sample_plugin_verbose():
+    '''
+    Checks output of metavision_hal_ls application when using sample plugin
+    '''
+
+    cmd = "./metavision_hal_ls -v"
+    output, error_code = pytest_tools.run_cmd_setting_mv_log_file(cmd)
+
+    # Check app exited without error
+    assert error_code == 0
+
+    # Get expected output
+
+    # Version
+    project_version = "@PROJECT_VERSION_FULL@"
+
+    # Commit id
+    commit_command = "@GIT_COMMAND_GET_COMMIT_ID_QUOTES_ESCAPED@"
+    commit_id, error, err_code = shell_tools.execute_cmd(commit_command)
+    assert err_code == 0, "******\nError while executing cmd '{}':{}\n{}\n******".format(
+        commit_command, commit_id, error)
+
+    # Commit date
+    commit_date_command = "@GIT_COMMAND_GET_COMMIT_DATE_QUOTES_ESCAPED@"
+    commit_date, error, err_code = shell_tools.execute_cmd(commit_date_command)
+    assert err_code == 0, "******\nError while executing cmd '{}':{}\n{}\n******".format(commit_date_command,
+                                                                                         commit_date, error)
+    branch_name_command = "@GIT_COMMAND_GET_BRANCH_QUOTES_ESCAPED@"
+    branch_name, error, err_code = shell_tools.execute_cmd(branch_name_command)
+    assert err_code == 0, "******\nError while executing cmd '{}':{}\n{}\n******".format(branch_name_command,
+                                                                                         branch_name, error)
+
+    # Get expected output
+    version = project_version + "." + commit_date
+
+    # Check expected output
+    expected_output = """Device detected: SampleIntegratorName:hal_toy_sample_plugin:000000
+## HAL Software
+Version:                      {}
+VCS branch:                   {}
+VCS commit:                   {}
+VCS commit's date:            {}
+
+## Plugin Software
+Name:                         hal_toy_sample_plugin
+Version:                      0.1.0.0
+VCS branch:                   hal-sample-plugin-vcs-branch
+VCS commit:                   hal-sample-plugin-vcs-commit
+VCS commit's date:            hal-sample-plugin-vcs-commit-date
+
+## Hardware
+Connection:                   USB
+Integrator:                   SampleIntegratorName
+Raw Formats:                  SAMPLE-FORMAT-1.0
+Sensor Info:                  1.0
+Serial:                       000000
+System Version:               0.0.1
+SystemID:                     42
+""".format(project_version + "." + commit_date.strip(), branch_name.strip(), commit_id.strip(), commit_date.strip())
+
+    output_strip = "\n".join([line.strip() for line in output.splitlines()])
+    expected_output_strip = "\n".join([line.strip() for line in expected_output.splitlines()])
+    assert output_strip.find(expected_output_strip) >= 0

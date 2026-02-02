@@ -33,6 +33,25 @@ I_EventsStreamDecoder::I_EventsStreamDecoder(
     }
 }
 
+I_EventsStreamDecoder::I_EventsStreamDecoder(
+    bool time_shifting_enabled, const std::shared_ptr<I_EventDecoder<EventCDVector>> &cd_vector_event_decoder,
+    const std::shared_ptr<I_EventDecoder<EventExtTrigger>> &ext_trigger_event_decoder,
+    const std::shared_ptr<I_EventDecoder<EventERCCounter>> &erc_count_event_decoder) :
+    is_time_shifting_enabled_(time_shifting_enabled),
+    cd_event_vector_decoder_(cd_vector_event_decoder),
+    ext_trigger_event_decoder_(ext_trigger_event_decoder),
+    erc_count_event_decoder_(erc_count_event_decoder) {
+    if (cd_event_vector_decoder_) {
+        cd_event_vector_forwarder_.reset(new DecodedEventForwarder<EventCDVector>(cd_event_vector_decoder_.get()));
+    }
+    if (ext_trigger_event_decoder_) {
+        trigger_event_forwarder_.reset(new DecodedEventForwarder<EventExtTrigger, 1>(ext_trigger_event_decoder_.get()));
+    }
+    if (erc_count_event_decoder_) {
+        erc_count_event_forwarder_.reset(new DecodedEventForwarder<EventERCCounter, 1>(erc_count_event_decoder_.get()));
+    }
+}
+
 bool I_EventsStreamDecoder::is_time_shifting_enabled() const {
     return is_time_shifting_enabled_;
 }
@@ -78,6 +97,9 @@ void I_EventsStreamDecoder::decode(const RawData *const raw_data_begin, const Ra
     if (cd_event_forwarder_) {
         cd_event_forwarder_->flush();
     }
+    if (cd_event_vector_forwarder_) {
+        cd_event_vector_forwarder_->flush();
+    }
     if (trigger_event_forwarder_) {
         trigger_event_forwarder_->flush();
     }
@@ -88,6 +110,10 @@ void I_EventsStreamDecoder::decode(const RawData *const raw_data_begin, const Ra
     for (auto it = time_cbs_map_.begin(), it_end = time_cbs_map_.end(); it != it_end; ++it) {
         it->second(last_ts);
     }
+}
+
+void I_EventsStreamDecoder::decode(const DataTransfer::BufferPtr &raw_buffer) {
+    decode(raw_buffer.begin(), raw_buffer.end());
 }
 
 size_t I_EventsStreamDecoder::add_time_callback(const TimeCallback_t &cb) {
@@ -104,38 +130,9 @@ bool I_EventsStreamDecoder::remove_time_callback(size_t callback_id) {
     return false;
 }
 
-// Exception only used to detect which of reset_timestamp or reset_last_timestamp is implemented
-// Should be removed once reset_timestamp is removed
-class ResetTimestampNotImplementedException : public std::exception {};
-
-bool I_EventsStreamDecoder::reset_timestamp(const timestamp &timestamp) {
-    return reset_last_timestamp(timestamp);
-}
-
 bool I_EventsStreamDecoder::reset_last_timestamp(const timestamp &timestamp) {
     incomplete_raw_data_.clear();
-    try {
-        return reset_timestamp_impl(timestamp);
-    } catch (const ResetTimestampNotImplementedException &e) {
-        try {
-            return reset_last_timestamp_impl(timestamp);
-        } catch (const ResetTimestampNotImplementedException &e) {
-            // Plugin is broken
-            throw HalException(HalErrorCode::OperationNotImplemented,
-                               "I_EventsStreamDecoder::reset_timestamp/reset_last_timestamp"
-                               " operation is not implemented by the current plugin");
-        }
-    }
-    return false;
-}
-
-bool I_EventsStreamDecoder::reset_timestamp_impl(const timestamp &timestamp) {
-    throw ResetTimestampNotImplementedException();
-}
-
-// Should made pure virtual once I_EventsStreamDecoder::reset_timestamp is removed
-bool I_EventsStreamDecoder::reset_last_timestamp_impl(const timestamp &timestamp) {
-    throw ResetTimestampNotImplementedException();
+    return reset_last_timestamp_impl(timestamp);
 }
 
 bool I_EventsStreamDecoder::reset_timestamp_shift(const timestamp &t) {

@@ -9,28 +9,17 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
+#include <future>
 #include "metavision/hal/utils/hal_connection_exception.h"
 #include "metavision/hal/utils/hal_exception.h"
 #include "metavision/hal/utils/data_transfer.h"
 
 namespace Metavision {
 
-DataTransfer::DataTransfer(uint32_t raw_event_size_bytes) : raw_event_size_bytes_(raw_event_size_bytes) {}
-
-DataTransfer::DataTransfer(uint32_t raw_event_size_bytes, const BufferPool &buffer_pool, bool allow_buffer_drop) :
-    raw_event_size_bytes_(raw_event_size_bytes), buffer_pool_(buffer_pool), allow_buffer_drop_(allow_buffer_drop) {
-    if (buffer_pool_.is_bounded() && buffer_pool_.size() < 3) {
-        throw HalException(HalErrorCode::InvalidArgument,
-                           "A DataTransfer can not be initialized with a bounded object pool of size < 3 (got size " +
-                               std::to_string(buffer_pool_.size()) + ").");
-    }
-}
+DataTransfer::DataTransfer(RawDataProducerPtr data_producer_ptr) : data_producer_ptr_(data_producer_ptr) {}
 
 DataTransfer::~DataTransfer() {
-    // not calling stop here, rather leaving this "burden" to the user of the data transfer
-    // will will most probably be in the destructor of I_EventStream
-    // if done from this destructor, it will be too late to call a derived version of stop_impl
-    // if one was defined
+    stop();
 }
 
 void DataTransfer::start() {
@@ -51,9 +40,14 @@ void DataTransfer::start() {
         stop_    = false;
         running_ = false;
     }
-    start_impl(get_buffer());
 
-    run_transfers_thread_ = std::thread([this]() {
+    data_producer_ptr_->start_impl();
+
+    std::promise<void> thread_is_started;
+    std::future<void> has_started = thread_is_started.get_future();
+
+    run_transfers_thread_ = std::thread([this, &thread_is_started]() {
+        thread_is_started.set_value();
         for (auto cb : status_change_cbs_) {
             cb.second(Status::Started);
         }
@@ -68,7 +62,8 @@ void DataTransfer::start() {
                     std::unique_lock<std::mutex> lock(running_mutex_);
                     running_ = true;
                 }
-                run_impl();
+
+                data_producer_ptr_->run_impl(*this);
 
                 if (!suspend_) {
                     break;
@@ -96,7 +91,7 @@ void DataTransfer::start() {
         }
     });
 
-    while (!run_transfers_thread_.joinable()) {}
+    has_started.wait();
 }
 
 void DataTransfer::stop() {
@@ -105,7 +100,7 @@ void DataTransfer::stop() {
     }
 
     try {
-        stop_impl();
+        data_producer_ptr_->stop_impl();
     } catch (const HalConnectionException &) {
         notify_stop();
         // We can't be sure the thread will terminate
@@ -162,7 +157,7 @@ size_t DataTransfer::add_new_buffer_callback(NewBufferCallback_t cb) {
 
 size_t DataTransfer::add_transfer_error_callback(TransferErrorCallback_t cb) {
     transfer_error_cbs_[cb_index_] = cb;
-    auto ret                         = cb_index_;
+    auto ret                       = cb_index_;
     ++cb_index_;
     return ret;
 }
@@ -173,11 +168,7 @@ void DataTransfer::remove_callback(size_t cb_id) {
     transfer_error_cbs_.erase(cb_id);
 }
 
-uint32_t DataTransfer::get_raw_event_size_bytes() const {
-    return raw_event_size_bytes_;
-}
-
-bool DataTransfer::should_stop() {
+bool DataTransfer::should_stop() const {
     return stop_ || suspend_;
 }
 
@@ -185,14 +176,69 @@ bool DataTransfer::stopped() const {
     return stop_;
 }
 
-void DataTransfer::start_impl(BufferPtr buffer) {}
-
-void DataTransfer::stop_impl() {}
-
-void DataTransfer::fire_callbacks(const BufferPtr buffer) const {
+void DataTransfer::fire_callbacks(const BufferPtr &buffer) const {
     for (auto &cb : new_buffer_cbs_) {
         cb.second(buffer);
     }
 }
 
+DataTransfer::BufferPtr::BufferPtr(std::any buffer, PtrType data, std::size_t buffer_size) :
+    internal_buffer_(buffer), buffer_data_(data), buffer_size_(buffer_size) {}
+
+bool DataTransfer::BufferPtr::operator==(const BufferPtr &other) const {
+    if (other.buffer_size_ != buffer_size_) {
+        return false;
+    }
+
+    return std::equal(begin(), end(), other.begin());
+}
+
+DataTransfer::BufferPtr::operator bool() const noexcept {
+    return buffer_data_ != nullptr;
+}
+
+std::size_t DataTransfer::BufferPtr::size() const noexcept {
+    return buffer_size_;
+}
+
+DataTransfer::BufferPtr::PtrType DataTransfer::BufferPtr::data() const noexcept {
+    return buffer_data_;
+}
+
+DataTransfer::BufferPtr::PtrType DataTransfer::BufferPtr::begin() const noexcept {
+    return buffer_data_;
+}
+
+DataTransfer::BufferPtr::PtrType DataTransfer::BufferPtr::end() const noexcept {
+    return buffer_data_ + buffer_size_;
+}
+
+const DataTransfer::BufferPtr::PtrType DataTransfer::BufferPtr::cbegin() const noexcept {
+    return begin();
+}
+
+const DataTransfer::BufferPtr::PtrType DataTransfer::BufferPtr::cend() const noexcept {
+    return end();
+}
+
+DataTransfer::BufferPtr DataTransfer::BufferPtr::clone() const {
+    auto new_buffer = std::make_shared<CloneType>();
+    new_buffer->reserve(buffer_size_);
+
+    auto from = buffer_data_;
+    auto end  = buffer_data_ + buffer_size_;
+    std::copy(from, end, std::back_inserter(*new_buffer));
+
+    return make_buffer_ptr(new_buffer);
+}
+
+DataTransfer::BufferPtr::SharedCloneType DataTransfer::BufferPtr::any_clone_cast() const {
+    return std::any_cast<SharedCloneType>(internal_buffer_);
+}
+
+void DataTransfer::BufferPtr::reset() noexcept {
+    internal_buffer_ = {};
+    buffer_data_     = nullptr;
+    buffer_size_     = 0;
+}
 } // namespace Metavision

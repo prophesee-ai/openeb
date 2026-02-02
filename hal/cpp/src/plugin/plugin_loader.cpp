@@ -113,31 +113,28 @@ struct dlcloser {
 namespace Metavision {
 
 struct PluginLoader::PluginInfo {
-    PluginInfo(const std::string &folder, const std::string &filename) {
+    PluginInfo(const std::filesystem::path &folder, const std::string &filename) {
 #ifdef _WIN32
 #ifdef _DEBUG
         name = get_plugin_name(filename, "dll", "", "_d", true);
-        path = folder + "\\" + filename;
 #else
         name = get_plugin_name(filename, "dll", "", "_d", false);
-        path = folder + "\\" + filename;
 #endif
 #elif defined __APPLE__
         name = get_plugin_name(filename, "dylib");
-        path = folder + "/" + filename;
 #else
         name = get_plugin_name(filename, "so");
-        path = folder + "/" + filename;
 #endif
+        path = folder / filename;
     }
 
     std::string name;
-    std::string path;
+    std::filesystem::path path;
 };
 
 struct PluginLoader::Library {
-    Library(const std::string &entrypoint_name, const std::string &name, const std::string &path) :
-        handle(load_library(path.c_str())) {
+    Library(const std::string &entrypoint_name, const std::string &name, const std::filesystem::path &path) :
+        handle(load_library(path)) {
         if (handle && !entrypoint_name.empty()) {
             auto entrypoint = reinterpret_cast<PluginEntry>(load_entrypoint(handle.get(), entrypoint_name.c_str()));
             if (entrypoint) {
@@ -148,37 +145,30 @@ struct PluginLoader::Library {
     }
 
 #ifdef _WIN32
-    void *load_library(const char *name) {
-        char abs_path[MAX_PATH];
-        GetFullPathName(name, MAX_PATH, abs_path, nullptr);
-        name = abs_path;
+    void *load_library(const std::filesystem::path &path) {
+        const std::filesystem::path dir = std::filesystem::canonical(path).parent_path();
 
-        std::string dir   = abs_path;
         LPSTR old_dll_dir = nullptr;
-        auto dir_sep_pos  = dir.rfind("\\");
-        if (dir_sep_pos != std::string::npos) {
-            dir = dir.substr(0, dir_sep_pos);
-            if (dir != "") {
-                // Save old dll directory
-                DWORD size = GetDllDirectoryA(0, old_dll_dir);
-                if (size > 0) {
-                    old_dll_dir = new char[size + 1];
-                    GetDllDirectoryA(size + 1, old_dll_dir);
-                    if (std::string(old_dll_dir) == "") {
-                        delete[] old_dll_dir;
-                        old_dll_dir = nullptr;
-                    }
+        if (!dir.empty()) {
+            // Save old dll directory
+            DWORD size = GetDllDirectoryA(0, old_dll_dir);
+            if (size > 0) {
+                old_dll_dir = new char[size + 1];
+                GetDllDirectoryA(size + 1, old_dll_dir);
+                if (std::string(old_dll_dir) == "") {
+                    delete[] old_dll_dir;
+                    old_dll_dir = nullptr;
                 }
-                SetDllDirectoryA(dir.c_str());
             }
+            SetDllDirectoryA(dir.string().c_str());
         }
 
-        void *handler = (void *)LoadLibraryA(name);
+        void *handler = (void *)LoadLibraryA(std::filesystem::canonical(path).string().c_str());
         if (handler == nullptr) {
             showErrorMsg("LoadLibraryA");
         }
 
-        if (dir != "" && dir_sep_pos != std::string::npos) {
+        if (!dir.empty()) {
             // Restore dll directory
             SetDllDirectoryA(old_dll_dir);
         }
@@ -198,9 +188,9 @@ struct PluginLoader::Library {
         return entrypoint;
     }
 #else
-    void *load_library(const char *name) {
+    void *load_library(const std::filesystem::path &path) {
         dlerror();
-        void *handler = dlopen(name, RTLD_LAZY | RTLD_LOCAL | RTLD_NODELETE);
+        void *handler = dlopen(path.c_str(), RTLD_LAZY | RTLD_LOCAL | RTLD_NODELETE);
         if (handler == nullptr) {
             showErrorMsg(std::string("dlopen error: ") + std::string(dlerror()));
         }
@@ -231,7 +221,7 @@ void PluginLoader::clear_folders() {
     folders_.clear();
 }
 
-void PluginLoader::insert_folder(const std::string &folder) {
+void PluginLoader::insert_folder(const std::filesystem::path &folder) {
     if (std::find(folders_.begin(), folders_.end(), folder) == folders_.end()) {
         folders_.push_back(folder);
     }
@@ -243,18 +233,19 @@ void PluginLoader::insert_folders(const std::vector<std::string> &folders) {
     }
 }
 
+void PluginLoader::insert_folders(const std::vector<std::filesystem::path> &folders) {
+    for (const auto &folder : folders) {
+        insert_folder(folder);
+    }
+}
+
 void PluginLoader::load_plugins() {
     for (auto folder : folders_) {
-        DIR *dir_descriptor;
-        dir_descriptor = opendir(folder.c_str());
-        if (dir_descriptor) {
-            struct dirent *entries;
-            while ((entries = readdir(dir_descriptor)) != NULL) {
-                std::string filename = entries->d_name;
-                auto plugin_info     = PluginInfo(folder, filename);
+        if (std::filesystem::is_directory(folder)) {
+            for (auto const &dir_entry : std::filesystem::directory_iterator(folder)) {
+                auto plugin_info = PluginInfo(folder, dir_entry.path().filename().string());
                 insert_plugin(plugin_info);
             }
-            closedir(dir_descriptor);
         }
     }
 }
@@ -264,7 +255,7 @@ void PluginLoader::unload_plugins() {
     libraries_.clear();
 }
 
-void PluginLoader::insert_plugin(const std::string &name, const std::string &library_path) {
+void PluginLoader::insert_plugin(const std::string &name, const std::filesystem::path &library_path) {
     if (!name.empty() && !library_path.empty()) {
         auto library = std::make_unique<Library>(get_plugin_entry_point(), name, library_path);
         if (library->plugin) {

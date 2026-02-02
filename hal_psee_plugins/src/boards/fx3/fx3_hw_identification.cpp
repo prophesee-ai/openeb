@@ -45,9 +45,6 @@ Fx3HWIdentification::Fx3HWIdentification(const std::shared_ptr<Metavision::I_Plu
 std::string Fx3HWIdentification::get_serial() const {
     return icmd_->get_serial();
 }
-long Fx3HWIdentification::get_system_id() const {
-    return icmd_->get_system_id();
-}
 
 std::string Fx3HWIdentification::get_integrator() const {
     return integrator_;

@@ -12,7 +12,7 @@
 // This code sample demonstrate how to use the Metavision C++ SDK. The goal of this sample is to create a simple event
 // counter and displayer by introducing some basic concepts of the Metavision SDK.
 
-#include <metavision/sdk/driver/camera.h>
+#include <metavision/sdk/stream/camera.h>
 #include <metavision/sdk/base/events/event_cd.h>
 #include <metavision/sdk/core/algorithms/periodic_frame_generation_algorithm.h>
 #include <metavision/sdk/core/algorithms/flip_x_algorithm.h>
@@ -76,8 +76,8 @@ int main(int argc, char *argv[]) {
     // to visualize the events, we will need to build frames and render them.
     // building frame will be done with a frame generator that will accumulate the events over time.
     // we need to provide it the camera resolution that we can retrieve from the camera instance
-    int camera_width  = cam.geometry().width();
-    int camera_height = cam.geometry().height();
+    int camera_width  = cam.geometry().get_width();
+    int camera_height = cam.geometry().get_height();
 
     // we also need to choose an accumulation time and a frame rate (here of 20ms and 50 fps)
     const std::uint32_t acc = 20000;

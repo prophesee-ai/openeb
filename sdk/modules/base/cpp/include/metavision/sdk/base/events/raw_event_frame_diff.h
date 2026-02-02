@@ -54,14 +54,6 @@ public:
     /// @brief Copy constructor
     RawEventFrameDiff(const RawEventFrameDiff &d) : cfg_(d.cfg_), diff_(d.diff_) {}
 
-    [[deprecated(
-        "'RawEventFrameDiff(const RawEventFrameDiffConfig &, std::unique_ptr<const std::vector<int8_t>>)' constructor "
-        "is deprecated since v4.3.0 and will be removed in future releases, "
-        "please use 'RawEventFrameDiff(const RawEventFrameDiffConfig &, const std::vector<int8_t>&)' "
-        "instead.")]] RawEventFrameDiff(const RawEventFrameDiffConfig &cfg,
-                                        std::unique_ptr<const std::vector<int8_t>> data) :
-        RawEventFrameDiff(cfg, *data) {}
-
     /// @brief Resets the event frame configuration and sets all values to 0.
     /// @throws invalid_argument if bit_size is outside the supported range of [2;8].
     void reset(unsigned height, unsigned width, unsigned bit_size = 8) {

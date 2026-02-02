@@ -28,8 +28,6 @@ public:
 
     bool enable(bool enable_filter) override;
     bool is_enabled() const override;
-    bool set_event_rate_threshold(uint32_t threshold_Kev_s) override;
-    uint32_t get_event_rate_threshold() const override;
 
     NflThresholds is_thresholds_supported() const override;
     bool set_thresholds(const NflThresholds &thresholds_ev_s) override;
@@ -52,7 +50,6 @@ private:
 
     std::shared_ptr<I_HW_Register> i_hw_register_;
     const std::string base_name_;
-    mutable uint32_t current_threshold_kev_s_{0};
 };
 
 } // namespace Metavision

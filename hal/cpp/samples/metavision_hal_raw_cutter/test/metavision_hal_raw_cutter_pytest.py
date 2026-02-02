@@ -186,7 +186,6 @@ Integrator          Prophesee
 Plugin name         hal_plugin_gen31_fx3
 Data encoding       EVT2
 Camera generation   3.1
-Camera systemID     \d*
 Camera serial       00001621
 
 ====================================================================================================
@@ -219,7 +218,6 @@ Integrator          Prophesee
 Plugin name         hal_plugin_gen31_fx3
 Data encoding       EVT2
 Camera generation   3.1
-Camera systemID     \d*
 Camera serial       00001621
 
 ====================================================================================================
@@ -252,8 +250,6 @@ Integrator          Prophesee
 Plugin name         hal_plugin_gen41_evk3
 Data encoding       EVT2
 Camera generation   4.0
-Camera systemID     \d*(?:
-Camera subsystemID  537921537)?
 Camera serial       00001495
 
 ====================================================================================================
@@ -286,8 +282,6 @@ Integrator          Prophesee
 Plugin name         hal_plugin_gen41_evk3
 Data encoding       EVT2
 Camera generation   4.0
-Camera systemID     \d*(?:
-Camera subsystemID  537921537)?
 Camera serial       00001495
 
 ====================================================================================================
@@ -320,8 +314,6 @@ Integrator          Prophesee
 Plugin name         hal_plugin_gen41_evk3
 Data encoding       EVT2
 Camera generation   4.0
-Camera systemID     \d*(?:
-Camera subsystemID  537921537)?
 Camera serial       00001495
 
 ====================================================================================================
@@ -354,8 +346,6 @@ Integrator          Prophesee
 Plugin name         hal_plugin_gen41_evk3
 Data encoding       EVT3
 Camera generation   4.0
-Camera systemID     \d*(?:
-Camera subsystemID  537921537)?
 Camera serial       00001495
 
 ====================================================================================================
@@ -388,8 +378,6 @@ Integrator          Prophesee
 Plugin name         hal_plugin_gen41_evk3
 Data encoding       EVT3
 Camera generation   4.0
-Camera systemID     \d*(?:
-Camera subsystemID  537921537)?
 Camera serial       00001495
 
 ====================================================================================================
@@ -422,8 +410,6 @@ Integrator          Prophesee
 Plugin name         hal_plugin_gen41_evk3
 Data encoding       EVT3
 Camera generation   4.0
-Camera systemID     \d*(?:
-Camera subsystemID  537921537)?
 Camera serial       00001495
 
 ====================================================================================================
@@ -456,8 +442,6 @@ Integrator          Prophesee
 Plugin name         hal_plugin_gen41_evk3
 Data encoding       EVT3
 Camera generation   4.0
-Camera systemID     \d*(?:
-Camera subsystemID  537921537)?
 Camera serial       00001495
 
 ====================================================================================================

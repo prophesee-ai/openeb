@@ -9,6 +9,9 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
+#include <filesystem>
+#include <initializer_list>
+#include <memory>
 #include <thread>
 #include <condition_variable>
 
@@ -19,7 +22,6 @@
 #include "metavision/hal/facilities/i_event_decoder.h"
 #include "metavision/hal/facilities/i_events_stream.h"
 #include "metavision/hal/utils/data_transfer.h"
-#include "metavision/hal/utils/file_data_transfer.h"
 #include "metavision/hal/device/device.h"
 #include "metavision/hal/device/device_discovery.h"
 #include "metavision/hal/utils/device_builder.h"
@@ -43,9 +45,6 @@ public:
 
     virtual std::string get_serial() const override {
         return dummy_serial_;
-    }
-    virtual long get_system_id() const override {
-        return system_id_;
     }
     virtual SensorInfo get_sensor_info() const override {
         return SensorInfo();
@@ -73,6 +72,7 @@ public:
         format["width"]  = std::to_string(VGAGeometry().get_width());
         format["height"] = std::to_string(VGAGeometry().get_height());
         PseeRawFileHeader header(*this, format);
+        header.set_system_id(system_id_);
         header.set_sub_system_id(dummy_sub_system_id_);
         header.set_field(dummy_custom_key_, dummy_custom_value_);
         return header;
@@ -101,28 +101,17 @@ const std::string MockHWIdentification::dummy_camera_integrator_name_ = "camera_
 const std::string MockHWIdentification::dummy_custom_key_             = "custom";
 const std::string MockHWIdentification::dummy_custom_value_           = "field";
 
-class MockDataTransfer : public DataTransfer {
+class MockRawDataProducer : public DataTransfer::RawDataProducer {
 public:
-    MockDataTransfer() : DataTransfer(4) {}
-
-    void trigger_transfer(const std::vector<Data> &data) {
-        buffer_->clear();
-        buffer_->insert(buffer_->end(), data.cbegin(), data.cend());
-        transfer_data(buffer_);
-    }
+    MockRawDataProducer() {}
 
 private:
-    void start_impl(BufferPtr buffer) final {
-        buffer_ = buffer;
-    }
-
-    void run_impl() final {
-        while (!should_stop()) {
+    void start_impl() final {}
+    void run_impl(const DataTransfer &data_transfer) final {
+        while (!data_transfer.should_stop()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
     }
-
-    BufferPtr buffer_;
 };
 
 class I_EventsStream_GTest : public GTestWithTmpDir {
@@ -135,8 +124,6 @@ public:
     virtual ~I_EventsStream_GTest() {}
 
     void reset() {
-        dt_ = new MockDataTransfer();
-        std::unique_ptr<MockDataTransfer> dt(dt_);
         // needed by MockHWIdentification::get_header
         auto plugin_sw_info = std::make_shared<I_PluginSoftwareInfo>(dummy_plugin_integrator_name_, dummy_plugin_name_,
                                                                      SoftwareInfo(0, 0, 0, "", "", "", ""));
@@ -146,7 +133,7 @@ public:
         DeviceBuilder device_builder = make_device_builder();
         auto decoder                 = device_builder.add_facility(std::make_unique<EVT2Decoder>(false));
         device_                      = device_builder();
-        events_stream_               = std::make_shared<I_EventsStream>(std::move(dt), hw_identification_,
+        events_stream_ = std::make_shared<I_EventsStream>(std::make_unique<MockRawDataProducer>(), hw_identification_,
                                                           std::shared_ptr<I_EventsStreamDecoder>(decoder));
         events_stream_->start();
     }
@@ -154,16 +141,19 @@ public:
     static const std::string dummy_plugin_name_;
     static const std::string dummy_plugin_integrator_name_;
 
+    void transfer_data(DataTransfer::DefaultBufferPtr data) const {
+        events_stream_->get_data_transfer().transfer_data(data);
+    }
+
 protected:
     virtual void SetUp() override {
         datasets_.push_back(
-            (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen31_timer.raw")
+            (std::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen31_timer.raw").string());
+        datasets_.push_back(
+            (std::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen4_evt2_hand.raw")
                 .string());
         datasets_.push_back(
-            (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen4_evt2_hand.raw")
-                .string());
-        datasets_.push_back(
-            (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen4_evt3_hand.raw")
+            (std::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen4_evt3_hand.raw")
                 .string());
     }
 
@@ -178,13 +168,13 @@ protected:
     std::unique_ptr<Device> device_;
     std::shared_ptr<MockHWIdentification> hw_identification_;
     std::shared_ptr<I_EventsStream> events_stream_;
-    MockDataTransfer *dt_ = nullptr;
     long system_id_;
     std::vector<std::string> datasets_;
 };
 
 const std::string I_EventsStream_GTest::dummy_plugin_name_            = "plugin_name";
 const std::string I_EventsStream_GTest::dummy_plugin_integrator_name_ = "plugin_integator_name";
+const std::initializer_list<DataTransfer::Data> list                  = {1, 2, 3, 4, 5};
 
 TEST_F(I_EventsStream_GTest, add_sub_system_id_to_header) {
     // Create tmp file
@@ -201,8 +191,8 @@ TEST_F(I_EventsStream_GTest, add_sub_system_id_to_header) {
 
 TEST_F(I_EventsStream_GTest, poll_buffer) {
     ASSERT_EQ(0, events_stream_->poll_buffer());
-    std::vector<DataTransfer::Data> data = {1, 2, 3, 4, 5};
-    dt_->trigger_transfer(data);
+    auto data = std::make_shared<DataTransfer::DefaultBufferType>(list);
+    transfer_data(data);
     ASSERT_EQ(1, events_stream_->poll_buffer());
 }
 
@@ -222,8 +212,8 @@ TEST_F(I_EventsStream_GTest, add_data_triggers_wait_next_buffer) {
     while (!thread.joinable()) {} // wait thread to be started
 
     // trigger with add data
-    std::vector<DataTransfer::Data> data = {1, 2, 3, 4, 5};
-    dt_->trigger_transfer(data);
+    auto data = std::make_shared<DataTransfer::DefaultBufferType>(list);
+    transfer_data(data);
 
     // Wait for the trigger to be processed (add a timeout to not wait forever)
     auto now = std::chrono::system_clock::now();
@@ -284,8 +274,8 @@ TEST_F_WITH_DATASET(I_EventsStream_GTest, valid_index_file) {
         const auto &dataset = datasets_[i];
         // Remove the index file if any
         std::string path;
-        boost::filesystem::remove(dataset + ".tmp_index");
-        ASSERT_FALSE(boost::filesystem::exists(dataset + ".tmp_index"));
+        std::filesystem::remove(dataset + ".tmp_index");
+        ASSERT_FALSE(std::filesystem::exists(dataset + ".tmp_index"));
 
         // Open the file and generate the index
         ASSERT_TRUE(open_dataset(dataset));
@@ -350,8 +340,8 @@ TEST_F_WITH_DATASET(I_EventsStream_GTest, invalid_index_file) {
 
         // Remove the index file if any
         std::string path;
-        boost::filesystem::remove(dataset + ".tmp_index");
-        ASSERT_FALSE(boost::filesystem::exists(dataset + ".tmp_index"));
+        std::filesystem::remove(dataset + ".tmp_index");
+        ASSERT_FALSE(std::filesystem::exists(dataset + ".tmp_index"));
 
         // Open the file and generate the index
         ASSERT_TRUE(open_dataset(dataset));
@@ -483,8 +473,8 @@ TEST_F_WITH_DATASET(I_EventsStream_GTest, seek_range) {
         for (const auto &dataset : datasets_) {
             if (do_delete) {
                 std::string path;
-                boost::filesystem::remove(dataset + ".tmp_index");
-                ASSERT_FALSE(boost::filesystem::exists(dataset + ".tmp_index"));
+                std::filesystem::remove(dataset + ".tmp_index");
+                ASSERT_FALSE(std::filesystem::exists(dataset + ".tmp_index"));
             }
 
             MV_HAL_LOG_INFO() << "\tTesting dataset" << dataset;
@@ -524,9 +514,9 @@ TEST_F_WITH_DATASET(I_EventsStream_GTest, seek_range) {
                 timestamp last_decoded_event_ts_us;
                 while (fes->wait_next_buffer() > 0) {
                     auto buffer    = fes->get_latest_raw_data();
-                    auto data      = buffer->data();
+                    auto data      = buffer.data();
                     auto data_next = data + decoder->get_raw_event_size_bytes();
-                    auto data_end  = data + buffer->size();
+                    auto data_end  = buffer.end();
 
                     for (; first_decoded_event_ts_us == decoder->get_last_timestamp() && data != data_end;
                          data = data_next, data_next += decoder->get_raw_event_size_bytes()) {
@@ -542,7 +532,7 @@ TEST_F_WITH_DATASET(I_EventsStream_GTest, seek_range) {
                 // -- Then decode the full dataset until the end
                 while (fes->wait_next_buffer() > 0) {
                     auto buffer = fes->get_latest_raw_data();
-                    decoder->decode(buffer->data(), buffer->data() + buffer->size());
+                    decoder->decode(buffer);
                 }
                 last_decoded_event_ts_us = decoder->get_last_timestamp();
 
@@ -579,8 +569,8 @@ TEST_F_WITH_DATASET(I_EventsStream_GTest, file_index_seek) {
         for (const auto &dataset : datasets_) {
             if (do_delete) {
                 std::string path;
-                boost::filesystem::remove(dataset + ".tmp_index");
-                ASSERT_FALSE(boost::filesystem::exists(dataset + ".tmp_index"));
+                std::filesystem::remove(dataset + ".tmp_index");
+                ASSERT_FALSE(std::filesystem::exists(dataset + ".tmp_index"));
             }
 
             MV_HAL_LOG_INFO() << "\tTesting dataset" << dataset;
@@ -625,7 +615,7 @@ TEST_F_WITH_DATASET(I_EventsStream_GTest, file_index_seek) {
                     // Read data from the file
                     ASSERT_TRUE(fes->wait_next_buffer() > 0);
                     auto buffer = fes->get_latest_raw_data();
-                    decoder->decode(buffer->data(), buffer->data() + buffer->size());
+                    decoder->decode(buffer);
                 }
 
                 // ------------------------------
@@ -642,7 +632,7 @@ TEST_F_WITH_DATASET(I_EventsStream_GTest, file_index_seek) {
                 auto buffer = fes->get_latest_raw_data();
 
                 // The first event decoded must have a timestamp that is equal to the first event's timestamp
-                decoder->decode(buffer->data(), buffer->data() + decoder->get_raw_event_size_bytes());
+                decoder->decode(buffer.data(), buffer.data() + decoder->get_raw_event_size_bytes());
                 ASSERT_EQ(decoder->get_last_timestamp(), first_indexed_event_ts_us);
 
                 // ------------------------------
@@ -668,7 +658,7 @@ TEST_F_WITH_DATASET(I_EventsStream_GTest, file_index_seek) {
                     buffer = fes->get_latest_raw_data();
 
                     // The first event decoded must have a timestamp that is equal to the reached timestamp
-                    decoder->decode(buffer->data(), buffer->data() + decoder->get_raw_event_size_bytes());
+                    decoder->decode(buffer.data(), buffer.data() + decoder->get_raw_event_size_bytes());
                     ASSERT_EQ(decoder->get_last_timestamp(), reached_ts);
                 }
 
@@ -684,135 +674,7 @@ TEST_F_WITH_DATASET(I_EventsStream_GTest, file_index_seek) {
                 buffer = fes->get_latest_raw_data();
 
                 // The first event decoded must have a timestamp that is equal to the reached timestamp
-                decoder->decode(buffer->data(), buffer->data() + decoder->get_raw_event_size_bytes());
-                ASSERT_EQ(decoder->get_last_timestamp(), reached_ts);
-            }
-        }
-    }
-}
-
-TEST_F_WITH_DATASET(I_EventsStream_GTest, file_index_seek_deprecated_reset_timestamp) {
-    ////////////////////////////////////////////////////////////////////////////////
-    // PURPOSE
-    // Check seeking feature of the file control
-
-    RawFileConfig config;
-    config.n_events_to_read_ = 10000;
-
-    std::vector<bool> delete_index{{true, false}};
-    std::vector<bool> time_shift{{true, false}};
-
-    for (const auto &do_delete : delete_index) {
-        MV_HAL_LOG_INFO() << (do_delete ? "Index building from scratch" : "Index loaded from file");
-        for (const auto &dataset : datasets_) {
-            if (do_delete) {
-                std::string path;
-                boost::filesystem::remove(dataset + ".tmp_index");
-                ASSERT_FALSE(boost::filesystem::exists(dataset + ".tmp_index"));
-            }
-
-            MV_HAL_LOG_INFO() << "\tTesting dataset" << dataset;
-            for (const auto &do_time_shifting : time_shift) {
-                // Builds the device from the dataset
-                MV_HAL_LOG_INFO() << "\t\tTime shift:" << (do_time_shifting ? "enabled" : "disabled");
-                config.do_time_shifting_ = do_time_shifting;
-                ASSERT_TRUE(open_dataset(dataset, config));
-
-                // Ensures the index have been built and one can retrieve the timestamp range
-                auto fes = device_->get_facility<I_EventsStream>();
-                ASSERT_NE(nullptr, fes);
-
-                timestamp first_indexed_event_ts_us, last_indexed_event_ts_us;
-                auto index_status = fes->get_seek_range(first_indexed_event_ts_us, last_indexed_event_ts_us);
-                constexpr uint32_t max_trials = 1000;
-                uint32_t trials               = 1;
-                while (index_status != Metavision::I_EventsStream::IndexStatus::Good && trials != max_trials) {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                    ++trials;
-                    index_status = fes->get_seek_range(first_indexed_event_ts_us, last_indexed_event_ts_us);
-                }
-
-                ASSERT_LT(trials, max_trials);
-                ASSERT_GT(last_indexed_event_ts_us, first_indexed_event_ts_us);
-
-                auto decoder    = device_->get_facility<I_EventsStreamDecoder>();
-                auto cd_decoder = device_->get_facility<I_EventDecoder<EventCD>>();
-                ASSERT_NE(nullptr, decoder);
-                ASSERT_NE(nullptr, cd_decoder);
-                ASSERT_EQ(do_time_shifting, decoder->is_time_shifting_enabled());
-
-                // Start polling data
-                fes->start();
-
-                // GTest necessity only:
-                // Initialize the decoder (i.e. wait to reach the first decodable event)
-                // This is needed so that the seeking capability is validated
-                bool valid_event = false;
-                cd_decoder->add_event_buffer_callback([&](auto, auto) { valid_event = true; });
-                while (!valid_event) {
-                    // Read data from the file
-                    ASSERT_TRUE(fes->wait_next_buffer() > 0);
-                    auto buffer = fes->get_latest_raw_data();
-                    decoder->decode(buffer->data(), buffer->data() + buffer->size());
-                }
-
-                // ------------------------------
-                // Check seeking at the beginning
-                MV_HAL_LOG_INFO() << "\t\t\tSeek first event";
-                timestamp reached_ts;
-                ASSERT_EQ(I_EventsStream::SeekStatus::Success, fes->seek(first_indexed_event_ts_us, reached_ts));
-                ASSERT_EQ(first_indexed_event_ts_us, reached_ts);
-                decoder->reset_timestamp(reached_ts);
-                ASSERT_EQ(decoder->get_last_timestamp(), reached_ts);
-
-                ASSERT_TRUE(fes->wait_next_buffer() > 0);
-                // Decode a single event and check that the timestamp is correct
-                auto buffer = fes->get_latest_raw_data();
-
-                // The first event decoded must have a timestamp that is equal to the first event's timestamp
-                decoder->decode(buffer->data(), buffer->data() + decoder->get_raw_event_size_bytes());
-                ASSERT_EQ(decoder->get_last_timestamp(), first_indexed_event_ts_us);
-
-                // ------------------------------
-                // Check seeking in the range of possible timestamps
-                MV_HAL_LOG_INFO() << "\t\t\tSeek in range of available timestamp";
-
-                std::vector<timestamp> targets;
-                const timestamp timestamp_step = (last_indexed_event_ts_us - first_indexed_event_ts_us) / 10;
-                for (uint32_t step = 1; step <= 10; ++step) {
-                    targets.push_back(first_indexed_event_ts_us + step * timestamp_step);
-                }
-
-                // Seeks back and forth in the file
-                using SizeType = std::vector<timestamp>::size_type;
-                for (SizeType i = 0; i < targets.size(); ++i) {
-                    auto target_ts_us = i % 2 ? targets[targets.size() - i] : targets[i];
-                    ASSERT_EQ(I_EventsStream::SeekStatus::Success, fes->seek(target_ts_us, reached_ts));
-                    decoder->reset_timestamp(reached_ts);
-                    ASSERT_LE(reached_ts, target_ts_us);
-
-                    // Read data from the file
-                    ASSERT_TRUE(fes->wait_next_buffer() > 0);
-                    buffer = fes->get_latest_raw_data();
-
-                    // The first event decoded must have a timestamp that is equal to the reached timestamp
-                    decoder->decode(buffer->data(), buffer->data() + decoder->get_raw_event_size_bytes());
-                    ASSERT_EQ(decoder->get_last_timestamp(), reached_ts);
-                }
-
-                // ------------------------------
-                // Check seeking at the end of the file
-                MV_HAL_LOG_INFO() << "\t\t\tSeek last event";
-                ASSERT_EQ(I_EventsStream::SeekStatus::Success, fes->seek(last_indexed_event_ts_us, reached_ts));
-                ASSERT_LE(reached_ts, last_indexed_event_ts_us);
-                decoder->reset_timestamp(reached_ts);
-
-                // Read data from the file
-                ASSERT_TRUE(fes->wait_next_buffer() > 0);
-                buffer = fes->get_latest_raw_data();
-
-                // The first event decoded must have a timestamp that is equal to the reached timestamp
-                decoder->decode(buffer->data(), buffer->data() + decoder->get_raw_event_size_bytes());
+                decoder->decode(buffer.data(), buffer.data() + decoder->get_raw_event_size_bytes());
                 ASSERT_EQ(decoder->get_last_timestamp(), reached_ts);
             }
         }
@@ -822,7 +684,7 @@ TEST_F_WITH_DATASET(I_EventsStream_GTest, file_index_seek_deprecated_reset_times
 TEST_F_WITH_DATASET(I_EventsStream_GTest, decode_evt3_nevents_monotonous_timestamps) {
     // GIVEN a RAW file in EVT3 format with a known content
     std::string dataset_file_path =
-        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen4_evt3_hand.raw").string();
+        (std::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen4_evt3_hand.raw").string();
 
     // AND a device configured to read by batches of n events
     RawFileConfig cfg;
@@ -847,11 +709,11 @@ TEST_F_WITH_DATASET(I_EventsStream_GTest, decode_evt3_nevents_monotonous_timesta
     Metavision::timestamp previous_ts_last = 0;
     while (es->wait_next_buffer() >= 0) {
         auto raw_buffer               = es->get_latest_raw_data();
-        auto cur_raw_ptr              = raw_buffer->data();
+        auto cur_raw_ptr              = raw_buffer.data();
         auto raw_data_to_decode_count = 1;
         auto raw_buffer_decode_to     = cur_raw_ptr + raw_data_to_decode_count;
 
-        for (; static_cast<std::size_t>(std::distance(raw_buffer->data(), cur_raw_ptr)) < raw_buffer->size();) {
+        for (; static_cast<std::size_t>(std::distance(raw_buffer.data(), cur_raw_ptr)) < raw_buffer.size();) {
             decoder->decode(cur_raw_ptr, raw_buffer_decode_to);
 
             // THEN the timestamps increase monotonously
@@ -863,7 +725,7 @@ TEST_F_WITH_DATASET(I_EventsStream_GTest, decode_evt3_nevents_monotonous_timesta
 
             cur_raw_ptr = raw_buffer_decode_to;
             raw_buffer_decode_to =
-                std::min(cur_raw_ptr + raw_data_to_decode_count, raw_buffer->data() + raw_buffer->size());
+                std::min(cur_raw_ptr + raw_data_to_decode_count, raw_buffer.data() + raw_buffer.size());
         }
     }
 }
@@ -871,7 +733,7 @@ TEST_F_WITH_DATASET(I_EventsStream_GTest, decode_evt3_nevents_monotonous_timesta
 TEST_WITH_DATASET(EventsStream_GTest, stop_on_recording_does_not_drop_buffers) {
     // Read the dataset provided
     std::string dataset_file_path =
-        (boost::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen4_evt3_hand.raw").string();
+        (std::filesystem::path(GtestsParameters::instance().dataset_dir) / "openeb" / "gen4_evt3_hand.raw").string();
 
     std::unique_ptr<Metavision::Device> device = Metavision::DeviceDiscovery::open_raw_file(dataset_file_path);
     EXPECT_TRUE(device != nullptr);
@@ -886,7 +748,7 @@ TEST_WITH_DATASET(EventsStream_GTest, stop_on_recording_does_not_drop_buffers) {
             break;
         }
         auto ev_buffer = i_eventsstream->get_latest_raw_data();
-        n_raw += ev_buffer->size();
+        n_raw += ev_buffer.size();
         i_eventsstream->stop();
     }
 
@@ -967,16 +829,16 @@ TYPED_TEST(I_EventsStreamT_GTest, test_log) {
     using EvtFormat = typename metavision_device_traits<TypeParam>::RawEventFormat;
 
     TEncoder<EvtFormat> encoder;
-    std::vector<DataTransfer::Data> data;
+    auto data = std::make_shared<DataTransfer::DefaultBufferType>();
 
     encoder.set_encode_event_callback(
-        [&data](const uint8_t *ev, const uint8_t *ev_end) { data.insert(data.end(), ev, ev_end); });
+        [&data](const uint8_t *ev, const uint8_t *ev_end) { data->insert(data->end(), ev, ev_end); });
 
     // Encode
     encoder.encode(this->events1_.data(), this->events1_.data() + this->events1_.size());
     encoder.flush();
     this->events_stream_->get_latest_raw_data();
-    this->dt_->trigger_transfer(data);
+    this->transfer_data(data);
 
     // REMARK : as of today, in order to log we have to call
     // get_latest_raw_data before add_data and after

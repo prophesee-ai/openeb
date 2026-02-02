@@ -49,7 +49,7 @@ Gen31_EventRateNoiseFilterModule::Gen31_EventRateNoiseFilterModule(const std::sh
 
 bool Gen31_EventRateNoiseFilterModule::enable(bool enable_filter) {
     get_hw_register()->write_register(base_name_ + "nfl_ctrl", "nfl_en", enable_filter);
-    get_event_rate_threshold();
+    get_thresholds();
 
     return true;
 }
@@ -71,7 +71,9 @@ uint32_t Gen31_EventRateNoiseFilterModule::get_time_window() const {
     return get_hw_register()->read_register(base_name_ + "nfl_thresh", "period_cnt_thresh");
 }
 
-bool Gen31_EventRateNoiseFilterModule::set_event_rate_threshold(uint32_t threshold_kev_s) {
+bool Gen31_EventRateNoiseFilterModule::set_thresholds(
+    const Gen31_EventRateNoiseFilterModule::NflThresholds &thresholds_ev_s) {
+    uint32_t threshold_kev_s = std::round(thresholds_ev_s.lower_bound_start / 1000.0);
     if (threshold_kev_s < min_event_rate_threshold_kev_s || threshold_kev_s > max_event_rate_threshold_kev_s) {
         return false;
     }
@@ -83,27 +85,19 @@ bool Gen31_EventRateNoiseFilterModule::set_event_rate_threshold(uint32_t thresho
     auto min_event_count_in_time_shifting_window =
         std::round((threshold_kev_s / 1000.) * get_time_window()); // ev per microseconds
     get_hw_register()->write_register(base_name_ + "nfl_thresh", "evt_thresh", min_event_count_in_time_shifting_window);
-    get_event_rate_threshold();
+    get_thresholds();
     return true;
 }
 
-uint32_t Gen31_EventRateNoiseFilterModule::get_event_rate_threshold() const {
-    current_threshold_kev_s_ = std::round(
-        (get_hw_register()->read_register(base_name_ + "nfl_thresh", "evt_thresh") * 1000.) / get_time_window());
-    return current_threshold_kev_s_;
+Gen31_EventRateNoiseFilterModule::NflThresholds Gen31_EventRateNoiseFilterModule::get_thresholds() const {
+    const uint32_t current_threshold_kev_s = std::round(
+         (get_hw_register()->read_register(base_name_ + "nfl_thresh", "evt_thresh") * 1000.) / get_time_window());
+
+    return {(current_threshold_kev_s * 1000), 0, 0, 0};
 }
 
 Gen31_EventRateNoiseFilterModule::NflThresholds Gen31_EventRateNoiseFilterModule::is_thresholds_supported() const {
     return {1, 0, 0, 0};
-}
-
-bool Gen31_EventRateNoiseFilterModule::set_thresholds(
-    const Gen31_EventRateNoiseFilterModule::NflThresholds &thresholds_ev_s) {
-    return set_event_rate_threshold(std::round(thresholds_ev_s.lower_bound_start / 1000.0));
-}
-
-Gen31_EventRateNoiseFilterModule::NflThresholds Gen31_EventRateNoiseFilterModule::get_thresholds() const {
-    return {(get_event_rate_threshold() * 1000), 0, 0, 0};
 }
 
 Gen31_EventRateNoiseFilterModule::NflThresholds Gen31_EventRateNoiseFilterModule::get_min_supported_thresholds() const {

@@ -32,6 +32,7 @@ set(CPACK_COMPONENT_METAVISION-HAL-BIN_DEPENDS metavision-hal-lib)
 ############################
 set(CPACK_COMPONENT_METAVISION-HAL-SAMPLES_DESCRIPTION "Samples for Metavision HAL libraries.\n${OPEN_PACKAGE_LICENSE}")
 set(CPACK_COMPONENT_METAVISION-HAL-SAMPLES_DEPENDS metavision-hal-dev)
+set(CPACK_COMPONENT_METAVISION-HAL-SAMPLES_PACKAGE_DEPENDS "libusb-1.0" "libusb-1.0-0-dev")
 
 ###################################
 #  metavision-hal-python-samples  #

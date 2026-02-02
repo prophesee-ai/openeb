@@ -34,7 +34,7 @@ def shorten_path(path, length=80):
 
 
 def which(program):
-    """"Tests if an executable program exists"""
+    """Tests if an executable program exists"""
     def is_exe(fpath):
         """Returns True if path is an executable"""
         return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
@@ -54,7 +54,7 @@ def which(program):
 
 
 def get_parent_directory(filepath, level=1):
-    """"Return parent directory of a file
+    """Return parent directory of a file
 
     Args:
         filepath (str): path of the file
@@ -90,9 +90,11 @@ def is_python_script(filepath):
         return False
     if not os.access(filepath, os.X_OK):
         return False
-    else:
+    try:
         with open(filepath, 'r') as tmpf:
             return has_python_content(tmpf.read())
+    except UnicodeDecodeError:
+        return False
 
 
 def has_python_extension(filename):

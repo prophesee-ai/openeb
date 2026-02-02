@@ -34,8 +34,6 @@ static HALFacilityPythonBinder<I_HW_Identification> bind(
         class_binding
             .def("get_serial", &I_HW_Identification::get_serial,
                  pybind_doc_hal["Metavision::I_HW_Identification::get_serial"])
-            .def("get_system_id", &I_HW_Identification::get_system_id,
-                 pybind_doc_hal["Metavision::I_HW_Identification::get_system_id"])
             .def("get_sensor_info", &I_HW_Identification::get_sensor_info,
                  pybind_doc_hal["Metavision::I_HW_Identification::get_sensor_info"])
             .def("get_available_data_encoding_formats", &I_HW_Identification::get_available_data_encoding_formats,

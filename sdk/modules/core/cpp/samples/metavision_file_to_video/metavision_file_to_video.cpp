@@ -9,17 +9,16 @@
  * See the License for the specific language governing permissions and limitations under the License.                 *
  **********************************************************************************************************************/
 
-// Example of using Metavision SDK Driver and Core API for generating a video from a RAW or HDF5 file.
+// Example of using Metavision SDK Stream and Core API for generating a video from a RAW or HDF5 file.
 
 #include <iostream>
 #include <regex>
 #include <boost/program_options.hpp>
-#include <boost/filesystem.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 #include <metavision/sdk/base/utils/log.h>
-#include <metavision/sdk/driver/camera.h>
+#include <metavision/sdk/stream/camera.h>
 #include <metavision/hal/facilities/i_event_decoder.h>
 #include <metavision/hal/facilities/i_event_frame_decoder.h>
 #include <metavision/sdk/core/algorithms/periodic_frame_generation_algorithm.h>
@@ -27,10 +26,6 @@
 #include <metavision/sdk/core/utils/raw_event_frame_converter.h>
 
 namespace po = boost::program_options;
-
-void remove_file(const std::string &filepath) {
-    boost::filesystem::remove(boost::filesystem::path(filepath));
-}
 
 int main(int argc, char *argv[]) {
     std::string in_event_file_path;
@@ -109,12 +104,12 @@ int main(int argc, char *argv[]) {
     Metavision::CvVideoRecorder recorder(
         out_video_file_path,
         enable_image_sequence ? 0 : cv::VideoWriter::fourcc(fourcc[0], fourcc[1], fourcc[2], fourcc[3]),
-        enable_image_sequence ? 0 : fps, cv::Size(geometry.width(), geometry.height()), true);
+        enable_image_sequence ? 0 : fps, cv::Size(geometry.get_width(), geometry.get_height()), true);
 
     recorder.start();
 
     // Set up frame generator for CD events
-    Metavision::PeriodicFrameGenerationAlgorithm frame_generation(geometry.width(), geometry.height());
+    Metavision::PeriodicFrameGenerationAlgorithm frame_generation(geometry.get_width(), geometry.get_height());
     bool has_cd = false;
     try {
         auto &cd = camera.cd();
@@ -134,7 +129,7 @@ int main(int argc, char *argv[]) {
     // Set up frame converter for Histo3D frames
     try {
         auto &histo_module = camera.frame_histo();
-        Metavision::RawEventFrameConverter frame_converter(geometry.height(), geometry.width(), 2);
+        Metavision::RawEventFrameConverter frame_converter(geometry.get_height(), geometry.get_width(), 2);
         histo_module.add_callback([&recorder, frame_converter](const Metavision::RawEventFrameHisto &histo) {
             auto histo_cfg       = histo.get_config();
             auto converted_histo = frame_converter.convert<float>(histo);
@@ -156,7 +151,7 @@ int main(int argc, char *argv[]) {
     // Set up frame converter for Diff3D frames
     try {
         auto &diff_module = camera.frame_diff();
-        Metavision::RawEventFrameConverter frame_converter(geometry.height(), geometry.width(), 1);
+        Metavision::RawEventFrameConverter frame_converter(geometry.get_height(), geometry.get_width(), 1);
         diff_module.add_callback([&recorder, frame_converter](const Metavision::RawEventFrameDiff &diff) {
             auto diff_cfg       = diff.get_config();
             auto converted_diff = frame_converter.convert<float>(diff);

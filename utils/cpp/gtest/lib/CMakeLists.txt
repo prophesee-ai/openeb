@@ -24,7 +24,6 @@ set(gtest_link_libraries
 target_link_libraries(metavision_utils_gtest
   INTERFACE
       ${gtest_link_libraries}
-      Boost::filesystem
       Boost::program_options
 )
 

@@ -10,7 +10,7 @@
 set (sample metavision_dummy_radar)
 set (common_libraries
         MetavisionSDK::core
-        MetavisionSDK::driver
+        MetavisionSDK::stream
         MetavisionSDK::ui
         Boost::program_options
         opencv_core

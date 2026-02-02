@@ -27,11 +27,6 @@ def pytestcase_metavision_hal_has_event_trail_filter_interface():
     assert "get_available_types" in event_trail_filter_module_member_names
     assert "get_type" in event_trail_filter_module_member_names
     assert "set_type" in event_trail_filter_module_member_names
-    # TODO : remove before next major release
-    assert "set_stc_cut_trail_filter" in event_trail_filter_module_member_names
-    # TODO : remove before next major release
-    assert "set_stc_cut_trail_filter" in event_trail_filter_module_member_names
-    assert "set_trail_filter" in event_trail_filter_module_member_names
     assert "set_threshold" in event_trail_filter_module_member_names
     assert "get_threshold" in event_trail_filter_module_member_names
     assert "get_min_supported_threshold" in event_trail_filter_module_member_names
@@ -88,15 +83,6 @@ def pytestcase_event_trail_filter_module_should_set_type(i_event_trail_filter_mo
     assert i_event_trail_filter_module.set_type(metavision_hal.I_EventTrailFilterModule.Type.STC_KEEP_TRAIL)
     assert i_event_trail_filter_module.get_type() == metavision_hal.I_EventTrailFilterModule.Type.STC_KEEP_TRAIL
     assert i_event_trail_filter_module.set_type(metavision_hal.I_EventTrailFilterModule.Type.TRAIL)
-    assert i_event_trail_filter_module.get_type() == metavision_hal.I_EventTrailFilterModule.Type.TRAIL
-
-
-def pytestcase_event_trail_filter_module_should_set_type_using_deprecated_wrappers(i_event_trail_filter_module):
-    with pytest.warns(UserWarning):
-        assert i_event_trail_filter_module.set_stc_cut_trail_filter()
-    assert i_event_trail_filter_module.get_type() == metavision_hal.I_EventTrailFilterModule.Type.STC_CUT_TRAIL
-    with pytest.warns(UserWarning):
-        assert i_event_trail_filter_module.set_trail_filter()
     assert i_event_trail_filter_module.get_type() == metavision_hal.I_EventTrailFilterModule.Type.TRAIL
 
 

@@ -16,6 +16,7 @@
 #include "metavision/sdk/core/algorithms/event_frame_diff_generation_algorithm.h"
 
 using namespace Metavision;
+using InputIt = std::vector<EventCD>::const_iterator;
 
 TEST(EventFrameDiffGenerationAlgorithm_GTest, nominal) {
     // GIVEN a 3x2 toy event stream
@@ -24,7 +25,7 @@ TEST(EventFrameDiffGenerationAlgorithm_GTest, nominal) {
                                    EventCD(0, 0, 1, 2), EventCD(2, 0, 1, 2), EventCD(0, 1, 1, 2), EventCD(2, 1, 0, 2),
                                    EventCD(0, 0, 0, 3), EventCD(2, 0, 1, 3), EventCD(0, 1, 0, 3), EventCD(2, 1, 0, 3)};
     // GIVEN a EventFrameDiffGenerationAlgorithm instance
-    EventFrameDiffGenerationAlgorithm diff_generator(width, height);
+    EventFrameDiffGenerationAlgorithm<InputIt> diff_generator(width, height);
 
     // WHEN we process the event stream and generate the event frame
     diff_generator.process_events(events.cbegin(), events.cend());
@@ -56,7 +57,7 @@ TEST(EventFrameDiffGenerationAlgorithm_GTest, many_negatives_no_rollover) {
     // GIVEN a EventFrameDiffGenerationAlgorithm instance
     const unsigned int bit_size = 8;
     const bool allow_rollover   = false;
-    EventFrameDiffGenerationAlgorithm diff_generator(width, height, bit_size, allow_rollover);
+    EventFrameDiffGenerationAlgorithm<InputIt> diff_generator(width, height, bit_size, allow_rollover);
 
     // WHEN we process the event stream and generate the event frame
     diff_generator.process_events(events.cbegin(), events.cend());
@@ -83,7 +84,7 @@ TEST(EventFrameDiffGenerationAlgorithm_GTest, many_negatives_with_rollover) {
     // GIVEN a EventFrameDiffGenerationAlgorithm instance
     const unsigned int bit_size = 8;
     const bool allow_rollover   = true;
-    EventFrameDiffGenerationAlgorithm diff_generator(width, height, bit_size, allow_rollover);
+    EventFrameDiffGenerationAlgorithm<InputIt> diff_generator(width, height, bit_size, allow_rollover);
 
     // WHEN we process the event stream and generate the event frame
     diff_generator.process_events(events.cbegin(), events.cend());
@@ -106,7 +107,7 @@ TEST(EventFrameDiffGenerationAlgorithm_GTest, many_negatives_no_rollover_low_bit
     // GIVEN a EventFrameDiffGenerationAlgorithm instance
     const unsigned int bit_size = 3;
     const bool allow_rollover   = false;
-    EventFrameDiffGenerationAlgorithm diff_generator(width, height, bit_size, allow_rollover);
+    EventFrameDiffGenerationAlgorithm<InputIt> diff_generator(width, height, bit_size, allow_rollover);
 
     // WHEN we process the event stream and generate the event frame
     diff_generator.process_events(events.cbegin(), events.cend());
@@ -133,7 +134,7 @@ TEST(EventFrameDiffGenerationAlgorithm_GTest, many_positives_no_rollover) {
     // GIVEN a EventFrameDiffGenerationAlgorithm instance
     const unsigned int bit_size = 8;
     const bool allow_rollover   = false;
-    EventFrameDiffGenerationAlgorithm diff_generator(width, height, bit_size, allow_rollover);
+    EventFrameDiffGenerationAlgorithm<InputIt> diff_generator(width, height, bit_size, allow_rollover);
 
     // WHEN we process the event stream and generate the event frame
     diff_generator.process_events(events.cbegin(), events.cend());
@@ -160,7 +161,7 @@ TEST(EventFrameDiffGenerationAlgorithm_GTest, many_positives_with_rollover) {
     // GIVEN a EventFrameDiffGenerationAlgorithm instance
     const unsigned int bit_size = 8;
     const bool allow_rollover   = true;
-    EventFrameDiffGenerationAlgorithm diff_generator(width, height, bit_size, allow_rollover);
+    EventFrameDiffGenerationAlgorithm<InputIt> diff_generator(width, height, bit_size, allow_rollover);
 
     // WHEN we process the event stream and generate the event frame
     diff_generator.process_events(events.cbegin(), events.cend());
@@ -183,7 +184,7 @@ TEST(EventFrameDiffGenerationAlgorithm_GTest, many_positives_no_rollover_low_bit
     // GIVEN a EventFrameDiffGenerationAlgorithm instance
     const unsigned int bit_size = 3;
     const bool allow_rollover   = false;
-    EventFrameDiffGenerationAlgorithm diff_generator(width, height, bit_size, allow_rollover);
+    EventFrameDiffGenerationAlgorithm<InputIt> diff_generator(width, height, bit_size, allow_rollover);
 
     // WHEN we process the event stream and generate the event frame
     diff_generator.process_events(events.cbegin(), events.cend());
@@ -207,8 +208,8 @@ TEST(EventFrameDiffGenerationAlgorithm_GTest, lowerbound_generation_period) {
     const unsigned int bit_size                     = 8;
     const bool allow_rollover                       = false;
     const timestamp lowerbound_generation_period_us = 10;
-    EventFrameDiffGenerationAlgorithm diff_generator(width, height, bit_size, allow_rollover,
-                                                     lowerbound_generation_period_us);
+    EventFrameDiffGenerationAlgorithm<InputIt> diff_generator(width, height, bit_size, allow_rollover,
+                                                              lowerbound_generation_period_us);
 
     // WHEN we process the event stream
     // THEN we can have feedback if the generation frequency is too high

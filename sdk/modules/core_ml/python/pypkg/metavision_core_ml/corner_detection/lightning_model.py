@@ -60,7 +60,7 @@ class CornerDetectionLightningModel(pl.LightningModule):
 
     @classmethod
     def load_from_checkpoint(cls, checkpoint_path):
-        checkpoint = torch.load(checkpoint_path, map_location=torch.device('cpu'))
+        checkpoint = torch.load(checkpoint_path, map_location=torch.device('cpu'), weights_only=False)
         hparams = argparse.Namespace(**checkpoint['hyper_parameters'])
         model = cls(hparams)
         model.load_state_dict(checkpoint['state_dict'])

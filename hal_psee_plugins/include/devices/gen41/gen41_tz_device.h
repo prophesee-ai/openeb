@@ -47,6 +47,9 @@ public:
 protected:
     virtual void spawn_facilities(DeviceBuilder &device_builder, const DeviceConfig &config);
 
+    static std::string ROOT_PREFIX;
+    static std::string SENSOR_PREFIX;
+
 private:
     void time_base_config(bool external, bool master);
     void lifo_control(bool enable, bool out_en, bool cnt_en);

@@ -14,6 +14,7 @@
 
 #include "metavision/sdk/base/events/event_cd.h"
 #include "metavision/sdk/base/events/raw_event_frame_diff.h"
+#include "metavision/sdk/core/preprocessors/hardware_diff_processor.h"
 
 namespace Metavision {
 
@@ -22,6 +23,8 @@ namespace Metavision {
 /// This class implements the algorithm for producing diff event frames from a stream of events. This algorithm
 /// computes, at each pixel, the sum of polarities of all processed events.
 /// Generated event frames are stored using row-major convention.
+/// @tparam InputIt The type of the input iterator for the range of events.
+template<typename InputIt>
 class EventFrameDiffGenerationAlgorithm {
 public:
     /// @brief Constructor for the EventFrameDiffGenerationAlgorithm class.
@@ -47,10 +50,8 @@ public:
     }
 
     /// @brief Processes a range of events and updates the sum of polarities at each pixel.
-    /// @tparam InputIt The type of the input iterator for the range of events.
     /// @param it_begin An iterator pointing to the beginning of the events range.
     /// @param it_end An iterator pointing to the end of the events range.
-    template<typename InputIt>
     void process_events(InputIt it_begin, InputIt it_end);
 
     /// @brief Retrieves the diff event frame aggregating the events processed so far, and resets the
@@ -74,12 +75,15 @@ public:
     void reset();
 
 private:
+    void reset_wrapper();
+
     const bool allow_rollover_;
-    const int8_t min_val_, max_val_;
     const timestamp min_generation_period_us_;
     bool is_ts_prev_set_ = false;
     timestamp ts_prev_   = -1;
+    HardwareDiffProcessor<InputIt> processor_;
     RawEventFrameDiff frame_;
+    Tensor diff_wrapper_;
 };
 
 } // namespace Metavision

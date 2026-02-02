@@ -12,8 +12,12 @@ Unit tests for the TimedVideoStream Interface
 """
 import os
 import pytest
-import skvideo.io
 import numpy as np
+# Temporary solution to fix the numpy deprecated alias in skvideo: https://github.com/scikit-video/scikit-video/issues/154#issuecomment-1445239790
+# Will be deleted in MV-2134 when skvideo makes the correction
+np.float = np.float64
+np.int = np.int_
+import skvideo.io
 import cv2
 import random
 

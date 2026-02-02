@@ -19,6 +19,12 @@ import numpy as np
 import cv2
 
 from metavision_core_ml.data.camera_poses import CameraPoseGenerator
+from metavision_core_ml.utils.files import is_image, is_video, is_tiff_image
+
+import torch
+from metavision_core_ml.utils.color_utils import from_linear_rgb
+import random
+import skimage.io
 
 
 class PlanarMotionStream(object):
@@ -36,21 +42,49 @@ class PlanarMotionStream(object):
         max_optical_flow_threshold (float): maximum optical flow between two consecutive frames
         max_interp_consecutive_frames (int): maximum number of interpolated frames between two consecutive frames
         crop_image (bool): crop images or resize them
+        saturation_max_factor (float): multiplicative factor of saturated pixels (only for tiff 16 bits images. Use 1.0 to disable)
     """
 
     def __init__(self, image_filename, height, width, max_frames=1000, rgb=False, infinite=True,
                  pause_probability=0.5,
-                 max_optical_flow_threshold=2., max_interp_consecutive_frames=20, crop_image=False):
+                 max_optical_flow_threshold=2., max_interp_consecutive_frames=20, crop_image=False,
+                 saturation_max_factor=1.0):
         self.height = height
         self.width = width
         self.crop_image = crop_image
         self.max_frames = max_frames
         self.rgb = rgb
         self.filename = image_filename
-        if not self.rgb:
-            frame = cv2.imread(image_filename, cv2.IMREAD_GRAYSCALE)
+        if is_tiff_image(image_filename):
+            assert saturation_max_factor >= 1.0, f"Error: saturation_max_factor should be >= 1.0 for tiff images ({saturation_max_factor})"
+            img_tiff = skimage.io.imread(image_filename)
+            H, W, C = img_tiff.shape
+            assert C == 3
+            lrgb_frame_np = (img_tiff.transpose(2, 0, 1).astype(np.float32) / (2**16 - 1))[None].astype(np.float16)
+            lrgb_frame = torch.from_numpy(lrgb_frame_np)
+            B, C, H, W = lrgb_frame.shape
+            assert B == 1 and C == 3
+
+            lab_frame = from_linear_rgb(lrgb_frame, "lab")
+            assert lab_frame.shape == (1, 3, H, W)
+            mask_saturated = lab_frame[:, [0]] >= 1.
+            nb_saturated_pixels = mask_saturated.sum()
+            if nb_saturated_pixels > 0:
+                lrgb_frame[0, :, mask_saturated.squeeze()] *= 1.0 + random.random() * (saturation_max_factor - 1.0)
+
+            frame = lrgb_frame.numpy()
+            assert frame.ndim == 4
+            assert frame.shape == (B, C, H, W)
+            frame = np.ascontiguousarray(frame.squeeze(axis=0).transpose(1, 2, 0))
+            assert frame.shape == (H, W, C)
+        elif is_image(image_filename):
+            assert saturation_max_factor == 1.0, f"Error: saturation_max_factor should be 1.0 for non-tiff images ({saturation_max_factor})"
+            if not self.rgb:
+                frame = cv2.imread(image_filename, cv2.IMREAD_GRAYSCALE)
+            else:
+                frame = cv2.imread(image_filename)[..., ::-1]
         else:
-            frame = cv2.imread(image_filename)[..., ::-1]
+            raise ValueError(f"Unhandled type of file: {image_filename} (should be image or npy image)")
         self.frame = frame
         self.frame_height, self.frame_width = self.frame.shape[:2]
         if self.height == -1 or self.width == -1:

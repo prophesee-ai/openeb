@@ -13,10 +13,12 @@
 #include <vector>
 #include <opencv2/core.hpp>
 
+#include "metavision/sdk/base/events/event_cd.h"
 #include "metavision/sdk/core/algorithms/event_frame_histo_generation_algorithm.h"
 #include "metavision/sdk/core/utils/raw_event_frame_converter.h"
 
 using namespace Metavision;
+using InputIt = std::vector<EventCD>::const_iterator;
 
 TEST(EventFrameHistoGenerationAlgorithm_GTest, nominal) {
     // GIVEN a 3x2 toy event stream
@@ -27,7 +29,7 @@ TEST(EventFrameHistoGenerationAlgorithm_GTest, nominal) {
     // GIVEN a EventFrameHistoGenerationAlgorithm instance
     const unsigned int bit_size_neg = 4, bit_size_pos = 4;
     const bool packed = false;
-    EventFrameHistoGenerationAlgorithm histo_generator(width, height, bit_size_neg, bit_size_pos, packed);
+    EventFrameHistoGenerationAlgorithm<InputIt> histo_generator(width, height, bit_size_neg, bit_size_pos, packed);
 
     // WHEN we process the event stream and generate the event frame
     histo_generator.process_events(events.cbegin(), events.cend());
@@ -65,7 +67,7 @@ TEST(EventFrameHistoGenerationAlgorithm_GTest, saturation) {
     // GIVEN a EventFrameHistoGenerationAlgorithm instance
     const unsigned int bit_size_neg = 4, bit_size_pos = 4;
     const bool packed = false;
-    EventFrameHistoGenerationAlgorithm histo_generator(width, height, bit_size_neg, bit_size_pos, packed);
+    EventFrameHistoGenerationAlgorithm<InputIt> histo_generator(width, height, bit_size_neg, bit_size_pos, packed);
 
     // WHEN we process the event stream and generate the event frame
     histo_generator.process_events(events.cbegin(), events.cend());
@@ -88,7 +90,7 @@ TEST(EventFrameHistoGenerationAlgorithm_GTest, packed) {
     // GIVEN a EventFrameHistoGenerationAlgorithm instance
     const unsigned int bit_size_neg = 4, bit_size_pos = 4;
     const bool packed = true;
-    EventFrameHistoGenerationAlgorithm histo_generator(width, height, bit_size_neg, bit_size_pos, packed);
+    EventFrameHistoGenerationAlgorithm<InputIt> histo_generator(width, height, bit_size_neg, bit_size_pos, packed);
 
     // WHEN we process the event stream and generate the event frame
     histo_generator.process_events(events.cbegin(), events.cend());
@@ -115,7 +117,7 @@ TEST(EventFrameHistoGenerationAlgorithm_GTest, compatibility_with_RawEventFrameC
     // GIVEN a EventFrameHistoGenerationAlgorithm instance
     const unsigned int bit_size_neg = 4, bit_size_pos = 4;
     const bool packed = true;
-    EventFrameHistoGenerationAlgorithm histo_generator(width, height, bit_size_neg, bit_size_pos, packed);
+    EventFrameHistoGenerationAlgorithm<InputIt> histo_generator(width, height, bit_size_neg, bit_size_pos, packed);
     // GIVEN a RawEventFrameConverter instance
     RawEventFrameConverter converter(2, 3, 2, HistogramFormat::HWC);
 
@@ -155,7 +157,7 @@ TEST(EventFrameHistoGenerationAlgorithm_GTest, saturation_low_bit_sizes) {
     // GIVEN a EventFrameHistoGenerationAlgorithm instance
     const unsigned int bit_size_neg = 2, bit_size_pos = 2;
     const bool packed = false;
-    EventFrameHistoGenerationAlgorithm histo_generator(width, height, bit_size_neg, bit_size_pos, packed);
+    EventFrameHistoGenerationAlgorithm<InputIt> histo_generator(width, height, bit_size_neg, bit_size_pos, packed);
 
     // WHEN we process the event stream and generate the event frame
     histo_generator.process_events(events.cbegin(), events.cend());
@@ -180,8 +182,8 @@ TEST(EventFrameHistoGenerationAlgorithm_GTest, lowerbound_generation_period) {
     const unsigned int bit_size_neg = 4, bit_size_pos = 4;
     const bool packed                               = false;
     const timestamp lowerbound_generation_period_us = 10;
-    EventFrameHistoGenerationAlgorithm histo_generator(width, height, bit_size_neg, bit_size_pos, packed,
-                                                       lowerbound_generation_period_us);
+    EventFrameHistoGenerationAlgorithm<InputIt> histo_generator(width, height, bit_size_neg, bit_size_pos, packed,
+                                                                lowerbound_generation_period_us);
 
     // WHEN we process the event stream
     // THEN we can have feedback if the generation frequency is too high

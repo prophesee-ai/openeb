@@ -8,7 +8,7 @@
 # See the License for the specific language governing permissions and limitations under the License.
 
 set (sample metavision_event_frame_generation)
-set (common_libraries MetavisionSDK::core MetavisionSDK::driver MetavisionSDK::ui Boost::program_options)
+set (common_libraries MetavisionSDK::core MetavisionSDK::stream MetavisionSDK::ui Boost::program_options)
 
 add_executable(${sample} ${sample}.cpp)
 target_link_libraries(${sample} PRIVATE ${common_libraries})

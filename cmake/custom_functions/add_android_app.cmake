@@ -41,7 +41,7 @@ function(add_android_app app)
         # Unpack gradle cache for faster and consistent builds
         set(ANDROID_GRADLE_CACHE_ARCHIVE utils/android/gradle-cache.tar.gz)
         if (NOT EXISTS ${ANDROID_GRADLE_CACHE_DIR})
-            lfs_download(${ANDROID_GRADLE_CACHE_ARCHIVE} COMPILATION)
+            lfs_download(COMPILATION IMMEDIATE ${ANDROID_GRADLE_CACHE_ARCHIVE})
             message(STATUS "Unpacking ${ANDROID_GRADLE_CACHE_ARCHIVE} in ${ANDROID_GRADLE_CACHE_EXTRACT_DIR}")
             file(MAKE_DIRECTORY ${ANDROID_GRADLE_CACHE_EXTRACT_DIR})
             execute_process(

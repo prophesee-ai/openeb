@@ -90,7 +90,6 @@ int main(int argc, char *argv[]) {
     std::string plugin_name;
     std::string pixel_mask_coord;
     std::string crop_region_coord;
-    long system_id = -1;
 
     std::string temperature, illumination, pixel_dead_time;
 
@@ -135,9 +134,7 @@ int main(int argc, char *argv[]) {
         } else {
             device = Metavision::DeviceDiscovery::open_raw_file(in_raw_file_path);
         }
-    } catch (Metavision::BaseException &e) {
-        std::cerr << "Error exception: " << e.what() << std::endl;
-    }
+    } catch (Metavision::BaseException &e) { std::cerr << "Error exception: " << e.what() << std::endl; }
 
     if (!device) {
         std::cerr << "Camera opening failed." << std::endl;
@@ -153,8 +150,7 @@ int main(int argc, char *argv[]) {
 
     Metavision::I_HW_Identification *i_hw_identification = device->get_facility<Metavision::I_HW_Identification>();
     if (i_hw_identification) {
-        system_id = i_hw_identification->get_system_id();
-        std::cout << "System ID: " << system_id << std::endl;
+        std::cout << "Camera serial: " << i_hw_identification->get_serial() << std::endl;
     }
 
     Metavision::I_CameraSynchronization *i_camera_synchronization =
@@ -231,8 +227,7 @@ int main(int argc, char *argv[]) {
         i_triggerdecoder->add_event_buffer_callback(
             [](const Metavision::EventExtTrigger *begin, const Metavision::EventExtTrigger *end) {
                 for (auto ev = begin; ev != end; ++ev) {
-                    std::cout << "Trigger "
-                              << " " << ev->t << " " << ev->id << " " << ev->p << std::endl;
+                    std::cout << "Trigger " << " " << ev->t << " " << ev->id << " " << ev->p << std::endl;
                 }
             });
     } else {
@@ -257,8 +252,19 @@ int main(int argc, char *argv[]) {
     Metavision::I_EventRateActivityFilterModule *i_event_rate_activity_filter_module =
         device->get_facility<Metavision::I_EventRateActivityFilterModule>();
     if (i_event_rate_activity_filter_module) {
+        Metavision::I_EventRateActivityFilterModule::thresholds NFL_ths;
+        NFL_ths.lower_bound_start = 0;
+        NFL_ths.lower_bound_stop = 0;
+        NFL_ths.upper_bound_start = 100000000;
+        NFL_ths.upper_bound_stop = 110000000;
+        i_event_rate_activity_filter_module->set_thresholds(NFL_ths);
+        i_event_rate_activity_filter_module->enable(true);
         std::cout << "Event rate activity filter: streaming from "
-                  << i_event_rate_activity_filter_module->get_thresholds().lower_bound_start << " Kev/s" << std::endl;
+                  << i_event_rate_activity_filter_module->get_thresholds().lower_bound_start/1000 << " - "
+                  << i_event_rate_activity_filter_module->get_thresholds().lower_bound_stop/1000 << " Kev/s, up to "
+                  << i_event_rate_activity_filter_module->get_thresholds().upper_bound_start/1000000 << " - "
+                  << i_event_rate_activity_filter_module->get_thresholds().upper_bound_stop/1000000 << " Mev/s"
+                  << std::endl;
     }
 
     auto tokenize = [](std::string str, std::string separator) {
@@ -366,7 +372,7 @@ int main(int argc, char *argv[]) {
 
             // This will trigger callbacks set on decoders: in our case EventAnalyzer.process_events
             if (raw_data) {
-                i_eventsstreamdecoder->decode(raw_data->data(), raw_data->data() + raw_data->size());
+                i_eventsstreamdecoder->decode(raw_data);
             }
             /// [buffer]
         }

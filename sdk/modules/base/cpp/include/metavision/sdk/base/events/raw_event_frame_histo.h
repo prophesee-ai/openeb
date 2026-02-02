@@ -60,14 +60,6 @@ public:
     /// @brief Copy constructor
     RawEventFrameHisto(const RawEventFrameHisto &h) : cfg_(h.cfg_), histo_(h.histo_) {}
 
-    [[deprecated("'RawEventFrameHisto(const RawEventFrameHistoConfig &, std::unique_ptr<const std::vector<int8_t>>)' "
-                 "constructor "
-                 "is deprecated since v4.3.0 and will be removed in future releases, "
-                 "please use 'RawEventFrameHisto(const RawEventFrameHistoConfig &, const std::vector<uint8_t>&)' "
-                 "instead.")]] RawEventFrameHisto(const RawEventFrameHistoConfig &cfg,
-                                                  std::unique_ptr<const std::vector<uint8_t>> data) :
-        RawEventFrameHisto(cfg, *data) {}
-
     /// @brief Resets the event frame configuration and sets all values to 0.
     /// @throws invalid_argument if either bit size is zero or if their sum is more than 8
     void reset(unsigned height, unsigned width, unsigned channel_bit_neg = 4, unsigned channel_bit_pos = 4,

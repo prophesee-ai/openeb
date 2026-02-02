@@ -12,7 +12,7 @@ Example of using Metavision SDK Core Python API for visualizing Time Surface of 
 """
 
 from metavision_core.event_io import EventsIterator, LiveReplayEventsIterator, is_live_camera
-from metavision_sdk_core import TimeSurfaceProducerAlgorithmMergePolarities, MostRecentTimestampBuffer
+from metavision_sdk_core import EventPreprocessor, MostRecentTimestampBuffer
 from metavision_sdk_ui import EventLoop, BaseWindow, MTWindow, UIAction, UIKeyEvent
 import numpy as np
 import cv2
@@ -55,27 +55,24 @@ def main():
         window.set_keyboard_callback(keyboard_cb)
 
         time_surface = MostRecentTimestampBuffer(rows=height, cols=width, channels=1)
-        ts_prod = TimeSurfaceProducerAlgorithmMergePolarities(width=width, height=height)
+        ts_prod = EventPreprocessor.create_TimeSurfaceProcessor(input_event_width=width, input_event_height=height, split_polarity=False)
 
-        def cb_time_surface(timestamp, data):
-            nonlocal last_processed_timestamp
-            nonlocal time_surface
-            last_processed_timestamp = timestamp
-            time_surface = data
-
-        ts_prod.set_output_callback(cb_time_surface)
         img = np.empty((height, width), dtype=np.uint8)
 
         # Process events
         for evs in mv_iterator:
             # Dispatch system events to the window
             EventLoop.poll_and_dispatch()
-            ts_prod.process_events(evs)
+            if len(evs) == 0:
+                continue
+            ts_prod.process_events(cur_frame_start_ts=evs[0][3], events_np=evs, frame_tensor_np=time_surface.numpy())
+            last_processed_timestamp = evs[-1][3]
             time_surface.generate_img_time_surface(last_processed_timestamp, 10000, img)
             window.show_async(cv2.applyColorMap(img, cv2.COLORMAP_JET))
 
             if window.should_close():
                 break
+
 
 if __name__ == "__main__":
     main()

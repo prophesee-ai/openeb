@@ -25,7 +25,6 @@
 #include <unistd.h>
 
 #include <cstring>
-#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <string>

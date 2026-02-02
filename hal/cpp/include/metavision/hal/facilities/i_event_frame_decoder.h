@@ -19,6 +19,7 @@
 
 #include "metavision/hal/facilities/i_decoder.h"
 #include "metavision/hal/facilities/i_registrable_facility.h"
+#include "metavision/hal/utils/data_transfer.h"
 
 namespace Metavision {
 
@@ -55,6 +56,12 @@ public:
     /// @param raw_data_end Pointer after the last byte of frame data
     virtual void decode(const I_Decoder::RawData *const raw_data_begin,
                         const I_Decoder::RawData *const raw_data_end) = 0;
+
+    /// @brief Decodes raw event wrapped in a BufferPtr
+    /// @param buffer Buffer containing the raw data
+    void decode(const DataTransfer::BufferPtr &buffer) {
+        decode(buffer.begin(), buffer.end());
+    }
 
     /// @brief Gets size of a raw event element in bytes
     virtual uint8_t get_raw_event_size_bytes() const = 0;

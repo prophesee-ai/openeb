@@ -23,10 +23,11 @@ set(metavision_hal_tests_src
     ${CMAKE_CURRENT_SOURCE_DIR}/i_roi_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/tencoder_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/timer_high_encoder_gtest.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/dummy_test_plugin_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/i_ll_biases_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/decoders_evt21_decoder_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/decoders_evt3_decoder_gtest.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/decoders_evt4_decoder_gtest.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/utils/data_transfer_gtest.cpp
 )
 
 add_executable(gtest_metavision_hal ${metavision_hal_tests_src})
@@ -55,6 +56,6 @@ add_custom_command(TARGET hal_dummy_test_plugin POST_BUILD
 add_dependencies(gtest_metavision_hal hal_dummy_test_plugin)
 
 # Until we execute ctest in docker on Windows, the embedded paths to resources used in the code
-# can not be absolute. Here the path is relative to the working directory of the test (which is the 
+# can not be absolute. Here the path is relative to the working directory of the test (which is the
 # current binary dir).
 target_compile_definitions(gtest_metavision_hal PRIVATE HAL_DUMMY_TEST_PLUGIN="plugins")

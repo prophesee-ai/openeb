@@ -1,0 +1,21 @@
+command_runner
+fire==0.4.0
+h5py
+# Newer versions of networkx require python3.9 or newer
+networkx<3
+numba>=0.58.1,<0.60
+opencv-python==4.5.5.64
+pandas
+profilehooks==1.12.0
+pytest
+scipy
+scikit-image
+sk-video==1.1.10
+tensorboard
+importlib-metadata<=7.1,>=6.0
+botocore
+msgpack==1.1.2
+requests==2.32.5
+pexpect==4.9.0
+lockfile==0.12.2
+html5lib==1.1

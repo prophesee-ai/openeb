@@ -29,16 +29,6 @@ public:
     /// @return the noise filter state
     bool is_enabled() const;
 
-    /// @brief Sets the event rate threshold. Below this threshold, no events are streamed.
-    /// @param threshold_Kev_s Event rate threshold in Kevt/s
-    /// @return true if the input value was correctly set (i.e. it falls in the range of acceptable values for the
-    /// sensor)
-    bool set_event_rate_threshold(uint32_t threshold_Kev_s);
-
-    /// @brief Gets the event rate threshold in Kevt/s below which no events are streamed
-    /// @return Event rate threshold in Kevt/s
-    uint32_t get_event_rate_threshold() const;
-
     I_EventRateActivityFilterModule::thresholds is_thresholds_supported() const;
     bool set_thresholds(const I_EventRateActivityFilterModule::thresholds &thresholds_ev_s);
     I_EventRateActivityFilterModule::thresholds get_thresholds() const;

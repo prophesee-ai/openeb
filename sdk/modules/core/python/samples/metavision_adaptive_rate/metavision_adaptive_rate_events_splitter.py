@@ -12,6 +12,10 @@ from metavision_sdk_core import AdaptiveRateEventsSplitterAlgorithm
 import numpy as np
 import cv2
 import os
+# Temporary solution to fix the numpy deprecated alias in skvideo: https://github.com/scikit-video/scikit-video/issues/154#issuecomment-1445239790
+# Will be deleted in MV-2134 when skvideo makes the correction
+np.float = np.float64
+np.int = np.int_
 from skvideo.io import FFmpegWriter
 
 
@@ -40,7 +44,7 @@ def events_to_diff_image(events, sensor_size, strict_coord=True):
     return img
 
 
-def split_into_frames(filename_raw, thr_var_per_event=5e-4, downsampling_factor=2, disable_display=False,
+def split_into_frames(input_event_file, thr_var_per_event=5e-4, downsampling_factor=2, disable_display=False,
                       filename_output_video=None):
     """ This function loads a sequence, splits it into sharp event frames, and displays the result
 
@@ -53,7 +57,7 @@ def split_into_frames(filename_raw, thr_var_per_event=5e-4, downsampling_factor=
     dropping some of the frames to cope with limited computational budget (detection).
 
     Args:
-        filename_raw (str): input sequence filename to process
+        input_event_file (str): path to input event file (RAW or HDF5) to process
         thr_var_per_event (float): minimum variance per event to reach before generating a new frame
         downsampling_factor (int): reduction factor to apply to input frame. Original coordinates will be
                                    multiplied by 2**(-downsampling_factor)
@@ -64,7 +68,7 @@ def split_into_frames(filename_raw, thr_var_per_event=5e-4, downsampling_factor=
     assert downsampling_factor == int(downsampling_factor), "Error: downsampling_factor must be an integer"
     assert downsampling_factor >= 0, "Error: downsampling_factor must be >= 0"
 
-    mv_adaptive_rate_iterator = AdaptiveRateEventsIterator(input_path=filename_raw,
+    mv_adaptive_rate_iterator = AdaptiveRateEventsIterator(input_path=input_event_file,
                                                            thr_var_per_event=thr_var_per_event,
                                                            downsampling_factor=downsampling_factor)
 

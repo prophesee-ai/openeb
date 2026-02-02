@@ -11,35 +11,37 @@ set(metavision_sdk_core_tests_srcs
     ${CMAKE_CURRENT_SOURCE_DIR}/async_algorithm_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/base_frame_generation_algorithm_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/cd_frame_generator_gtest.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/concurrent_queue_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/counter_map_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/cv_color_map_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/data_synchronizer_from_triggers_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/event_buffer_reslicer_algorithm_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/event_frame_diff_generation_algorithm_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/event_frame_histo_generation_algorithm_gtest.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/event_preprocessor_gtest.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/event_rescaler_algorithm_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/flip_x_algorithm_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/flip_y_algorithm_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/frame_composer_gtest.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/frame_composition_stage_gtest.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/frame_generation_stage_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/generic_producer_algorithm_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/index_generator_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/on_demand_frame_generation_algorithm_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/periodic_frame_generation_algorithm_gtest.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/pipeline_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/polarity_filter_algorithm_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/rate_estimator_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ring_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/roi_filter_algorithm_gtest.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/roi_mask_algorithm_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/rolling_event_buffer_gtest.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/rotate_events_algorithm_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/shared_buffer_queue_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/shared_cd_events_buffer_producer_algorithm_gtest.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/stage_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/stream_logger_algorithm_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/threaded_process_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/time_decay_frame_generation_algorithm_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/time_surface_producer_algorithm_gtest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/timing_profiler_gtest.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/transpose_events_algorithm_gtest.cpp
 )
 
 add_executable(gtest_metavision_sdk_core ${metavision_sdk_core_tests_srcs})

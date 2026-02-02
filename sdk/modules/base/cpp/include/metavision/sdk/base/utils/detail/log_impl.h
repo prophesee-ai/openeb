@@ -27,10 +27,11 @@ public:
     static constexpr LogLevel Level = LogLevel::Debug;
 
     LoggingOperation(const LogOptions & /**/ = LogOptions(), const std::string & /**/ = std::string(),
-                     const std::string & /**/ = std::string(), int = 0, const std::string & /**/ = std::string()) {}
+                     const std::filesystem::path & /**/ = std::string(), int = 0,
+                     const std::string & /**/ = std::string()) {}
 
-    const std::string &file() {
-        static std::string s;
+    const std::filesystem::path &file() {
+        static std::filesystem::path s;
         return s;
     }
 
@@ -38,8 +39,8 @@ public:
         return std::string();
     }
 
-    std::string file() const {
-        return std::string();
+    std::filesystem::path file() const {
+        return std::filesystem::path();
     }
 
     int line() const {
@@ -74,18 +75,18 @@ public:
 
 namespace detail {
 template<LogLevel Level>
-LoggingOperation<Level> log(const std::string &file, int line, const std::string &function) {
+LoggingOperation<Level> log(const std::filesystem::path &file, int line, const std::string &function) {
     return LoggingOperation<Level>(getLogOptions(), "", file, line, function);
 }
 
 template<LogLevel Level>
-LoggingOperation<Level> log(const std::string &file, int line, const std::string &function,
+LoggingOperation<Level> log(const std::filesystem::path &file, int line, const std::string &function,
                             const std::string &prefixFmt) {
     return LoggingOperation<Level>(getLogOptions(), prefixFmt, file, line, function);
 }
 
 template<LogLevel Level>
-LoggingOperation<Level> log(const std::string &file, int line, const std::string &function,
+LoggingOperation<Level> log(const std::filesystem::path &file, int line, const std::string &function,
                             const char *const prefixFmt) {
     return LoggingOperation<Level>(getLogOptions(), std::string(prefixFmt), file, line, function);
 }
@@ -134,8 +135,8 @@ std::string getPaddedLevelLabel(const LogLevel &level, const LogLevelNameMap &la
 std::string getLevelName(const LogLevel &level, const LogLevelNameMap &labels, bool level_prefix_padding);
 
 template<LogLevel Level>
-std::string getLogPrefixFormatString(bool level_prefix_padding, const std::string &prefixFmt, const std::string &file,
-                                     int line, const std::string &function) {
+std::string getLogPrefixFormatString(bool level_prefix_padding, const std::string &prefixFmt,
+                                     const std::filesystem::path &file, int line, const std::string &function) {
     size_t pos;
     std::string s = prefixFmt;
     std::string token;
@@ -149,17 +150,7 @@ std::string getLogPrefixFormatString(bool level_prefix_padding, const std::strin
     }
     token = "<FILE>";
     if ((pos = s.find(token)) != std::string::npos) {
-        std::string basename;
-#ifdef _WIN32
-        const char *const p = strrchr(file.c_str(), '\\');
-#else
-        const char *const p = strrchr(file.c_str(), '/');
-#endif
-        if (p)
-            basename = std::string(p + 1);
-        else
-            basename = file;
-        s.replace(pos, token.size(), basename);
+        s.replace(pos, token.size(), file.filename().string());
     }
     token = "<LINE>";
     if ((pos = s.find(token)) != std::string::npos) {
@@ -218,8 +209,8 @@ template<LogLevel Level>
 constexpr LogLevel LoggingOperation<Level>::Level;
 
 template<LogLevel Level>
-LoggingOperation<Level>::LoggingOperation(const LogOptions &opts, const std::string &prefixFmt, const std::string &file,
-                                          int line, const std::string &function) :
+LoggingOperation<Level>::LoggingOperation(const LogOptions &opts, const std::string &prefixFmt,
+                                          const std::filesystem::path &file, int line, const std::string &function) :
     streambuf_(new detail::concurrent_ostreambuf(opts.getStream().rdbuf())),
     stream_(new std::ostream(streambuf_.get())),
     addSpaceBetweenTokens_(true),
@@ -254,7 +245,7 @@ std::string LoggingOperation<Level>::function() const {
 }
 
 template<LogLevel Level>
-std::string LoggingOperation<Level>::file() const {
+std::filesystem::path LoggingOperation<Level>::file() const {
     return file_;
 }
 

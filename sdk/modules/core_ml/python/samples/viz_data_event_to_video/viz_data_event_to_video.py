@@ -61,7 +61,7 @@ def main(folder, num_workers=2, batch_size=4, batch_times=4, event_volume_depth=
     Args:
         folder (string): folder containing the mp4 videos (and optional _ts.npy timestamps files)/
         num_workers (int): number of processes used.
-        batch_size (int): number of videos loaded simultaenously
+        batch_size (int): number of videos loaded simultaneously
         batch_times (int): number of time bins.
         event_volume_depth (int): number of channels in the event cube.
         height (int): height of each video in pixels.
@@ -74,7 +74,7 @@ def main(folder, num_workers=2, batch_size=4, batch_times=4, event_volume_depth=
         batch_min_delta_t (int): min duration per batch
         batch_max_delta_t (int): max duration per batch
         device (string): either cuda or cpu (must be a valid descriptor for a torch.device)
-        verbose (boolean): wether to print batch loading times
+        verbose (boolean): whether to print batch loading times
         randomize_noises (boolean): add noises
     """
     dataloader = GPUEBSIM.from_params(

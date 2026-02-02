@@ -8,7 +8,7 @@
 # See the License for the specific language governing permissions and limitations under the License.
 
 """
-E2V Demo Script
+Event to Video Demo Script
 """
 
 import numpy as np

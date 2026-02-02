@@ -93,10 +93,10 @@ class HDF5EventsReader(object):
         ( 2234,  6000), ( 3067,  8000), ( 3919, 10000), ( 4715, 12008),
         ( 5495, 14003), ( 6324, 16002), ( 7195, 18009), ( 7964, 20000)
 
-        When ts = 12333, table_idx = 12333 // 2000 = 6, then events[3919: 5495] will be loaded and its timestamp range 
+        When ts = 12333, table_idx = 12333 // 2000 = 6, then events[3919: 5495+1] will be loaded and its timestamp range 
         is (10000, 14003), the pointer will be moved to the event whose timestamp is before and closest to 12333.
 
-        When ts = 1998, table_idx = 1998 // 2000 = 0, then events[0: 797] will be loaded and its timestamp range 
+        When ts = 1998, table_idx = 1998 // 2000 = 0, then events[0: 797+1] will be loaded and its timestamp range 
         is (19, 2010), the pointer will be moved to the event whose timestamp is before and closest to 1998.
 
         """
@@ -105,23 +105,24 @@ class HDF5EventsReader(object):
             table_idx = (ts + self.ts_offset) // self.indexes_period_us
 
             table_idx = min(table_idx, self.total_num_indexes_CD-1)
-            idx_CD_seek = min(table_idx + 2, self.total_num_indexes_CD-1)
+            idx_CD_seek = min(table_idx+1, self.total_num_indexes_CD-1)
 
             if table_idx >= 0:
+                while idx_CD_seek < self.total_num_indexes_CD-1 and self.indexes_CD[idx_CD_seek][1] < ts:
+                    idx_CD_seek += 1
+
                 begin_ev_idx = int(self.indexes_CD[table_idx][0])
-                end_ev_idx = int(self.indexes_CD[idx_CD_seek][0])
+                if idx_CD_seek < self.total_num_indexes_CD - 1:
+                    end_ev_idx = int(self.indexes_CD[idx_CD_seek][0])
+                else:
+                    end_ev_idx = self.total_num_events_CD - 1
 
                 if begin_ev_idx == end_ev_idx:
                     self.current_idx = begin_ev_idx
                 else:
-                    events = self.events_CD[begin_ev_idx:end_ev_idx]
+                    events = self.events_CD[begin_ev_idx:end_ev_idx+1]
                     additive_idx = np.searchsorted(events["t"], ts, side='left')
 
-                    assert events["t"][additive_idx] >= ts, (
-                        "The timestamp of the current event should be larger than "
-                        f"sought time events['t'][additive_idx] "
-                        f"({events['t'][additive_idx]})  ts ({ts})"
-                    )
                     self.current_idx = begin_ev_idx + additive_idx
             else:
                 self.current_idx = 0

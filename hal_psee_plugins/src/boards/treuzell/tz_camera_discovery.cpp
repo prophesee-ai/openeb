@@ -80,8 +80,7 @@ CameraDiscovery::SystemList TzCameraDiscovery::list_available_sources() {
     CameraDiscovery::SystemList system_list;
     auto boards = list_boards();
     for (auto board : boards) {
-        // Last argument is the system ID, but we can't know how many the board has before building the devices
-        system_list.push_back({board->get_serial(), USB_LINK, 0});
+        system_list.push_back({board->get_serial(), USB_LINK});
     }
     return system_list;
 }

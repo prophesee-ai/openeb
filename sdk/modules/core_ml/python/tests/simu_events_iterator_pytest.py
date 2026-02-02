@@ -12,8 +12,12 @@ Unit tests for the Event Simulator Interface
 """
 import os
 import pytest
-import skvideo.io
 import numpy as np
+# Temporary solution to fix the numpy deprecated alias in skvideo: https://github.com/scikit-video/scikit-video/issues/154#issuecomment-1445239790
+# Will be deleted in MV-2134 when skvideo makes the correction
+np.float = np.float64
+np.int = np.int_
+import skvideo.io
 from metavision_core_ml.video_to_event.simu_events_iterator import SimulatedEventsIterator
 from metavision_core_ml.data.video_stream import TimedVideoStream
 from metavision_core_ml.video_to_event.simulator import EventSimulator

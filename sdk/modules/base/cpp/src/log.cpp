@@ -276,10 +276,10 @@ constexpr LogLevel LoggingOperation<LogLevel::Debug>::Level;
 
 namespace detail {
 template<>
-LoggingOperation<LogLevel::Debug> log<LogLevel::Debug>(const std::string &file, int line, const std::string &function,
-                                                       const std::string &prefixFmt) {
+LoggingOperation<LogLevel::Debug> log<LogLevel::Debug>(const std::filesystem::path &file, int line,
+                                                       const std::string &function, const std::string &prefixFmt) {
     // when in release, this should return an "object" on which all operations are in fact no-op
-    return LoggingOperation<LogLevel::Debug>(LogOptions(), std::string(), std::string(), 0, std::string());
+    return LoggingOperation<LogLevel::Debug>(LogOptions(), std::string(), std::filesystem::path(), 0, std::string());
 }
 } // namespace detail
 

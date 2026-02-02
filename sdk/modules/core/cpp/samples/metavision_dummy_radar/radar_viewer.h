@@ -12,6 +12,7 @@
 #ifndef RADAR_VIEWER_H
 #define RADAR_VIEWER_H
 
+#include <cmath>
 #include <opencv2/core.hpp>
 
 /// @brief Display class to show a "radar"-like view of the most prominent data

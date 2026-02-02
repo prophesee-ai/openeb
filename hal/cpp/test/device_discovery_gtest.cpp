@@ -31,16 +31,12 @@ protected:
         rawfile_to_log_path_   = tmpdir_handler_->get_full_path("rawfile_" + std::to_string(++raw_counter) + ".raw");
     }
 
-    void write_header(long system_id, RawFileHeader header_to_write = RawFileHeader()) {
+    void write_header(RawFileHeader header_to_write = RawFileHeader()) {
         std::ofstream rawfile_to_log(rawfile_to_log_path_, std::ios::out | std::ios::binary);
         if (!rawfile_to_log.is_open()) {
             std::cerr << "Could not open file for writing at " << rawfile_to_log_path_ << std::endl;
             FAIL();
         }
-
-        // Psee custom field only. Duplicates what PseeRawFileHeader does for the sake of encoding/reading RAW file for
-        // the test
-        header_to_write.set_field("system_ID", std::to_string(system_id));
 
         rawfile_to_log << header_to_write;
         rawfile_to_log.close();
@@ -75,11 +71,10 @@ TEST_F(DeviceDiscovery_GTest, open_rawfile_success_with_dummy_test_plugin) {
     const std::string plugin_integrator_name("__DummyTestPlugin__");
     const std::string plugin_name("hal_dummy_test_plugin");
     const std::string camera_integrator_name("__DummyTestCamera__");
-    long dummy_system_id = 0;
     header.set_plugin_integrator_name(plugin_integrator_name);
     header.set_plugin_name(plugin_name);
     header.set_camera_integrator_name(camera_integrator_name);
-    write_header(dummy_system_id, header);
+    write_header(header);
     ASSERT_NO_THROW(device = DeviceDiscovery::open_raw_file(rawfile_to_log_path_));
 
     I_HW_Identification *hw_id = device->get_facility<I_HW_Identification>();
@@ -119,11 +114,10 @@ TEST_F(DeviceDiscovery_GTest, open_rawfile_success_with_dummy_test_plugin_and_de
     const std::string plugin_integrator_name("__DummyTestPlugin__");
     const std::string plugin_name("hal_dummy_test_plugin");
     const std::string camera_integrator_name("__DummyTestCamera__");
-    long dummy_system_id = 0;
     header.set_plugin_integrator_name(plugin_integrator_name);
     header.set_plugin_name(plugin_name);
     header.set_camera_integrator_name(camera_integrator_name);
-    write_header(dummy_system_id, header);
+    write_header(header);
     ASSERT_NO_THROW(device = DeviceDiscovery::open_raw_file(rawfile_to_log_path_));
     I_HW_Identification *hw_id = device->get_facility<I_HW_Identification>();
     ASSERT_EQ(camera_integrator_name, hw_id->get_integrator());
@@ -164,11 +158,10 @@ TEST_F(DeviceDiscovery_GTest, open_rawfile_success_with_dummy_test_plugin_and_pl
     const std::string plugin_integrator_name("__DummyTestPlugin__");
     const std::string plugin_name("hal_dummy_test_plugin");
     const std::string camera_integrator_name("__DummyTestCamera__");
-    long dummy_system_id = 0;
     header.set_plugin_integrator_name(plugin_integrator_name);
     header.set_plugin_name(plugin_name);
     header.set_camera_integrator_name(camera_integrator_name);
-    write_header(dummy_system_id, header);
+    write_header(header);
     ASSERT_NO_THROW(device = DeviceDiscovery::open_raw_file(rawfile_to_log_path_));
     I_HW_Identification *hw_id = device->get_facility<I_HW_Identification>();
     ASSERT_EQ(camera_integrator_name, hw_id->get_integrator());

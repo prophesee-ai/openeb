@@ -109,7 +109,7 @@ int main(int argc, char *argv[]) {
         auto ev_buffer = i_eventsstream->get_latest_raw_data();
 
         // Decode the raw buffer
-        i_decoder->decode(ev_buffer->data(), ev_buffer->data() + ev_buffer->size());
+        i_decoder->decode(ev_buffer.begin(), ev_buffer.end());
     }
 
     return 0;

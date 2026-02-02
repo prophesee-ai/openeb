@@ -8,7 +8,7 @@
 # See the License for the specific language governing permissions and limitations under the License.
 
 """
-E2V Training Script
+Event to Video Training Script
 """
 
 import torch
@@ -126,17 +126,15 @@ def train(params: argparse.Namespace):
             default_root_dir=params.root_dir,
             callbacks=[checkpoint_callback, demo_callback],
             logger=logger,
-            gpus=0 if params.cpu else 1,
             precision=params.precision,
             accumulate_grad_batches=params.accumulate_grad_batches,
             max_epochs=params.epochs,
-            resume_from_checkpoint=ckpt,
             log_every_n_steps=5,
             limit_train_batches=params.limit_train_batches,
             limit_val_batches=params.limit_val_batches,
-            accelerator="cpu" if params.cpu else None
+            accelerator="cpu" if params.cpu else "auto"
         )
-        trainer.fit(model, data)
+        trainer.fit(model, data, ckpt_path=ckpt)
 
 
 def main():

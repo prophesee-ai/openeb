@@ -75,11 +75,14 @@ add_custom_command(TARGET metavision_psee_hw_layer POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory "${HAL_BUILD_PLUGIN_PATH}"
     COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:metavision_psee_hw_layer>" "${HAL_BUILD_PLUGIN_PATH}")
 
-if(HAL_SENSORLIB_SUPPORT)
+if(BUILD_INTERNAL_PLUGINS)
+    add_custom_command(TARGET metavision_psee_hw_layer POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${HAL_BUILD_PLUGIN_PATH}/universal_internal"
+        COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:metavision_psee_hw_layer>" "${HAL_BUILD_PLUGIN_PATH}/universal_internal")
     add_custom_command(TARGET metavision_psee_hw_layer POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory "${HAL_BUILD_PLUGIN_PATH}/sensorlib"
         COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:metavision_psee_hw_layer>" "${HAL_BUILD_PLUGIN_PATH}/sensorlib")
-endif(HAL_SENSORLIB_SUPPORT)
+endif(BUILD_INTERNAL_PLUGINS)
 
 # Install public headers
 install(DIRECTORY ${metavision_psee_hw_layer_include_dir}/metavision
@@ -127,7 +130,13 @@ install(FILES ${metavision_psee_hw_layer_config_file} ${metavision_psee_hw_layer
         COMPONENT metavision-hal-prophesee-hw-layer-dev
 )
 
-set(lib_obj_list ${lib_common_obj_list})
+if(BUILD_INTERNAL_PLUGINS)
+    set(lib_internal_obj_list
+        metavision_hal_psee_plugin_internal_obj
+    )
+endif(BUILD_INTERNAL_PLUGINS)
+
+set(lib_obj_list ${lib_common_obj_list} ${lib_internal_obj_list})
 
 foreach(lib_obj ${lib_obj_list})
     add_library(${lib_obj} OBJECT)
@@ -152,6 +161,13 @@ foreach(lib_obj ${lib_obj_list})
     )
 endforeach()
 
+foreach(lib_obj ${lib_internal_obj_list})
+    target_include_directories(${lib_obj}
+        PUBLIC
+            $<BUILD_INTERFACE:${metavision_hal_psee_internal_plugins_include_dir}>
+    )
+endforeach()
+
 # Custom target for all plugins (useful to use as a dependency)
 add_custom_target(hal_plugins)
 add_dependencies(hal_plugins metavision_psee_hw_layer)
@@ -161,6 +177,14 @@ set(hal_psee_plugins_target_file_list)
 set(plugin_list
     hal_plugin_prophesee
 )
+
+if(BUILD_INTERNAL_PLUGINS)
+    list(APPEND plugin_list
+        hal_plugin_sensorlib_tz
+        hal_plugin_sensorlib_fx3
+        hal_plugin_prophesee_internal
+    )
+endif(BUILD_INTERNAL_PLUGINS)
 
 if(POLICY CMP0095)
     # Don't escape RPATH content
@@ -209,12 +233,20 @@ foreach(plugin ${plugin_list})
 
     list(APPEND hal_psee_plugins_target_file_list $<TARGET_FILE:${plugin}>)
 
-    set(HAL_COPY_PLUGIN_PATH "${HAL_BUILD_PLUGIN_PATH}")
-    install(TARGETS ${plugin}
-            LIBRARY DESTINATION "${HAL_INSTALL_PLUGIN_RELATIVE_PATH}" COMPONENT metavision-hal-prophesee-plugins
-            RUNTIME DESTINATION "${HAL_INSTALL_PLUGIN_RELATIVE_PATH}" COMPONENT metavision-hal-prophesee-plugins
-            #ARCHIVE : we don't want to install .lib files for the plugins, it's useless
-    )
+    if(plugin STREQUAL "hal_plugin_sensorlib_tz")
+        set(HAL_COPY_PLUGIN_PATH "${HAL_BUILD_PLUGIN_PATH}/sensorlib")
+    elseif(plugin STREQUAL "hal_plugin_sensorlib_fx3")
+        set(HAL_COPY_PLUGIN_PATH "${HAL_BUILD_PLUGIN_PATH}/sensorlib")
+    elseif(plugin STREQUAL "hal_plugin_prophesee_internal")
+        set(HAL_COPY_PLUGIN_PATH "${HAL_BUILD_PLUGIN_PATH}/universal_internal")
+    else()
+        set(HAL_COPY_PLUGIN_PATH "${HAL_BUILD_PLUGIN_PATH}")
+        install(TARGETS ${plugin}
+                LIBRARY DESTINATION "${HAL_INSTALL_PLUGIN_RELATIVE_PATH}" COMPONENT metavision-hal-prophesee-plugins
+                RUNTIME DESTINATION "${HAL_INSTALL_PLUGIN_RELATIVE_PATH}" COMPONENT metavision-hal-prophesee-plugins
+                #ARCHIVE : we don't want to install .lib files for the plugins, it's useless
+        )
+    endif()
     # instead of setting the RUNTIME/LIBRARY_OUTPUT_DIRECTORY property on the target, we manually copy
     # the library : this will work for linux and windows and avoid the automatic copy of the DLLs the
     # plugin depends on by MSVC
@@ -239,7 +271,38 @@ foreach(object ${lib_common_obj_list})
     )
 endforeach()
 
+# Linkage with generic hal plugin object
+if(BUILD_INTERNAL_PLUGINS)
+    set(internal_plugin_list hal_plugin_sensorlib_tz hal_plugin_sensorlib_fx3 hal_plugin_prophesee_internal)
+
+    foreach(internal_plugin ${internal_plugin_list})
+        foreach(object ${lib_obj_list})
+            # Linkage with generic hal plugin object
+            target_sources(${internal_plugin}
+                PRIVATE
+                    $<TARGET_OBJECTS:${object}>
+            )
+
+            target_link_libraries(${internal_plugin}
+                PRIVATE
+                    ${object}
+            )
+        endforeach()
+    endforeach()
+
+    set(output_universal_internal_plugin_path "${GENERATE_FILES_DIRECTORY}/universal_internal_plugin_${PROJECT_VERSION_FULL}.tar.gz")
+    add_custom_target(create_universal_internal_plugin_archive
+        COMMAND ${CMAKE_COMMAND} -E remove_directory "universal_internal_plugin"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "${HAL_BUILD_PLUGIN_PATH}/universal_internal" "universal_internal_plugin"
+        COMMAND ${CMAKE_COMMAND} -E tar czvf ${output_universal_plugin_path} "universal_internal_plugin")
+
+    add_dependencies(create_universal_internal_plugin_archive hal_plugin_prophesee_internal)
+
+endif(BUILD_INTERNAL_PLUGINS)
+
 if(EXISTS "${PROJECT_SOURCE_DIR}/licensing/LICENSE_METAVISION_SDK")
-    install(FILES ${PROJECT_SOURCE_DIR}/licensing/LICENSE_METAVISION_SDK
+    install(FILES
+                ${PROJECT_SOURCE_DIR}/licensing/LICENSE_METAVISION_SDK
+                ${PROJECT_SOURCE_DIR}/licensing/OPEN_SOURCE_3RDPARTY_NOTICES
             DESTINATION share/metavision/licensing)
 endif()

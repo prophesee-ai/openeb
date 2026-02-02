@@ -6,8 +6,8 @@ on:
     - cron: "15 2 1 */2 *"
 
 env:
-  win_binaries_download_address: "https://prophesee-bamboo.s3.eu-west-1.amazonaws.com/build-env/vcpkg-export-20230323-MV4.0.0.zip"
-  ffmpeg_archive_download_address: "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full.7z"
+  win_binaries_download_address: "https://prophesee-bamboo.s3.eu-west-1.amazonaws.com/build-env/vcpkg-export-win11-20260112-MV_V5.2.0.zip"
+  ffmpeg_archive_download_address: "https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-7.1.1-full_build.7z"
 
 jobs:
   get_artifacts:

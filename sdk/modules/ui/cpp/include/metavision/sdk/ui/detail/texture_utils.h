@@ -30,10 +30,6 @@ struct TextureOptions {
 
 unsigned int initialize_texture(const TextureOptions &options);
 
-[[deprecated("This function is deprecated since version 4.2.0. Please use initialize_texture(const TextureOptions &) "
-             "instead.")]] unsigned int
-    initialize_texture(int width, int height, bool is_gray);
-
 void upload_texture(const cv::Mat &img, const unsigned int &tex_id);
 
 } // namespace detail

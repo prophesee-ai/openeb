@@ -110,6 +110,7 @@ def execute_cmd(cmd, **kwargs):
                                                        encoding="utf-8",
                                                        method="poller",
                                                        split_streams=True,
+                                                       valid_exit_codes=True,
                                                        stdout=_print_to_stdout,
                                                        stderr=_print_to_stderr)
             # When there is nothing on stderr, command_runner returns None

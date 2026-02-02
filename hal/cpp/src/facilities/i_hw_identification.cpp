@@ -38,7 +38,6 @@ I_HW_Identification::I_HW_Identification(const std::shared_ptr<I_PluginSoftwareI
 I_HW_Identification::SystemInfo I_HW_Identification::get_system_info() const {
     SystemInfo infos;
     infos.insert({"Serial", get_serial()});
-    infos.insert({"SystemID", std::to_string(get_system_id())});
     infos.insert({"Integrator", get_integrator()});
     infos.insert({"Sensor Name", get_sensor_info().name_});
     auto formats     = get_available_data_encoding_formats();

@@ -13,6 +13,7 @@
 #define METAVISION_HAL_I_EVENTS_STREAM_H
 
 #include <exception>
+#include <filesystem>
 #include <string>
 #include <fstream>
 #include <memory>
@@ -22,7 +23,6 @@
 #include <queue>
 #include <unordered_set>
 
-#include "metavision/hal/facilities/i_camera_synchronization.h"
 #include "metavision/hal/facilities/i_registrable_facility.h"
 #include "metavision/hal/utils/data_transfer.h"
 #include "metavision/sdk/base/utils/timestamp.h"
@@ -40,11 +40,11 @@ public:
     using RawData = DataTransfer::Data;
 
     /// @brief Constructor
-    /// @param data_transfer Data transfer class owned by the events stream and used to transfer data
+    /// @param data_producer Raw data producer class owned by the events stream and used to transfer data
     /// @param hw_identification Hardware identification associated to this events stream
     /// @param decoder Decoder associated to this events stream
     /// @param device_control Device control class for starting and stopping
-    I_EventsStream(std::unique_ptr<DataTransfer> data_transfer,
+    I_EventsStream(std::unique_ptr<DataTransfer::RawDataProducer> data_producer,
                    const std::shared_ptr<I_HW_Identification> &hw_identification,
                    const std::shared_ptr<I_EventsStreamDecoder> &decoder = nullptr,
                    const std::shared_ptr<DeviceControl> &device_control  = std::shared_ptr<DeviceControl>());
@@ -76,19 +76,6 @@ public:
     ///
     /// Gets raw data from the event buffer received since the last time this function was called.
     ///
-    /// @param n_rawbytes Address of a variable in which to put the number of bytes contained in the buffer
-    /// @return Pointer to an array of Event structures
-    /// @note This function must be called to write the buffer of events in the log file defined in @ref
-    /// log_raw_data
-    [[deprecated("'RawData *I_EventsStream::get_latest_raw_data(long &)' is deprecated since v4.5.0 and will be removed"
-                 " in future releases, please use 'DataTransfer::BufferPtr I_EventsStream::get_latest_raw_data()'"
-                 " instead.")]]
-    RawData *get_latest_raw_data(long &n_rawbytes);
-
-    /// @brief Gets latest raw data from the event buffer
-    ///
-    /// Gets raw data from the event buffer received since the last time this function was called.
-    ///
     /// @return Pointer to a vector of Event structures
     /// @note This function must be called to write the buffer of events in the log file defined in @ref
     /// log_raw_data
@@ -111,13 +98,13 @@ public:
     /// Does nothing if no recording has been started
     void stop_log_raw_data();
 
-    /// @brief Sets name of the file read to avoid writing in the same file when calling log_raw_data
-    /// @param filename Name of the file from which the events are read
+    /// @brief Sets the path of file read to avoid writing in the same file when calling log_raw_data
+    /// @param file Path of the file from which the events are read
     /// @note This function is directly called when opening a RAW file
-    void set_underlying_filename(const std::string &filename);
+    void set_underlying_file(const std::filesystem::path &file);
 
-    /// @brief Gets name of the file read to avoid writing in the same file when calling log_raw_data
-    const std::string &get_underlying_filename() const;
+    /// @brief Gets path of the file read to avoid writing in the same file when calling log_raw_data
+    const std::filesystem::path &get_underlying_file() const;
 
     /// @brief Structure representing a bookmark that composes the index
     struct Bookmark {
@@ -184,6 +171,12 @@ public:
     /// @warning The input device must have been built with the same RAW file used to initialize this class
     void index(std::unique_ptr<Device> device_for_indexing);
 
+    /// @brief Gets the DataTransfer object used to transfer data from the device to the host
+    /// @return A reference to the DataTransfer object
+    const DataTransfer &get_data_transfer() const {
+        return data_transfer_;
+    }
+
 private:
     /// @brief Builds and loads the index in memory
     virtual Index index_impl(Device &device);
@@ -195,13 +188,13 @@ private:
     std::shared_ptr<I_HW_Identification> hw_identification_;
     std::shared_ptr<I_EventsStreamDecoder> decoder_;
 
-    // Name of the file read if one
-    std::string underlying_filename_;
+    // Path of the file read if one
+    std::filesystem::path underlying_file_;
 
     std::unique_ptr<std::ofstream> log_raw_data_;
     std::mutex log_raw_safety_;
 
-    std::unique_ptr<DataTransfer> data_transfer_;
+    DataTransfer data_transfer_;
     std::exception_ptr data_transfer_connection_error_;
     std::shared_ptr<DeviceControl> device_control_;
     std::mutex new_buffer_safety_;
@@ -213,8 +206,7 @@ private:
     // To achieve this, we copy buffers internally in a temporary buffer pool to always leave the data transfer
     // buffer pool full when resuming streaming
     const bool stop_should_release_buffers_;
-    DataTransfer::BufferPool tmp_buffer_pool_;
-    std::unordered_set<DataTransfer::BufferPtr::element_type *>
+    std::unordered_set<DataTransfer::BufferPtr::PtrType>
         data_transfer_buffer_ptrs_; // for quick check if copying is necessary
 
     std::mutex start_stop_safety_;

@@ -13,6 +13,7 @@
 #define MAKE_DECODER_H
 
 #include <memory>
+#include "metavision/hal/utils/device_config.h"
 
 namespace Metavision {
 
@@ -27,7 +28,7 @@ class DeviceBuilder;
  * If the provided fromat is not handled, the function will throw.
  */
 std::shared_ptr<I_EventsStreamDecoder> make_decoder(DeviceBuilder &, const StreamFormat &, size_t &raw_size_bytes,
-                                                    bool do_time_shifting);
+                                                    bool do_time_shifting, const Metavision::DeviceConfig &config = Metavision::DeviceConfig{});
 
 } // namespace Metavision
 #endif /* MAKE_DECODER_H */

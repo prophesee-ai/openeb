@@ -21,18 +21,18 @@ set(CPACK_COMPONENT_METAVISION-SDK-CORE-LIB_DEPENDS metavision-sdk-base-lib)
 
 # Runtime (apps)
 set(CPACK_COMPONENT_METAVISION-SDK-CORE-BIN_DESCRIPTION "Binaries for the Metavision SDK Core applications.\n${OPEN_PACKAGE_LICENSE}")
-set(CPACK_COMPONENT_METAVISION-SDK-CORE-BIN_DEPENDS metavision-sdk-core-lib metavision-sdk-driver-lib)
+set(CPACK_COMPONENT_METAVISION-SDK-CORE-BIN_DEPENDS metavision-sdk-core-lib metavision-sdk-stream-lib)
 
 # Development package
 set(CPACK_COMPONENT_METAVISION-SDK-CORE-DEV_DESCRIPTION "Development (C++) files for Metavision SDK Core library.\n${OPEN_PACKAGE_LICENSE}")
 set(CPACK_COMPONENT_METAVISION-SDK-CORE-DEV_DEPENDS metavision-sdk-core-lib metavision-sdk-base-dev)
 list(APPEND CPACK_DEBIAN_METAVISION-SDK-CORE-DEV_PACKAGE_DEPENDS "libopencv-dev")
-list(APPEND CPACK_DEBIAN_METAVISION-SDK-CORE-DEV_PACKAGE_DEPENDS "libboost-dev" "libboost-filesystem-dev" "libboost-timer-dev")
+list(APPEND CPACK_DEBIAN_METAVISION-SDK-CORE-DEV_PACKAGE_DEPENDS "libboost-dev" "libboost-timer-dev")
 string(REPLACE ";" ", " CPACK_DEBIAN_METAVISION-SDK-CORE-DEV_PACKAGE_DEPENDS "${CPACK_DEBIAN_METAVISION-SDK-CORE-DEV_PACKAGE_DEPENDS}")
 
 # Samples of metavision-sdk-core
 set(CPACK_COMPONENT_METAVISION-SDK-CORE-SAMPLES_DESCRIPTION "Samples for Metavision SDK Core library.\n${OPEN_PACKAGE_LICENSE}")
-set(CPACK_COMPONENT_METAVISION-SDK-CORE-SAMPLES_DEPENDS metavision-sdk-base-dev metavision-sdk-core-dev metavision-sdk-driver-dev metavision-sdk-ui-dev)
+set(CPACK_COMPONENT_METAVISION-SDK-CORE-SAMPLES_DEPENDS metavision-sdk-base-dev metavision-sdk-core-dev metavision-sdk-stream-dev metavision-sdk-ui-dev)
 
 # Pure python library
 if (COMPILE_PYTHON3_BINDINGS)

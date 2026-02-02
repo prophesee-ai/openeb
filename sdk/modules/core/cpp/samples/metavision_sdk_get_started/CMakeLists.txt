@@ -8,7 +8,7 @@
 # See the License for the specific language governing permissions and limitations under the License.
 
 set (sample metavision_sdk_get_started)
-set (common_libraries MetavisionSDK::core MetavisionSDK::driver MetavisionSDK::ui)
+set (common_libraries MetavisionSDK::core MetavisionSDK::stream MetavisionSDK::ui)
 
 add_executable(${sample} ${sample}.cpp)
 target_link_libraries(${sample} PRIVATE ${common_libraries})

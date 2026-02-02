@@ -40,7 +40,12 @@ PythonBindingsDoc pybind_doc_core;
 #endif
 
 void export_event_bbox(py::module &);
+void export_event_tracked_box(py::module &);
 void export_base_frame_generation_algorithm(py::module &);
+void export_contrast_map_generation_algorithm(py::module &);
+void export_event_preprocessor(py::module &);
+void export_event_rescaler_algorithm(py::module &m);
+void export_events_integration_algorithm(py::module &);
 void export_colors(py::module &);
 void export_adaptive_rate_events_splitter_algorithm(py::module &);
 void export_flip_x_algorithm(py::module &);
@@ -52,9 +57,11 @@ void export_polarity_filter_algorithm(py::module &);
 void export_polarity_inverter_algorithm(py::module &);
 void export_raw_event_frame_converter(py::module &);
 void export_roi_filter_algorithm(py::module &);
+void export_roi_mask_algorithm(py::module &);
+void export_rotate_events_algorithm(py::module &);
 void export_shared_cd_events_buffer_producer(py::module &);
 void export_stream_logger_algorithm(py::module &);
-void export_timesurface_producer_algorithm(py::module &);
+void export_transpose_events_algorithm(py::module &);
 void export_rolling_event_cd_buffer(py::module &);
 } // namespace Metavision
 
@@ -74,12 +81,17 @@ PYBIND11_MODULE(MODULE_NAME, m) {
 
     // 2. Export event types
     Metavision::export_event_bbox(m);
+    Metavision::export_event_tracked_box(m);
     Metavision::export_colors(m);
     Metavision::export_mostrecent_timestamp_buffer(m);
 
     // 3. Export algos
-    Metavision::export_base_frame_generation_algorithm(m);
     Metavision::export_adaptive_rate_events_splitter_algorithm(m);
+    Metavision::export_base_frame_generation_algorithm(m);
+    Metavision::export_contrast_map_generation_algorithm(m);
+    Metavision::export_event_preprocessor(m);
+    Metavision::export_event_rescaler_algorithm(m);
+    Metavision::export_events_integration_algorithm(m);
     Metavision::export_flip_x_algorithm(m);
     Metavision::export_flip_y_algorithm(m);
     Metavision::export_on_demand_frame_generation_algorithm(m);
@@ -88,9 +100,11 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     Metavision::export_polarity_inverter_algorithm(m);
     Metavision::export_raw_event_frame_converter(m);
     Metavision::export_roi_filter_algorithm(m);
+    Metavision::export_roi_mask_algorithm(m);
+    Metavision::export_rotate_events_algorithm(m);
     Metavision::export_shared_cd_events_buffer_producer(m);
     Metavision::export_stream_logger_algorithm(m);
-    Metavision::export_timesurface_producer_algorithm(m);
+    Metavision::export_transpose_events_algorithm(m);
 
     // 4. Export utils
     Metavision::export_rolling_event_cd_buffer(m);

@@ -12,10 +12,6 @@
 #ifdef _WIN32
 #include <windows.h>
 #include <shlobj.h>
-#else
-#include <dirent.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #endif
 #include <filesystem>
 
@@ -48,13 +44,6 @@ std::string read_registry_subkey_hklm(LPCSTR subkey, LPCSTR registry_value_name)
     }
     return result;
 }
-#else
-
-bool exists(const std::string &name) {
-    struct stat buffer;
-    return (stat(name.c_str(), &buffer) == 0);
-}
-
 #endif
 
 } /* anonymous namespace */
@@ -93,57 +82,45 @@ std::filesystem::path ResourcesFolder::get_user_path() {
 }
 #endif
 
-std::string ResourcesFolder::get_install_path() {
+std::filesystem::path ResourcesFolder::get_install_path() {
     char *p = getenv("MV_HAL_INSTALL_PATH");
     if (p) {
         return p;
     }
 
+    std::filesystem::path parent_dir;
 #ifdef _WIN32
-    return read_registry_subkey_hklm(METAVISION_SUBKEY, METAVISION_SUBKEY_INSTALL_PATH) + "\\" +
-           HAL_INSTALL_SUPPORT_RELATIVE_PATH;
+    parent_dir = read_registry_subkey_hklm(METAVISION_SUBKEY, METAVISION_SUBKEY_INSTALL_PATH);
 #else
-
     auto path_candidates = Metavision::get_root_installation_path_candidates();
     for (auto &candidate : path_candidates) {
-        if (exists(candidate + "/" + Metavision::METAVISION_HAL_LIB_RELATIVE_PATH)) {
-            return candidate + "/" + HAL_INSTALL_SUPPORT_RELATIVE_PATH;
+        if (std::filesystem::exists(candidate / Metavision::METAVISION_HAL_LIB_RELATIVE_PATH)) {
+            parent_dir = candidate;
         }
     }
-    return "";
+    if (parent_dir.empty()) {
+        return "";
+    }
 #endif
+
+    return parent_dir / HAL_INSTALL_SUPPORT_RELATIVE_PATH;
 }
 
-std::string ResourcesFolder::get_plugin_install_path() {
+std::filesystem::path ResourcesFolder::get_plugin_install_path() {
 #ifdef _WIN32
-    return read_registry_subkey_hklm(METAVISION_SUBKEY, METAVISION_SUBKEY_INSTALL_PATH) + "\\" +
+    return std::filesystem::path(read_registry_subkey_hklm(METAVISION_SUBKEY, METAVISION_SUBKEY_INSTALL_PATH)) /
            HAL_INSTALL_PLUGIN_RELATIVE_PATH;
 #else
     auto path_candidates = Metavision::get_root_installation_path_candidates();
     for (auto &path_candidate : path_candidates) {
-        std::string candidate = path_candidate + "/" + Metavision::HAL_INSTALL_PLUGIN_RELATIVE_PATH;
-        if (exists(candidate)) {
-            // Check if folder is empty or not
-            DIR *dir_descriptor;
-            dir_descriptor = opendir(candidate.c_str());
-            if (dir_descriptor) {
-                struct dirent *entries;
-                // Loop over the contents of the directory, to make sure that it's not empty and that it doesn't contain
-                // only subdirectories
-                // Remark : readdir() doesn't guarantee a specific order, so we loop over the all directory
-                while ((entries = readdir(dir_descriptor)) != NULL) {
-                    // Verify that the entry is not a directory
-                    struct stat statbuf;
-                    bool is_dir = false;
-                    if (stat(entries->d_name, &statbuf) == 0) {
-                        is_dir = S_ISDIR(statbuf.st_mode);
-                    }
-                    if (!is_dir) {
-                        closedir(dir_descriptor);
-                        return candidate;
-                    }
+        std::filesystem::path candidate = path_candidate / Metavision::HAL_INSTALL_PLUGIN_RELATIVE_PATH;
+        if (std::filesystem::is_directory(candidate)) {
+            // Loop over the contents of the directory, to make sure that it's not empty and that it doesn't contain
+            // only subdirectories
+            for (auto const &dir_entry : std::filesystem::directory_iterator(candidate)) {
+                if (!dir_entry.is_directory()) {
+                    return candidate;
                 }
-                closedir(dir_descriptor);
             }
         }
     }
