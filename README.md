@@ -130,7 +130,7 @@ This allows you to use simple commands like `python` without needing to specify 
 The Python bindings of the C++ API rely on the [pybind11](https://github.com/pybind) library, specifically version 2.11.0.
 
 *Note* that pybind11 is required only if you want to use the Python bindings of the C++ API .
-You can opt out of creating these bindings by passing the argument `-DCOMPILE_PYTHON3_BINDINGS=OFF` at step 3 during compilation (see below).
+You can opt out of creating these bindings by passing the argument `-DCOMPILE_PYTHON3_BINDINGS=OFF` at step 2 during compilation (see below).
 In that case, you will not need to install pybind11, but you won't be able to use our Python interface to the C++ API.
 
 Unfortunately, there is no pre-compiled version of pybind11 available, so you need to install it manually:
