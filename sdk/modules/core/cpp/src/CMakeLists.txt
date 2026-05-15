@@ -12,6 +12,7 @@ target_sources(metavision_sdk_core PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/algorithms/base_frame_generation_algorithm.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/algorithms/contrast_map_generation_algorithm.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/algorithms/event_buffer_reslicer_algorithm.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/algorithms/event_count_frame_generation_algorithm.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/algorithms/events_integration_algorithm.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/algorithms/on_demand_frame_generation_algorithm.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/algorithms/periodic_frame_generation_algorithm.cpp

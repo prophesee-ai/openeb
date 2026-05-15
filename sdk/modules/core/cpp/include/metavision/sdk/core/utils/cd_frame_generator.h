@@ -14,6 +14,7 @@
 
 #include "metavision/sdk/base/events/event_cd.h"
 #include "metavision/sdk/core/algorithms/periodic_frame_generation_algorithm.h"
+#include "metavision/sdk/core/algorithms/event_count_frame_generation_algorithm.h"
 #include "metavision/sdk/core/utils/threaded_process.h"
 
 namespace Metavision {
@@ -85,6 +86,21 @@ public:
     /// @brief Resets the frame generator state
     void reset();
 
+    /// @brief Sets frame generation to event-count based mode
+    /// @param events_per_frame Number of events to accumulate before generating a frame
+    void set_event_count_mode(uint32_t events_per_frame);
+
+    /// @brief Sets frame generation to sliding event-count based mode
+    /// @param events_per_frame Window size (number of events used per frame)
+    /// @param hop_events Number of events between successive frames (hop/stride)
+    void set_sliding_event_count_mode(uint32_t events_per_frame, uint32_t hop_events);
+
+    /// @brief Sets frame generation back to time-interval based mode
+    void set_time_interval_mode();
+
+    /// @brief Returns whether event-count mode is enabled
+    bool is_event_count_mode() const;
+
 private:
     bool generate();
 
@@ -111,6 +127,12 @@ private:
     std::condition_variable events_available_cond_;
 
     std::unique_ptr<PeriodicFrameGenerationAlgorithm> frame_generation_algo_;
+    std::unique_ptr<EventCountFrameGenerationAlgorithm> event_count_frame_generation_algo_;
+    
+    // Event count mode configuration
+    uint32_t events_per_frame_{10000};
+    bool use_event_count_mode_{false};
+    
     // Shadow params
     timestamp accumulation_time_us_;
     cv::Scalar background_color_, on_color_, off_color_;

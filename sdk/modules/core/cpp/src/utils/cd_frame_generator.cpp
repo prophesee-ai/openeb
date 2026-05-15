@@ -16,8 +16,11 @@ namespace Metavision {
 
 CDFrameGenerator::CDFrameGenerator(long width, long height, bool process_all_frames) :
     process_all_frames_(process_all_frames) {
-    // Builds algo
+    // Builds time-based algo (default)
     frame_generation_algo_.reset(new PeriodicFrameGenerationAlgorithm(width, height));
+
+    // Builds event-count-based algo
+    event_count_frame_generation_algo_.reset(new EventCountFrameGenerationAlgorithm(width, height));
 
     // Update accumulation time
     set_display_accumulation_time_us(frame_generation_algo_->get_accumulation_time_us());
@@ -69,17 +72,26 @@ void CDFrameGenerator::add_events(const EventCD *begin, const EventCD *end) {
     // depending on the inputs.and decreases the performance. Better ensure that bigger chunks of data are processed
     events_back_.insert(events_back_.end(), begin, end);
     
-    // if (std::prev(end)->t > next_notify_us_) {
-    //    events_available_ = true;
-    //    next_notify_us_   = notify_slice_us_ * (1 + begin->t / notify_slice_us_);
-    //    events_available_cond_.notify_all();
-    //}
-
-    auto current_time = std::prev(end)->t;
-    if (current_time >= next_notify_us_) {
-        events_available_ = true;
-        next_notify_us_   = notify_slice_us_; // * (1 + begin->t / notify_slice_us_);
-        events_available_cond_.notify_all();
+    if (use_event_count_mode_) {
+        // In event-count mode, notify frequently to process events as soon as possible
+        // This prevents buffer overflow when events arrive faster than processing speed
+        const size_t notify_threshold = std::max(static_cast<size_t>(1000), static_cast<size_t>(events_per_frame_) / 10);
+        const size_t max_buffer = std::max(10 * events_per_frame_, 1000000u);
+        
+        // Notify if we've accumulated a threshold of events OR if buffer is dangerously large
+        // The max_buffer check acts as a safety valve to prevent unbounded growth
+        if (events_back_.size() >= notify_threshold || events_back_.size() >= max_buffer) {
+            events_available_ = true;
+            events_available_cond_.notify_all();
+        }
+    } else {
+        // Time-interval mode (original behavior)
+        auto current_time = std::prev(end)->t;
+        if (current_time >= next_notify_us_) {
+            events_available_ = true;
+            next_notify_us_   = notify_slice_us_; // * (1 + begin->t / notify_slice_us_);
+            events_available_cond_.notify_all();
+        }
     }
 }
 
@@ -97,18 +109,30 @@ bool CDFrameGenerator::generate() {
         events_front_.swap(events_back_);
         events_available_ = false;
 
-        frame_generation_algo_->set_accumulation_time_us(accumulation_time_us_);
-        frame_generation_algo_->set_colors(background_color_, on_color_, off_color_, colored_);
+        if (use_event_count_mode_) {
+            event_count_frame_generation_algo_->set_colors(background_color_, on_color_, off_color_, colored_);
+        } else {
+            frame_generation_algo_->set_accumulation_time_us(accumulation_time_us_);
+            frame_generation_algo_->set_colors(background_color_, on_color_, off_color_, colored_);
+        }
     }
 
-    if (!process_all_frames_ && !events_front_.empty()) {
-        // Generates only the last possible frame
-        frame_generation_algo_->skip_frames_up_to(events_front_.back().t);
-    }
+    if (use_event_count_mode_) {
+        event_count_frame_generation_algo_->process_events(events_front_.cbegin(), events_front_.cend());
+        if (stop_) {
+            event_count_frame_generation_algo_->force_generate(
+                !events_front_.empty() ? events_front_.back().t : 0);
+        }
+    } else {
+        if (!process_all_frames_ && !events_front_.empty()) {
+            // Generates only the last possible frame
+            frame_generation_algo_->skip_frames_up_to(events_front_.back().t);
+        }
 
-    frame_generation_algo_->process_events(events_front_.cbegin(), events_front_.cend());
-    if (stop_) {
-        frame_generation_algo_->force_generate();
+        frame_generation_algo_->process_events(events_front_.cbegin(), events_front_.cend());
+        if (stop_) {
+            frame_generation_algo_->force_generate();
+        }
     }
 
     for (size_t i = 0; i < frames_count_; ++i) {
@@ -129,9 +153,21 @@ bool CDFrameGenerator::start(std::uint16_t fps, const PeriodicFrameGenerationAlg
     // Init algos and state variables
     frame_generation_algo_->reset();
     frame_generation_algo_->set_fps(fps);
+    event_count_frame_generation_algo_->reset();
+    event_count_frame_generation_algo_->set_events_per_frame(events_per_frame_);
+    
     frame_cb_ = cb ? cb : [](auto, auto) {};
 
     frame_generation_algo_->set_output_callback([this](timestamp frame_ts_us, cv::Mat &mat) {
+        if (frames_count_ == frames_.size()) {
+            frames_.resize(frames_.size() + 1);
+        }
+        std::swap(frames_[frames_count_].frame_, mat);
+        frames_[frames_count_].ts_us_ = frame_ts_us;
+        ++frames_count_;
+    });
+
+    event_count_frame_generation_algo_->set_output_callback([this](timestamp frame_ts_us, cv::Mat &mat) {
         if (frames_count_ == frames_.size()) {
             frames_.resize(frames_.size() + 1);
         }
@@ -166,8 +202,44 @@ bool CDFrameGenerator::stop() {
 void CDFrameGenerator::reset() {
     std::lock_guard<std::mutex> lock(processing_mutex_);
     frame_generation_algo_->reset();
+    if (use_event_count_mode_) {
+        event_count_frame_generation_algo_->reset();
+    }
     events_back_.clear();
     next_notify_us_ = notify_slice_us_;
+}
+
+void CDFrameGenerator::set_event_count_mode(uint32_t events_per_frame) {
+    std::lock_guard<std::mutex> lock(processing_mutex_);
+    use_event_count_mode_ = true;
+    events_per_frame_ = events_per_frame;
+    if (event_count_frame_generation_algo_) {
+        event_count_frame_generation_algo_->set_events_per_frame(events_per_frame);
+        event_count_frame_generation_algo_->set_sliding_mode(false);
+    }
+}
+
+void CDFrameGenerator::set_sliding_event_count_mode(uint32_t events_per_frame, uint32_t hop_events) {
+    std::lock_guard<std::mutex> lock(processing_mutex_);
+    use_event_count_mode_ = true;
+    events_per_frame_ = events_per_frame;
+    if (event_count_frame_generation_algo_) {
+        event_count_frame_generation_algo_->set_events_per_frame(events_per_frame);
+        event_count_frame_generation_algo_->set_hop_events(hop_events == 0 ? events_per_frame : hop_events);
+        event_count_frame_generation_algo_->set_sliding_mode(true);
+    }
+}
+
+void CDFrameGenerator::set_time_interval_mode() {
+    std::lock_guard<std::mutex> lock(processing_mutex_);
+    use_event_count_mode_ = false;
+    if (event_count_frame_generation_algo_) {
+        event_count_frame_generation_algo_->set_sliding_mode(false);
+    }
+}
+
+bool CDFrameGenerator::is_event_count_mode() const {
+    return use_event_count_mode_;
 }
 
 } // namespace Metavision
