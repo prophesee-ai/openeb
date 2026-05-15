@@ -1,6 +1,6 @@
 queue_rules:
   - name: default
-    conditions: &ChecksQueue
+    merge_conditions: &ChecksQueue
       - "#approved-reviews-by>=1"
       - "#review-requested=0"
       - "#changes-requested-reviews-by=0"
