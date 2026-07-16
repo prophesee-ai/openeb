@@ -14,6 +14,7 @@
 
 #include <vector>
 #include <tuple>
+#include <cstdint>
 
 #include "metavision/hal/facilities/i_registrable_facility.h"
 

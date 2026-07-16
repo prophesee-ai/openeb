@@ -13,7 +13,7 @@
 #define METAVISION_SDK_CORE_MOSTRECENT_TIMESTAMP_BUFFER_H
 
 #include <opencv2/opencv.hpp>
-#if CV_MAJOR_VERSION >= 4
+#if CV_MAJOR_VERSION >= 4 && CV_MAJOR_VERSION < 5
 #include <opencv2/imgproc/types_c.h>
 #endif
 

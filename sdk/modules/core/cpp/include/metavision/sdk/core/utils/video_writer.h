@@ -177,8 +177,11 @@ public:
     The function/method writes the specified image to video file. It must have the same size as has
     been specified when opening the video writer.
      */
+#if CV_MAJOR_VERSION >= 5
+    virtual bool write(cv::InputArray image);
+#else
     virtual void write(cv::InputArray image);
-
+#endif
     /** @brief Sets a property in the VideoWriter.
 
      @param propId Property identifier from cv::VideoWriterProperties (eg. cv::VIDEOWRITER_PROP_QUALITY)

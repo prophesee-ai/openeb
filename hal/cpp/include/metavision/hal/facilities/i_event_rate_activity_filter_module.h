@@ -13,6 +13,7 @@
 #define METAVISION_HAL_I_EVENT_RATE_ACTIVITY_FILTER_MODULE_H
 
 #include <string>
+#include <cstdint>
 
 #include "metavision/hal/facilities/i_registrable_facility.h"
 

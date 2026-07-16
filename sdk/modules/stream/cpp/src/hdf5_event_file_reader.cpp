@@ -155,7 +155,11 @@ private:
         H5Dget_chunk_storage_size(dset_.getId(), offset, &compressed_size);
         if (decoding_cb_) {
             inbuf_.resize(compressed_size);
+#if (H5_VERS_MAJOR == 1 && H5_VERS_MINOR >= 13) || H5_VERS_MAJOR > 1
+            if (H5Dread_chunk(dset_.getId(), H5P_DEFAULT, offset, &filters, inbuf_.data(), nullptr) < 0) {
+#else
             if (H5Dread_chunk(dset_.getId(), H5P_DEFAULT, offset, &filters, inbuf_.data()) < 0) {
+#endif
                 return false;
             }
             // Make sure we have enough space to decode events, we will resize to correct size after decoding
@@ -164,7 +168,11 @@ private:
             events_.resize(std::min(num_bytes / sizeof(Metavision::EventCD), num_events_ - offset_));
         } else {
             events_.resize(std::min(chunk_size_, num_events_ - offset_));
+#if (H5_VERS_MAJOR == 1 && H5_VERS_MINOR >= 13) || H5_VERS_MAJOR > 1
+            if (H5Dread_chunk(dset_.getId(), H5P_DEFAULT, offset, &filters, events_.data(), nullptr) < 0) {
+#else
             if (H5Dread_chunk(dset_.getId(), H5P_DEFAULT, offset, &filters, events_.data()) < 0) {
+#endif
                 return false;
             }
         }
@@ -284,7 +292,11 @@ private:
         }
         hsize_t offset[1] = {offset_};
         std::uint32_t filters;
+#if (H5_VERS_MAJOR == 1 && H5_VERS_MINOR >= 13) || H5_VERS_MAJOR > 1
+        if (H5Dread_chunk(dset_.getId(), H5P_DEFAULT, offset, &filters, indexes_.data(), nullptr) < 0) {
+#else
         if (H5Dread_chunk(dset_.getId(), H5P_DEFAULT, offset, &filters, indexes_.data()) < 0) {
+#endif
             return false;
         }
         const size_t num_indexes = std::min(num_indexes_ - offset_, chunk_size_);
