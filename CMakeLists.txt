@@ -222,7 +222,7 @@ if (COMPILE_PYTHON3_BINDINGS OR BUILD_TESTING)
 endif ()
 
 # OpenCV
-find_package(OpenCV COMPONENTS core highgui imgproc videoio imgcodecs calib3d objdetect REQUIRED)
+find_package(OpenCV COMPONENTS core highgui imgproc videoio imgcodecs geometry calib stereo objdetect REQUIRED)
 
 # HDF5
 if (NOT ANDROID AND NOT HDF5_DISABLED)
