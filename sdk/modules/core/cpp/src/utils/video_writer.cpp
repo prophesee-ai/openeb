@@ -51,7 +51,11 @@
 //M*/
 
 #include <opencv2/videoio.hpp>
+#if CV_MAJOR_VERSION < 4
 #include <opencv2/core/types_c.h>
+#elif CV_MAJOR_VERSION < 5
+#include <opencv2/imgproc/types_c.h>
+#endif
 
 #include "metavision/sdk/base/utils/sdk_log.h"
 #include "metavision/sdk/core/utils/video_writer.h"
@@ -94,11 +98,20 @@ using ParallelLoopBody = ::cv::ParallelLoopBody;
 using Range            = ::cv::Range;
 
 namespace Error {
+#if CV_MAJOR_VERSION >= 5
+using Code = ::cv::Error::Code;
+constexpr Code StsAssert       = ::cv::Error::StsAssert;
+constexpr Code StsOutOfRange   = ::cv::Error::StsOutOfRange;
+constexpr Code StsVecLengthErr = ::cv::Error::StsVecLengthErr;
+constexpr Code StsBadArg       = ::cv::Error::StsBadArg;
+#else
 enum Code {
     StsAssert       = ::cv::Error::StsAssert,
     StsOutOfRange   = ::cv::Error::StsOutOfRange,
-    StsVecLengthErr = ::cv::Error::StsVecLengthErr
+    StsVecLengthErr = ::cv::Error::StsVecLengthErr,
+    StsBadArg       = ::cv::Error::StsBadArg
 };
+#endif
 }
 
 using ::cv::error;
@@ -209,6 +222,15 @@ enum VideoWriterProperties {
 
 // including OpenCV's implementation from v4.5.0
 #define cv cv45 // not super clean, but it's the easiest way to get the job done
+#ifndef CV_StsBadArg
+#define CV_StsBadArg cv45::Error::StsBadArg
+#endif
+#ifndef CV_StsOutOfRange
+#define CV_StsOutOfRange cv45::Error::StsOutOfRange
+#endif
+#ifndef CV_StsAssert
+#define CV_StsAssert cv45::Error::StsAssert
+#endif
 #include "3rdparty/container_avi.cpp"
 #include "3rdparty/cap_mjpeg_encoder.cpp"
 #undef cv
@@ -343,6 +365,16 @@ cv::String VideoWriter::getBackendName() const {
 #endif
 }
 
+#if CV_MAJOR_VERSION >= 5
+bool VideoWriter::write(cv::InputArray image) {
+    if (writer_) {
+        writer_->write(image);
+        return true;
+    }
+    cv::VideoWriter::write(image);
+    return true;
+}
+#else
 void VideoWriter::write(cv::InputArray image) {
     if (writer_) {
         writer_->write(image);
@@ -354,6 +386,7 @@ void VideoWriter::write(cv::InputArray image) {
     cv::VideoWriter::write(image);
 #endif
 }
+#endif
 
 VideoWriter &VideoWriter::operator<<(const cv::Mat &image) {
     if (writer_) {

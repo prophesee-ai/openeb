@@ -19,7 +19,7 @@
 #include <thread>
 #include <boost/program_options.hpp>
 #include <opencv2/highgui/highgui.hpp>
-#if CV_MAJOR_VERSION >= 4
+#if CV_MAJOR_VERSION >= 4 && CV_MAJOR_VERSION < 5
 #include <opencv2/highgui/highgui_c.h>
 #endif
 #include <opencv2/imgproc.hpp>

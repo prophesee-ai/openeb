@@ -22,9 +22,17 @@ inline D safe_int_cast(S val, const char * msg = 0)
     if (!in_range_r || !in_range_l)
     {
         if (!msg)
+#if CV_MAJOR_VERSION >= 5
+            error(Exception(Error::StsOutOfRange, format("Can not convert integer values (%s -> %s), value 0x%jx is out of range", typeid(S).name(), typeid(D).name(), (uintmax_t)val), __func__, __FILE__, __LINE__));
+#else
             CV_Error_(Error::StsOutOfRange, ("Can not convert integer values (%s -> %s), value 0x%jx is out of range", typeid(S).name(), typeid(D).name(), (uintmax_t)val));
+#endif
         else
+#if CV_MAJOR_VERSION >= 5
+            error(Exception(Error::StsOutOfRange, msg, __func__, __FILE__, __LINE__));
+#else
             CV_Error(Error::StsOutOfRange, msg);
+#endif
     }
     return static_cast<D>(val);
 }

@@ -19,7 +19,7 @@
 #include <thread>
 #include <boost/program_options.hpp>
 #include <opencv2/highgui/highgui.hpp>
-#if CV_MAJOR_VERSION >= 4
+#if CV_MAJOR_VERSION >= 4 && CV_MAJOR_VERSION < 5
 #include <opencv2/highgui/highgui_c.h>
 #endif
 #include <opencv2/imgproc.hpp>
@@ -353,7 +353,11 @@ int main(int argc, char *argv[]) {
 
         // Setup CD frame display
         std::string cd_window_name("CD Events");
+#if CV_MAJOR_VERSION >= 5
+        cv::namedWindow(cd_window_name, cv::WINDOW_GUI_NORMAL);
+#else
         cv::namedWindow(cd_window_name, CV_GUI_NORMAL);
+#endif
         cv::resizeWindow(cd_window_name, geometry.get_width(), geometry.get_height());
         cv::moveWindow(cd_window_name, 0, 0);
 #if (CV_MAJOR_VERSION == 3 && (CV_MINOR_VERSION * 100 + CV_SUBMINOR_VERSION) >= 408) || \
